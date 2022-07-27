@@ -16,7 +16,7 @@ build:
 
 docker-build:
 	$(ENVVARS) $(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/search.sh" --ldflags="$(LDFLAGS)" ./cmd/search
-#	$(ENVVARS) $(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/samindex" --ldflags="$(LDFLAGS)" ./cmd/samindex
+	$(ENVVARS) $(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/samindex" --ldflags="$(LDFLAGS)" ./cmd/samindex
 
 build-mister:
 	docker run --platform linux/arm/v7 -v $(DOCKERGOBUILDCACHE):/root/.cache/go-build -v $(DOCKERGOMODCACHE):/root/go/pkg/mod -v $(CURDIR):/build $(DOCKERIMAGENAME)
