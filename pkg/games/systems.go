@@ -28,12 +28,35 @@ var SYSTEMS = map[string]System{
 			},
 		},
 	},
+	// TODO: support for multiple folders?
+	// TODO: could cut down on work scanning by folder rather than system
+	"Atari2600": {
+		folder: "ATARI7800",
+		rbf:    "_Console/Atari7800",
+		fileTypes: []fileType{
+			{
+				extensions: []string{".a26"},
+				mgl:        nil,
+			},
+		},
+	},
+	"Atari5200": {
+		folder: "ATARI5200",
+		rbf:    "_Console/Atari5200",
+		fileTypes: []fileType{
+			{
+				extensions: []string{".a52", ".car"},
+				// TODO: this probably supports mgl launching
+				mgl: nil,
+			},
+		},
+	},
 	"Atari7800": {
 		folder: "ATARI7800",
 		rbf:    "_Console/Atari7800",
 		fileTypes: []fileType{
 			{
-				extensions: []string{".a78", ".a26", ".bin"},
+				extensions: []string{".a78", ".bin"},
 				mgl: &mglParams{
 					delay:    1,
 					fileType: "f",
@@ -122,6 +145,20 @@ var SYSTEMS = map[string]System{
 					delay:    1,
 					fileType: "f",
 					index:    1,
+				},
+			},
+		},
+	},
+	"GameGear": {
+		folder: "SMS",
+		rbf:    "_Console/SMS",
+		fileTypes: []fileType{
+			{
+				extensions: []string{".gg"},
+				mgl: &mglParams{
+					delay:    1,
+					fileType: "f",
+					index:    2,
 				},
 			},
 		},
@@ -270,14 +307,6 @@ var SYSTEMS = map[string]System{
 					delay:    1,
 					fileType: "f",
 					index:    1,
-				},
-			},
-			{
-				extensions: []string{".gg"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    2,
 				},
 			},
 		},

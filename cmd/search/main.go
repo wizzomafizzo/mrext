@@ -65,7 +65,9 @@ func newGenerateIndexWindow(stdscr *gc.Window) error {
 	win.NoutRefresh()
 	gc.Update()
 
-	files := games.GetSystemFiles(func(system string) {
+	systemPaths := games.GetSystemPaths()
+
+	files := games.GetSystemFiles(systemPaths, func(system string, path string) {
 		win.MovePrint(1, 3+len(scanningGamesText), scanningGamesClear)
 		win.MovePrint(1, 3+len(scanningGamesText), system)
 		win.NoutRefresh()

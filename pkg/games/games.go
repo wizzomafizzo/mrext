@@ -90,12 +90,10 @@ func GetSystemPaths() map[string][]string {
 	return paths
 }
 
-func GetSystemFiles(statusFn func(system string)) [][2]string {
+func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) [][2]string {
 	var found [][2]string
 
-	for systemId, paths := range GetSystemPaths() {
-		statusFn(systemId)
-
+	for systemId, paths := range systemPaths {
 		system, err := getSystem(systemId)
 		if err != nil {
 			log.Println(err)
@@ -125,6 +123,7 @@ func GetSystemFiles(statusFn func(system string)) [][2]string {
 		}
 
 		for _, path := range paths {
+			statusFn(systemId, path)
 			filepath.WalkDir(path, scanner)
 		}
 	}
