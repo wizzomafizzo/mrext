@@ -4,10 +4,10 @@ MISTERBINDIR := $(BINDIR)/mister
 ENVVARS := CGO_LDFLAGS="-lcurses"
 LDFLAGS := -extldflags=-static
 
-DOCKERIMAGENAME    := mister-mext-build
+DOCKERIMAGENAME    := mister-mrext-build
 DOCKERENVVARS      := GOOS="linux" GOARCH="arm" GOARM="7"
-DOCKERGOBUILDCACHE := mister-mext-build-cache
-DOCKERGOMODCACHE   := mister-mext-mod-cache
+DOCKERGOBUILDCACHE := mister-mrext-build-cache
+DOCKERGOMODCACHE   := mister-mrext-mod-cache
 
 build:
 	$(ENVVARS) go build -o "$(BINDIR)/search" --ldflags="$(LDFLAGS)" ./cmd/search

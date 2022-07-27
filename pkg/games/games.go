@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	s "strings"
 
-	"github.com/wizzomafizzo/mext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 func getSystem(name string) (*System, error) {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wizzomafizzo/mext/pkg/games"
-	"github.com/wizzomafizzo/mext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 func main() {

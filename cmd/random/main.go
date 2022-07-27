@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/wizzomafizzo/mext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
 func pickRandomFile(path string) string {

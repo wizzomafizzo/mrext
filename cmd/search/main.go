@@ -9,8 +9,8 @@ import (
 
 	gc "github.com/rthornton128/goncurses"
 
-	"github.com/wizzomafizzo/mext/pkg/games"
-	"github.com/wizzomafizzo/mext/pkg/index"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/index"
 )
 
 func SetupCurses() (*gc.Window, error) {

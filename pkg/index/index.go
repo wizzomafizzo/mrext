@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	s "strings"
 
-	"github.com/wizzomafizzo/mext/pkg/config"
-	"github.com/wizzomafizzo/mext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	_ "github.com/mattn/go-sqlite3"
 )

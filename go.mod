@@ -1,4 +1,4 @@
-module github.com/wizzomafizzo/mext
+module github.com/wizzomafizzo/mrext
 
 go 1.18
 
