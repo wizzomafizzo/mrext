@@ -36,9 +36,15 @@ func main() {
 	outDir := flag.String("o", ".", "output directory for gamelist files")
 	filter := flag.String("s", "all", "list of systems to index (comma delimited)")
 	progress := flag.Bool("p", false, "print output for dialog gauge")
+	quiet := flag.Bool("q", false, "suppress all output")
 	flag.Parse()
 
 	start := time.Now()
+
+	if !*quiet && !*progress {
+		fmt.Println("Finding system folders")
+	}
+
 	systemPaths := games.GetSystemPaths()
 
 	// filter systems if required
@@ -53,6 +59,7 @@ func main() {
 					filteredPaths[systemId] = paths
 				}
 			}
+			// also support sam's system ids
 			for origId, samId := range idMap {
 				if strings.EqualFold(system, samId) {
 					filteredPaths[origId] = systemPaths[origId]
@@ -70,21 +77,30 @@ func main() {
 
 	// generate file list
 	systemFiles := games.GetSystemFiles(filteredPaths, func(s string, p string) {
-		if *progress {
-			fmt.Println("XXX")
-			fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-			fmt.Printf("Scanning %s (%s)\n", s, p)
-			fmt.Println("XXX")
+		if !*quiet {
+			if *progress {
+				fmt.Println("XXX")
+				fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
+				fmt.Printf("Scanning %s (%s)\n", s, p)
+				fmt.Println("XXX")
+			} else {
+				fmt.Printf("Scanning %s: %s\n", s, p)
+			}
 		}
+
 		currentStep++
 	})
 
 	// write gamelist files to tmp
-	if *progress {
-		fmt.Println("XXX")
-		fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-		fmt.Println("Creating game lists")
-		fmt.Println("XXX")
+	if !*quiet {
+		if *progress {
+			fmt.Println("XXX")
+			fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
+			fmt.Println("Creating game lists")
+			fmt.Println("XXX")
+		} else {
+			fmt.Println("Creating game lists")
+		}
 	}
 	currentStep++
 
@@ -131,10 +147,15 @@ func main() {
 		panic(err)
 	}
 
-	if *progress {
-		fmt.Println("XXX")
-		fmt.Println("100")
-		fmt.Printf("Indexing complete (%d seconds)\n", int(time.Since(start).Seconds()))
-		fmt.Println("XXX")
+	if !*quiet {
+		taken := int(time.Since(start).Seconds())
+		if *progress {
+			fmt.Println("XXX")
+			fmt.Println("100")
+			fmt.Printf("Indexing complete (%d seconds)\n", taken)
+			fmt.Println("XXX")
+		} else {
+			fmt.Printf("Indexing complete (%d seconds)\n", taken)
+		}
 	}
 }
