@@ -14,6 +14,7 @@ import (
 
 var idMap = map[string]string{
 	"Gameboy":         "gb",
+	"GameboyColor":    "gbc",
 	"GameGear":        "gg",
 	"MasterSystem":    "sms",
 	"Sega32X":         "s32x",
@@ -42,7 +43,7 @@ func main() {
 	start := time.Now()
 
 	if !*quiet && !*progress {
-		fmt.Println("Finding system folders")
+		fmt.Println("Finding system folders...")
 	}
 
 	systemPaths := games.GetSystemPaths()
@@ -96,10 +97,10 @@ func main() {
 		if *progress {
 			fmt.Println("XXX")
 			fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-			fmt.Println("Creating game lists")
+			fmt.Println("Creating game lists...")
 			fmt.Println("XXX")
 		} else {
-			fmt.Println("Creating game lists")
+			fmt.Println("Creating game lists...")
 		}
 	}
 	currentStep++
@@ -152,10 +153,10 @@ func main() {
 		if *progress {
 			fmt.Println("XXX")
 			fmt.Println("100")
-			fmt.Printf("Indexing complete (%d seconds)\n", taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
 			fmt.Println("XXX")
 		} else {
-			fmt.Printf("Indexing complete (%d seconds)\n", taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
 		}
 	}
 }
