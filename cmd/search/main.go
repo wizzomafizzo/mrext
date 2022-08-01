@@ -14,7 +14,7 @@ import (
 	index "github.com/wizzomafizzo/mrext/pkg/sqlindex"
 )
 
-func newGenerateIndexWindow(stdscr *gc.Window) error {
+func generateIndexWindow(stdscr *gc.Window) error {
 	win, err := curses.NewWindow(stdscr, 5, 75, "", -1)
 	if err != nil {
 		return err
@@ -77,6 +77,28 @@ func newGenerateIndexWindow(stdscr *gc.Window) error {
 	return nil
 }
 
+func searchWindow(stdscr *gc.Window, query string) (err error) {
+	searchTitle := "Search"
+	searchButtons := []string{"Advanced", "Search", "Exit"}
+	button, text, err := curses.OnScreenKeyboard(stdscr, searchTitle, searchButtons, query)
+	if err != nil {
+		panic(err)
+	}
+
+	if button == 0 {
+		return searchWindow(stdscr, text)
+	} else if button == 1 {
+		results, err := index.SearchGames(text)
+		if err != nil {
+			return err
+		}
+
+		return searchWindow(stdscr, fmt.Sprintf("%d", len(results)))
+	} else {
+		return nil
+	}
+}
+
 func main() {
 	stdscr, err := curses.Setup()
 	if err != nil {
@@ -85,7 +107,7 @@ func main() {
 	defer gc.End()
 
 	if _, err := os.Stat(index.GetDbPath()); os.IsNotExist(err) {
-		if err := newGenerateIndexWindow(stdscr); err != nil {
+		if err := generateIndexWindow(stdscr); err != nil {
 			log.Fatal(err)
 		}
 		stdscr.Clear()
@@ -93,9 +115,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	searchButtons := []string{"Advanced", "Search", "Exit"}
-	selected, _, _ := curses.OnScreenKeyboard(stdscr, searchButtons, "")
-	for selected != 2 {
-		selected, _, _ = curses.OnScreenKeyboard(stdscr, searchButtons, "")
+	err = searchWindow(stdscr, "")
+	if err != nil {
+		log.Fatal(err)
 	}
 }

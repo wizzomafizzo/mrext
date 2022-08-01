@@ -7,6 +7,11 @@ import (
 	gc "github.com/rthornton128/goncurses"
 )
 
+type Coords struct {
+	Y int
+	X int
+}
+
 func Setup() (*gc.Window, error) {
 	stdscr, err := gc.Init()
 	if err != nil {
@@ -88,13 +93,8 @@ func DrawActionButtons(win *gc.Window, buttons []string, selected int) {
 	win.NoutRefresh()
 }
 
-type Coords struct {
-	Y int
-	X int
-}
-
-func OnScreenKeyboard(stdscr *gc.Window, buttons []string, defaultText string) (int, string, error) {
-	win, err := NewWindow(stdscr, 16, 63, "Search", -1)
+func OnScreenKeyboard(stdscr *gc.Window, title string, buttons []string, defaultText string) (int, string, error) {
+	win, err := NewWindow(stdscr, 16, 63, title, -1)
 	if err != nil {
 		return 0, "", err
 	}
@@ -105,7 +105,7 @@ func OnScreenKeyboard(stdscr *gc.Window, buttons []string, defaultText string) (
 	selected := 1
 	selectedKey := Coords{0, 0}
 	selectedButton := 0
-	cursor := 0
+	cursor := len(defaultText)
 	text := defaultText
 
 	keys := [4][10]gc.Char{
@@ -290,7 +290,7 @@ func OnScreenKeyboard(stdscr *gc.Window, buttons []string, defaultText string) (
 			} else if selected == 2 {
 				return selectedButton, text, nil
 			}
-		case gc.KEY_BACKSPACE:
+		case gc.KEY_BACKSPACE: // FIXME: not working over ssh
 			if cursor > 0 {
 				text = text[:cursor-1] + text[cursor:]
 				cursor--
@@ -305,4 +305,14 @@ func OnScreenKeyboard(stdscr *gc.Window, buttons []string, defaultText string) (
 	}
 
 	return -1, "", nil
+}
+
+func ListPicker(stdscr *gc.Window, title string, items []string) (int, error) {
+	win, err := NewWindow(stdscr, 20, 70, title, -1)
+	if err != nil {
+		return -1, err
+	}
+	defer win.Delete()
+
+	return -1, nil
 }

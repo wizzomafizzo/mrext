@@ -9,8 +9,26 @@ import (
 	"path/filepath"
 	s "strings"
 
+	"github.com/edwardrf/symwalk"
+
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
+
+type dupeChecker struct {
+	filenames map[string]bool
+}
+
+func (d *dupeChecker) isDupe(path string) bool {
+	fn := filepath.Base(path)
+	_, exists := d.filenames[fn]
+
+	if exists {
+		return true
+	} else {
+		d.filenames[fn] = true
+		return false
+	}
+}
 
 func getSystem(name string) (*System, error) {
 	if system, ok := SYSTEMS[name]; ok {
@@ -91,6 +109,7 @@ func GetSystemPaths() map[string][]string {
 }
 
 func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) [][2]string {
+	var dupes = &dupeChecker{filenames: make(map[string]bool)}
 	var found [][2]string
 
 	for systemId, paths := range systemPaths {
@@ -100,7 +119,8 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 			continue
 		}
 
-		scanner := func(path string, _ fs.DirEntry, _ error) error {
+		// scanner := func(path string, _ fs.DirEntry, _ error) error {
+		scanner := func(path string, _ os.FileInfo, _ error) error {
 			if s.HasSuffix(s.ToLower(path), ".zip") {
 				zipFiles, err := utils.ListZip(path)
 				if err != nil {
@@ -108,14 +128,14 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 				}
 
 				for _, zipPath := range zipFiles {
-					if matchSystemFile(*system, zipPath) {
+					if matchSystemFile(*system, zipPath) && !dupes.isDupe(zipPath) {
 						abs := filepath.Join(path, zipPath)
 						found = append(found, [2]string{systemId, string(abs)})
 
 					}
 				}
 			} else {
-				if matchSystemFile(*system, path) {
+				if matchSystemFile(*system, path) && !dupes.isDupe(path) {
 					found = append(found, [2]string{systemId, path})
 				}
 			}
@@ -124,7 +144,8 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 
 		for _, path := range paths {
 			statusFn(systemId, path)
-			filepath.WalkDir(path, scanner)
+			// filepath.WalkDir(path, scanner)
+			symwalk.Walk(path, scanner)
 		}
 	}
 

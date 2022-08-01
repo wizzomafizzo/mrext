@@ -126,7 +126,21 @@ var SYSTEMS = map[string]System{
 		rbf:    "_Console/Gameboy",
 		fileTypes: []fileType{
 			{
-				extensions: []string{".gb", ".gbc"},
+				extensions: []string{".gb"},
+				mgl: &mglParams{
+					delay:    1,
+					fileType: "f",
+					index:    1,
+				},
+			},
+		},
+	},
+	"GameboyColor": {
+		folder: "GAMEBOY",
+		rbf:    "_Console/Gameboy",
+		fileTypes: []fileType{
+			{
+				extensions: []string{".gbc"},
 				mgl: &mglParams{
 					delay:    1,
 					fileType: "f",
@@ -246,7 +260,7 @@ var SYSTEMS = map[string]System{
 		rbf:    "_Console/NES",
 		fileTypes: []fileType{
 			{
-				extensions: []string{".nes", ".fds", ".nsf"},
+				extensions: []string{".nes", ".nsf"},
 				mgl: &mglParams{
 					delay:    1,
 					fileType: "f",
