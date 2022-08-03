@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,33 +78,33 @@ func main() {
 	currentStep := 0
 
 	// generate file list
-	systemFiles, _ := games.GetAllFiles(filteredPaths, func(s string, p string) {
-		if !*quiet {
-			if *progress {
-				fmt.Println("XXX")
-				fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-				fmt.Printf("Scanning %s (%s)\n", s, p)
-				fmt.Println("XXX")
-			} else {
-				fmt.Printf("Scanning %s: %s\n", s, p)
+	systemFiles := make([][2]string, 0)
+	for systemId, paths := range filteredPaths {
+		for _, path := range paths {
+			if !*quiet {
+				if *progress {
+					fmt.Println("XXX")
+					fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
+					fmt.Printf("Scanning %s (%s)\n", systemId, path)
+					fmt.Println("XXX")
+				} else {
+					fmt.Printf("Scanning %s: %s\n", systemId, path)
+				}
 			}
-		}
 
-		currentStep++
-	})
+			files, err := games.GetFiles(systemId, path)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 
-	// remove files with same filename
-	var uniqueFiles [][2]string
-	uniqueFns := make(map[string]struct{})
-	for _, file := range systemFiles {
-		_, path := file[0], file[1]
-		key := filepath.Base(path)
+			files = games.FilterUniqueFilenames(files)
 
-		if _, exists := uniqueFns[key]; exists {
-			continue
-		} else {
-			uniqueFns[key] = struct{}{}
-			uniqueFiles = append(uniqueFiles, file)
+			for _, file := range files {
+				systemFiles = append(systemFiles, [2]string{systemId, file})
+			}
+
+			currentStep++
 		}
 	}
 
@@ -126,7 +127,7 @@ func main() {
 	}
 
 	gamelists := make(map[string]*os.File)
-	for _, game := range uniqueFiles {
+	for _, game := range systemFiles {
 		systemId, path := game[0], game[1]
 
 		if _, ok := gamelists[systemId]; !ok {
@@ -168,10 +169,10 @@ func main() {
 		if *progress {
 			fmt.Println("XXX")
 			fmt.Println("100")
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(uniqueFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
 			fmt.Println("XXX")
 		} else {
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(uniqueFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
 		}
 	}
 }
