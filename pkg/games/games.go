@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	s "strings"
 
-	"github.com/edwardrf/symwalk"
-
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -38,17 +36,30 @@ func getSystem(name string) (*System, error) {
 	}
 }
 
-func matchSystemFolder(folder fs.FileInfo) ([]string, error) {
-	var found []string
+func matchSystemFolder(path string) ([][2]string, error) {
+	var matches [][2]string
+
+	folder, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+
+	name := folder.Name()
+
+	if !folder.IsDir() {
+		return nil, fmt.Errorf("not a directory: %s", path)
+	}
+
 	for k, v := range SYSTEMS {
-		if folder.IsDir() && s.EqualFold(folder.Name(), v.folder) {
-			found = append(found, k)
+		if s.EqualFold(name, v.folder) {
+			matches = append(matches, [2]string{k, path})
 		}
 	}
-	if len(found) == 0 {
-		return nil, fmt.Errorf("unknown system: %s", folder)
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("unknown system: %s", name)
 	} else {
-		return found, nil
+		return matches, nil
 	}
 }
 
@@ -68,12 +79,12 @@ func findSystemFolders(path string) [][2]string {
 
 	root, err := os.Stat(path)
 	if err != nil || !root.IsDir() {
-		return found
+		return nil
 	}
 
 	folders, err := ioutil.ReadDir(path)
 	if err != nil {
-		return found
+		return nil
 	}
 
 	for _, folder := range folders {
@@ -83,13 +94,11 @@ func findSystemFolders(path string) [][2]string {
 			found = append(found, findSystemFolders(abs)...)
 		}
 
-		matches, err := matchSystemFolder(folder)
+		matches, err := matchSystemFolder(abs)
 		if err != nil {
 			continue
 		} else {
-			for _, match := range matches {
-				found = append(found, [2]string{match, abs})
-			}
+			found = append(found, matches...)
 		}
 	}
 
@@ -108,9 +117,15 @@ func GetSystemPaths() map[string][]string {
 	return paths
 }
 
-func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) [][2]string {
+func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) ([][2]string, error) {
 	var dupes = &dupeChecker{filenames: make(map[string]bool)}
-	var found [][2]string
+	var allFound [][2]string
+	var folderFound [][2]string
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
 
 	for systemId, paths := range systemPaths {
 		system, err := getSystem(systemId)
@@ -119,8 +134,7 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 			continue
 		}
 
-		// scanner := func(path string, _ fs.DirEntry, _ error) error {
-		scanner := func(path string, _ os.FileInfo, _ error) error {
+		scanner := func(path string, _ fs.DirEntry, _ error) error {
 			if s.HasSuffix(s.ToLower(path), ".zip") {
 				zipFiles, err := utils.ListZip(path)
 				if err != nil {
@@ -130,13 +144,13 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 				for _, zipPath := range zipFiles {
 					if matchSystemFile(*system, zipPath) && !dupes.isDupe(zipPath) {
 						abs := filepath.Join(path, zipPath)
-						found = append(found, [2]string{systemId, string(abs)})
+						folderFound = append(folderFound, [2]string{systemId, string(abs)})
 
 					}
 				}
 			} else {
 				if matchSystemFile(*system, path) && !dupes.isDupe(path) {
-					found = append(found, [2]string{systemId, path})
+					folderFound = append(folderFound, [2]string{systemId, path})
 				}
 			}
 			return nil
@@ -144,10 +158,40 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 
 		for _, path := range paths {
 			statusFn(systemId, path)
-			// filepath.WalkDir(path, scanner)
-			symwalk.Walk(path, scanner)
+
+			folderFound = nil
+
+			err = os.Chdir(cwd)
+			if err != nil {
+				return nil, err
+			}
+
+			folder, err := os.Lstat(path)
+			if err != nil {
+				continue
+			}
+
+			if folder.Mode()&os.ModeSymlink == 0 {
+				filepath.WalkDir(path, scanner)
+				allFound = append(allFound, folderFound...)
+			} else {
+				realPath, err := filepath.EvalSymlinks(path)
+				if err != nil {
+					continue
+				}
+				filepath.WalkDir(realPath, scanner)
+				for _, result := range folderFound {
+					result[1] = s.Replace(result[1], realPath, path, 1)
+					allFound = append(allFound, result)
+				}
+			}
 		}
 	}
 
-	return found
+	err = os.Chdir(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	return allFound, nil
 }
