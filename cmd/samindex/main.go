@@ -77,7 +77,7 @@ func main() {
 	currentStep := 0
 
 	// generate file list
-	systemFiles := games.GetSystemFiles(filteredPaths, func(s string, p string) {
+	systemFiles, _ := games.GetSystemFiles(filteredPaths, func(s string, p string) {
 		if !*quiet {
 			if *progress {
 				fmt.Println("XXX")

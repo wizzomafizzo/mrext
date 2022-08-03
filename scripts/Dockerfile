@@ -1,6 +1,5 @@
-FROM arm32v7/debian:bullseye
+FROM arm32v7/debian:bullseye-backports
 
-RUN echo "deb http://deb.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list
 RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get install -y ca-certificates openssl
