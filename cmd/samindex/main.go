@@ -90,7 +90,7 @@ func main() {
 		}
 
 		currentStep++
-	})
+	}, true)
 
 	// write gamelist files to tmp
 	if !*quiet {

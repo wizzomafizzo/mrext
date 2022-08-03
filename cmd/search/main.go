@@ -35,7 +35,7 @@ func generateIndexWindow(stdscr *gc.Window) error {
 		win.MovePrint(1, 3+len(scanningGamesText), system)
 		win.NoutRefresh()
 		gc.Update()
-	})
+	}, false)
 
 	win.MovePrint(1, 3+len(scanningGamesText), scanningGamesClear)
 	win.MovePrint(1, 3+len(scanningGamesText), fmt.Sprintf("Done! (%d games)", len(files)))

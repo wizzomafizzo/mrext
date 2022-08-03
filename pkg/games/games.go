@@ -13,17 +13,22 @@ import (
 )
 
 type dupeChecker struct {
-	filenames map[string]bool
+	filenames map[string]struct{}
+	enabled   bool
 }
 
 func (d *dupeChecker) isDupe(path string) bool {
+	if !d.enabled {
+		return false
+	}
+
 	fn := filepath.Base(path)
 	_, exists := d.filenames[fn]
 
 	if exists {
 		return true
 	} else {
-		d.filenames[fn] = true
+		d.filenames[fn] = struct{}{}
 		return false
 	}
 }
@@ -117,10 +122,36 @@ func GetSystemPaths() map[string][]string {
 	return paths
 }
 
-func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) ([][2]string, error) {
-	var dupes = &dupeChecker{filenames: make(map[string]bool)}
-	var allFound [][2]string
-	var folderFound [][2]string
+type resultsStack [][][2]string
+
+func (r *resultsStack) new() {
+	*r = append(*r, [][2]string{})
+}
+
+func (r *resultsStack) pop() {
+	if len(*r) == 0 {
+		return
+	}
+	*r = (*r)[:len(*r)-1]
+}
+
+func (r *resultsStack) get() (*[][2]string, error) {
+	if len(*r) == 0 {
+		return nil, fmt.Errorf("nothing on stack")
+	}
+	return &(*r)[len(*r)-1], nil
+}
+
+// Search for all valid games in given paths and return a single list of files
+// with their corresponding system names. An optional function can be given
+// which is simply triggered before each system is searched (for use in progress
+// displays).
+// This function supports deep searching in .zip files and symlinked directories.
+func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId string, path string), removeDupes bool) ([][2]string, error) {
+	dupes := &dupeChecker{filenames: make(map[string]struct{}), enabled: removeDupes}
+	visited := make(map[string]struct{})
+	var allFiles [][2]string
+	var stack resultsStack
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -134,8 +165,61 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 			continue
 		}
 
-		scanner := func(path string, _ fs.DirEntry, _ error) error {
+		var scanner func(path string, file fs.DirEntry, err error) error
+		scanner = func(path string, file fs.DirEntry, _ error) error {
+			// avoid recursive symlinks
+			if file.IsDir() {
+				if _, ok := visited[path]; ok {
+					return filepath.SkipDir
+				} else {
+					visited[path] = struct{}{}
+				}
+			}
+
+			// handle symlinked directories
+			if file.Type()&os.ModeSymlink != 0 {
+				realPath, err := filepath.EvalSymlinks(path)
+				if err != nil {
+					return err
+				}
+
+				file, err := os.Stat(realPath)
+				if err != nil {
+					return err
+				}
+
+				if file.IsDir() {
+					err = os.Chdir(path)
+					if err != nil {
+						return err
+					}
+
+					stack.new()
+
+					filepath.WalkDir(realPath, scanner)
+
+					results, err := stack.get()
+					if err != nil {
+						return err
+					}
+
+					for _, result := range *results {
+						result[1] = s.Replace(result[1], realPath, path, 1)
+						allFiles = append(allFiles, result)
+					}
+
+					stack.pop()
+					return nil
+				}
+			}
+
+			results, err := stack.get()
+			if err != nil {
+				return err
+			}
+
 			if s.HasSuffix(s.ToLower(path), ".zip") {
+				// zip files
 				zipFiles, err := utils.ListZip(path)
 				if err != nil {
 					return err
@@ -144,22 +228,25 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 				for _, zipPath := range zipFiles {
 					if matchSystemFile(*system, zipPath) && !dupes.isDupe(zipPath) {
 						abs := filepath.Join(path, zipPath)
-						folderFound = append(folderFound, [2]string{systemId, string(abs)})
+						*results = append(*results, [2]string{systemId, string(abs)})
 
 					}
 				}
 			} else {
+				// regular files
 				if matchSystemFile(*system, path) && !dupes.isDupe(path) {
-					folderFound = append(folderFound, [2]string{systemId, path})
+					*results = append(*results, [2]string{systemId, path})
 				}
 			}
+
 			return nil
 		}
 
 		for _, path := range paths {
 			statusFn(systemId, path)
 
-			folderFound = nil
+			stack.new()
+			visited = make(map[string]struct{})
 
 			err = os.Chdir(cwd)
 			if err != nil {
@@ -172,19 +259,33 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 			}
 
 			if folder.Mode()&os.ModeSymlink == 0 {
+				// handle symlinked games folders
 				filepath.WalkDir(path, scanner)
-				allFound = append(allFound, folderFound...)
+				results, err := stack.get()
+				if err != nil {
+					return nil, err
+				}
+				allFiles = append(allFiles, *results...)
 			} else {
 				realPath, err := filepath.EvalSymlinks(path)
 				if err != nil {
 					continue
 				}
+
 				filepath.WalkDir(realPath, scanner)
-				for _, result := range folderFound {
+
+				results, err := stack.get()
+				if err != nil {
+					return nil, err
+				}
+
+				for _, result := range *results {
 					result[1] = s.Replace(result[1], realPath, path, 1)
-					allFound = append(allFound, result)
+					allFiles = append(allFiles, result)
 				}
 			}
+
+			stack.pop()
 		}
 	}
 
@@ -193,5 +294,5 @@ func GetSystemFiles(systemPaths map[string][]string, statusFn func(systemId stri
 		return nil, err
 	}
 
-	return allFound, nil
+	return allFiles, nil
 }
