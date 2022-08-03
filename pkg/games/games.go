@@ -120,6 +120,8 @@ func (r *resultsStack) get() (*[]string, error) {
 	return &(*r)[len(*r)-1], nil
 }
 
+// Search for all valid games in a given path and return a list of files.
+// This function deep searches .zip files and handles symlinks at all levels.
 func GetFiles(systemId string, path string) ([]string, error) {
 	var allResults []string
 	var stack resultsStack
@@ -217,13 +219,39 @@ func GetFiles(systemId string, path string) ([]string, error) {
 		return nil
 	}
 
-	err = os.Chdir(cwd)
+	stack.new()
+
+	root, err := os.Lstat(path)
 	if err != nil {
 		return nil, err
 	}
 
-	stack.new()
-	filepath.WalkDir(path, scanner)
+	err = os.Chdir(filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
+
+	// handle symlinks on root game folder because WalkDir fails silently on them
+	var realPath string
+	if root.Mode()&os.ModeSymlink == 0 {
+		realPath = path
+	} else {
+		realPath, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	realRoot, err := os.Stat(realPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if !realRoot.IsDir() {
+		return nil, fmt.Errorf("root is not a directory")
+	}
+
+	filepath.WalkDir(realPath, scanner)
 
 	results, err := stack.get()
 	if err != nil {
@@ -233,65 +261,10 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	allResults = append(allResults, *results...)
 	stack.pop()
 
-	return allResults, nil
-}
-
-// Search for all valid games in given paths and return a single list of files
-// with their corresponding system names. An optional function can be given
-// which is simply triggered before each system path is searched (for use in
-// progress displays).
-// This function supports deep searching in .zip files and symlinked directories.
-func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) ([][2]string, error) {
-	var allFiles [][2]string
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	for systemId, paths := range systemPaths {
-		for _, path := range paths {
-			statusFn(systemId, path)
-
-			err = os.Chdir(filepath.Dir(path))
-			if err != nil {
-				return nil, err
-			}
-
-			folder, err := os.Lstat(path)
-			if err != nil {
-				continue
-			}
-
-			if folder.Mode()&os.ModeSymlink == 0 {
-				// regular folders
-				results, err := GetFiles(systemId, path)
-				if err != nil {
-					return nil, err
-				}
-
-				for _, filePath := range results {
-					allFiles = append(allFiles, [2]string{systemId, filePath})
-				}
-			} else {
-				// handle symlinked games folders
-				realPath, err := filepath.EvalSymlinks(path)
-				if err != nil {
-					continue
-				}
-
-				results, err := GetFiles(systemId, path)
-				if err != nil {
-					return nil, err
-				}
-
-				for _, filePath := range results {
-					allFiles = append(allFiles, [2]string{
-						systemId,
-						s.Replace(filePath, realPath, path, 1),
-					})
-				}
-			}
+	// change root back to symlink
+	if realPath != path {
+		for i, result := range allResults {
+			allResults[i] = s.Replace(result, realPath, path, 1)
 		}
 	}
 
@@ -300,5 +273,41 @@ func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string,
 		return nil, err
 	}
 
+	return allResults, nil
+}
+
+func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) ([][2]string, error) {
+	var allFiles [][2]string
+
+	for systemId, paths := range systemPaths {
+		for _, path := range paths {
+			statusFn(systemId, path)
+
+			files, err := GetFiles(systemId, path)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, file := range files {
+				allFiles = append(allFiles, [2]string{systemId, file})
+			}
+		}
+	}
+
 	return allFiles, nil
+}
+
+func FilterUniqueFilenames(files []string) []string {
+	var filtered []string
+	filenames := make(map[string]struct{})
+	for _, file := range files {
+		fn := filepath.Base(file)
+		if _, ok := filenames[fn]; ok {
+			continue
+		} else {
+			filenames[fn] = struct{}{}
+			filtered = append(filtered, file)
+		}
+	}
+	return filtered
 }

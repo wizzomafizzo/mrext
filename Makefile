@@ -12,11 +12,11 @@ DOCKERGOMODCACHE   := mister-mrext-mod-cache
 build:
 	$(ENVVARS) go build -o "$(BINDIR)/search" --ldflags="$(LDFLAGS)" ./cmd/search
 	$(ENVVARS) go build -o "$(BINDIR)/random" --ldflags="$(LDFLAGS)" ./cmd/random
-	$(ENVVARS) go build -o "$(BINDIR)/samindex" --ldflags="$(LDFLAGS)" ./cmd/samindex
+	go build -o "$(BINDIR)/samindex" ./cmd/samindex
 
 docker-build:
 	$(ENVVARS) $(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/search.sh" --ldflags="$(LDFLAGS)" ./cmd/search
-	$(ENVVARS) $(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/samindex" --ldflags="$(LDFLAGS)" ./cmd/samindex
+	$(DOCKERENVVARS) go build -o "$(MISTERBINDIR)/samindex" ./cmd/samindex
 
 build-mister:
 	docker run --platform linux/arm/v7 -v $(DOCKERGOBUILDCACHE):/root/.cache/go-build -v $(DOCKERGOMODCACHE):/root/go/pkg/mod -v $(CURDIR):/build $(DOCKERIMAGENAME)
