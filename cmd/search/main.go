@@ -30,12 +30,12 @@ func generateIndexWindow(stdscr *gc.Window) error {
 
 	systemPaths := games.GetSystemPaths()
 
-	files, _ := games.GetSystemFiles(systemPaths, func(system string, path string) {
+	files, _ := games.GetAllFiles(systemPaths, func(system string, path string) {
 		win.MovePrint(1, 3+len(scanningGamesText), scanningGamesClear)
 		win.MovePrint(1, 3+len(scanningGamesText), system)
 		win.NoutRefresh()
 		gc.Update()
-	}, false)
+	})
 
 	win.MovePrint(1, 3+len(scanningGamesText), scanningGamesClear)
 	win.MovePrint(1, 3+len(scanningGamesText), fmt.Sprintf("Done! (%d games)", len(files)))

@@ -77,7 +77,7 @@ func main() {
 	currentStep := 0
 
 	// generate file list
-	systemFiles, _ := games.GetSystemFiles(filteredPaths, func(s string, p string) {
+	systemFiles, _ := games.GetAllFiles(filteredPaths, func(s string, p string) {
 		if !*quiet {
 			if *progress {
 				fmt.Println("XXX")
@@ -90,7 +90,22 @@ func main() {
 		}
 
 		currentStep++
-	}, true)
+	})
+
+	// remove files with same filename
+	var uniqueFiles [][2]string
+	uniqueFns := make(map[string]struct{})
+	for _, file := range systemFiles {
+		_, path := file[0], file[1]
+		key := filepath.Base(path)
+
+		if _, exists := uniqueFns[key]; exists {
+			continue
+		} else {
+			uniqueFns[key] = struct{}{}
+			uniqueFiles = append(uniqueFiles, file)
+		}
+	}
 
 	// write gamelist files to tmp
 	if !*quiet {
@@ -111,7 +126,7 @@ func main() {
 	}
 
 	gamelists := make(map[string]*os.File)
-	for _, game := range systemFiles {
+	for _, game := range uniqueFiles {
 		systemId, path := game[0], game[1]
 
 		if _, ok := gamelists[systemId]; !ok {
@@ -153,10 +168,10 @@ func main() {
 		if *progress {
 			fmt.Println("XXX")
 			fmt.Println("100")
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(uniqueFiles), taken)
 			fmt.Println("XXX")
 		} else {
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", len(uniqueFiles), taken)
 		}
 	}
 }
