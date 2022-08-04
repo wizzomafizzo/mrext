@@ -6,16 +6,33 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	s "strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func getSystem(name string) (*System, error) {
-	if system, ok := SYSTEMS[name]; ok {
+func GetSystem(id string) (*System, error) {
+	if system, ok := SYSTEMS[id]; ok {
 		return &system, nil
 	} else {
-		return nil, fmt.Errorf("unknown system: %s", name)
+		return nil, fmt.Errorf("unknown system: %s", id)
+	}
+}
+
+func LookupSystem(id string) (*System, error) {
+	var system *System
+
+	for k, v := range SYSTEMS {
+		if s.EqualFold(k, id) {
+			system = &v
+		}
+	}
+
+	if system == nil {
+		return nil, fmt.Errorf("unknown system: %s", id)
+	} else {
+		return system, nil
 	}
 }
 
@@ -34,7 +51,7 @@ func matchSystemFolder(path string) ([][2]string, error) {
 	}
 
 	for k, v := range SYSTEMS {
-		if s.EqualFold(name, v.folder) {
+		if s.EqualFold(name, v.Folder) {
 			matches = append(matches, [2]string{k, path})
 		}
 	}
@@ -47,8 +64,8 @@ func matchSystemFolder(path string) ([][2]string, error) {
 }
 
 func matchSystemFile(system System, path string) bool {
-	for _, args := range system.fileTypes {
-		for _, ext := range args.extensions {
+	for _, args := range system.FileTypes {
+		for _, ext := range args.Extensions {
 			if s.HasSuffix(s.ToLower(path), ext) {
 				return true
 			}
@@ -127,7 +144,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	var stack resultsStack
 	visited := make(map[string]struct{})
 
-	system, err := getSystem(systemId)
+	system, err := GetSystem(systemId)
 	if err != nil {
 		return nil, err
 	}
@@ -310,4 +327,83 @@ func FilterUniqueFilenames(files []string) []string {
 		}
 	}
 	return filtered
+}
+
+var zipRe = regexp.MustCompile(`^(.*\.zip)/(.+)$`)
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+
+	zipMatch := zipRe.FindStringSubmatch(path)
+	if zipMatch != nil {
+		zipPath := zipMatch[1]
+		file := zipMatch[2]
+
+		zipFiles, err := utils.ListZip(zipPath)
+		if err != nil {
+			return false
+		}
+
+		for _, zipFile := range zipFiles {
+			if zipFile == file {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+type fileChecker struct {
+	zipCache map[string]map[string]struct{}
+}
+
+func (fc *fileChecker) cacheZip(zipPath string, files []string) {
+	fc.zipCache[zipPath] = make(map[string]struct{})
+	for _, file := range files {
+		fc.zipCache[zipPath][file] = struct{}{}
+	}
+}
+
+func (fc *fileChecker) existsZip(zipPath string, file string) bool {
+	if _, ok := fc.zipCache[zipPath]; !ok {
+		files, err := utils.ListZip(zipPath)
+		if err != nil {
+			return false
+		}
+
+		fc.cacheZip(zipPath, files)
+	}
+
+	if _, ok := fc.zipCache[zipPath][file]; !ok {
+		return false
+	}
+
+	return true
+}
+
+func (fc *fileChecker) Exists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+
+	zipMatch := zipRe.FindStringSubmatch(path)
+	if zipMatch != nil {
+		zipPath := zipMatch[1]
+		file := zipMatch[2]
+
+		return fc.existsZip(zipPath, file)
+	}
+
+	return false
+}
+
+func NewFileChecker() *fileChecker {
+	return &fileChecker{
+		zipCache: make(map[string]map[string]struct{}),
+	}
 }

@@ -1,404 +1,432 @@
 package games
 
-type mglParams struct {
-	delay    int
-	fileType string
-	index    int
+type MglParams struct {
+	Delay    int
+	FileType string
+	Index    int
 }
 
-type fileType struct {
-	extensions []string
-	mgl        *mglParams
+type FileType struct {
+	Extensions []string
+	Mgl        *MglParams
 }
 
 type System struct {
-	folder    string
-	rbf       string
-	fileTypes []fileType
+	Id        string
+	Folder    string
+	Rbf       string
+	FileTypes []FileType
 }
 
 var SYSTEMS = map[string]System{
 	"Arcade": {
-		folder: "_Arcade",
-		rbf:    "",
-		fileTypes: []fileType{
+		Id:     "Arcade",
+		Folder: "_Arcade",
+		Rbf:    "",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".mra"},
-				mgl:        nil,
+				Extensions: []string{".mra"},
+				Mgl:        nil,
 			},
 		},
 	},
 	// TODO: support for multiple folders?
 	// TODO: could cut down on work scanning by folder rather than system
 	"Atari2600": {
-		folder: "ATARI7800",
-		rbf:    "_Console/Atari7800",
-		fileTypes: []fileType{
+		Id:     "Atari2600",
+		Folder: "ATARI7800",
+		Rbf:    "_Console/Atari7800",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".a26"},
-				mgl:        nil,
+				Extensions: []string{".a26"},
+				Mgl:        nil,
 			},
 		},
 	},
 	"Atari5200": {
-		folder: "ATARI5200",
-		rbf:    "_Console/Atari5200",
-		fileTypes: []fileType{
+		Id:     "Atari5200",
+		Folder: "ATARI5200",
+		Rbf:    "_Console/Atari5200",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".a52", ".car"},
+				Extensions: []string{".a52", ".car"},
 				// TODO: this probably supports mgl launching
-				mgl: nil,
+				Mgl: nil,
 			},
 		},
 	},
 	"Atari7800": {
-		folder: "ATARI7800",
-		rbf:    "_Console/Atari7800",
-		fileTypes: []fileType{
+		Id:     "Atari7800",
+		Folder: "ATARI7800",
+		Rbf:    "_Console/Atari7800",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".a78", ".bin"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".a78", ".bin"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"AtariLynx": {
-		folder: "AtariLynx",
-		rbf:    "_Console/AtariLynx",
-		fileTypes: []fileType{
+		Id:     "AtariLynx",
+		Folder: "AtariLynx",
+		Rbf:    "_Console/AtariLynx",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".lnx"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".lnx"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"C64": {
-		folder: "C64",
-		rbf:    "_Computer/C64",
-		fileTypes: []fileType{
+		Id:     "C64",
+		Folder: "C64",
+		Rbf:    "_Computer/C64",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".prg", ".crt", ".reu", ".tap"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".prg", ".crt", ".reu", ".tap"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"ColecoVision": {
-		folder: "Coleco",
-		rbf:    "_Console/ColecoVision",
-		fileTypes: []fileType{
+		Id:     "ColecoVision",
+		Folder: "Coleco",
+		Rbf:    "_Console/ColecoVision",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".col", ".bin", ".rom", ".sg"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".col", ".bin", ".rom", ".sg"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"FDS": {
-		folder: "NES",
-		rbf:    "_Console/NES",
-		fileTypes: []fileType{
+		Id:     "FDS",
+		Folder: "NES",
+		Rbf:    "_Console/NES",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".fds"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".fds"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"Gameboy": {
-		folder: "GAMEBOY",
-		rbf:    "_Console/Gameboy",
-		fileTypes: []fileType{
+		Id:     "Gameboy",
+		Folder: "GAMEBOY",
+		Rbf:    "_Console/Gameboy",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gb"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".gb"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"GameboyColor": {
-		folder: "GAMEBOY",
-		rbf:    "_Console/Gameboy",
-		fileTypes: []fileType{
+		Id:     "GameboyColor",
+		Folder: "GAMEBOY",
+		Rbf:    "_Console/Gameboy",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gbc"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".gbc"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"Gameboy2P": {
-		folder: "GAMEBOY2P",
-		rbf:    "_Console/Gameboy2P",
-		fileTypes: []fileType{
+		Id:     "Gameboy2P",
+		Folder: "GAMEBOY2P",
+		Rbf:    "_Console/Gameboy2P",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gb", ".gbc"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".gb", ".gbc"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"GameGear": {
-		folder: "SMS",
-		rbf:    "_Console/SMS",
-		fileTypes: []fileType{
+		Id:     "GameGear",
+		Folder: "SMS",
+		Rbf:    "_Console/SMS",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gg"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    2,
+				Extensions: []string{".gg"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    2,
 				},
 			},
 		},
 	},
 	"GBA": {
-		folder: "GBA",
-		rbf:    "_Console/GBA",
-		fileTypes: []fileType{
+		Id:     "GBA",
+		Folder: "GBA",
+		Rbf:    "_Console/GBA",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gba"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".gba"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"GBA2P": {
-		folder: "GBA2P",
-		rbf:    "_Console/GBA2P",
-		fileTypes: []fileType{
+		Id:     "GBA2P",
+		Folder: "GBA2P",
+		Rbf:    "_Console/GBA2P",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gba"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".gba"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"Genesis": {
-		folder: "Genesis",
-		rbf:    "_Console/Genesis",
-		fileTypes: []fileType{
+		Id:     "Genesis",
+		Folder: "Genesis",
+		Rbf:    "_Console/Genesis",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".bin", ".gen", ".md"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".bin", ".gen", ".md"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"MegaCD": {
-		folder: "MegaCD",
-		rbf:    "_Console/MegaCD",
-		fileTypes: []fileType{
+		Id:     "MegaCD",
+		Folder: "MegaCD",
+		Rbf:    "_Console/MegaCD",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".cue", ".chd"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "s",
-					index:    0,
+				Extensions: []string{".cue", ".chd"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "s",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"NeoGeo": {
-		folder: "NEOGEO",
-		rbf:    "_Console/NeoGeo",
-		fileTypes: []fileType{
+		Id:     "NeoGeo",
+		Folder: "NEOGEO",
+		Rbf:    "_Console/NeoGeo",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".neo"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".neo"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 			{
-				extensions: []string{".iso"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "s",
-					index:    1,
+				Extensions: []string{".iso"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "s",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"NES": {
-		folder: "NES",
-		rbf:    "_Console/NES",
-		fileTypes: []fileType{
+		Id:     "NES",
+		Folder: "NES",
+		Rbf:    "_Console/NES",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".nes", ".nsf"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".nes", ".nsf"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"PSX": {
-		folder: "PSX",
-		rbf:    "_Console/PSX",
-		fileTypes: []fileType{
+		Id:     "PSX",
+		Folder: "PSX",
+		Rbf:    "_Console/PSX",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".cue", ".chd"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "s",
-					index:    1,
+				Extensions: []string{".cue", ".chd"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "s",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"Sega32X": {
-		folder: "S32X",
-		rbf:    "_Console/S32X",
-		fileTypes: []fileType{
+		Id:     "Sega32X",
+		Folder: "S32X",
+		Rbf:    "_Console/S32X",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".32x"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".32x"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"SuperGameboy": {
-		folder: "SGB",
-		rbf:    "_Console/SGB",
-		fileTypes: []fileType{
+		Id:     "SuperGameboy",
+		Folder: "SGB",
+		Rbf:    "_Console/SGB",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".gb", ".gbc"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".gb", ".gbc"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"MasterSystem": {
-		folder: "SMS",
-		rbf:    "_Console/SMS",
-		fileTypes: []fileType{
+		Id:     "MasterSystem",
+		Folder: "SMS",
+		Rbf:    "_Console/SMS",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".sms", ".sg"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".sms", ".sg"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"SNES": {
-		folder: "SNES",
-		rbf:    "_Console/SNES",
-		fileTypes: []fileType{
+		Id:     "SNES",
+		Folder: "SNES",
+		Rbf:    "_Console/SNES",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".smc", ".sfc"},
-				mgl: &mglParams{
-					delay:    2,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".smc", ".sfc"},
+				Mgl: &MglParams{
+					Delay:    2,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"TurboGraphx16": {
-		folder: "TGFX16",
-		rbf:    "_Console/TGFX16",
-		fileTypes: []fileType{
+		Id:     "TurboGraphx16",
+		Folder: "TGFX16",
+		Rbf:    "_Console/TGFX16",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".bin", ".pce"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    0,
+				Extensions: []string{".bin", ".pce"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
 				},
 			},
 			{
-				extensions: []string{".sgx"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".sgx"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"TurboGraphx16CD": {
-		folder: "TGFX16-CD",
-		rbf:    "_Console/TGFX16",
-		fileTypes: []fileType{
+		Id:     "TurboGraphx16CD",
+		Folder: "TGFX16-CD",
+		Rbf:    "_Console/TGFX16",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".cue", ".chd"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "s",
-					index:    0,
+				Extensions: []string{".cue", ".chd"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "s",
+					Index:    0,
 				},
 			},
 		},
 	},
 	"Vectrex": {
-		folder: "VECTREX",
-		rbf:    "_Console/Vectrex",
-		fileTypes: []fileType{
+		Id:     "Vectrex",
+		Folder: "VECTREX",
+		Rbf:    "_Console/Vectrex",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".ovr", ".vec", ".bin", ".rom"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".ovr", ".vec", ".bin", ".rom"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
 	},
 	"WonderSwan": {
-		folder: "WonderSwan",
-		rbf:    "_Console/WonderSwan",
-		fileTypes: []fileType{
+		Id:     "WonderSwan",
+		Folder: "WonderSwan",
+		Rbf:    "_Console/WonderSwan",
+		FileTypes: []FileType{
 			{
-				extensions: []string{".ws", ".wsc"},
-				mgl: &mglParams{
-					delay:    1,
-					fileType: "f",
-					index:    1,
+				Extensions: []string{".ws", ".wsc"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
 				},
 			},
 		},
