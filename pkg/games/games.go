@@ -197,9 +197,8 @@ func GetFiles(systemId string, path string) ([]string, error) {
 					return err
 				}
 
-				for _, result := range *results {
-					result = s.Replace(result, realPath, path, 1)
-					allResults = append(allResults, result)
+				for i := range *results {
+					allResults = append(allResults, s.Replace((*results)[i], realPath, path, 1))
 				}
 
 				stack.pop()
@@ -219,9 +218,9 @@ func GetFiles(systemId string, path string) ([]string, error) {
 				return err
 			}
 
-			for _, zipPath := range zipFiles {
-				if matchSystemFile(*system, zipPath) {
-					abs := filepath.Join(path, zipPath)
+			for i := range zipFiles {
+				if matchSystemFile(*system, zipFiles[i]) {
+					abs := filepath.Join(path, zipFiles[i])
 					*results = append(*results, string(abs))
 
 				}
@@ -280,8 +279,8 @@ func GetFiles(systemId string, path string) ([]string, error) {
 
 	// change root back to symlink
 	if realPath != path {
-		for i, result := range allResults {
-			allResults[i] = s.Replace(result, realPath, path, 1)
+		for i := range allResults {
+			allResults[i] = s.Replace(allResults[i], realPath, path, 1)
 		}
 	}
 
@@ -297,16 +296,16 @@ func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string,
 	var allFiles [][2]string
 
 	for systemId, paths := range systemPaths {
-		for _, path := range paths {
-			statusFn(systemId, path)
+		for i := range paths {
+			statusFn(systemId, paths[i])
 
-			files, err := GetFiles(systemId, path)
+			files, err := GetFiles(systemId, paths[i])
 			if err != nil {
 				return nil, err
 			}
 
-			for _, file := range files {
-				allFiles = append(allFiles, [2]string{systemId, file})
+			for i := range files {
+				allFiles = append(allFiles, [2]string{systemId, files[i]})
 			}
 		}
 	}
@@ -317,13 +316,13 @@ func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string,
 func FilterUniqueFilenames(files []string) []string {
 	var filtered []string
 	filenames := make(map[string]struct{})
-	for _, file := range files {
-		fn := filepath.Base(file)
+	for i := range files {
+		fn := filepath.Base(files[i])
 		if _, ok := filenames[fn]; ok {
 			continue
 		} else {
 			filenames[fn] = struct{}{}
-			filtered = append(filtered, file)
+			filtered = append(filtered, files[i])
 		}
 	}
 	return filtered
@@ -347,8 +346,8 @@ func FileExists(path string) bool {
 			return false
 		}
 
-		for _, zipFile := range zipFiles {
-			if zipFile == file {
+		for i := range zipFiles {
+			if zipFiles[i] == file {
 				return true
 			}
 		}
