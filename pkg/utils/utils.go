@@ -47,3 +47,32 @@ func MoveFile(sourcePath, destPath string) error {
 
 	return nil
 }
+
+func MaxInt(xs []int) int {
+	max := 0
+	for _, x := range xs {
+		if x > max {
+			max = x
+		}
+	}
+	return max
+}
+
+func MinInt(xs []int) int {
+	min := int(^uint(0) >> 1)
+	for _, x := range xs {
+		if x < min {
+			min = x
+		}
+	}
+	return min
+}
+
+func Contains[X comparable](xs []X, x X) bool {
+	for _, v := range xs {
+		if v == x {
+			return true
+		}
+	}
+	return false
+}
