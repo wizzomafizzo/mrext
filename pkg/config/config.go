@@ -1,4 +1,5 @@
 package config
 
 const SD_ROOT = "/media/fat"
-const DB_NAME = "games.db"
+const INDEX_NAME = "index"
+const CMD_INTERFACE = "/dev/MiSTer_cmd"

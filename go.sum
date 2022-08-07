@@ -1,5 +1,3 @@
-github.com/edwardrf/symwalk v0.1.0 h1:NAakDFfWD1ef65UDiYREFvWiu1+RqRC2dJIDXJdpFjM=
-github.com/edwardrf/symwalk v0.1.0/go.mod h1:qlC1zULcOcrPbB0Mog6yENGnszBOdCM59+rLC6g607Y=
 github.com/mattn/go-sqlite3 v1.14.14 h1:qZgc/Rwetq+MtyE18WhzjokPD93dNqLGNT3QJuLvBGw=
 github.com/mattn/go-sqlite3 v1.14.14/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/rthornton128/goncurses v0.0.0-20220628231859-fd57939296e5 h1:3xiHKR9Gbvjiy8OWuDcowMEpF5yfaT+FUPQuy+hkuVc=

@@ -1,4 +1,4 @@
-package index
+package sqlindex
 
 import (
 	"database/sql"
@@ -29,16 +29,16 @@ func setupDb(db *sql.DB) error {
 	return nil
 }
 
-func GetDbPath() string {
+func GetIndexPath() string {
 	if _, err := os.Stat(config.SD_ROOT); err == nil {
-		return filepath.Join(config.SD_ROOT, config.DB_NAME)
+		return filepath.Join(config.SD_ROOT, config.INDEX_NAME+".db")
 	} else {
-		return config.DB_NAME
+		return config.INDEX_NAME + ".db"
 	}
 }
 
 func getDb() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", GetDbPath())
+	db, err := sql.Open("sqlite3", GetIndexPath())
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +47,12 @@ func getDb() (*sql.DB, error) {
 }
 
 func Generate(files [][2]string, statusFn func(count int)) error {
-	tempDbPath := filepath.Join(os.TempDir(), config.DB_NAME)
-	if err := os.Remove(tempDbPath); err != nil && !os.IsNotExist(err) {
+	tmpDbPath := filepath.Join(os.TempDir(), config.INDEX_NAME+".db")
+	if err := os.Remove(tmpDbPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	db, err := sql.Open("sqlite3", tempDbPath)
+	db, err := sql.Open("sqlite3", tmpDbPath)
 	if err != nil {
 		return err
 	}
@@ -85,12 +85,12 @@ func Generate(files [][2]string, statusFn func(count int)) error {
 	insertStmt.Close()
 	db.Close()
 
-	dbPath := GetDbPath()
+	dbPath := GetIndexPath()
 	if err := os.Remove(dbPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	utils.MoveFile(tempDbPath, dbPath)
+	utils.MoveFile(tmpDbPath, dbPath)
 
 	return nil
 }

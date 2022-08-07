@@ -2,9 +2,11 @@ package curses
 
 import (
 	"fmt"
+	m "math"
 	s "strings"
 
 	gc "github.com/rthornton128/goncurses"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type Coords struct {
@@ -102,9 +104,9 @@ func OnScreenKeyboard(stdscr *gc.Window, title string, buttons []string, default
 
 	_, width := win.MaxYX()
 
-	selected := 1
+	selected := 2
 	selectedKey := Coords{0, 0}
-	selectedButton := 0
+	selectedButton := 1
 	cursor := len(defaultText)
 	text := defaultText
 
@@ -219,6 +221,7 @@ func OnScreenKeyboard(stdscr *gc.Window, title string, buttons []string, default
 				}
 			} else if selected == 2 {
 				selected = 1
+				selectedKey.Y = 3
 				// FIXME: this only works well for 3 buttons
 				if selectedButton == 0 {
 					selectedKey.X = 2
@@ -290,7 +293,7 @@ func OnScreenKeyboard(stdscr *gc.Window, title string, buttons []string, default
 			} else if selected == 2 {
 				return selectedButton, text, nil
 			}
-		case gc.KEY_BACKSPACE: // FIXME: not working over ssh
+		case gc.KEY_BACKSPACE, gc.KEY_DC, 127:
 			if cursor > 0 {
 				text = text[:cursor-1] + text[cursor:]
 				cursor--
@@ -307,12 +310,169 @@ func OnScreenKeyboard(stdscr *gc.Window, title string, buttons []string, default
 	return -1, "", nil
 }
 
-func ListPicker(stdscr *gc.Window, title string, items []string) (int, error) {
-	win, err := NewWindow(stdscr, 20, 70, title, -1)
+func ListPicker(stdscr *gc.Window, title string, items []string, buttons []string, defaultButton int) (int, int, error) {
+	selectedItem := 0
+	selectedButton := defaultButton
+
+	height := 18
+	width := 70
+
+	viewStart := 0
+	viewHeight := height - 4
+
+	win, err := NewWindow(stdscr, height, width, title, -1)
 	if err != nil {
-		return -1, err
+		return -1, -1, err
 	}
 	defer win.Delete()
 
-	return -1, nil
+	var ch gc.Key
+
+	for ch != gc.KEY_ESC {
+		// list items
+		max := utils.MinInt([]int{len(items), viewHeight})
+
+		for i := 0; i < max; i++ {
+			var display string
+
+			item := items[viewStart+i]
+
+			if len(item) > width-5 {
+				display = item[:width-8] + "..."
+			} else {
+				display = item
+			}
+
+			if viewStart+i == selectedItem {
+				win.ColorOn(1)
+			}
+
+			win.MovePrint(i+1, 2, s.Repeat(" ", width-5))
+			win.MovePrint(i+1, 2, display)
+			win.ColorOff(1)
+		}
+
+		// scroll bar
+		var gripHeight int
+		var gripOffset int
+		scrollHeight := viewHeight - 2
+
+		// FIXME: not quite working
+		if len(items) <= scrollHeight {
+			gripHeight = scrollHeight
+		} else {
+			gripHeight = int(m.Ceil((float64(scrollHeight) / float64(len(items))) * float64(scrollHeight)))
+		}
+
+		if gripHeight >= scrollHeight {
+			gripOffset = 0
+		} else {
+			gripOffset = int(m.Floor(float64(viewStart) * float64(scrollHeight) / float64(len(items))))
+		}
+
+		for i := 0; i < scrollHeight; i++ {
+			if i >= gripOffset && i < gripOffset+gripHeight {
+				win.ColorOn(1)
+				win.MoveAddChar(i+2, width-2, ' ')
+			} else {
+				win.MoveAddChar(i+2, width-2, ' ')
+			}
+			win.ColorOff(1)
+		}
+
+		win.MoveAddChar(1, width-2, ' ')
+		if viewStart > 0 {
+			win.ColorOn(1)
+			win.MoveAddChar(1, width-2, gc.ACS_UARROW)
+			win.ColorOff(1)
+		}
+
+		win.MoveAddChar(height-4, width-2, ' ')
+		if viewStart+viewHeight < len(items) {
+			win.ColorOn(1)
+			win.MoveAddChar(height-4, width-2, gc.ACS_DARROW)
+			win.ColorOff(1)
+		}
+
+		// buttons
+		DrawActionButtons(win, buttons, selectedButton)
+
+		win.NoutRefresh()
+		gc.Update()
+
+		ch = win.GetChar()
+
+		switch ch {
+		case gc.KEY_DOWN:
+			if selectedItem < len(items)-1 {
+				selectedItem++
+				if selectedItem >= viewStart+viewHeight && viewStart+viewHeight < len(items) {
+					viewStart++
+				}
+			}
+		case gc.KEY_UP:
+			if selectedItem > 0 {
+				selectedItem--
+				if selectedItem < viewStart && viewStart > 0 {
+					viewStart--
+				}
+			}
+		case gc.KEY_LEFT:
+			if selectedButton > 0 {
+				selectedButton--
+			} else {
+				selectedButton = len(buttons) - 1
+			}
+		case gc.KEY_RIGHT:
+			if selectedButton < len(buttons)-1 {
+				selectedButton++
+			} else {
+				selectedButton = 0
+			}
+		case gc.KEY_ENTER, 10, 13:
+			if selectedButton == 1 {
+				return selectedButton, selectedItem, nil
+			} else {
+				return selectedButton, -1, nil
+			}
+		}
+	}
+
+	return -1, -1, nil
+}
+
+func InfoBox(stdscr *gc.Window, title string, text string, clear bool, ok bool) error {
+	if clear {
+		stdscr.Erase()
+		stdscr.NoutRefresh()
+		gc.Update()
+	}
+
+	height := 3
+	// if ok {
+	// 	height = 5
+	// }
+
+	win, err := NewWindow(stdscr, height, len(text)+4, title, -1)
+	if err != nil {
+		return err
+	}
+	defer win.Delete()
+
+	gc.Cursor(0)
+
+	win.MovePrint(1, 2, text)
+
+	// if ok {
+	// 	DrawActionButtons(win, []string{"OK"}, 0)
+	// }
+
+	win.NoutRefresh()
+	gc.Update()
+
+	if ok {
+		win.GetChar()
+	}
+
+	return nil
 }
