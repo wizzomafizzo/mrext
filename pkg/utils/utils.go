@@ -3,8 +3,19 @@ package utils
 import (
 	"archive/zip"
 	"io"
+	"math/rand"
 	"os"
+	"path/filepath"
+	"strings"
 )
+
+func IsZip(path string) bool {
+	if filepath.Ext(strings.ToLower(path)) == ".zip" {
+		return true
+	} else {
+		return false
+	}
+}
 
 func ListZip(path string) ([]string, error) {
 	r, err := zip.OpenReader(path)
@@ -68,11 +79,31 @@ func MinInt(xs []int) int {
 	return min
 }
 
-func Contains[X comparable](xs []X, x X) bool {
+func Contains[T comparable](xs []T, x T) bool {
 	for _, v := range xs {
 		if v == x {
 			return true
 		}
 	}
 	return false
+}
+
+func RandomItem[T any](xs []T) (T, error) {
+	var item T
+	if len(xs) == 0 {
+		return item, nil
+	} else {
+		item = xs[rand.Intn(len(xs))]
+		return item, nil
+	}
+}
+
+func MapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
 }

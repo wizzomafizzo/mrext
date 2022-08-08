@@ -12,6 +12,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
+// Lookup up exact system id definition.
 func GetSystem(id string) (*System, error) {
 	if system, ok := SYSTEMS[id]; ok {
 		return &system, nil
@@ -20,6 +21,7 @@ func GetSystem(id string) (*System, error) {
 	}
 }
 
+// Lookup case insensitive system id definition.
 func LookupSystem(id string) (*System, error) {
 	var system *System
 
@@ -36,7 +38,9 @@ func LookupSystem(id string) (*System, error) {
 	}
 }
 
-func matchSystemFolder(path string) ([][2]string, error) {
+// Match a *top level* folder to its systems. Returns a list of pairs of
+// systemId and path.
+func MatchSystemFolder(path string) ([][2]string, error) {
 	var matches [][2]string
 
 	folder, err := os.Stat(path)
@@ -63,7 +67,8 @@ func matchSystemFolder(path string) ([][2]string, error) {
 	}
 }
 
-func matchSystemFile(system System, path string) bool {
+// Return true if a given files extension is valid for a system.
+func MatchSystemFile(system System, path string) bool {
 	for _, args := range system.FileTypes {
 		for _, ext := range args.Extensions {
 			if s.HasSuffix(s.ToLower(path), ext) {
@@ -74,6 +79,8 @@ func matchSystemFile(system System, path string) bool {
 	return false
 }
 
+// Return a list of all possible parent system folders in a given
+// path with their associated system ids.
 func findSystemFolders(path string) [][2]string {
 	var found [][2]string
 
@@ -94,7 +101,7 @@ func findSystemFolders(path string) [][2]string {
 			found = append(found, findSystemFolders(abs)...)
 		}
 
-		matches, err := matchSystemFolder(abs)
+		matches, err := MatchSystemFolder(abs)
 		if err != nil {
 			continue
 		} else {
@@ -115,6 +122,35 @@ func GetSystemPaths() map[string][]string {
 	}
 
 	return paths
+}
+
+// Given any path, return what systems it could be for.
+func FolderToSystems(path string) []*System {
+	var systems []*System
+	path = s.ToLower(path)
+	validGamesFolder := false
+	gamesFolder := ""
+
+	for _, folder := range GAMES_FOLDERS {
+		if s.HasPrefix(path, s.ToLower(folder)) {
+			validGamesFolder = true
+			gamesFolder = folder
+			break
+		}
+	}
+
+	if !validGamesFolder {
+		return nil
+	}
+
+	for _, system := range SYSTEMS {
+		systemPath := s.ToLower(filepath.Join(gamesFolder, system.Folder))
+		if s.HasPrefix(path, systemPath) {
+			systems = append(systems, &system)
+		}
+	}
+
+	return systems
 }
 
 type resultsStack [][]string
@@ -219,7 +255,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			}
 
 			for i := range zipFiles {
-				if matchSystemFile(*system, zipFiles[i]) {
+				if MatchSystemFile(*system, zipFiles[i]) {
 					abs := filepath.Join(path, zipFiles[i])
 					*results = append(*results, string(abs))
 
@@ -227,7 +263,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			}
 		} else {
 			// regular files
-			if matchSystemFile(*system, path) {
+			if MatchSystemFile(*system, path) {
 				*results = append(*results, path)
 			}
 		}
