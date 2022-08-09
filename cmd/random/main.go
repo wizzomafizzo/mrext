@@ -1,15 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-const MAX_ATTEMPTS = 10
+const MAX_ATTEMPTS = 100
 
 // Recursively search through given folder for a valid game file for that system.
 func tryPickRandomGame(system *games.System, folder string) (string, error) {
@@ -70,11 +74,57 @@ func tryPickRandomGame(system *games.System, folder string) (string, error) {
 	}
 }
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func main() {
+	// TODO: optionally use search index for picking
+	// TODO: support an ini file for default values
+	// TODO: exception for _arcade folder
+	filter := flag.String("filter", "", "list of system folders to filter (ex. gba,psx,nes)")
+	ignore := flag.String("ignore", "", "list of system folders to ignore (ex. tgfx16-cd)")
+	flag.Parse()
+
+	filteredFolders := strings.Split(*filter, ",")
+	ignoredFolders := strings.Split(*ignore, ",")
+
 	folders := games.GetSystemPaths()
 	if len(folders) == 0 {
 		fmt.Println("No games folders found.")
 		return
+	}
+
+	var filteredSystemIds []string
+	for _, system := range games.SYSTEMS {
+		for _, folder := range filteredFolders {
+			if strings.EqualFold(folder, system.Folder) {
+				filteredSystemIds = append(filteredSystemIds, system.Id)
+			}
+		}
+	}
+
+	var ignoredSystemIds []string
+	for _, system := range games.SYSTEMS {
+		for _, folder := range ignoredFolders {
+			if strings.EqualFold(folder, system.Folder) {
+				ignoredSystemIds = append(ignoredSystemIds, system.Id)
+			}
+		}
+	}
+
+	if *filter != "" {
+		for _, systemId := range utils.MapKeys(folders) {
+			if !utils.Contains(filteredSystemIds, systemId) {
+				delete(folders, systemId)
+			}
+		}
+	}
+
+	if *ignore != "" {
+		for _, systemId := range ignoredSystemIds {
+			delete(folders, systemId)
+		}
 	}
 
 	// pick out the folders that actually have stuff in them
