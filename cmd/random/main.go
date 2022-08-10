@@ -79,11 +79,11 @@ func init() {
 }
 
 func main() {
-	// TODO: optionally use search index for picking
 	// TODO: support an ini file for default values
-	// TODO: exception for _arcade folder
+
 	filter := flag.String("filter", "", "list of system folders to filter (ex. gba,psx,nes)")
 	ignore := flag.String("ignore", "", "list of system folders to ignore (ex. tgfx16-cd)")
+	noscan := flag.Bool("noscan", false, "don't index entire system (faster, but less random)")
 	flag.Parse()
 
 	filteredFolders := strings.Split(*filter, ",")
@@ -98,6 +98,11 @@ func main() {
 	var filteredSystemIds []string
 	for _, system := range games.SYSTEMS {
 		for _, folder := range filteredFolders {
+			// exception for arcade folder
+			if strings.EqualFold(folder, "arcade") {
+				folder = "_Arcade"
+			}
+
 			if strings.EqualFold(folder, system.Folder) {
 				filteredSystemIds = append(filteredSystemIds, system.Id)
 			}
@@ -107,6 +112,11 @@ func main() {
 	var ignoredSystemIds []string
 	for _, system := range games.SYSTEMS {
 		for _, folder := range ignoredFolders {
+			// exception for arcade folder
+			if strings.EqualFold(folder, "arcade") {
+				folder = "_Arcade"
+			}
+
 			if strings.EqualFold(folder, system.Folder) {
 				ignoredSystemIds = append(ignoredSystemIds, system.Id)
 			}
@@ -146,29 +156,71 @@ func main() {
 		return
 	}
 
-	for i := 0; i < MAX_ATTEMPTS; i++ {
-		// random system
-		systemId, err := utils.RandomItem(utils.MapKeys(populated))
-		if err != nil {
-			continue
+	if *noscan {
+		for i := 0; i < MAX_ATTEMPTS; i++ {
+			// random system
+			systemId, err := utils.RandomItem(utils.MapKeys(populated))
+			if err != nil {
+				continue
+			}
+
+			// random folder from that system
+			folder, err := utils.RandomItem(populated[systemId])
+			if err != nil {
+				continue
+			}
+
+			// search for a random game
+			system, err := games.GetSystem(systemId)
+			if err != nil {
+				continue
+			}
+
+			game, err := tryPickRandomGame(system, folder)
+			if err != nil || game == "" {
+				continue
+			} else {
+				// we did it
+				games.LaunchGame(system, game)
+				return
+			}
 		}
-		// random folder from that system
-		folder, err := utils.RandomItem(populated[systemId])
-		if err != nil {
-			continue
-		}
-		// search for a random game
-		system, err := games.GetSystem(systemId)
-		if err != nil {
-			continue
-		}
-		game, err := tryPickRandomGame(system, folder)
-		if err != nil || game == "" {
-			continue
-		} else {
-			// we did it
-			fmt.Println(system.Id, game)
-			return
+	} else {
+		for i := 0; i < MAX_ATTEMPTS; i++ {
+			// random system
+			systemId, err := utils.RandomItem(utils.MapKeys(populated))
+			if err != nil {
+				continue
+			}
+
+			// scan all system folders
+			var files []string
+			for _, path := range populated[systemId] {
+				results, err := games.GetFiles(systemId, path)
+				if err != nil {
+					continue
+				} else {
+					files = append(files, results...)
+				}
+			}
+
+			if len(files) == 0 {
+				continue
+			}
+
+			system, err := games.GetSystem(systemId)
+			if err != nil {
+				continue
+			}
+
+			game, err := utils.RandomItem(files)
+			if err != nil {
+				continue
+			} else {
+				// we did it
+				games.LaunchGame(system, game)
+				return
+			}
 		}
 	}
 
