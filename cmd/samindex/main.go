@@ -23,15 +23,15 @@ var idMap = map[string]string{
 	"TurboGraphx16CD": "tgfx16cd",
 }
 
-// func reverseId(id string) string {
-// 	for k, v := range idMap {
-// 		if v == id {
-// 			return k
-// 		}
-// 	}
+func reverseId(id string) string {
+	for k, v := range idMap {
+		if strings.EqualFold(v, id) {
+			return k
+		}
+	}
 
-// 	return id
-// }
+	return id
+}
 
 func gamelistFilename(systemId string) string {
 	var prefix string
@@ -164,9 +164,10 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 
 func main() {
 	gamelistDir := flag.String("o", ".", "gamelist files directory")
-	filter := flag.String("s", "all", "list of systems to index (comma delimited)")
+	filter := flag.String("s", "all", "list of systems to index (comma separated)")
 	progress := flag.Bool("p", false, "print output for dialog gauge")
 	quiet := flag.Bool("q", false, "suppress all output")
+	detect := flag.Bool("d", false, "list system folders")
 	flag.Parse()
 
 	systemPaths := games.GetSystemPaths()
@@ -190,6 +191,22 @@ func main() {
 				}
 			}
 		}
+	}
+
+	if *detect {
+		for systemId, paths := range filteredPaths {
+			for _, path := range paths {
+				files, err := os.ReadDir(path)
+				if err != nil {
+					continue
+				}
+
+				if len(files) > 0 {
+					fmt.Printf("%s:%s\n", strings.ToLower(reverseId(systemId)), path)
+				}
+			}
+		}
+		return
 	}
 
 	createGamelists(*gamelistDir, filteredPaths, *progress, *quiet)

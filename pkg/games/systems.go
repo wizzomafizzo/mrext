@@ -19,6 +19,18 @@ type System struct {
 }
 
 var SYSTEMS = map[string]System{
+	"Amiga": {
+		// TODO: amiga will require a custom scan function
+		Id:     "Amiga",
+		Folder: "Amiga",
+		Rbf:    "_Computer/Minimig",
+		FileTypes: []FileType{
+			{
+				Extensions: nil,
+				Mgl:        nil,
+			},
+		},
+	},
 	"Arcade": {
 		Id:     "Arcade",
 		Folder: "_Arcade",
