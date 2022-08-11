@@ -8,5 +8,6 @@
 go.work
 .vscode/
 *.db
-bin/
-/games/
+*.tar
+/bin
+/games
