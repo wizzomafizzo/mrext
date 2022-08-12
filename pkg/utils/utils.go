@@ -7,14 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 func IsZip(path string) bool {
-	if filepath.Ext(strings.ToLower(path)) == ".zip" {
-		return true
-	} else {
-		return false
-	}
+	return filepath.Ext(strings.ToLower(path)) == ".zip"
 }
 
 func ListZip(path string) ([]string, error) {
@@ -59,8 +57,12 @@ func MoveFile(sourcePath, destPath string) error {
 	return nil
 }
 
-func MaxInt(xs []int) int {
-	max := 0
+func Max[T constraints.Ordered](xs []T) T {
+	if len(xs) == 0 {
+		var zv T
+		return zv
+	}
+	max := xs[0]
 	for _, x := range xs {
 		if x > max {
 			max = x
@@ -69,8 +71,12 @@ func MaxInt(xs []int) int {
 	return max
 }
 
-func MinInt(xs []int) int {
-	min := int(^uint(0) >> 1)
+func Min[T constraints.Ordered](xs []T) T {
+	if len(xs) == 0 {
+		var zv T
+		return zv
+	}
+	min := xs[0]
 	for _, x := range xs {
 		if x < min {
 			min = x

@@ -330,7 +330,7 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 
 	for ch != gc.KEY_ESC {
 		// list items
-		max := utils.MinInt([]int{len(items), viewHeight})
+		max := utils.Min([]int{len(items), viewHeight})
 
 		for i := 0; i < max; i++ {
 			var display string
