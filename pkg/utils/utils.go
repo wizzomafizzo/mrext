@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -12,9 +13,11 @@ import (
 )
 
 func IsZip(path string) bool {
+	// TODO: this should check the file header
 	return filepath.Ext(strings.ToLower(path)) == ".zip"
 }
 
+// Return a slice of all filenames in a zip file.
 func ListZip(path string) ([]string, error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
@@ -30,6 +33,7 @@ func ListZip(path string) ([]string, error) {
 	return files, nil
 }
 
+// Move a file. Supports moving between filesystems.
 func MoveFile(sourcePath, destPath string) error {
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {
@@ -57,6 +61,7 @@ func MoveFile(sourcePath, destPath string) error {
 	return nil
 }
 
+// Return the highest value in a slice.
 func Max[T constraints.Ordered](xs []T) T {
 	if len(xs) == 0 {
 		var zv T
@@ -71,6 +76,7 @@ func Max[T constraints.Ordered](xs []T) T {
 	return max
 }
 
+// Return the lowest value in a slice.
 func Min[T constraints.Ordered](xs []T) T {
 	if len(xs) == 0 {
 		var zv T
@@ -85,6 +91,7 @@ func Min[T constraints.Ordered](xs []T) T {
 	return min
 }
 
+// Return true if slice contains value.
 func Contains[T comparable](xs []T, x T) bool {
 	for _, v := range xs {
 		if v == x {
@@ -94,16 +101,18 @@ func Contains[T comparable](xs []T, x T) bool {
 	return false
 }
 
-func RandomItem[T any](xs []T) (T, error) {
+// Pick and return a random element from a slice.
+func RandomElem[T any](xs []T) (T, error) {
 	var item T
 	if len(xs) == 0 {
-		return item, nil
+		return item, fmt.Errorf("empty slice")
 	} else {
 		item = xs[rand.Intn(len(xs))]
 		return item, nil
 	}
 }
 
+// Return a list of all keys in a map.
 func MapKeys[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, len(m))
 	i := 0

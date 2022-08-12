@@ -44,7 +44,7 @@ func gamelistFilename(systemId string) string {
 	return strings.ToLower(prefix) + "_gamelist.txt"
 }
 
-func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool) {
+func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) {
 	start := time.Now()
 
 	if !quiet && !progress {
@@ -79,7 +79,9 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 				continue
 			}
 
-			files = games.FilterUniqueFilenames(files)
+			if filter {
+				files = games.FilterUniqueFilenames(files)
+			}
 
 			for _, file := range files {
 				systemFiles = append(systemFiles, [2]string{systemId, file})
@@ -168,6 +170,7 @@ func main() {
 	progress := flag.Bool("p", false, "print output for dialog gauge")
 	quiet := flag.Bool("q", false, "suppress all output")
 	detect := flag.Bool("d", false, "list system folders")
+	noFilter := flag.Bool("nofilter", false, "don't filter out duplicate games")
 	flag.Parse()
 
 	systemPaths := games.GetSystemPaths()
@@ -209,5 +212,5 @@ func main() {
 		return
 	}
 
-	createGamelists(*gamelistDir, filteredPaths, *progress, *quiet)
+	createGamelists(*gamelistDir, filteredPaths, *progress, *quiet, !*noFilter)
 }
