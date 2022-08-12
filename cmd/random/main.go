@@ -41,7 +41,7 @@ func tryPickRandomGame(system *games.System, folder string) (string, error) {
 		return "", fmt.Errorf("no valid files in %s", folder)
 	}
 
-	file, err := utils.RandomItem(validFiles)
+	file, err := utils.RandomElem(validFiles)
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func tryPickRandomGame(system *games.System, folder string) (string, error) {
 			return "", fmt.Errorf("no files in %s", path)
 		}
 		// just shoot our shot on a zip instead of checking every file
-		randomZip, err := utils.RandomItem(zipFiles)
+		randomZip, err := utils.RandomElem(zipFiles)
 		if err != nil {
 			return "", err
 		}
@@ -159,13 +159,13 @@ func main() {
 	if *noscan {
 		for i := 0; i < MAX_ATTEMPTS; i++ {
 			// random system
-			systemId, err := utils.RandomItem(utils.MapKeys(populated))
+			systemId, err := utils.RandomElem(utils.MapKeys(populated))
 			if err != nil {
 				continue
 			}
 
 			// random folder from that system
-			folder, err := utils.RandomItem(populated[systemId])
+			folder, err := utils.RandomElem(populated[systemId])
 			if err != nil {
 				continue
 			}
@@ -188,7 +188,7 @@ func main() {
 	} else {
 		for i := 0; i < MAX_ATTEMPTS; i++ {
 			// random system
-			systemId, err := utils.RandomItem(utils.MapKeys(populated))
+			systemId, err := utils.RandomElem(utils.MapKeys(populated))
 			if err != nil {
 				continue
 			}
@@ -213,7 +213,7 @@ func main() {
 				continue
 			}
 
-			game, err := utils.RandomItem(files)
+			game, err := utils.RandomElem(files)
 			if err != nil {
 				continue
 			} else {
