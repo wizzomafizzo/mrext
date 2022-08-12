@@ -94,3 +94,7 @@ func Mister() {
 	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
 	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", dockerImageName, "mage", "build")
 }
+
+func Test() {
+	sh.RunV("go", "test", "./...")
+}
