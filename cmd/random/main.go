@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -181,7 +182,7 @@ func main() {
 				continue
 			} else {
 				// we did it
-				games.LaunchGame(system, game)
+				mister.LaunchGame(system, game)
 				return
 			}
 		}
@@ -218,7 +219,7 @@ func main() {
 				continue
 			} else {
 				// we did it
-				games.LaunchGame(system, game)
+				mister.LaunchGame(system, game)
 				return
 			}
 		}

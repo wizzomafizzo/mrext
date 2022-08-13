@@ -10,6 +10,7 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
@@ -149,7 +150,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 				log.Fatal(err)
 			}
 
-			err = games.LaunchGame(system, game.Path)
+			err = mister.LaunchGame(system, game.Path)
 			if err != nil {
 				log.Fatal(err)
 			} else {
