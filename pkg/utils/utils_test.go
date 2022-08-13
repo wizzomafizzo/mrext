@@ -35,6 +35,9 @@ func TestListZip(t *testing.T) {
 	if contents[0] != "f1" {
 		t.Errorf("got %q, want f1", contents[0])
 	}
+	if _, err = ListZip("testdata/not_zip.zip"); err == nil {
+		t.Error("expected error for non-zip file")
+	}
 }
 
 func TestMoveFile(t *testing.T) {
@@ -139,6 +142,7 @@ func TestRandomElem(t *testing.T) {
 }
 
 func TestMapKeys(t *testing.T) {
+	// FIXME: this shouldn't be checking order of result
 	var tests = []struct {
 		m    map[string]int
 		want []string

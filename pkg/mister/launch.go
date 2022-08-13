@@ -1,4 +1,4 @@
-package games
+package mister
 
 import (
 	"fmt"
@@ -8,10 +8,11 @@ import (
 	s "strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
-func generateMgl(system *System, path string) (string, error) {
-	var mglDef *MglParams
+func generateMgl(system *games.System, path string) (string, error) {
+	var mglDef *games.MglParams
 
 	for _, ft := range system.FileTypes {
 		for _, ext := range ft.Extensions {
@@ -66,7 +67,7 @@ func launchFile(path string) error {
 	return nil
 }
 
-func launchTempMgl(system *System, path string) error {
+func launchTempMgl(system *games.System, path string) error {
 	mgl, err := generateMgl(system, path)
 	if err != nil {
 		return err
@@ -80,7 +81,7 @@ func launchTempMgl(system *System, path string) error {
 	return launchFile(tmpFile)
 }
 
-func LaunchGame(system *System, path string) error {
+func LaunchGame(system *games.System, path string) error {
 	if system == nil {
 		return fmt.Errorf("unknown system: %s", path)
 	}

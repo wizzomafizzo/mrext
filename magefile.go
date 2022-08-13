@@ -98,3 +98,9 @@ func Mister() {
 func Test() {
 	sh.RunV("go", "test", "./...")
 }
+
+func Coverage() {
+	sh.RunV("go", "test", "-coverprofile", "coverage.out", "./...")
+	sh.RunV("go", "tool", "cover", "-html", "coverage.out")
+	sh.Rm("coverage.out")
+}
