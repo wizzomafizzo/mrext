@@ -16,8 +16,8 @@ import (
 var (
 	cwd, _           = os.Getwd()
 	binDir           = filepath.Join(cwd, "bin")
-	dockerBuild      = filepath.Join(cwd, "scripts", "docker")
-	dockerImageName  = "mrext/mister"
+	dockerBuild      = filepath.Join(cwd, "scripts", "armbuild")
+	dockerImageName  = "mrext/armbuild"
 	dockerBuildCache = filepath.Join(os.TempDir(), "mrext-buildcache")
 	dockerModCache   = filepath.Join(os.TempDir(), "mrext-modcache")
 )
@@ -32,12 +32,6 @@ type app struct {
 
 var apps = []app{
 	{
-		name:    "search",
-		path:    filepath.Join(cwd, "cmd", "search"),
-		bin:     "search.sh",
-		ldFlags: "-lcurses",
-	},
-	{
 		name: "random",
 		path: filepath.Join(cwd, "cmd", "random"),
 		bin:  "random.sh",
@@ -46,6 +40,12 @@ var apps = []app{
 		name: "samindex",
 		path: filepath.Join(cwd, "cmd", "samindex"),
 		bin:  "samindex",
+	},
+	{
+		name:    "search",
+		path:    filepath.Join(cwd, "cmd", "search"),
+		bin:     "search.sh",
+		ldFlags: "-lcurses",
 	},
 }
 
