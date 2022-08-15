@@ -1,7 +1,7 @@
 # glibc in this version matches mister
 FROM arm32v7/debian:bullseye-backports
 
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update -y && apt-get upgrade -y
 
 # make go mod download work
 RUN apt-get install -y ca-certificates openssl && \
@@ -12,7 +12,7 @@ RUN apt-get install -y ca-certificates openssl && \
 # install go and app dependencies
 RUN apt-get install build-essential git -y && \
     apt-get install golang-doc/bullseye-backports golang-go/bullseye-backports golang-src/bullseye-backports golang/bullseye-backports -y && \
-    apt-get install libsqlite3-dev libncurses-dev -y
+    apt-get install libsqlite3-dev libncurses-dev linux-source -y
 
 # drop permissions on output files
 RUN useradd -m -u 1000 build

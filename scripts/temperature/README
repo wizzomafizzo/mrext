@@ -1,0 +1,2 @@
+Scripts for displaying temperature from sensors attached to the RTC board's i2c
+pins. They have no dependencies outside what is shipped with MiSTer.
