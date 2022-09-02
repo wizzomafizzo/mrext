@@ -10,4 +10,5 @@ go.work
 *.db
 *.tar
 /bin
+/build
 /games

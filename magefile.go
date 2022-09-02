@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -14,12 +15,18 @@ import (
 )
 
 var (
-	cwd, _           = os.Getwd()
-	binDir           = filepath.Join(cwd, "bin")
-	dockerBuild      = filepath.Join(cwd, "scripts", "armbuild")
-	dockerImageName  = "mrext/armbuild"
-	dockerBuildCache = filepath.Join(os.TempDir(), "mrext-buildcache")
-	dockerModCache   = filepath.Join(os.TempDir(), "mrext-modcache")
+	cwd, _ = os.Getwd()
+	binDir = filepath.Join(cwd, "bin")
+	// docker arm build
+	armBuild          = filepath.Join(cwd, "scripts", "armbuild")
+	armBuildImageName = "mrext/armbuild"
+	armBuildCache     = filepath.Join(os.TempDir(), "mrext-buildcache")
+	armModCache       = filepath.Join(os.TempDir(), "mrext-modcache")
+	// docker kernel build
+	kernelBuild          = filepath.Join(cwd, "scripts", "kernelbuild")
+	kernelBuildImageName = "mrext/kernelbuild"
+	kernelRepoName       = "Linux-Kernel_MiSTer"
+	KernelRepoUrl        = fmt.Sprintf("https://github.com/MiSTer-devel/%s.git", kernelRepoName)
 )
 
 type app struct {
@@ -57,8 +64,9 @@ func cleanPlatform(name string) {
 
 func Clean() {
 	sh.Rm(binDir)
-	sh.Rm(dockerBuildCache)
-	sh.Rm(dockerModCache)
+	sh.Rm(armBuildCache)
+	sh.Rm(armModCache)
+	// TODO: kernel build dir
 }
 
 func buildApp(a app, out string) {
@@ -82,17 +90,46 @@ func Build() {
 	}
 }
 
-func BuildDockerImage() {
-	sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", dockerImageName, dockerBuild)
+func MakeArmImage() {
+	sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
 }
 
 func Mister() {
-	buildCache := fmt.Sprintf("%s:%s", dockerBuildCache, "/home/build/.cache/go-build")
-	os.Mkdir(dockerBuildCache, 0755)
-	modCache := fmt.Sprintf("%s:%s", dockerModCache, "/home/build/go/pkg/mod")
-	os.Mkdir(dockerModCache, 0755)
+	buildCache := fmt.Sprintf("%s:%s", armBuildCache, "/home/build/.cache/go-build")
+	os.Mkdir(armBuildCache, 0755)
+	modCache := fmt.Sprintf("%s:%s", armModCache, "/home/build/go/pkg/mod")
+	os.Mkdir(armModCache, 0755)
 	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
-	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", dockerImageName, "mage", "build")
+	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build")
+}
+
+func MakeKernelImage() {
+	sh.RunV("sudo", "docker", "build", "-t", kernelBuildImageName, kernelBuild)
+}
+
+func Kernel() {
+	repoDir := filepath.Join(os.TempDir(), kernelRepoName)
+	if _, err := os.Stat(repoDir); os.IsNotExist(err) {
+		sh.RunV("git", "clone", "--depth", "1", KernelRepoUrl, repoDir)
+	} else {
+		sh.RunV("git", "-C", repoDir, "reset", "--hard", "HEAD")
+		sh.RunV("git", "-C", repoDir, "pull")
+	}
+
+	patches, _ := filepath.Glob(filepath.Join(kernelBuild, "*.patch"))
+	for _, path := range patches {
+		sh.RunV("git", "-C", repoDir, "apply", path)
+	}
+
+	kCmd := sh.RunCmd("sudo", "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, "/build"), "--user", "1000:1000", kernelBuildImageName)
+	kCmd("make", "MiSTer_defconfig")
+	kCmd("make", "-j6", "zImage")
+	kCmd("make", "socfpga_cyclone5_de10_nano.dtb")
+
+	os.MkdirAll(filepath.Join(binDir, "linux"), 0755)
+	zImage := filepath.Join(repoDir, "arch", "arm", "boot", "zImage")
+	dtb := filepath.Join(repoDir, "arch", "arm", "boot", "dtbs", "socfpga_cyclone5_de10_nano.dtb")
+	exec.Command("cat " + zImage + " " + dtb + " > " + filepath.Join(binDir, "zImage_dtb"))
 }
 
 func Test() {
