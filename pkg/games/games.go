@@ -23,19 +23,12 @@ func GetSystem(id string) (*System, error) {
 
 // Lookup case insensitive system id definition.
 func LookupSystem(id string) (*System, error) {
-	var system *System
-
 	for k, v := range SYSTEMS {
 		if s.EqualFold(k, id) {
-			system = &v
+			return &v, nil
 		}
 	}
-
-	if system == nil {
-		return nil, fmt.Errorf("unknown system: %s", id)
-	} else {
-		return system, nil
-	}
+	return nil, fmt.Errorf("unknown system: %s", id)
 }
 
 // Match a *top level* folder to its systems. Returns a list of pairs of

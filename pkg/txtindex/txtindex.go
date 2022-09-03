@@ -15,7 +15,7 @@ import (
 
 var indexFilename = config.INDEX_NAME + ".tar"
 
-func getIndexPath() string {
+func GetIndexPath() string {
 	if _, err := os.Stat(config.SD_ROOT); err == nil {
 		return filepath.Join(config.SD_ROOT, indexFilename)
 	} else {
@@ -24,11 +24,11 @@ func getIndexPath() string {
 }
 
 func Exists() bool {
-	_, err := os.Stat(getIndexPath())
+	_, err := os.Stat(GetIndexPath())
 	return err == nil
 }
 
-func Generate(files [][2]string) error {
+func Generate(files [][2]string, indexPath string) error {
 	tmpDir, err := os.MkdirTemp(os.TempDir(), "search-")
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func Generate(files [][2]string) error {
 		}
 	}
 
-	utils.MoveFile(tmpIndexPath, getIndexPath())
+	utils.MoveFile(tmpIndexPath, indexPath)
 
 	return nil
 }
@@ -127,23 +127,25 @@ func Generate(files [][2]string) error {
 type indexMap map[string]map[string][]string
 
 type Index struct {
+	Path  string
 	files indexMap
 }
 
-func Open() (Index, error) {
+func Open(indexPath string) (Index, error) {
 	var index Index
 
-	_, err := os.Stat(getIndexPath())
+	_, err := os.Stat(indexPath)
 	if err != nil {
 		return index, err
 	}
 
-	indexTar, err := os.Open(getIndexPath())
+	indexTar, err := os.Open(indexPath)
 	if err != nil {
 		return index, err
 	}
 	defer indexTar.Close()
 
+	index.Path = indexPath
 	index.files = make(map[string]map[string][]string)
 
 	r := tar.NewReader(indexTar)
@@ -205,6 +207,24 @@ func (idx *Index) SearchName(query string) []SearchResult {
 					Path:   idx.files[system]["paths"][i],
 				})
 			}
+		}
+	}
+
+	return results
+}
+
+func (idx *Index) SearchSystemName(system string, query string) []SearchResult {
+	var results []SearchResult
+
+	query = s.ToLower(query)
+
+	for i, name := range idx.files[system]["names"] {
+		if s.Contains(s.ToLower(name), query) {
+			results = append(results, SearchResult{
+				System: system,
+				Name:   name,
+				Path:   idx.files[system]["paths"][i],
+			})
 		}
 	}
 
