@@ -54,6 +54,11 @@ var apps = []app{
 		bin:     "search.sh",
 		ldFlags: "-lcurses",
 	},
+	{
+		name: "launchsync",
+		path: filepath.Join(cwd, "cmd", "launchsync"),
+		bin:  "launchsync.sh",
+	},
 }
 
 var Default = Build

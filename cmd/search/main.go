@@ -18,7 +18,7 @@ import (
 func newIndexChannel() chan txtindex.Index {
 	ic := make(chan txtindex.Index, 1)
 	go func() {
-		index, err := txtindex.Open()
+		index, err := txtindex.Open(txtindex.GetIndexPath())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -83,7 +83,7 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	win.NoutRefresh()
 	gc.Update()
 
-	if err := txtindex.Generate(files); err != nil {
+	if err := txtindex.Generate(files, txtindex.GetIndexPath()); err != nil {
 		log.Fatal(err)
 	}
 

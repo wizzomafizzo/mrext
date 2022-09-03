@@ -11,7 +11,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
-func generateMgl(system *games.System, path string) (string, error) {
+func GenerateMgl(system *games.System, path string) (string, error) {
 	var mglDef *games.MglParams
 
 	for _, ft := range system.FileTypes {
@@ -32,6 +32,7 @@ func generateMgl(system *games.System, path string) (string, error) {
 	}
 }
 
+// TODO: move to utils?
 func writeTempFile(content string, ext string) (string, error) {
 	tmpFile, err := ioutil.TempFile("", "*."+ext)
 	if err != nil {
@@ -68,7 +69,7 @@ func launchFile(path string) error {
 }
 
 func launchTempMgl(system *games.System, path string) error {
-	mgl, err := generateMgl(system, path)
+	mgl, err := GenerateMgl(system, path)
 	if err != nil {
 		return err
 	}

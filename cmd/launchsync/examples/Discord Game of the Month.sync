@@ -1,0 +1,29 @@
+name = Discord Game of the Month
+author = MiSTer Discord Community
+url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
+updated = 2022-09-01
+
+[Crystalis]
+system = NES
+file = Crystalis (USA)
+
+[McDonald's Treasure Land Adventure]
+system = Genesis
+file = McDonald's Treasure Land Adventure (USA)
+
+[Vagrant Story]
+system = PSX
+file = Vagrant Story (USA)
+file = Vagrant Story
+
+[The Legend of Zelda: The Minish Cap]
+system = GBA
+file = The Minish Cap
+
+[Super Mario World]
+system = SNES
+file = Super Mario World (USA)
+
+[Phantasy Star IV]
+system = Genesis
+file = Phantasy Star IV
