@@ -84,7 +84,7 @@ func launchTempMgl(system *games.System, path string) error {
 
 func LaunchGame(system *games.System, path string) error {
 	if system == nil {
-		return fmt.Errorf("unknown system: %s", path)
+		return fmt.Errorf("no system specified")
 	}
 
 	switch s.ToLower(filepath.Ext(path)) {
@@ -106,4 +106,80 @@ func LaunchGame(system *games.System, path string) error {
 	}
 
 	return nil
+}
+
+func GetLauncherFilename(system *games.System, folder string, name string) string {
+	if system.Id == "Arcade" {
+		return filepath.Join(folder, name+".mra")
+	} else {
+		return filepath.Join(folder, name+".mgl")
+	}
+}
+
+func DeleteLauncher(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		err := os.Remove(path)
+		if err != nil {
+			return fmt.Errorf("failed to remove launcher: %s", err)
+		}
+	}
+
+	// FIXME: best effort for now but this should be case insensitive
+	mras, _ := filepath.Glob(filepath.Join(filepath.Dir(path), "*.mra"))
+	if len(mras) == 0 {
+		coresLink := filepath.Join(filepath.Dir(path), filepath.Base(config.ArcadeCoresFolder))
+		if _, err := os.Lstat(coresLink); err == nil {
+			err := os.Remove(coresLink)
+			if err != nil {
+				return fmt.Errorf("failed to remove cores link: %s", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func CreateLauncher(system *games.System, gameFile string, folder string, name string) (string, error) {
+	if system == nil {
+		return "", fmt.Errorf("no system specified")
+	}
+
+	if system.Id == "Arcade" {
+		mraPath := GetLauncherFilename(system, folder, name)
+		if _, err := os.Lstat(mraPath); err == nil {
+			err := os.Remove(mraPath)
+			if err != nil {
+				return "", fmt.Errorf("failed to remove existing link: %s", err)
+			}
+		}
+
+		err := os.Symlink(gameFile, mraPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to create game link: %s", err)
+		}
+
+		coresLink := filepath.Join(folder, filepath.Base(config.ArcadeCoresFolder))
+		if _, err := os.Lstat(coresLink); err == nil {
+			err := os.Symlink(config.ArcadeCoresFolder, coresLink)
+			if err != nil {
+				return "", fmt.Errorf("failed to create cores link: %s", err)
+			}
+		}
+
+		return mraPath, nil
+	} else {
+		mglPath := GetLauncherFilename(system, folder, name)
+
+		mgl, err := GenerateMgl(system, gameFile)
+		if err != nil {
+			return "", err
+		}
+
+		err = os.WriteFile(mglPath, []byte(mgl), 0644)
+		if err != nil {
+			return "", fmt.Errorf("failed to write mgl file: %s", err)
+		}
+
+		return mglPath, nil
+	}
 }
