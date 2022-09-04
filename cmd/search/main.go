@@ -96,7 +96,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 	gc.Update()
 
 	searchTitle := "Search"
-	searchButtons := []string{"Advanced", "Search", "Exit"}
+	searchButtons := []string{"Options", "Search", "Exit"}
 	button, text, err := curses.OnScreenKeyboard(stdscr, searchTitle, searchButtons, query)
 	if err != nil {
 		log.Fatal(err)
@@ -114,7 +114,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 			log.Fatal(err)
 		}
 
-		results := index.SearchName(text)
+		results := index.SearchAllName(text)
 
 		if len(results) == 0 {
 			if err := curses.InfoBox(stdscr, "", "No results found.", false, true); err != nil {
