@@ -194,58 +194,48 @@ type SearchResult struct {
 	Path   string
 }
 
-func (idx *Index) SearchName(query string) []SearchResult {
+func (idx *Index) searchSystemNameGeneric(test func(string, string) bool, system string, query string) []SearchResult {
 	var results []SearchResult
-
-	query = s.ToLower(query)
-
-	for system := range idx.files {
-		for i, name := range idx.files[system]["names"] {
-			if s.Contains(s.ToLower(name), query) {
-				results = append(results, SearchResult{
-					System: system,
-					Name:   name,
-					Path:   idx.files[system]["paths"][i],
-				})
-			}
+	for i, name := range idx.files[system]["names"] {
+		if test(name, query) {
+			results = append(results, SearchResult{
+				System: system,
+				Name:   name,
+				Path:   idx.files[system]["paths"][i],
+			})
 		}
 	}
+	return results
+}
 
+func searchNameTest(name string, query string) bool {
+	return s.Contains(s.ToLower(name), query)
+}
+
+func (idx *Index) SearchAllName(query string) []SearchResult {
+	var results []SearchResult
+	query = s.ToLower(query)
+	for system := range idx.files {
+		results = append(results, idx.searchSystemNameGeneric(searchNameTest, system, query)...)
+	}
 	return results
 }
 
 func (idx *Index) SearchSystemName(system string, query string) []SearchResult {
-	var results []SearchResult
-
 	query = s.ToLower(query)
-
-	for i, name := range idx.files[system]["names"] {
-		if s.Contains(s.ToLower(name), query) {
-			results = append(results, SearchResult{
-				System: system,
-				Name:   name,
-				Path:   idx.files[system]["paths"][i],
-			})
-		}
-	}
-
-	return results
+	return idx.searchSystemNameGeneric(searchNameTest, system, query)
 }
 
-func (idx *Index) SearchSystemNameRe(system string, query regexp.Regexp) []SearchResult {
-	var results []SearchResult
-
-	for i, name := range idx.files[system]["names"] {
-		if query.MatchString(name) {
-			results = append(results, SearchResult{
-				System: system,
-				Name:   name,
-				Path:   idx.files[system]["paths"][i],
-			})
-		}
+func searchNameReTest(name string, query string) bool {
+	re, err := regexp.Compile(query)
+	if err != nil {
+		return false
 	}
+	return re.MatchString(name)
+}
 
-	return results
+func (idx *Index) SearchSystemNameRe(system string, query string) []SearchResult {
+	return idx.searchSystemNameGeneric(searchNameReTest, system, query)
 }
 
 func (idx *Index) Total() int {

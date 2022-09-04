@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 type syncFileGame struct {
 	name    string
 	system  *games.System
-	matches []regexp.Regexp
+	matches []string
 }
 
 type syncFile struct {
@@ -110,13 +109,7 @@ func readSyncFile(path string) (*syncFile, error) {
 			for _, char := range []string{"(", ")", "[", "]"} {
 				escapedMatch = strings.ReplaceAll(escapedMatch, char, "\\"+char)
 			}
-
-			re, err := regexp.Compile("(?i)" + escapedMatch)
-			if err != nil {
-				return nil, fmt.Errorf("invalid match format in %s: %s", section.Name(), err)
-			} else {
-				game.matches = append(game.matches, *re)
-			}
+			game.matches = append(game.matches, "(?i)"+escapedMatch)
 		}
 
 		if len(game.matches) == 0 {
