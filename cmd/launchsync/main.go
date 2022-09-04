@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"gopkg.in/ini.v1"
@@ -12,12 +16,13 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type syncFileGame struct {
-	name   string
-	system *games.System
-	files  []string
+	name    string
+	system  *games.System
+	matches []regexp.Regexp
 }
 
 type syncFile struct {
@@ -26,6 +31,7 @@ type syncFile struct {
 	url     string
 	updated time.Time
 	folder  string
+	path    string
 	games   []syncFileGame
 }
 
@@ -50,6 +56,7 @@ func readSyncFile(path string) (*syncFile, error) {
 	}
 
 	sf.folder = filepath.Dir(path)
+	sf.path = path
 
 	sf.name = cfg.Section("DEFAULT").Key("name").String()
 	if sf.name == "" {
@@ -79,7 +86,14 @@ func readSyncFile(path string) (*syncFile, error) {
 
 		var game syncFileGame
 
-		game.name = section.Name()
+		// TODO: support subfolders
+		strippedName := section.Name()
+		for _, char := range []string{"<", ">", ":", "\"", "/", "\\", "|", "?", "*"} {
+			strippedName = strings.ReplaceAll(strippedName, char, "")
+		}
+
+		game.name = strippedName
+
 		if game.name == "" {
 			return nil, fmt.Errorf("missing name in %s -> %s", path, section.Name())
 		}
@@ -92,9 +106,24 @@ func readSyncFile(path string) (*syncFile, error) {
 			game.system = system
 		}
 
-		game.files = section.Key("file").ValueWithShadows()
-		if len(game.files) == 0 {
-			return nil, fmt.Errorf("missing files in %s -> %s", path, section.Name())
+		matches := section.Key("match").ValueWithShadows()
+		for _, match := range matches {
+			escapedMatch := match
+			for _, char := range []string{"(", ")", "[", "]"} {
+				escapedMatch = strings.ReplaceAll(escapedMatch, char, "\\"+char)
+			}
+
+			re, err := regexp.Compile("(?i)" + escapedMatch)
+
+			if err != nil {
+				return nil, fmt.Errorf("invalid match in %s -> %s: %s", path, section.Name(), err)
+			} else {
+				game.matches = append(game.matches, *re)
+			}
+		}
+
+		if len(game.matches) == 0 {
+			return nil, fmt.Errorf("missing matches in %s -> %s", path, section.Name())
 		}
 
 		sf.games = append(sf.games, game)
@@ -150,6 +179,7 @@ func makeIndex(systems []*games.System) (txtindex.Index, error) {
 }
 
 func main() {
+	fmt.Println("Searching for sync files...")
 	menuFolders := mister.GetMenuFolders(config.SD_ROOT)
 	syncFiles := getSyncFiles(menuFolders)
 	var syncs []*syncFile
@@ -157,7 +187,7 @@ func main() {
 	for _, path := range syncFiles {
 		sf, err := readSyncFile(path)
 		if err != nil {
-			fmt.Printf("Error reading %s: %s", path, err)
+			fmt.Printf("Error reading %s: %s\n", path, err)
 			continue
 		}
 		syncs = append(syncs, sf)
@@ -168,6 +198,63 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Found %d sync files\n", len(syncs))
+
+	fmt.Println("Checking for updates...")
+
+	for i, sync := range syncs {
+		fmt.Printf("%d/%d: %s\n", i+1, len(syncs), sync.name)
+
+		if sync.url == "" {
+			fmt.Println("No update URL")
+			continue
+		}
+
+		resp, err := http.Get(sync.url)
+		if err != nil {
+			fmt.Println("Error checking for updates:", err)
+			continue
+		}
+
+		if resp.StatusCode != 200 {
+			fmt.Println("Error checking for updates:", resp.Status)
+			continue
+		}
+
+		fp, err := os.CreateTemp("", "launchsync-")
+		if err != nil {
+			fmt.Println("Error creating temp file:", err)
+			continue
+		}
+		defer fp.Close()
+		defer os.Remove(fp.Name())
+
+		_, err = io.Copy(fp, resp.Body)
+		if err != nil {
+			fmt.Println("Error writing to tmp:", err)
+			continue
+		}
+		fp.Close()
+
+		newSync, err := readSyncFile(fp.Name())
+		if err != nil {
+			fmt.Println("Error reading new sync file:", err)
+			continue
+		}
+
+		if newSync.updated.After(sync.updated) {
+			fmt.Println("Update available")
+			syncs[i] = newSync
+			err := utils.MoveFile(fp.Name(), sync.path)
+			if err != nil {
+				fmt.Println("Error writing new sync file:", err)
+				continue
+			}
+		} else {
+			fmt.Println("No update available")
+		}
+	}
+
 	var indexSystems []*games.System
 	for _, sync := range syncs {
 		for _, game := range sync.games {
@@ -175,11 +262,15 @@ func main() {
 		}
 	}
 
+	fmt.Println("Building index...")
+
 	index, err := makeIndex(indexSystems)
 	if err != nil {
 		fmt.Printf("Error generating index: %s\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("Index built")
 
 	for _, sync := range syncs {
 		fmt.Println("---")
@@ -194,8 +285,8 @@ func main() {
 			var match txtindex.SearchResult
 			fmt.Println("> " + game.name)
 
-			for _, file := range game.files {
-				results := index.SearchSystemName(game.system.Id, file)
+			for _, re := range game.matches {
+				results := index.SearchSystemNameRe(game.system.Id, re)
 				if len(results) > 0 {
 					match = results[0]
 					break

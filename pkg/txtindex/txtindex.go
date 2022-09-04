@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	s "strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -220,6 +221,22 @@ func (idx *Index) SearchSystemName(system string, query string) []SearchResult {
 
 	for i, name := range idx.files[system]["names"] {
 		if s.Contains(s.ToLower(name), query) {
+			results = append(results, SearchResult{
+				System: system,
+				Name:   name,
+				Path:   idx.files[system]["paths"][i],
+			})
+		}
+	}
+
+	return results
+}
+
+func (idx *Index) SearchSystemNameRe(system string, query regexp.Regexp) []SearchResult {
+	var results []SearchResult
+
+	for i, name := range idx.files[system]["names"] {
+		if query.MatchString(name) {
 			results = append(results, SearchResult{
 				System: system,
 				Name:   name,

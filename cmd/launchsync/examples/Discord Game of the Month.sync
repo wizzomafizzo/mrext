@@ -5,25 +5,25 @@ updated = 2022-09-01
 
 [Crystalis]
 system = NES
-file = Crystalis (USA)
+match = Crystalis (USA)
 
 [McDonald's Treasure Land Adventure]
 system = Genesis
-file = McDonald's Treasure Land Adventure (USA)
+match = McDonald's Treasure Land Adventure (USA)
 
 [Vagrant Story]
 system = PSX
-file = Vagrant Story (USA)
-file = Vagrant Story
+match = Vagrant Story (USA)
+match = Vagrant Story
 
-[The Legend of Zelda: The Minish Cap]
+[The Legend of Zelda - The Minish Cap]
 system = GBA
-file = The Minish Cap
+match = The Minish Cap
 
 [Super Mario World]
 system = SNES
-file = Super Mario World (USA)
+match = ^Super Mario World (USA)
 
 [Phantasy Star IV]
 system = Genesis
-file = Phantasy Star IV
+match = Phantasy Star IV
