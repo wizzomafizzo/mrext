@@ -9,6 +9,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 func makeIndex(systems []*games.System) (txtindex.Index, error) {
@@ -53,6 +54,10 @@ func makeIndex(systems []*games.System) (txtindex.Index, error) {
 	return index, nil
 }
 
+func notFoundFilename(folder string, name string) string {
+	return filepath.Join(folder, name+" [NOT FOUND].mgl")
+}
+
 func main() {
 	fmt.Println("Searching for sync files...")
 	menuFolders := mister.GetMenuFolders(config.SD_ROOT)
@@ -84,6 +89,18 @@ func main() {
 			continue
 		}
 
+		var newNames []string
+		for _, game := range newSync.games {
+			newNames = append(newNames, game.name)
+		}
+
+		for _, game := range sync.games {
+			if !utils.Contains(newNames, game.name) {
+				mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
+				os.Remove(notFoundFilename(sync.folder, game.name))
+			}
+		}
+
 		if updated {
 			syncs[i] = newSync
 		}
@@ -112,7 +129,7 @@ func main() {
 		fmt.Printf("URL:     %s\n", sync.url)
 		fmt.Printf("Updated: %s\n", sync.updated)
 		fmt.Printf("Folder:  %s\n", sync.folder)
-		fmt.Printf("Games:   %d\n", len(sync.games))
+		fmt.Println("Games:")
 
 		for _, game := range sync.games {
 			var match txtindex.SearchResult
@@ -132,10 +149,17 @@ func main() {
 				_, err := mister.CreateLauncher(game.system, match.Path, sync.folder, game.name)
 				if err != nil {
 					fmt.Printf("Error creating launcher: %s\n", err)
+				} else {
+					if _, err := os.Stat(notFoundFilename(sync.folder, game.name)); err == nil {
+						os.Remove(notFoundFilename(sync.folder, game.name))
+					}
 				}
 			} else {
-				// TODO: generate missing mgl placeholder
-				fmt.Println("No match found")
+				fp, err := os.Create(notFoundFilename(sync.folder, game.name))
+				if err != nil {
+					fmt.Printf("Error creating not found placeholder: %s\n", err)
+				}
+				fp.Close()
 			}
 		}
 	}
