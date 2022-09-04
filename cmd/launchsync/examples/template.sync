@@ -1,0 +1,46 @@
+; Comments start with a semicolon.
+; name is a required field. It doesn't affect functionality but will be used later in a UI.
+name = My Awesome List
+; author is required too. Same story.
+author = Me
+; url points to the original online sync file. It's used to check for updates.
+; It's optional, so you can leave it out if you don't want any updates.
+url = https://example.com/example.sync
+; updated is used to check if the local file is outdated. It's required if the url field is present.
+; It's a date/time in the format YYYY-MM-DD or YYYY-MM-DD HH:MM
+updated = 2022-09-01
+
+; Each entry like this represents a launcher/shortcut to be created on the MiSTer.
+; The name in square brackets is exactly what will be used as the launcher name in the menu.
+; Certain special characters are not allowed and will be stripped out: / \ : * ? " < > |
+[My Favorite Game]
+; system is required. Generally, it's the same as the name of the system folder on the MiSTer.
+; NOTE: Currently there's an exception with these systems:
+;       Atari2600, FDS (Famicom Disk System), GameGear
+;       If you want to use these systems, you need to use that specific system name. These
+;       will always work, but support will be added later to use their generic folder names too.
+system = NES
+; At least one match field is required. This is the magic part that makes the sync work.
+; It basically works as a search query to try find the matching game file on the user's disk.
+; It's case insensitive and searches an individual file's name without extensions, not 
+; the full file path.
+match = Cool Game (USA)
+; The match field can be repeated to add more search terms. Each field will be used in a search
+; top down until a match is found. If no match is found, the next entry will be tried. If a
+; match is found, the search will stop and the launcher will be created.
+match = Cool Game (Europe)
+match = Cool Game
+
+[Another Game]
+system = PSX
+; Match fields can also contain regular expressions. This is a limited version which escapes
+; parentheses and square brackets since they're so common for tags on game files.
+match = ^Another Game ; Starts with Another Game
+match = Game$ ; Ends with Game
+match = Another Game (.+) ; Matches anything in the parentheses
+match = ^Another Game$ ; Matches exactly Another Game
+
+; And so on. Sync files can contain as many entries as you want.
+[My Favorite Game 2 - The Sequel]
+system = Genesis
+match = Cool Game 2 [T-En.*]^
