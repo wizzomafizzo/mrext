@@ -5,8 +5,8 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -118,6 +118,7 @@ func Kernel() {
 		sh.RunV("git", "clone", "--depth", "1", KernelRepoUrl, repoDir)
 	} else {
 		sh.RunV("git", "-C", repoDir, "reset", "--hard", "HEAD")
+		sh.RunV("git", "-C", repoDir, "clean", "-df")
 		sh.RunV("git", "-C", repoDir, "pull")
 	}
 
@@ -131,10 +132,17 @@ func Kernel() {
 	kCmd("make", "-j6", "zImage")
 	kCmd("make", "socfpga_cyclone5_de10_nano.dtb")
 
+	zImage, _ := os.Open(filepath.Join(repoDir, "arch", "arm", "boot", "zImage"))
+	defer zImage.Close()
+	dtb, _ := os.Open(filepath.Join(repoDir, "arch", "arm", "boot", "dts", "socfpga_cyclone5_de10_nano.dtb"))
+	defer dtb.Close()
+
 	os.MkdirAll(filepath.Join(binDir, "linux"), 0755)
-	zImage := filepath.Join(repoDir, "arch", "arm", "boot", "zImage")
-	dtb := filepath.Join(repoDir, "arch", "arm", "boot", "dtbs", "socfpga_cyclone5_de10_nano.dtb")
-	exec.Command("cat " + zImage + " " + dtb + " > " + filepath.Join(binDir, "zImage_dtb"))
+	kernel, _ := os.Create(filepath.Join(binDir, "linux", "zImage_dtb"))
+	defer kernel.Close()
+
+	io.Copy(kernel, zImage)
+	io.Copy(kernel, dtb)
 }
 
 func Test() {
