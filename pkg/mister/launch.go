@@ -159,7 +159,7 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 		}
 
 		coresLink := filepath.Join(folder, filepath.Base(config.ArcadeCoresFolder))
-		if _, err := os.Lstat(coresLink); err == nil {
+		if _, err := os.Lstat(coresLink); err != nil {
 			err := os.Symlink(config.ArcadeCoresFolder, coresLink)
 			if err != nil {
 				return "", fmt.Errorf("failed to create cores link: %s", err)

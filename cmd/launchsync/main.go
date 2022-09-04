@@ -59,7 +59,7 @@ func notFoundFilename(folder string, name string) string {
 }
 
 func main() {
-	fmt.Println("Searching for sync files...")
+	fmt.Print("Searching for sync files... ")
 	menuFolders := mister.GetMenuFolders(config.SD_ROOT)
 	syncFiles := getSyncFiles(menuFolders)
 	var syncs []*syncFile
@@ -74,35 +74,39 @@ func main() {
 	}
 
 	if len(syncs) == 0 {
-		fmt.Println("No sync files found")
+		fmt.Println("no sync files found")
 		os.Exit(1)
 	}
-	fmt.Printf("Found %d sync files\n", len(syncs))
+	fmt.Printf("found %d files\n", len(syncs))
 
+	// TODO: diff sync/removals could work without a url
 	fmt.Println("Checking for updates...")
 	for i, sync := range syncs {
-		fmt.Printf("%d/%d: %s\n", i+1, len(syncs), sync.name)
+		fmt.Printf("%d/%d: %s... ", i+1, len(syncs), sync.name)
 
 		newSync, updated, err := updateSyncFile(sync)
 		if err != nil {
-			fmt.Printf("Error updating %s: %s\n", sync.name, err)
+			fmt.Printf("error updating %s: %s\n", sync.name, err)
 			continue
 		}
 
-		var newNames []string
-		for _, game := range newSync.games {
-			newNames = append(newNames, game.name)
-		}
-
-		for _, game := range sync.games {
-			if !utils.Contains(newNames, game.name) {
-				mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
-				os.Remove(notFoundFilename(sync.folder, game.name))
-			}
-		}
-
 		if updated {
+			var newNames []string
+			for _, game := range newSync.games {
+				newNames = append(newNames, game.name)
+			}
+
+			for _, game := range sync.games {
+				if !utils.Contains(newNames, game.name) {
+					mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
+					os.Remove(notFoundFilename(sync.folder, game.name))
+				}
+			}
+
+			fmt.Println("updated")
 			syncs[i] = newSync
+		} else {
+			fmt.Println("skipped")
 		}
 	}
 
@@ -114,13 +118,13 @@ func main() {
 		}
 	}
 
-	fmt.Println("Building index...")
+	fmt.Print("Building games index... ")
 	index, err := makeIndex(indexSystems)
 	if err != nil {
-		fmt.Printf("Error generating index: %s\n", err)
+		fmt.Printf("error generating index: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Index built")
+	fmt.Println("done")
 
 	for _, sync := range syncs {
 		fmt.Println("---")
@@ -133,7 +137,7 @@ func main() {
 
 		for _, game := range sync.games {
 			var match txtindex.SearchResult
-			fmt.Println("- " + game.name)
+			fmt.Print("- " + game.name + "... ")
 
 			for _, re := range game.matches {
 				results := index.SearchSystemNameRe(game.system.Id, re)
@@ -144,22 +148,23 @@ func main() {
 			}
 
 			if match.Name != "" {
-				fmt.Println(filepath.Base(match.Path))
 				// TODO: don't write if it's the same file
 				_, err := mister.CreateLauncher(game.system, match.Path, sync.folder, game.name)
 				if err != nil {
-					fmt.Printf("Error creating launcher: %s\n", err)
+					fmt.Printf("error creating launcher: %s\n", err)
 				} else {
 					if _, err := os.Stat(notFoundFilename(sync.folder, game.name)); err == nil {
 						os.Remove(notFoundFilename(sync.folder, game.name))
 					}
 				}
+				fmt.Println("found " + filepath.Base(match.Path))
 			} else {
 				fp, err := os.Create(notFoundFilename(sync.folder, game.name))
 				if err != nil {
-					fmt.Printf("Error creating not found placeholder: %s\n", err)
+					fmt.Printf("error creating not found placeholder: %s\n", err)
 				}
 				fp.Close()
+				fmt.Println("not found, skipping")
 			}
 		}
 	}

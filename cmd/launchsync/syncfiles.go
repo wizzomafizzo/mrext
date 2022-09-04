@@ -44,7 +44,6 @@ func getSyncFiles(paths []string) []string {
 }
 
 func readSyncFile(path string) (*syncFile, error) {
-	// TODO: returned errors don't need path?
 	var sf syncFile
 
 	cfg, err := ini.ShadowLoad(path)
@@ -57,23 +56,24 @@ func readSyncFile(path string) (*syncFile, error) {
 
 	sf.name = cfg.Section("DEFAULT").Key("name").String()
 	if sf.name == "" {
-		return nil, fmt.Errorf("missing name in %s", path)
+		return nil, fmt.Errorf("missing name field")
 	}
 
 	sf.author = cfg.Section("DEFAULT").Key("author").String()
 	if sf.author == "" {
-		return nil, fmt.Errorf("missing author in %s", path)
+		return nil, fmt.Errorf("missing author field")
 	}
 
 	sf.url = cfg.Section("DEFAULT").Key("url").String()
 
-	if !cfg.Section("DEFAULT").HasKey("updated") {
-		return nil, fmt.Errorf("missing updated in %s", path)
-	}
-	// TODO: support time
-	sf.updated, err = cfg.Section("DEFAULT").Key("updated").TimeFormat("2006-01-02")
-	if err != nil {
-		return nil, err
+	if cfg.Section("DEFAULT").HasKey("url") {
+		sf.updated, err = cfg.Section("DEFAULT").Key("updated").TimeFormat("2006-01-02")
+		if err != nil {
+			sf.updated, err = cfg.Section("DEFAULT").Key("updated").TimeFormat("2006-01-02 15:04")
+			if err != nil {
+				return nil, fmt.Errorf("invalid updated date/time: %s", err)
+			}
+		}
 	}
 
 	for _, section := range cfg.Sections() {
@@ -92,20 +92,20 @@ func readSyncFile(path string) (*syncFile, error) {
 		game.name = strippedName
 
 		if game.name == "" {
-			return nil, fmt.Errorf("missing name in %s -> %s", path, section.Name())
+			return nil, fmt.Errorf("missing name in %s", section.Name())
 		}
 
 		systemName := section.Key("system").String()
 		system, err := games.LookupSystem(systemName)
 		if err != nil {
-			return nil, fmt.Errorf("invalid system in %s -> %s: %s", path, section.Name(), err)
+			return nil, fmt.Errorf("invalid system in %s: %s", section.Name(), err)
 		} else {
 			game.system = system
 		}
 
 		matches := section.Key("match").ValueWithShadows()
 		for _, match := range matches {
-			// Escape these regex characters for convenience matching rom filenames
+			// escape these regex characters for convenience matching rom filenames
 			escapedMatch := match
 			for _, char := range []string{"(", ")", "[", "]"} {
 				escapedMatch = strings.ReplaceAll(escapedMatch, char, "\\"+char)
@@ -113,21 +113,21 @@ func readSyncFile(path string) (*syncFile, error) {
 
 			re, err := regexp.Compile("(?i)" + escapedMatch)
 			if err != nil {
-				return nil, fmt.Errorf("invalid match format in %s -> %s: %s", path, section.Name(), err)
+				return nil, fmt.Errorf("invalid match format in %s: %s", section.Name(), err)
 			} else {
 				game.matches = append(game.matches, *re)
 			}
 		}
 
 		if len(game.matches) == 0 {
-			return nil, fmt.Errorf("missing matches in %s -> %s", path, section.Name())
+			return nil, fmt.Errorf("missing matches in %s", section.Name())
 		}
 
 		sf.games = append(sf.games, game)
 	}
 
 	if len(sf.games) == 0 {
-		return nil, fmt.Errorf("no games in %s", path)
+		return nil, fmt.Errorf("no games found")
 	}
 
 	return &sf, nil
