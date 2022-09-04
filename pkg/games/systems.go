@@ -13,6 +13,7 @@ type FileType struct {
 
 type System struct {
 	Id        string
+	Alias     []string
 	Folder    string
 	Rbf       string
 	FileTypes []FileType
@@ -114,6 +115,7 @@ var SYSTEMS = map[string]System{
 	},
 	"ColecoVision": {
 		Id:     "ColecoVision",
+		Alias:  []string{"Coleco"},
 		Folder: "Coleco",
 		Rbf:    "_Console/ColecoVision",
 		FileTypes: []FileType{
@@ -129,6 +131,7 @@ var SYSTEMS = map[string]System{
 	},
 	"FDS": {
 		Id:     "FDS",
+		Alias:  []string{"FamicomDiskSystem"},
 		Folder: "NES",
 		Rbf:    "_Console/NES",
 		FileTypes: []FileType{
@@ -144,6 +147,7 @@ var SYSTEMS = map[string]System{
 	},
 	"Gameboy": {
 		Id:     "Gameboy",
+		Alias:  []string{"GB"},
 		Folder: "GAMEBOY",
 		Rbf:    "_Console/Gameboy",
 		FileTypes: []FileType{
@@ -159,6 +163,7 @@ var SYSTEMS = map[string]System{
 	},
 	"GameboyColor": {
 		Id:     "GameboyColor",
+		Alias:  []string{"GBC"},
 		Folder: "GAMEBOY",
 		Rbf:    "_Console/Gameboy",
 		FileTypes: []FileType{
@@ -204,6 +209,7 @@ var SYSTEMS = map[string]System{
 	},
 	"GBA": {
 		Id:     "GBA",
+		Alias:  []string{"GameboyAdvance"},
 		Folder: "GBA",
 		Rbf:    "_Console/GBA",
 		FileTypes: []FileType{
@@ -234,6 +240,7 @@ var SYSTEMS = map[string]System{
 	},
 	"Genesis": {
 		Id:     "Genesis",
+		Alias:  []string{"MegaDrive"},
 		Folder: "Genesis",
 		Rbf:    "_Console/Genesis",
 		FileTypes: []FileType{
@@ -249,6 +256,7 @@ var SYSTEMS = map[string]System{
 	},
 	"MegaCD": {
 		Id:     "MegaCD",
+		Alias:  []string{"SegaCD"},
 		Folder: "MegaCD",
 		Rbf:    "_Console/MegaCD",
 		FileTypes: []FileType{
@@ -302,6 +310,7 @@ var SYSTEMS = map[string]System{
 	},
 	"PSX": {
 		Id:     "PSX",
+		Alias:  []string{"Playstation", "PS1"},
 		Folder: "PSX",
 		Rbf:    "_Console/PSX",
 		FileTypes: []FileType{
@@ -317,6 +326,7 @@ var SYSTEMS = map[string]System{
 	},
 	"Sega32X": {
 		Id:     "Sega32X",
+		Alias:  []string{"S32X", "32X"},
 		Folder: "S32X",
 		Rbf:    "_Console/S32X",
 		FileTypes: []FileType{
@@ -332,6 +342,7 @@ var SYSTEMS = map[string]System{
 	},
 	"SuperGameboy": {
 		Id:     "SuperGameboy",
+		Alias:  []string{"SGB"},
 		Folder: "SGB",
 		Rbf:    "_Console/SGB",
 		FileTypes: []FileType{
@@ -347,6 +358,7 @@ var SYSTEMS = map[string]System{
 	},
 	"MasterSystem": {
 		Id:     "MasterSystem",
+		Alias:  []string{"SMS"},
 		Folder: "SMS",
 		Rbf:    "_Console/SMS",
 		FileTypes: []FileType{
@@ -362,6 +374,7 @@ var SYSTEMS = map[string]System{
 	},
 	"SNES": {
 		Id:     "SNES",
+		Alias:  []string{"SuperNintendo"},
 		Folder: "SNES",
 		Rbf:    "_Console/SNES",
 		FileTypes: []FileType{
@@ -377,6 +390,7 @@ var SYSTEMS = map[string]System{
 	},
 	"TurboGraphx16": {
 		Id:     "TurboGraphx16",
+		Alias:  []string{"TGFX16", "PCEngine"},
 		Folder: "TGFX16",
 		Rbf:    "_Console/TGFX16",
 		FileTypes: []FileType{
@@ -400,6 +414,7 @@ var SYSTEMS = map[string]System{
 	},
 	"TurboGraphx16CD": {
 		Id:     "TurboGraphx16CD",
+		Alias:  []string{"TGFX16-CD", "PCEngineCD"},
 		Folder: "TGFX16-CD",
 		Rbf:    "_Console/TGFX16",
 		FileTypes: []FileType{

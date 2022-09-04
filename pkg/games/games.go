@@ -21,11 +21,18 @@ func GetSystem(id string) (*System, error) {
 	}
 }
 
-// Lookup case insensitive system id definition.
+// Lookup case insensitive system id definition including aliases.
 func LookupSystem(id string) (*System, error) {
 	for k, v := range SYSTEMS {
 		if s.EqualFold(k, id) {
 			return &v, nil
+		}
+	}
+	for _, v := range SYSTEMS {
+		for _, alias := range v.Alias {
+			if s.EqualFold(alias, id) {
+				return &v, nil
+			}
 		}
 	}
 	return nil, fmt.Errorf("unknown system: %s", id)
