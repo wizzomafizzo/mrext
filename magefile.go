@@ -26,7 +26,8 @@ var (
 	kernelBuild          = filepath.Join(cwd, "scripts", "kernelbuild")
 	kernelBuildImageName = "mrext/kernelbuild"
 	kernelRepoName       = "Linux-Kernel_MiSTer"
-	KernelRepoUrl        = fmt.Sprintf("https://github.com/MiSTer-devel/%s.git", kernelRepoName)
+	kernelRepoPath       = filepath.Join(os.TempDir(), "mrext-"+kernelRepoName)
+	kernelRepoUrl        = fmt.Sprintf("https://github.com/MiSTer-devel/%s.git", kernelRepoName)
 )
 
 type app struct {
@@ -71,7 +72,7 @@ func Clean() {
 	sh.Rm(binDir)
 	sh.Rm(armBuildCache)
 	sh.Rm(armModCache)
-	// TODO: kernel build dir
+	sh.Rm(kernelRepoPath)
 }
 
 func buildApp(a app, out string) {
@@ -113,28 +114,27 @@ func MakeKernelImage() {
 }
 
 func Kernel() {
-	repoDir := filepath.Join(os.TempDir(), kernelRepoName)
-	if _, err := os.Stat(repoDir); os.IsNotExist(err) {
-		sh.RunV("git", "clone", "--depth", "1", KernelRepoUrl, repoDir)
+	if _, err := os.Stat(kernelRepoPath); os.IsNotExist(err) {
+		sh.RunV("git", "clone", "--depth", "1", kernelRepoUrl, kernelRepoPath)
 	} else {
-		sh.RunV("git", "-C", repoDir, "reset", "--hard", "HEAD")
-		sh.RunV("git", "-C", repoDir, "clean", "-df")
-		sh.RunV("git", "-C", repoDir, "pull")
+		sh.RunV("git", "-C", kernelRepoPath, "reset", "--hard", "HEAD")
+		sh.RunV("git", "-C", kernelRepoPath, "clean", "-df")
+		sh.RunV("git", "-C", kernelRepoPath, "pull")
 	}
 
 	patches, _ := filepath.Glob(filepath.Join(kernelBuild, "*.patch"))
 	for _, path := range patches {
-		sh.RunV("git", "-C", repoDir, "apply", path)
+		sh.RunV("git", "-C", kernelRepoPath, "apply", path)
 	}
 
-	kCmd := sh.RunCmd("sudo", "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, "/build"), "--user", "1000:1000", kernelBuildImageName)
+	kCmd := sh.RunCmd("sudo", "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", kernelRepoPath, "/build"), "--user", "1000:1000", kernelBuildImageName)
 	kCmd("make", "MiSTer_defconfig")
 	kCmd("make", "-j6", "zImage")
 	kCmd("make", "socfpga_cyclone5_de10_nano.dtb")
 
-	zImage, _ := os.Open(filepath.Join(repoDir, "arch", "arm", "boot", "zImage"))
+	zImage, _ := os.Open(filepath.Join(kernelRepoPath, "arch", "arm", "boot", "zImage"))
 	defer zImage.Close()
-	dtb, _ := os.Open(filepath.Join(repoDir, "arch", "arm", "boot", "dts", "socfpga_cyclone5_de10_nano.dtb"))
+	dtb, _ := os.Open(filepath.Join(kernelRepoPath, "arch", "arm", "boot", "dts", "socfpga_cyclone5_de10_nano.dtb"))
 	defer dtb.Close()
 
 	os.MkdirAll(filepath.Join(binDir, "linux"), 0755)
