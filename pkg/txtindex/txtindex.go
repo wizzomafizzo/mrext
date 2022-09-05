@@ -194,7 +194,7 @@ type SearchResult struct {
 	Path   string
 }
 
-func (idx *Index) searchSystemNameGeneric(test func(string, string) bool, system string, query string) []SearchResult {
+func (idx *Index) searchSystemByNameGeneric(test func(string, string) bool, system string, query string) []SearchResult {
 	var results []SearchResult
 	for i, name := range idx.files[system]["names"] {
 		if test(name, query) {
@@ -208,25 +208,25 @@ func (idx *Index) searchSystemNameGeneric(test func(string, string) bool, system
 	return results
 }
 
-func searchNameTest(name string, query string) bool {
+func searchByNameTest(name string, query string) bool {
 	return s.Contains(s.ToLower(name), query)
 }
 
-func (idx *Index) SearchAllName(query string) []SearchResult {
+func (idx *Index) SearchAllByName(query string) []SearchResult {
 	var results []SearchResult
 	query = s.ToLower(query)
 	for system := range idx.files {
-		results = append(results, idx.searchSystemNameGeneric(searchNameTest, system, query)...)
+		results = append(results, idx.searchSystemByNameGeneric(searchByNameTest, system, query)...)
 	}
 	return results
 }
 
-func (idx *Index) SearchSystemName(system string, query string) []SearchResult {
+func (idx *Index) SearchSystemByName(system string, query string) []SearchResult {
 	query = s.ToLower(query)
-	return idx.searchSystemNameGeneric(searchNameTest, system, query)
+	return idx.searchSystemByNameGeneric(searchByNameTest, system, query)
 }
 
-func searchNameReTest(name string, query string) bool {
+func searchByNameReTest(name string, query string) bool {
 	re, err := regexp.Compile(query)
 	if err != nil {
 		return false
@@ -234,8 +234,46 @@ func searchNameReTest(name string, query string) bool {
 	return re.MatchString(name)
 }
 
-func (idx *Index) SearchSystemNameRe(system string, query string) []SearchResult {
-	return idx.searchSystemNameGeneric(searchNameReTest, system, query)
+func (idx *Index) SearchSystemByNameRe(system string, query string) []SearchResult {
+	return idx.searchSystemByNameGeneric(searchByNameReTest, system, query)
+}
+
+func (idx *Index) SearchSystemByWords(system string, query string) []SearchResult {
+	var results []SearchResult
+	words := s.Split(s.ToLower(query), " ")
+	if len(words) == 0 {
+		return results
+	}
+
+	for i, name := range idx.files[system]["names"] {
+		if searchByNameTest(name, words[0]) {
+			results = append(results, SearchResult{
+				System: system,
+				Name:   name,
+				Path:   idx.files[system]["paths"][i],
+			})
+		}
+	}
+
+	for _, word := range words[1:] {
+		var newResults []SearchResult
+		for _, result := range results {
+			if searchByNameTest(result.Name, word) {
+				newResults = append(newResults, result)
+			}
+		}
+		results = newResults
+	}
+
+	return results
+}
+
+func (idx *Index) SearchAllByWords(query string) []SearchResult {
+	var results []SearchResult
+	for system := range idx.files {
+		results = append(results, idx.SearchSystemByWords(system, query)...)
+	}
+	return results
 }
 
 func (idx *Index) Total() int {

@@ -140,7 +140,7 @@ func main() {
 			fmt.Print("- " + game.name + "... ")
 
 			for _, re := range game.matches {
-				results := index.SearchSystemNameRe(game.system.Id, re)
+				results := index.SearchSystemByNameRe(game.system.Id, re)
 				if len(results) > 0 {
 					match = results[0]
 					break

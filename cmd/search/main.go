@@ -114,7 +114,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 			log.Fatal(err)
 		}
 
-		results := index.SearchAllName(text)
+		results := index.SearchAllByWords(text)
 
 		if len(results) == 0 {
 			if err := curses.InfoBox(stdscr, "", "No results found.", false, true); err != nil {
@@ -137,7 +137,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 		stdscr.NoutRefresh()
 		gc.Update()
 
-		button, selected, err := curses.ListPicker(stdscr, "Launch Game", names, []string{"Cancel", "Launch"}, 1)
+		button, selected, err := curses.ListPicker(stdscr, "Launch Game", names, []string{"PgUp", "PgDn", "Launch", "Options", "Cancel"}, 2)
 		if err != nil {
 			log.Fatal(err)
 		}
