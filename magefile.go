@@ -4,19 +4,24 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 )
 
 var (
-	cwd, _ = os.Getwd()
-	binDir = filepath.Join(cwd, "bin")
+	cwd, _           = os.Getwd()
+	binDir           = filepath.Join(cwd, "bin")
+	releasesDir      = filepath.Join(cwd, "releases")
+	releaseUrlPrefix = "https://github.com/wizzomafizzo/mrext/raw/main/releases"
 	// docker arm build
 	armBuild          = filepath.Join(cwd, "scripts", "armbuild")
 	armBuildImageName = "mrext/armbuild"
@@ -34,15 +39,16 @@ type app struct {
 	name      string
 	path      string
 	bin       string
-	misterBin string
 	ldFlags   string
+	releaseId string
 }
 
 var apps = []app{
 	{
-		name: "random",
-		path: filepath.Join(cwd, "cmd", "random"),
-		bin:  "random.sh",
+		name:      "random",
+		path:      filepath.Join(cwd, "cmd", "random"),
+		bin:       "random.sh",
+		releaseId: "mrext/random",
 	},
 	{
 		name: "samindex",
@@ -50,16 +56,27 @@ var apps = []app{
 		bin:  "samindex",
 	},
 	{
-		name:    "search",
-		path:    filepath.Join(cwd, "cmd", "search"),
-		bin:     "search.sh",
-		ldFlags: "-lcurses",
+		name:      "search",
+		path:      filepath.Join(cwd, "cmd", "search"),
+		bin:       "search.sh",
+		ldFlags:   "-lcurses",
+		releaseId: "mrext/search",
 	},
 	{
-		name: "launchsync",
-		path: filepath.Join(cwd, "cmd", "launchsync"),
-		bin:  "launchsync.sh",
+		name:      "launchsync",
+		path:      filepath.Join(cwd, "cmd", "launchsync"),
+		bin:       "launchsync.sh",
+		releaseId: "mrext/launchsync",
 	},
+}
+
+func getApp(name string) *app {
+	for _, a := range apps {
+		if a.name == name {
+			return &a
+		}
+	}
+	return nil
 }
 
 var Default = Build
@@ -100,6 +117,7 @@ func MakeArmImage() {
 	sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
 }
 
+// TODO: split this to do one app at a time
 func Mister() {
 	buildCache := fmt.Sprintf("%s:%s", armBuildCache, "/home/build/.cache/go-build")
 	os.Mkdir(armBuildCache, 0755)
@@ -107,6 +125,66 @@ func Mister() {
 	os.Mkdir(armModCache, 0755)
 	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
 	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build")
+}
+
+type updateDbFile struct {
+	Hash string `json:"hash"`
+	Size int64  `json:"size"`
+	Url  string `json:"url"`
+}
+
+type updateDbFolder struct {
+	Tags []string `json:"tags"`
+}
+
+type updateDb struct {
+	DbId      string                    `json:"db_id"`
+	Timestamp int64                     `json:"timestamp"`
+	Files     map[string]updateDbFile   `json:"files"`
+	Folders   map[string]updateDbFolder `json:"folders"`
+}
+
+func Release(name string) {
+	a := getApp(name)
+	if a == nil {
+		fmt.Println("Unknown app", name)
+		os.Exit(1)
+	}
+	platform := "linux_arm"
+	mg.Deps(func() { cleanPlatform(platform) }, Mister)
+
+	rd := filepath.Join(releasesDir, a.name)
+	os.MkdirAll(rd, 0755)
+	releaseBin := filepath.Join(rd, a.bin)
+	sh.Copy(filepath.Join(binDir, platform, a.bin), releaseBin)
+
+	if a.releaseId != "" {
+		file, _ := os.Open(releaseBin)
+		info, _ := os.Stat(releaseBin)
+		hash := md5.New()
+		io.Copy(hash, file)
+		file.Close()
+
+		dbFile := &updateDb{
+			DbId:      a.releaseId,
+			Timestamp: time.Now().Unix(),
+			Files: map[string]updateDbFile{
+				"Scripts/" + a.bin: {
+					Hash: fmt.Sprintf("%x", hash.Sum(nil)),
+					Size: info.Size(),
+					Url:  fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, a.name, a.bin),
+				},
+			},
+			Folders: map[string]updateDbFolder{
+				"Scripts": {},
+			},
+		}
+
+		dbFileJson, _ := json.MarshalIndent(dbFile, "", "  ")
+		dbFp, _ := os.Create(filepath.Join(rd, a.name+".json"))
+		dbFp.Write(dbFileJson)
+		dbFp.Close()
+	}
 }
 
 func MakeKernelImage() {
