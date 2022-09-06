@@ -219,6 +219,7 @@ func main() {
 				continue
 			} else {
 				// we did it
+				fmt.Printf("Launching %s: %s\n", system.Id, game)
 				mister.LaunchGame(system, game)
 				return
 			}

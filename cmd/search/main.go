@@ -142,7 +142,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 			log.Fatal(err)
 		}
 
-		if button == 1 {
+		if button == 2 {
 			game := items[selected]
 
 			system, err := games.GetSystem(game.System)
