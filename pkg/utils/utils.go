@@ -122,3 +122,12 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	}
 	return keys
 }
+
+// Remove all characters from a string that are not allowed in filenames.
+func StripBadFileChars(s string) string {
+	badChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
+	for _, c := range badChars {
+		s = strings.ReplaceAll(s, c, "")
+	}
+	return s
+}

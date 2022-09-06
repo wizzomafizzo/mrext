@@ -52,13 +52,14 @@ func readSyncFile(path string) (*syncFile, error) {
 		return nil, err
 	}
 
-	sf.folder = filepath.Dir(path)
 	sf.path = path
 
 	sf.name = cfg.Section("DEFAULT").Key("name").String()
 	if sf.name == "" {
 		return nil, fmt.Errorf("missing name field")
 	}
+
+	sf.folder = filepath.Join(filepath.Dir(path), utils.StripBadFileChars(sf.name))
 
 	sf.author = cfg.Section("DEFAULT").Key("author").String()
 	if sf.author == "" {
@@ -85,12 +86,7 @@ func readSyncFile(path string) (*syncFile, error) {
 		var game syncFileGame
 
 		// TODO: support subfolders
-		strippedName := section.Name()
-		for _, char := range []string{"<", ">", ":", "\"", "/", "\\", "|", "?", "*"} {
-			strippedName = strings.ReplaceAll(strippedName, char, "")
-		}
-
-		game.name = strippedName
+		game.name = utils.StripBadFileChars(section.Name())
 
 		if game.name == "" {
 			return nil, fmt.Errorf("missing name in %s", section.Name())
@@ -239,10 +235,13 @@ func checkForUpdate(sync *syncFile) (*syncFile, bool, error) {
 			newNames = append(newNames, game.name)
 		}
 
-		for _, game := range sync.games {
-			if !utils.Contains(newNames, game.name) {
-				mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
-				os.Remove(notFoundFilename(sync.folder, game.name))
+		// delete removed games
+		if _, ok := os.Stat(sync.folder); ok == nil {
+			for _, game := range sync.games {
+				if !utils.Contains(newNames, game.name) {
+					mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
+					os.Remove(notFoundFilename(sync.folder, game.name))
+				}
 			}
 		}
 
@@ -267,15 +266,24 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 		}
 	}
 
+	if _, ok := os.Stat(sync.folder); ok != nil {
+		err := os.Mkdir(sync.folder, 0755)
+		if err != nil {
+			return "", false, err
+		}
+	}
+
 	if match.Name != "" {
 		// TODO: don't write if it's the same file
 		_, err := mister.CreateLauncher(game.system, match.Path, sync.folder, game.name)
 		if err != nil {
 			return "", false, err
 		}
+
 		if _, err := os.Stat(notFoundFilename(sync.folder, game.name)); err == nil {
 			os.Remove(notFoundFilename(sync.folder, game.name))
 		}
+
 		return filepath.Base(match.Path), true, nil
 	} else {
 		fp, err := os.Create(notFoundFilename(sync.folder, game.name))
@@ -283,6 +291,7 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 			return "", false, err
 		}
 		defer fp.Close()
+
 		return "", false, nil
 	}
 }

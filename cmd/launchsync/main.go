@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -56,6 +57,15 @@ func testSyncFile(path string) {
 		fmt.Println("---")
 		fmt.Printf("Game:    %s\n", game.name)
 		fmt.Printf("System:  %s\n", game.system.Id)
+
+		var fn string
+		if game.system.Id == "Arcade" {
+			fn = game.name + ".mra"
+		} else {
+			fn = game.name + ".mgl"
+		}
+		fmt.Printf("Path:    %s\n", filepath.Join(sf.folder, fn))
+
 		fmt.Printf("Matches: %d\n", len(game.matches))
 
 		for _, match := range game.matches {
