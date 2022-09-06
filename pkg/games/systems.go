@@ -19,6 +19,10 @@ type System struct {
 	FileTypes []FileType
 }
 
+// TODO: meta systems, combined systems matchings the folders
+// TODO: script to generate markdown doc from this
+// TODO: launch game, launch new game same system, not working? should it?
+
 var SYSTEMS = map[string]System{
 	"Amiga": {
 		// TODO: amiga will require a custom scan function
@@ -113,6 +117,8 @@ var SYSTEMS = map[string]System{
 			},
 		},
 	},
+	// TODO: apparently indexes are wrong on this
+	// TODO: probably just remove .sg from here, keep in meta
 	"ColecoVision": {
 		Id:     "ColecoVision",
 		Alias:  []string{"Coleco"},
@@ -293,6 +299,7 @@ var SYSTEMS = map[string]System{
 			},
 		},
 	},
+	// TODO: split off nsf music to separate system
 	"NES": {
 		Id:     "NES",
 		Folder: "NES",
@@ -392,7 +399,7 @@ var SYSTEMS = map[string]System{
 		Id:     "TurboGraphx16",
 		Alias:  []string{"TGFX16", "PCEngine"},
 		Folder: "TGFX16",
-		Rbf:    "_Console/TGFX16",
+		Rbf:    "_Console/TurboGrafx16",
 		FileTypes: []FileType{
 			{
 				Extensions: []string{".bin", ".pce"},
