@@ -12,6 +12,8 @@ import (
 	"gopkg.in/ini.v1"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -171,5 +173,116 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 		return newSync, true, nil
 	} else {
 		return sync, false, nil
+	}
+}
+
+func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
+	var index txtindex.Index
+	indexFile := filepath.Join(os.TempDir(), "launchsync-index.tar")
+
+	// Restrict index to necessary systems
+	var systems []*games.System
+	for _, sync := range syncs {
+		for _, game := range sync.games {
+			systems = append(systems, game.system)
+		}
+	}
+
+	systemPaths := make(map[string][]string)
+	for systemId, path := range games.GetSystemPaths() {
+		for _, system := range systems {
+			if system.Id == systemId {
+				systemPaths[systemId] = path
+				break
+			}
+		}
+	}
+
+	systemFiles := make([][2]string, 0)
+	for systemId, paths := range systemPaths {
+		for _, path := range paths {
+			files, err := games.GetFiles(systemId, path)
+			if err != nil {
+				return index, err
+			}
+
+			for _, file := range files {
+				systemFiles = append(systemFiles, [2]string{systemId, file})
+			}
+		}
+	}
+
+	err := txtindex.Generate(systemFiles, indexFile)
+	if err != nil {
+		return index, err
+	}
+
+	index, err = txtindex.Open(indexFile)
+	if err != nil {
+		return index, err
+	}
+	os.Remove(indexFile)
+
+	return index, nil
+}
+
+func checkForUpdate(sync *syncFile) (*syncFile, bool, error) {
+	// TODO: diff sync/removals could work without a url
+	newSync, updated, err := updateSyncFile(sync)
+	if err != nil {
+		return sync, false, err
+	}
+
+	if updated {
+		var newNames []string
+		for _, game := range newSync.games {
+			newNames = append(newNames, game.name)
+		}
+
+		for _, game := range sync.games {
+			if !utils.Contains(newNames, game.name) {
+				mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
+				os.Remove(notFoundFilename(sync.folder, game.name))
+			}
+		}
+
+		return newSync, true, nil
+	} else {
+		return sync, false, nil
+	}
+}
+
+func notFoundFilename(folder string, name string) string {
+	return filepath.Join(folder, name+" [NOT FOUND].mgl")
+}
+
+func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
+	var match txtindex.SearchResult
+
+	for _, re := range game.matches {
+		results := index.SearchSystemByNameRe(game.system.Id, re)
+		if len(results) > 0 {
+			match = results[0]
+			break
+		}
+	}
+
+	if match.Name != "" {
+		// TODO: don't write if it's the same file
+		_, err := mister.CreateLauncher(game.system, match.Path, sync.folder, game.name)
+		if err != nil {
+			return "", false, err
+		}
+		if _, err := os.Stat(notFoundFilename(sync.folder, game.name)); err == nil {
+			os.Remove(notFoundFilename(sync.folder, game.name))
+		}
+		return filepath.Base(match.Path), true, nil
+	} else {
+		fp, err := os.Create(notFoundFilename(sync.folder, game.name))
+		if err != nil {
+			return "", false, err
+		}
+		defer fp.Close()
+		return "", false, nil
 	}
 }
