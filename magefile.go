@@ -156,7 +156,11 @@ func Release(name string) {
 	rd := filepath.Join(releasesDir, a.name)
 	os.MkdirAll(rd, 0755)
 	releaseBin := filepath.Join(rd, a.bin)
-	sh.Copy(filepath.Join(binDir, platform, a.bin), releaseBin)
+	err := sh.Copy(releaseBin, filepath.Join(binDir, platform, a.bin))
+	if err != nil {
+		fmt.Println("Error copying binary", err)
+		os.Exit(1)
+	}
 
 	if a.releaseId != "" {
 		file, _ := os.Open(releaseBin)
