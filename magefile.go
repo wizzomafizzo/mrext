@@ -79,8 +79,6 @@ func getApp(name string) *app {
 	return nil
 }
 
-var Default = Build
-
 func cleanPlatform(name string) {
 	sh.Rm(filepath.Join(binDir, name))
 }
@@ -93,7 +91,6 @@ func Clean() {
 }
 
 func buildApp(a app, out string) {
-	fmt.Println("Building", a.name)
 	if a.ldFlags == "" {
 		sh.RunV("go", "build", "-o", out, a.path)
 	} else {
@@ -105,11 +102,21 @@ func buildApp(a app, out string) {
 	}
 }
 
-func Build() {
+func Build(appName string) {
 	platform := runtime.GOOS + "_" + runtime.GOARCH
-	mg.Deps(func() { cleanPlatform(platform) })
-	for _, app := range apps {
-		buildApp(app, filepath.Join(binDir, platform, app.bin))
+	if appName == "all" {
+		mg.Deps(func() { cleanPlatform(platform) })
+		for _, app := range apps {
+			fmt.Println("Building", app.name)
+			buildApp(app, filepath.Join(binDir, platform, app.bin))
+		}
+	} else {
+		app := getApp(appName)
+		if app == nil {
+			fmt.Println("Unknown app", appName)
+			os.Exit(1)
+		}
+		buildApp(*app, filepath.Join(binDir, platform, app.bin))
 	}
 }
 
@@ -117,14 +124,13 @@ func MakeArmImage() {
 	sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
 }
 
-// TODO: split this to do one app at a time
-func Mister() {
+func Mister(appName string) {
 	buildCache := fmt.Sprintf("%s:%s", armBuildCache, "/home/build/.cache/go-build")
 	os.Mkdir(armBuildCache, 0755)
 	modCache := fmt.Sprintf("%s:%s", armModCache, "/home/build/go/pkg/mod")
 	os.Mkdir(armModCache, 0755)
 	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
-	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build")
+	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
 }
 
 type updateDbFile struct {
