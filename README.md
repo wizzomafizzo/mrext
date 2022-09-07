@@ -4,13 +4,14 @@
 Create shareable and subscriptable game playlists. Launch Sync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
 [![Download Launch Sync](docs/download.png "Download Launch Sync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Readme Launch Sync](docs/readme.png "Readme Launch Sync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
 
-[Download](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
+[![Download Random](docs/download.png "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
 
 ## Search
 Search for and launch games from your collection. Searching is *fast* and is fully useable with just a controller.
 
-[Download](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
+[![Download Search](docs/download.png "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
