@@ -14,7 +14,7 @@ import (
 
 // Lookup up exact system id definition.
 func GetSystem(id string) (*System, error) {
-	if system, ok := SYSTEMS[id]; ok {
+	if system, ok := Systems[id]; ok {
 		return &system, nil
 	} else {
 		return nil, fmt.Errorf("unknown system: %s", id)
@@ -23,12 +23,12 @@ func GetSystem(id string) (*System, error) {
 
 // Lookup case insensitive system id definition including aliases.
 func LookupSystem(id string) (*System, error) {
-	for k, v := range SYSTEMS {
+	for k, v := range Systems {
 		if s.EqualFold(k, id) {
 			return &v, nil
 		}
 	}
-	for _, v := range SYSTEMS {
+	for _, v := range Systems {
 		for _, alias := range v.Alias {
 			if s.EqualFold(alias, id) {
 				return &v, nil
@@ -54,7 +54,7 @@ func MatchSystemFolder(path string) ([][2]string, error) {
 		return nil, fmt.Errorf("not a directory: %s", path)
 	}
 
-	for k, v := range SYSTEMS {
+	for k, v := range Systems {
 		if s.EqualFold(name, v.Folder) {
 			matches = append(matches, [2]string{k, path})
 		}
@@ -143,7 +143,7 @@ func FolderToSystems(path string) []*System {
 		return nil
 	}
 
-	for _, system := range SYSTEMS {
+	for _, system := range Systems {
 		systemPath := s.ToLower(filepath.Join(gamesFolder, system.Folder))
 		if s.HasPrefix(path, systemPath) {
 			systems = append(systems, &system)

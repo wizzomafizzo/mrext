@@ -97,7 +97,7 @@ func main() {
 	}
 
 	var filteredSystemIds []string
-	for _, system := range games.SYSTEMS {
+	for _, system := range games.Systems {
 		for _, folder := range filteredFolders {
 			// exception for arcade folder
 			if strings.EqualFold(folder, "arcade") {
@@ -111,7 +111,7 @@ func main() {
 	}
 
 	var ignoredSystemIds []string
-	for _, system := range games.SYSTEMS {
+	for _, system := range games.Systems {
 		for _, folder := range ignoredFolders {
 			// exception for arcade folder
 			if strings.EqualFold(folder, "arcade") {
