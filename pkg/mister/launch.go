@@ -48,7 +48,7 @@ func writeTempFile(content string, ext string) (string, error) {
 }
 
 func launchFile(path string) error {
-	_, err := os.Stat(config.CMD_INTERFACE)
+	_, err := os.Stat(config.CmdInterface)
 	if err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
@@ -57,7 +57,7 @@ func launchFile(path string) error {
 		return fmt.Errorf("not a valid launch file: %s", path)
 	}
 
-	cmd, err := os.OpenFile(config.CMD_INTERFACE, os.O_RDWR, 0)
+	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 	if err != nil {
 		return err
 	}

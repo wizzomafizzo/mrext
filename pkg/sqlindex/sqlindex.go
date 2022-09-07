@@ -30,10 +30,10 @@ func setupDb(db *sql.DB) error {
 }
 
 func GetIndexPath() string {
-	if _, err := os.Stat(config.SD_ROOT); err == nil {
-		return filepath.Join(config.SD_ROOT, config.INDEX_NAME+".db")
+	if _, err := os.Stat(config.SdRoot); err == nil {
+		return filepath.Join(config.SdRoot, config.IndexName+".db")
 	} else {
-		return config.INDEX_NAME + ".db"
+		return config.IndexName + ".db"
 	}
 }
 
@@ -47,7 +47,7 @@ func getDb() (*sql.DB, error) {
 }
 
 func Generate(files [][2]string, statusFn func(count int)) error {
-	tmpDbPath := filepath.Join(os.TempDir(), config.INDEX_NAME+".db")
+	tmpDbPath := filepath.Join(os.TempDir(), config.IndexName+".db")
 	if err := os.Remove(tmpDbPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}

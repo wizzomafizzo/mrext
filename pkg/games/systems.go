@@ -23,7 +23,7 @@ type System struct {
 // TODO: script to generate markdown doc from this
 // TODO: launch game, launch new game same system, not working? should it?
 
-var SYSTEMS = map[string]System{
+var Systems = map[string]System{
 	"Amiga": {
 		// TODO: amiga will require a custom scan function
 		Id:     "Amiga",

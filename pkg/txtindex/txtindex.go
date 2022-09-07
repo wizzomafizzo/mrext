@@ -14,11 +14,11 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-var indexFilename = config.INDEX_NAME + ".tar"
+var indexFilename = config.IndexName + ".tar"
 
 func GetIndexPath() string {
-	if _, err := os.Stat(config.SD_ROOT); err == nil {
-		return filepath.Join(config.SD_ROOT, indexFilename)
+	if _, err := os.Stat(config.SdRoot); err == nil {
+		return filepath.Join(config.SdRoot, indexFilename)
 	} else {
 		return indexFilename
 	}
