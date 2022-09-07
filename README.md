@@ -1,10 +1,9 @@
 # Mister Extensions
-Collection of extensions and utilities for the MiSTer system.
 
 ## Launch Sync
 Create shareable and subscriptable game playlists. Launch Sync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
-[Download](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Download Launch Sync](docs/download.png "Download Launch Sync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
