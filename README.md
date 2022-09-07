@@ -1,4 +1,4 @@
-# Mister Extensions
+# MiSTer Extensions
 
 Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/Main_MiSTer/wiki) even better.
 
