@@ -3,6 +3,15 @@
 # Systems
 
 [Amiga](#amiga), [Arcade](#arcade), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Commodore 64](#commodore-64), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [GBA](#gba), [GBA 2P](#gba-2p), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy 2P](#gameboy-2p), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Master System](#master-system), [Mega CD](#mega-cd), [NES](#nes), [Neo Geo](#neo-geo), [Playstation](#playstation), [SNES](#snes), [Sega 32X](#sega-32x), [Super Gameboy](#super-gameboy), [TurboGraphx-16](#turbographx-16), [TurboGraphx-16 CD](#turbographx-16-cd), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
+## Core Groups
+Core groups are aliases to multiple systems. They work as system IDs for all configuration options where a user must type a system ID manually. MiSTer Extensions differentiates between systems more than MiSTer itself, and these are included as a convenience so system folder names can still be used as IDs.
+
+| ID | Systems |
+| --- | --- |
+| Atari7800 | [Atari 7800](#atari-7800), [Atari 2600](#atari-2600) |
+| Gameboy | [Gameboy](#gameboy), [Gameboy Color](#gameboy-color) |
+| NES | [NES](#nes), [Famicom Disk System](#famicom-disk-system) |
+| SMS | [Master System](#master-system), [Game Gear](#game-gear) |
 
 ## Amiga
 - **ID**: Amiga
