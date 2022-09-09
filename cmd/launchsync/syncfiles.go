@@ -59,7 +59,7 @@ func readSyncFile(path string) (*syncFile, error) {
 		return nil, fmt.Errorf("missing name field")
 	}
 
-	sf.folder = filepath.Join(filepath.Dir(path), utils.StripBadFileChars(sf.name))
+	sf.folder = filepath.Join(filepath.Dir(path), "_"+utils.StripBadFileChars(sf.name))
 
 	sf.author = cfg.Section("DEFAULT").Key("author").String()
 	if sf.author == "" {
