@@ -163,7 +163,7 @@ func Release(name string) {
 		os.Exit(1)
 	}
 	platform := "linux_arm"
-	mg.Deps(func() { cleanPlatform(platform) }, Mister)
+	mg.Deps(func() { cleanPlatform(platform) }, func() { Mister(name) })
 
 	rd := filepath.Join(releasesDir, a.name)
 	os.MkdirAll(rd, 0755)
