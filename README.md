@@ -6,8 +6,6 @@ All scripts listed can be installed by downloading the linked file, placing it i
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
-##
-
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
 
@@ -44,7 +42,7 @@ Search for and launch games from your collection. Searching is *fast* and great 
 
 ## Other Projects
 
-Other great projects that add heaps of functionality to your MiSTer.
+Other great projects that add heaps of functionality to your MiSTer:
 
 - [MiSTer Super Attract Mode (SAM)](https://github.com/mrchrisster/MiSTer_SAM)
 
