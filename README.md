@@ -6,6 +6,7 @@ All scripts listed can be installed by downloading the linked file, placing it i
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
+##
 
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
@@ -43,7 +44,7 @@ Search for and launch games from your collection. Searching is *fast* and great 
 
 ## Other Projects
 
-These projects are not part of MiSTer Extensions, but are still awesome and add heaps of functionality to your MiSTer.
+Other great projects that add heaps of functionality to your MiSTer.
 
 - [MiSTer Super Attract Mode (SAM)](https://github.com/mrchrisster/MiSTer_SAM)
 
@@ -83,7 +84,7 @@ These projects are not part of MiSTer Extensions, but are still awesome and add 
 
 - [MiSTer FPGA Overclock Scripts](https://github.com/coolbho3k/MiSTer-Overclock-Scripts)
 
-  A kernel patch that allows overclocking the MiSTer. An overclocked system can run MUNT (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
+  A kernel patch that allows overclocking the MiSTer. An overclocked system can run Munt (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
 
 - [AO486 Top 300 Updater](https://github.com/flynnsbit/Top300_updates)
 
@@ -96,3 +97,5 @@ These projects are not part of MiSTer Extensions, but are still awesome and add 
 - [Official Scripts](https://github.com/MiSTer-devel/Scripts_MiSTer)
 
   The official MiSTer scripts repository. A miscellaneous collection of small scripts for various system tasks and configuration.
+
+Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'd like to suggest something for this list. Anything is welcome, though the focus is on software projects that work without custom hardware.
