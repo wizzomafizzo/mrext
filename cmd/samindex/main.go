@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -44,23 +45,48 @@ func gamelistFilename(systemId string) string {
 	return strings.ToLower(prefix) + "_gamelist.txt"
 }
 
+func writeGamelist(wg *sync.WaitGroup, gamelistDir string, systemId string, files []string) {
+	defer wg.Done()
+
+	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemId))
+	tmpPath, err := os.CreateTemp("", "gamelist-*.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, file := range files {
+		tmpPath.WriteString(file + "\n")
+	}
+	tmpPath.Sync()
+	tmpPath.Close()
+
+	err = utils.MoveFile(tmpPath.Name(), gamelistPath)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) {
 	start := time.Now()
+	var wg sync.WaitGroup
 
 	if !quiet && !progress {
 		fmt.Println("Finding system folders...")
 	}
 
 	// prep calculating progress
-	totalSteps := 1
+	totalPaths := 0
 	for _, v := range systemPaths {
-		totalSteps += len(v)
+		totalPaths += len(v)
 	}
+	totalSteps := totalPaths + 1
 	currentStep := 0
 
 	// generate file list
-	systemFiles := make([][2]string, 0)
+	totalGames := 0
 	for systemId, paths := range systemPaths {
+		var systemFiles []string
+
 		for _, path := range paths {
 			if !quiet {
 				if progress {
@@ -78,88 +104,44 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 				log.Println(err)
 				continue
 			}
-
-			if filter {
-				files = games.FilterUniqueFilenames(files)
-			}
-
-			for _, file := range files {
-				systemFiles = append(systemFiles, [2]string{systemId, file})
-			}
+			systemFiles = append(systemFiles, files...)
 
 			currentStep++
 		}
+
+		if filter {
+			systemFiles = games.FilterUniqueFilenames(systemFiles)
+		}
+
+		if len(systemFiles) > 0 {
+			totalGames += len(systemFiles)
+			wg.Add(1)
+			go writeGamelist(&wg, gamelistDir, systemId, systemFiles)
+		}
 	}
 
-	// write gamelist files to tmp
 	if !quiet {
 		if progress {
 			fmt.Println("XXX")
 			fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-			fmt.Println("Creating game lists...")
+			fmt.Println("Writing game lists...")
 			fmt.Println("XXX")
 		} else {
-			fmt.Println("Creating game lists...")
+			fmt.Println("Writing game lists...")
 		}
 	}
+	wg.Wait()
 	currentStep++
-
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "sam-")
-	if err != nil {
-		panic(err)
-	}
-
-	gamelists := make(map[string]*os.File)
-	for _, game := range systemFiles {
-		systemId, path := game[0], game[1]
-
-		if _, ok := gamelists[systemId]; !ok {
-			filename := gamelistFilename(systemId)
-
-			file, err := os.Create(filepath.Join(tmpDir, filename))
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-
-			gamelists[systemId] = file
-		}
-
-		gamelists[systemId].WriteString(path + "\n")
-	}
-
-	for _, file := range gamelists {
-		file.Sync()
-	}
-
-	// move gamelist files to final destination
-	gamelistFiles, err := os.ReadDir(tmpDir)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, file := range gamelistFiles {
-		src := filepath.Join(tmpDir, file.Name())
-		dest := filepath.Join(gamelistDir, file.Name())
-
-		if err := utils.MoveFile(src, dest); err != nil {
-			panic(err)
-		}
-	}
-
-	if err := os.RemoveAll(tmpDir); err != nil {
-		panic(err)
-	}
 
 	if !quiet {
 		taken := int(time.Since(start).Seconds())
 		if progress {
 			fmt.Println("XXX")
 			fmt.Println("100")
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
 			fmt.Println("XXX")
 		} else {
-			fmt.Printf("Indexing complete (%d games in %ds)\n", len(systemFiles), taken)
+			fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
 		}
 	}
 }
