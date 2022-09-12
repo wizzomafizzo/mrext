@@ -60,6 +60,10 @@ Other great projects that add heaps of functionality to your MiSTer:
 
   A build of the [PrBoom](http://prboom.sourceforge.net/) project for MiSTer. An enhanced Doom engine with a massive number of expansions.
 
+- [MiSTer Basilisk II](https://github.com/bbond007/MiSTer_BasiliskII)
+
+  A build of the [Basilisk II](https://basilisk.cebix.net/) project for MiSTer. A 68k Macintosh emulator.
+
 - [VIDEO PRESETS by Robby](https://github.com/RGarciaLago/VIDEO_PRESETS_by_Robby)
 
   A curated and extensive set of video presets for the MiSTer cores.
@@ -67,6 +71,10 @@ Other great projects that add heaps of functionality to your MiSTer:
 - [MiSTerWallpapers](https://github.com/RetroDriven/MiSTerWallpapers)
 
   Automatically download a large collection of high quality wallpapers.
+
+- [MiSTer-CRT-Wallpapers](https://github.com/RetroDriven/MiSTer-CRT-Wallpapers)
+
+  The same, but specifically for 4:3 CRT screens.
 
 - [mister-boot-roms](https://github.com/uberyoji/mister-boot-roms)
 
@@ -84,13 +92,21 @@ Other great projects that add heaps of functionality to your MiSTer:
 
   A kernel patch that allows overclocking the MiSTer. An overclocked system can run Munt (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
 
+- [Yet another random MiSTer utility script (YARMUS)](https://github.com/jayp76/MiSTer_get_optional_installers)
+
+  A script to install basically every MiSTer script around at once. This script includes pretty much everything on this list,  plus extra custom installers for software like [DevilutionX](https://github.com/diasurgical/devilutionX), [Cave Story](https://nxengine.sourceforge.io/) and homebrew packs.
+
+- [MiSTerTools](https://github.com/morfeus77/MiSTerTools/)
+
+  Scripts for custom aspect ratio calculation, modeline to video_mode conversion, video_mode to modeline conversion, ini profile switcher and to parse MRA files.
+
 - [AO486 Top 300 Updater](https://github.com/flynnsbit/Top300_updates)
 
   An update script for the flynnsbit Top 300 Pack on the AO486 core.
 
 - [Update All](https://github.com/theypsilon/Update_All_MiSTer)
   
-  If you're reading this, you already have it.
+  If you're reading this, you already use it. Don't forget to check the advanced options.
 
 - [Official Scripts](https://github.com/MiSTer-devel/Scripts_MiSTer)
 
