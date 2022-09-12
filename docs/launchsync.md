@@ -27,7 +27,7 @@ Launch Sync will search for all sync files on the MiSTer, check for sync file up
 
 ### Sync Files
 
-Launch Sync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
+Launch Sync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
 
 ## Creating Sync Files
 
@@ -37,9 +37,9 @@ Some important notes:
 - Valid systems can be found on the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page, use the ID or Alias field
 - Match fields support regular expressions, except for parentheses and square brackets which are escaped
 
-Currently sync files must be created manually, though in most cases they're quite simple. If you want your sync file to auto-update, it also needs to hosted somewhere publicly. GitHub is a good choice for this but anywhere will work. The [Discord Game of the Month](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) file is a good base to edit and make your own.
+Currently sync files must be created manually, though in most cases they're quite simple. If you want your sync file to auto-update, it also needs to hosted somewhere publicly. GitHub is a good choice for this but anywhere will work. The [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) file is a good base to edit and make your own.
 
-These next sections will go through each part of the [template.sync](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/examples/template.sync) file and explain in detail how each field works. It isn't a requirement to read this to create your own files, but it will show some more advanced features.
+These next sections will go through each part of the [template.sync](https://github.com/wizzomafizzo/mrext/blob/main/cmd/launchsync/examples/template.sync) file and explain in detail how each field works. It isn't a requirement to read this to create your own files, but it will show some more advanced features.
 
 As you create a sync file, you can test it with this command:
 
