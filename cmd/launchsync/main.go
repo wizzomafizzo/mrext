@@ -12,6 +12,7 @@ import (
 )
 
 // TODO: handle filename being too long (255 chars)
+// TODO: add system id to mgl name if many systems, and config option
 
 func testSyncFile(path string) {
 	sf, err := readSyncFile(path)
