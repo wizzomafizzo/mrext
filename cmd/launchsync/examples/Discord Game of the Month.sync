@@ -1,7 +1,7 @@
 name = Discord Game of the Month
 author = MiSTer Discord Community
 url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
-updated = 2022-09-01
+updated = 2022-09-13
 
 [Crystalis]
 system = NES
@@ -22,7 +22,7 @@ match = The Minish Cap
 
 [Super Mario World]
 system = SNES
-match = ^Super Mario World (USA)
+match = ~^Super Mario World (USA)
 
 [Phantasy Star IV]
 system = Genesis

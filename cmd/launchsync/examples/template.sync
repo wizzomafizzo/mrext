@@ -1,7 +1,7 @@
 name = My Awesome List
 author = Me
 url = https://example.com/example.sync
-updated = 2022-09-01
+updated = 2022-09-13
 
 [My Favorite Game]
 system = NES
@@ -11,11 +11,11 @@ match = Cool Game
 
 [Another Game]
 system = PSX
-match = ^Another Game
-match = Game$
-match = Another Game (.+)
-match = ^Another Game$
+match = ~^Another Game
+match = ~Game$
+match = ~Another Game (.+)
+match = ~^Another Game$
 
 [My Favorite Game 2 - The Sequel]
 system = Genesis
-match = Cool Game 2 [T-En.*]^
+match = ~Cool Game 2 [T-En.*]^

@@ -94,7 +94,7 @@ Other great projects that add heaps of functionality to your MiSTer:
 
 - [Yet another random MiSTer utility script (YARMUS)](https://github.com/jayp76/MiSTer_get_optional_installers)
 
-  A script to install basically every MiSTer script around at once. This script includes pretty much everything on this list,  plus extra custom installers for software like [DevilutionX](https://github.com/diasurgical/devilutionX), [Cave Story](https://nxengine.sourceforge.io/) and homebrew packs.
+  A script to install a lot of MiSTer scripts at once. It includes a lot of things on this list, plus extra custom installers for software like [DevilutionX](https://github.com/diasurgical/devilutionX), [Cave Story](https://nxengine.sourceforge.io/) and homebrew packs.
 
 - [MiSTerTools](https://github.com/morfeus77/MiSTerTools/)
 
