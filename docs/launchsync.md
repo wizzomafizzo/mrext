@@ -31,10 +31,7 @@ Launch Sync requires sync files to actually do anything. These are text files en
 
 ## Creating Sync Files
 
-Some important notes:
-
-- Sync files follow the same syntax as a standard .ini file
-- Valid systems can be found on the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page, use the ID or Alias field
+*NOTE: Check the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page to see what cores are supported. Most consoles are, most computers aren't. Use the ID or Alias listed on that page for the `system` field.*
 
 Currently sync files must be created manually, though in most cases they're quite simple. If you want your sync file to auto-update, it also needs to hosted somewhere publicly. GitHub is a good choice for this but anywhere will work. The [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) file is a good base to edit and make your own.
 
