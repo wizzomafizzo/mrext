@@ -1,9 +1,5 @@
 package games
 
-import (
-	"fmt"
-)
-
 type MglParams struct {
 	Delay    int
 	FileType string
@@ -33,30 +29,7 @@ var CoreGroups = map[string][]System{
 	"SMS":       {Systems["MasterSystem"], Systems["GameGear"]},
 }
 
-func GetGroup(groupId string) (System, error) {
-	var merged System
-	if _, ok := CoreGroups[groupId]; !ok {
-		return merged, fmt.Errorf("no system group found for %s", groupId)
-	}
-
-	if len(CoreGroups[groupId]) < 1 {
-		return merged, fmt.Errorf("no systems in %s", groupId)
-	} else if len(CoreGroups[groupId]) == 1 {
-		return CoreGroups[groupId][0], nil
-	}
-
-	merged = CoreGroups[groupId][0]
-	merged.FileTypes = make([]FileType, 0)
-	for _, s := range CoreGroups[groupId] {
-		merged.FileTypes = append(merged.FileTypes, s.FileTypes...)
-	}
-
-	return merged, nil
-}
-
-// TODO: meta systems, combined systems matchings the folders
-// TODO: script to generate markdown doc from this
-// TODO: launch game, launch new game same system, not working? should it?
+// TODO: launch game > launch new game same system > not working? should it?
 
 var Systems = map[string]System{
 	"Amiga": {

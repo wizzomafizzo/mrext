@@ -21,6 +21,27 @@ func GetSystem(id string) (*System, error) {
 	}
 }
 
+func GetGroup(groupId string) (System, error) {
+	var merged System
+	if _, ok := CoreGroups[groupId]; !ok {
+		return merged, fmt.Errorf("no system group found for %s", groupId)
+	}
+
+	if len(CoreGroups[groupId]) < 1 {
+		return merged, fmt.Errorf("no systems in %s", groupId)
+	} else if len(CoreGroups[groupId]) == 1 {
+		return CoreGroups[groupId][0], nil
+	}
+
+	merged = CoreGroups[groupId][0]
+	merged.FileTypes = make([]FileType, 0)
+	for _, s := range CoreGroups[groupId] {
+		merged.FileTypes = append(merged.FileTypes, s.FileTypes...)
+	}
+
+	return merged, nil
+}
+
 // Lookup case insensitive system id definition including aliases.
 func LookupSystem(id string) (*System, error) {
 	if system, err := GetGroup(id); err == nil {
