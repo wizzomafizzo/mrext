@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"gopkg.in/ini.v1"
@@ -101,14 +100,7 @@ func readSyncFile(path string) (*syncFile, error) {
 		}
 
 		matches := section.Key("match").ValueWithShadows()
-		for _, match := range matches {
-			// escape these regex characters for convenience matching rom filenames
-			escapedMatch := match
-			for _, char := range []string{"(", ")", "[", "]"} {
-				escapedMatch = strings.ReplaceAll(escapedMatch, char, "\\"+char)
-			}
-			game.matches = append(game.matches, "(?i)"+escapedMatch)
-		}
+		game.matches = append(game.matches, matches...)
 
 		if len(game.matches) == 0 {
 			return nil, fmt.Errorf("missing matches in %s", section.Name())
@@ -258,8 +250,24 @@ func notFoundFilename(folder string, name string) string {
 func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
 	var match txtindex.SearchResult
 
-	for _, re := range game.matches {
-		results := index.SearchSystemByNameRe(game.system.Id, re)
+	for _, m := range game.matches {
+		var results []txtindex.SearchResult
+
+		if m == "" {
+			continue
+		}
+
+		if m[0] == '~' {
+			// regex match
+			if m[1:] == "" {
+				continue
+			}
+			results = index.SearchSystemByNameRe(game.system.Id, "(?i)"+m[1:])
+		} else {
+			// partial match
+			results = index.SearchSystemByName(game.system.Id, m)
+		}
+
 		if len(results) > 0 {
 			match = results[0]
 			break
