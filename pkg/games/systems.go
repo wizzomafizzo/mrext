@@ -513,5 +513,4 @@ var GAMES_FOLDERS = []string{
 	"/media/usb4",
 	"/media/usb5",
 	"/media/fat/cifs",
-	".",
 }
