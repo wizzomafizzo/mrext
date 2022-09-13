@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -45,9 +44,7 @@ func gamelistFilename(systemId string) string {
 	return strings.ToLower(prefix) + "_gamelist.txt"
 }
 
-func writeGamelist(wg *sync.WaitGroup, gamelistDir string, systemId string, files []string) {
-	defer wg.Done()
-
+func writeGamelist(gamelistDir string, systemId string, files []string) {
 	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemId))
 	tmpPath, err := os.CreateTemp("", "gamelist-*.txt")
 	if err != nil {
@@ -68,7 +65,6 @@ func writeGamelist(wg *sync.WaitGroup, gamelistDir string, systemId string, file
 
 func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) {
 	start := time.Now()
-	var wg sync.WaitGroup
 
 	if !quiet && !progress {
 		fmt.Println("Finding system folders...")
@@ -79,7 +75,7 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 	for _, v := range systemPaths {
 		totalPaths += len(v)
 	}
-	totalSteps := totalPaths + 1
+	totalSteps := totalPaths
 	currentStep := 0
 
 	// generate file list
@@ -115,23 +111,9 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 
 		if len(systemFiles) > 0 {
 			totalGames += len(systemFiles)
-			wg.Add(1)
-			go writeGamelist(&wg, gamelistDir, systemId, systemFiles)
+			writeGamelist(gamelistDir, systemId, systemFiles)
 		}
 	}
-
-	if !quiet {
-		if progress {
-			fmt.Println("XXX")
-			fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-			fmt.Println("Writing game lists...")
-			fmt.Println("XXX")
-		} else {
-			fmt.Println("Writing game lists...")
-		}
-	}
-	wg.Wait()
-	currentStep++
 
 	if !quiet {
 		taken := int(time.Since(start).Seconds())

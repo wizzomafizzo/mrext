@@ -39,19 +39,20 @@ func MoveFile(sourcePath, destPath string) error {
 	if err != nil {
 		return err
 	}
+	defer inputFile.Close()
 
 	outputFile, err := os.Create(destPath)
 	if err != nil {
-		inputFile.Close()
 		return err
 	}
-
 	defer outputFile.Close()
+
 	_, err = io.Copy(outputFile, inputFile)
-	inputFile.Close()
 	if err != nil {
 		return err
 	}
+	outputFile.Sync()
+	inputFile.Close()
 
 	err = os.Remove(sourcePath)
 	if err != nil {
