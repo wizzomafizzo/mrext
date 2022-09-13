@@ -11,6 +11,8 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
+// TODO: handle filename being too long (255 chars)
+
 func testSyncFile(path string) {
 	sf, err := readSyncFile(path)
 	if err != nil {
