@@ -35,7 +35,6 @@ Some important notes:
 
 - Sync files follow the same syntax as a standard .ini file
 - Valid systems can be found on the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page, use the ID or Alias field
-- Match fields support regular expressions, except for parentheses and square brackets which are escaped
 
 Currently sync files must be created manually, though in most cases they're quite simple. If you want your sync file to auto-update, it also needs to hosted somewhere publicly. GitHub is a good choice for this but anywhere will work. The [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) file is a good base to edit and make your own.
 
@@ -114,13 +113,13 @@ If a game is not found, a placeholder shortcut is created in the menu. It won't 
 [Another Game]
 system = PSX
 ; Starts with Another Game
-match = ^Another Game
+match = ~^Another Game
 ; Ends with Game
-match = Game$
+match = ~Game$
 ; Matches anything in the parentheses
-match = Another Game (.+)
+match = ~Another Game (.+)
 ; Matches exactly Another Game
-match = ^Another Game$
+match = ~^Another Game$
 ```
 
-This example shows how `match` fields can contain [regular expressions](https://quickref.me/regex). This is a limited version of regular expressions with parentheses and square brackets (`( ) [ ]`) escaped automatically. This loses some features of regular expressions, but is more convenient and user-friendly than escaping them all the time, since game files use them so often for tagging.
+This example shows how `match` fields can contain [regular expressions](https://quickref.me/regex). Just add a tilde (`~`) character to the start of a match and the rest of the string will be used as a regular expression.
