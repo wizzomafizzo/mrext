@@ -6,7 +6,7 @@ Make sure to check the linked documentation for each script you use. Most are si
 
 ## Install
 
-All scripts listed can be installed by downloading the linked file, placing it in the `Scripts` folder of your SD card, and running it from the `Scripts` menu on your MiSTer. No scripts require a keyboard to use or any additional dependencies.
+All scripts listed can be installed by downloading the linked file, placing it in the `Scripts` folder on your SD card, and running it from the `Scripts` menu on your MiSTer. No scripts require a keyboard to use or any additional dependencies.
 
 Add the following to your `downloader.ini` file to install everything at once through the `update` script:
 
