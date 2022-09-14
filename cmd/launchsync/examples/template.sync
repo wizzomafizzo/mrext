@@ -13,9 +13,9 @@ match = Cool Game
 system = PSX
 match = ~^Another Game
 match = ~Game$
-match = ~Another Game (.+)
+match = ~Another Game \(.+\)
 match = ~^Another Game$
 
 [My Favorite Game 2 - The Sequel]
 system = Genesis
-match = ~Cool Game 2 [T-En.*]^
+match = ~Cool Game 2 \[T\+En.*\]^
