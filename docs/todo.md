@@ -16,3 +16,4 @@ Major features and changes affecting all scripts.
 - [ ] Rewrite Favorites in mrext (major UI improvements)
 - [ ] Rewrite BGM in mrext (volume control, flac support, improved UI and audio control)
 - [ ] Investigate arcade high scores display
+- [ ] Time tracking stats (how long you've played a system/game)
