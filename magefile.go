@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -76,6 +77,30 @@ var apps = []app{
 	},
 }
 
+type externalApp struct {
+	name string
+	url  string
+	bin  string
+}
+
+var externalApps = []externalApp{
+	{
+		name: "bgm",
+		url:  "https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh",
+		bin:  "bgm.sh",
+	},
+	{
+		name: "favorites",
+		url:  "https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh",
+		bin:  "favorites.sh",
+	},
+	{
+		name: "gamesmenu",
+		url:  "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh",
+		bin:  "gamesmenu.sh",
+	},
+}
+
 func getApp(name string) *app {
 	for _, a := range apps {
 		if a.name == name {
@@ -139,6 +164,31 @@ func Mister(appName string) {
 	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
 }
 
+func UpdateExternalApps() {
+	externalDir := filepath.Join(releasesDir, "external")
+	os.MkdirAll(externalDir, 0755)
+	for _, app := range externalApps {
+		resp, err := http.Get(app.url)
+		if err != nil || resp.StatusCode != 200 {
+			fmt.Println("Error downloading", app.name, err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		out, err := os.Create(filepath.Join(externalDir, app.bin))
+		if err != nil {
+			fmt.Println("Error creating", app.name, err)
+			os.Exit(1)
+		}
+
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			fmt.Println("Error writing", app.name, err)
+			os.Exit(1)
+		}
+	}
+}
+
 type updateDbFile struct {
 	Hash string `json:"hash"`
 	Size int64  `json:"size"`
@@ -154,6 +204,93 @@ type updateDb struct {
 	Timestamp int64                     `json:"timestamp"`
 	Files     map[string]updateDbFile   `json:"files"`
 	Folders   map[string]updateDbFolder `json:"folders"`
+}
+
+func getMd5Hash(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hash := md5.New()
+	io.Copy(hash, file)
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+func getFileSize(path string) (int64, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return 0, err
+	}
+	return stat.Size(), nil
+}
+
+func UpdateAllDb() {
+	dbFile := updateDb{}
+	dbFile.DbId = "mrext/all"
+	dbFile.Timestamp = time.Now().Unix()
+	dbFile.Files = make(map[string]updateDbFile)
+	dbFile.Folders = map[string]updateDbFolder{
+		"Scripts": {},
+	}
+
+	for _, app := range apps {
+		if app.releaseId == "" {
+			continue
+		}
+
+		releaseBin := filepath.Join(releasesDir, app.name, app.bin)
+
+		hash, err := getMd5Hash(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting hash for", app.name, err)
+			os.Exit(1)
+		}
+
+		size, err := getFileSize(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting size for", app.name, err)
+			os.Exit(1)
+		}
+
+		dbFile.Files["Scripts/"+app.bin] = updateDbFile{
+			Hash: hash,
+			Size: size,
+			Url:  fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, app.name, app.bin),
+		}
+	}
+
+	for _, app := range externalApps {
+		releaseBin := filepath.Join(releasesDir, "external", app.bin)
+
+		hash, err := getMd5Hash(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting hash for", app.name, err)
+			os.Exit(1)
+		}
+
+		size, err := getFileSize(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting size for", app.name, err)
+			os.Exit(1)
+		}
+
+		dbFile.Files["Scripts/"+app.bin] = updateDbFile{
+			Hash: hash,
+			Size: size,
+			Url:  app.url,
+		}
+	}
+
+	dbFileJson, _ := json.MarshalIndent(dbFile, "", "  ")
+	dbFp, _ := os.Create(filepath.Join(releasesDir, "all.json"))
+	dbFp.Write(dbFileJson)
+	dbFp.Close()
 }
 
 func Release(name string) {
@@ -175,19 +312,25 @@ func Release(name string) {
 	}
 
 	if a.releaseId != "" {
-		file, _ := os.Open(releaseBin)
-		info, _ := os.Stat(releaseBin)
-		hash := md5.New()
-		io.Copy(hash, file)
-		file.Close()
+		hash, err := getMd5Hash(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting hash", a.name, err)
+			os.Exit(1)
+		}
 
-		dbFile := &updateDb{
+		size, err := getFileSize(releaseBin)
+		if err != nil {
+			fmt.Println("Error getting size", a.name, err)
+			os.Exit(1)
+		}
+
+		dbFile := updateDb{
 			DbId:      a.releaseId,
 			Timestamp: time.Now().Unix(),
 			Files: map[string]updateDbFile{
 				"Scripts/" + a.bin: {
-					Hash: fmt.Sprintf("%x", hash.Sum(nil)),
-					Size: info.Size(),
+					Hash: hash,
+					Size: size,
 					Url:  fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, a.name, a.bin),
 				},
 			},
@@ -201,6 +344,8 @@ func Release(name string) {
 		dbFp.Write(dbFileJson)
 		dbFp.Close()
 	}
+
+	UpdateAllDb()
 }
 
 func MakeKernelImage() {
