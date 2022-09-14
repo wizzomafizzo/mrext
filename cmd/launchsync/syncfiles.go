@@ -126,6 +126,7 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return nil, false, fmt.Errorf("failed to download %s: %s", sync.url, resp.Status)
