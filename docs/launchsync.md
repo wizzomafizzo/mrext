@@ -114,7 +114,7 @@ match = ~^Another Game
 ; Ends with Game
 match = ~Game$
 ; Matches anything in the parentheses
-match = ~Another Game (.+)
+match = ~Another Game \(.+\)
 ; Matches exactly Another Game
 match = ~^Another Game$
 ```
