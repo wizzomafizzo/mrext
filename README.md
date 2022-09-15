@@ -105,6 +105,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
 ### System
 
+- [MiSTer Batch Control](https://github.com/pocomane/MiSTer_Batch_Control)
+
+  A command line utility to perform low-level functions that may not be possible via scripting languages.
+
 - [MiSTer FPGA Overclock Scripts](https://github.com/coolbho3k/MiSTer-Overclock-Scripts)
 
   A kernel patch that allows overclocking the MiSTer. An overclocked system can run Munt (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
