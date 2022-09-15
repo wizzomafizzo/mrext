@@ -18,3 +18,4 @@ High level features, ideas and changes.
 - [ ] Investigate arcade high scores display
 - [ ] Time tracking stats (how long you've played a system/game)
 - [ ] EasyRPG player build
+- [ ] Dynamic menu background changer
