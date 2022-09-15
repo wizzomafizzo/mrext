@@ -17,8 +17,8 @@ import (
 var indexFilename = config.IndexName + ".tar"
 
 func GetIndexPath() string {
-	if _, err := os.Stat(config.SdRoot); err == nil {
-		return filepath.Join(config.SdRoot, indexFilename)
+	if _, err := os.Stat(config.SdFolder); err == nil {
+		return filepath.Join(config.SdFolder, indexFilename)
 	} else {
 		return indexFilename
 	}

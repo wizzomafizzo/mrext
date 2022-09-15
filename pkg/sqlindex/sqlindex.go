@@ -30,8 +30,8 @@ func setupDb(db *sql.DB) error {
 }
 
 func GetIndexPath() string {
-	if _, err := os.Stat(config.SdRoot); err == nil {
-		return filepath.Join(config.SdRoot, config.IndexName+".db")
+	if _, err := os.Stat(config.SdFolder); err == nil {
+		return filepath.Join(config.SdFolder, config.IndexName+".db")
 	} else {
 		return config.IndexName + ".db"
 	}

@@ -1,12 +1,15 @@
 package config
 
-const SdRoot = "/media/fat"
+const SdFolder = "/media/fat"
+const CoreConfigFolder = SdFolder + "/config"
 
 const IndexName = "index"
 
-const CoreName = "/tmp/CORENAME"
-const CurrentPath = "/tmp/CURRENTPATH"
-const StartPath = "/tmp/STARTPATH"
+const CoreNameFile = "/tmp/CORENAME"
+const CurrentPathFile = "/tmp/CURRENTPATH"
+const StartPathFile = "/tmp/STARTPATH"
+const FullPathFile = "/tmp/FULLPATH"
+
 const CmdInterface = "/dev/MiSTer_cmd"
 
 // TODO: this can't be hardcoded if we want dynamic arcade folders
