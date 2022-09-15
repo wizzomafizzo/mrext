@@ -100,7 +100,7 @@ func main() {
 	if *verbose || !*update {
 		fmt.Print("Searching for sync files... ")
 	}
-	menuFolders := mister.GetMenuFolders(config.SdRoot)
+	menuFolders := mister.GetMenuFolders(config.SdFolder)
 	syncFiles := getSyncFiles(menuFolders)
 	var syncs []*syncFile
 
