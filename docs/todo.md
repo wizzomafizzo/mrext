@@ -1,6 +1,6 @@
 # Todo
 
-Major features and changes affecting all scripts.
+High level features, ideas and changes.
 
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
 - [ ] Allow defining multiple folders on a system
@@ -17,3 +17,4 @@ Major features and changes affecting all scripts.
 - [ ] Rewrite BGM in mrext (volume control, flac support, improved UI and audio control)
 - [ ] Investigate arcade high scores display
 - [ ] Time tracking stats (how long you've played a system/game)
+- [ ] EasyRPG player build
