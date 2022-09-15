@@ -9,6 +9,7 @@ import (
 	"regexp"
 	s "strings"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -124,7 +125,7 @@ func findSystemFolders(path string) [][2]string {
 	for _, folder := range folders {
 		abs := filepath.Join(path, folder.Name())
 
-		if folder.IsDir() && s.ToLower(folder.Name()) == "games" {
+		if folder.IsDir() && s.ToLower(folder.Name()) == config.GamesFolderSubfolder {
 			found = append(found, findSystemFolders(abs)...)
 		}
 
@@ -142,7 +143,7 @@ func findSystemFolders(path string) [][2]string {
 func GetSystemPaths() map[string][]string {
 	var paths = make(map[string][]string)
 
-	for _, rootPath := range GAMES_FOLDERS {
+	for _, rootPath := range config.GamesFolders {
 		for _, result := range findSystemFolders(rootPath) {
 			paths[result[0]] = append(paths[result[0]], result[1])
 		}
@@ -158,7 +159,7 @@ func FolderToSystems(path string) []*System {
 	validGamesFolder := false
 	gamesFolder := ""
 
-	for _, folder := range GAMES_FOLDERS {
+	for _, folder := range config.GamesFolders {
 		if s.HasPrefix(path, s.ToLower(folder)) {
 			validGamesFolder = true
 			gamesFolder = folder

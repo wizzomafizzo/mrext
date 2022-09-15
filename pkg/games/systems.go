@@ -48,19 +48,6 @@ var CoreGroups = map[string][]System{
 // TODO: could cut down on work scanning by folder rather than system
 
 var Systems = map[string]System{
-	"Amiga": {
-		// TODO: amiga will require a custom scan function
-		Id:     "Amiga",
-		Name:   "Amiga",
-		Folder: "Amiga",
-		Rbf:    "_Computer/Minimig",
-		FileTypes: []FileType{
-			{
-				Extensions: nil,
-				Mgl:        nil,
-			},
-		},
-	},
 	"Arcade": {
 		Id:     "Arcade",
 		Name:   "Arcade",
@@ -72,6 +59,11 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// Consoles
+	// TODO: AY-3-8500
+	// TODO: AVision
+	// TODO: Arcadia
+	// TODO: Astrocade
 	"Atari2600": {
 		Id:     "Atari2600",
 		Name:   "Atari 2600",
@@ -140,25 +132,7 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	"C64": {
-		Id:     "C64",
-		Name:   "Commodore 64",
-		Folder: "C64",
-		Rbf:    "_Computer/C64",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"C64YC"},
-		},
-		FileTypes: []FileType{
-			{
-				Extensions: []string{".prg", ".crt", ".reu", ".tap"},
-				Mgl: &MglParams{
-					Delay:    1,
-					FileType: "f",
-					Index:    1,
-				},
-			},
-		},
-	},
+	// TODO: ChannelF
 	// TODO: apparently indexes are wrong on this
 	// TODO: probably just remove .sg from here, keep in meta
 	"ColecoVision": {
@@ -202,6 +176,7 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// TODO: Gamate
 	"Gameboy": {
 		Id:     "Gameboy",
 		Name:   "Gameboy",
@@ -280,6 +255,7 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// TODO: GameNWatch
 	"GBA": {
 		Id:     "GBA",
 		Name:   "GBA",
@@ -341,7 +317,29 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// TODO: Intv
 	// TODO: Jaguar
+	"MasterSystem": {
+		Id:     "MasterSystem",
+		Name:   "Master System",
+		Alias:  []string{"SMS"},
+		Folder: "SMS",
+		Rbf:    "_Console/SMS",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"SMS_LLAPI"},
+			AltRbfYC:    []string{"SMSYC"},
+		},
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".sms", ".sg"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
+				},
+			},
+		},
+	},
 	"MegaCD": {
 		Id:     "MegaCD",
 		Name:   "Mega CD",
@@ -413,6 +411,7 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// TODO: Odyssey2
 	"PSX": {
 		Id:     "PSX",
 		Name:   "Playstation",
@@ -468,27 +467,6 @@ var Systems = map[string]System{
 		FileTypes: []FileType{
 			{
 				Extensions: []string{".gb", ".gbc"},
-				Mgl: &MglParams{
-					Delay:    1,
-					FileType: "f",
-					Index:    1,
-				},
-			},
-		},
-	},
-	"MasterSystem": {
-		Id:     "MasterSystem",
-		Name:   "Master System",
-		Alias:  []string{"SMS"},
-		Folder: "SMS",
-		Rbf:    "_Console/SMS",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SMS_LLAPI"},
-			AltRbfYC:    []string{"SMSYC"},
-		},
-		FileTypes: []FileType{
-			{
-				Extensions: []string{".sms", ".sg"},
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
@@ -569,6 +547,7 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	// TODO: VC4000
 	"Vectrex": {
 		Id:     "Vectrex",
 		Name:   "Vectrex",
@@ -601,15 +580,168 @@ var Systems = map[string]System{
 			},
 		},
 	},
-}
-
-var GAMES_FOLDERS = []string{
-	"/media/fat",
-	"/media/usb0",
-	"/media/usb1",
-	"/media/usb2",
-	"/media/usb3",
-	"/media/usb4",
-	"/media/usb5",
-	"/media/fat/cifs",
+	// Computers
+	// TODO: AcornAtom
+	"AliceMC10": {
+		Id:     "AliceMC10",
+		Name:   "Alice MC-10",
+		Folder: "AliceMC10",
+		Rbf:    "_Computer/AliceMC10",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".c10"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	// TODO: Altair8800
+	"Amiga": {
+		// TODO: new versions of MegaAGS image support launching individual games
+		//       will need support for custom scan and launch functions for a core
+		Id:     "Amiga",
+		Name:   "Amiga",
+		Folder: "Amiga",
+		Rbf:    "_Computer/Minimig",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".adf", ".hdf"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	"Amstrad": {
+		Id:     "Amstrad",
+		Name:   "Amstrad",
+		Folder: "Amstrad",
+		Rbf:    "_Computer/Amstrad",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".dsk", ".cdt"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	"AmstradPCW": {
+		Id:     "AmstradPCW",
+		Name:   "Amstrad PCW",
+		Folder: "Amstrad PCW",
+		Rbf:    "_Computer/Amstrad-PCW",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".dsk"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	"ao486": {
+		Id:     "ao486",
+		Name:   "ao486",
+		Folder: "AO486",
+		Rbf:    "_Computer/ao486",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".img", ".vhd"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	"Apogee": {
+		Id:     "Apogee",
+		Name:   "Apogee",
+		Folder: "APOGEE",
+		Rbf:    "_Computer/Apogee",
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".rka"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    0,
+				},
+			},
+		},
+	},
+	// TODO: Apple-I
+	// TODO: Apple-II
+	// TODO: Aquarius
+	// TODO: Archie
+	// TODO: Atari800
+	// TODO: AtariST
+	// TODO: BBCMicro
+	// TODO: BK0011M
+	// TODO: C16
+	"C64": {
+		Id:     "C64",
+		Name:   "Commodore 64",
+		Folder: "C64",
+		Rbf:    "_Computer/C64",
+		AltRbf: AltRbfOpts{
+			AltRbfYC: []string{"C64YC"},
+		},
+		FileTypes: []FileType{
+			{
+				Extensions: []string{".prg", ".crt", ".reu", ".tap"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
+				},
+			},
+		},
+	},
+	// TODO: Chip8
+	// TODO: CoCo2
+	// TODO: CoCo3
+	// TODO: EDSAC
+	// TODO: Galaksija
+	// TODO: Interac
+	// TODO: Jupiter
+	// TODO: Laser310
+	// TODO: MacPlus
+	// TODO: MSX
+	// TODO: MultiComp
+	// TODO: OndraSPO186
+	// TODO: Orao
+	// TODO: Oric
+	// TODO: PC88
+	// TODO: PDP1
+	// TODO: PET2001
+	// TODO: PMD85
+	// TODO: QL
+	// TODO: RX-78
+	// TODO: SAM-Coupe
+	// TODO: SharpMZ
+	// TODO: SordM5
+	// TODO: Specialist
+	// TODO: SVI328
+	// TODO: TI-99_4A
+	// TODO: TRS-80
+	// TODO: TSConf
+	// TODO: UK101
+	// TODO: Vector-06C
+	// TODO: VIC20
+	// TODO: X68000
+	// TODO: ZX-Spectrum
+	// TODO: ZX81
+	// TODO: ZXNext
 }
