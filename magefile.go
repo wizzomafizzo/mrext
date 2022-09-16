@@ -75,6 +75,12 @@ var apps = []app{
 		bin:       "launchsync.sh",
 		releaseId: "mrext/launchsync",
 	},
+	{
+		name: "playlog",
+		path: filepath.Join(cwd, "cmd", "playlog"),
+		bin:  "playlog.sh",
+		// releaseId: "mrext/playlog",
+	},
 }
 
 type externalApp struct {
