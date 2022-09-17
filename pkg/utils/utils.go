@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"crypto/md5"
 	"fmt"
 	"io"
 	"math/rand"
@@ -131,4 +132,16 @@ func StripBadFileChars(s string) string {
 		s = strings.ReplaceAll(s, c, "")
 	}
 	return s
+}
+
+// Return the MD5 hash of a file on disk.
+func Md5Sum(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hash := md5.New()
+	io.Copy(hash, file)
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
