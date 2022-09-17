@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	s "strings"
+	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -50,14 +50,14 @@ func LookupSystem(id string) (*System, error) {
 	}
 
 	for k, v := range Systems {
-		if s.EqualFold(k, id) {
+		if strings.EqualFold(k, id) {
 			return &v, nil
 		}
 	}
 
 	for _, v := range Systems {
 		for _, alias := range v.Alias {
-			if s.EqualFold(alias, id) {
+			if strings.EqualFold(alias, id) {
 				return &v, nil
 			}
 		}
@@ -83,7 +83,7 @@ func MatchSystemFolder(path string) ([][2]string, error) {
 	}
 
 	for k, v := range Systems {
-		if s.EqualFold(name, v.Folder) {
+		if strings.EqualFold(name, v.Folder) {
 			matches = append(matches, [2]string{k, path})
 		}
 	}
@@ -99,7 +99,7 @@ func MatchSystemFolder(path string) ([][2]string, error) {
 func MatchSystemFile(system System, path string) bool {
 	for _, args := range system.FileTypes {
 		for _, ext := range args.Extensions {
-			if s.HasSuffix(s.ToLower(path), ext) {
+			if strings.HasSuffix(strings.ToLower(path), ext) {
 				return true
 			}
 		}
@@ -125,7 +125,7 @@ func findSystemFolders(path string) [][2]string {
 	for _, folder := range folders {
 		abs := filepath.Join(path, folder.Name())
 
-		if folder.IsDir() && s.ToLower(folder.Name()) == config.GamesFolderSubfolder {
+		if folder.IsDir() && strings.ToLower(folder.Name()) == config.GamesFolderSubfolder {
 			found = append(found, findSystemFolders(abs)...)
 		}
 
@@ -155,12 +155,12 @@ func GetSystemPaths() map[string][]string {
 // Given any path, return what systems it could be for.
 func FolderToSystems(path string) []*System {
 	var systems []*System
-	path = s.ToLower(path)
+	path = strings.ToLower(path)
 	validGamesFolder := false
 	gamesFolder := ""
 
 	for _, folder := range config.GamesFolders {
-		if s.HasPrefix(path, s.ToLower(folder)) {
+		if strings.HasPrefix(path, strings.ToLower(folder)) {
 			validGamesFolder = true
 			gamesFolder = folder
 			break
@@ -172,8 +172,8 @@ func FolderToSystems(path string) []*System {
 	}
 
 	for _, system := range Systems {
-		systemPath := s.ToLower(filepath.Join(gamesFolder, system.Folder))
-		if s.HasPrefix(path, systemPath) {
+		systemPath := strings.ToLower(filepath.Join(gamesFolder, system.Folder))
+		if strings.HasPrefix(path, systemPath) {
 			systems = append(systems, &system)
 		}
 	}
@@ -262,7 +262,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 				}
 
 				for i := range *results {
-					allResults = append(allResults, s.Replace((*results)[i], realPath, path, 1))
+					allResults = append(allResults, strings.Replace((*results)[i], realPath, path, 1))
 				}
 
 				stack.pop()
@@ -275,7 +275,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			return err
 		}
 
-		if s.HasSuffix(s.ToLower(path), ".zip") {
+		if strings.HasSuffix(strings.ToLower(path), ".zip") {
 			// zip files
 			zipFiles, err := utils.ListZip(path)
 			if err != nil {
@@ -344,7 +344,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	// change root back to symlink
 	if realPath != path {
 		for i := range allResults {
-			allResults[i] = s.Replace(allResults[i], realPath, path, 1)
+			allResults[i] = strings.Replace(allResults[i], realPath, path, 1)
 		}
 	}
 
