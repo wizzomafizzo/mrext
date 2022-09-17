@@ -3,6 +3,7 @@
 High level features, ideas and changes.
 
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
+- [ ] Write all temp mgls to a directory in tmp instead of root
 - [ ] Allow defining multiple folders on a system
 - [ ] Support alternate arcade folders for those sets
 - [ ] Split any remaining cores supporting multiple systems
@@ -20,3 +21,4 @@ High level features, ideas and changes.
 - [ ] Time tracking stats (how long you've played a system/game)
 - [ ] EasyRPG player build
 - [ ] Dynamic menu background changer
+- [ ] Joystick custom mapping daemon
