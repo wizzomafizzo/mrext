@@ -10,6 +10,36 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
+func ActiveGameEnabled() bool {
+	_, err := os.Stat(config.ActiveGameFile)
+	return err == nil
+}
+
+func SetActiveGame(path string) error {
+	file, err := os.Create(config.ActiveGameFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetActiveGame() (string, error) {
+	data, err := os.ReadFile(config.ActiveGameFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// Convert a launchable relative path to an absolute path if required.
 func ResolvePath(path string) string {
 	if path == "" {
 		return path
