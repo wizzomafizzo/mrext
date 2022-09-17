@@ -1,10 +1,26 @@
 package mister
 
 import (
+	"encoding/xml"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
+
+func ResolvePath(path string) string {
+	if path == "" {
+		return path
+	}
+
+	if filepath.IsAbs(path) {
+		return path
+	} else {
+		return filepath.Join(config.SdFolder, path)
+	}
+}
 
 // Search for directories in root that start with "_".
 func GetMenuFolders(root string) []string {
@@ -82,4 +98,86 @@ func MatchRbf(rbfs []string, match string) string {
 	}
 
 	return ""
+}
+
+type RecentEntry struct {
+	Directory string
+	Name      string
+	Label     string
+}
+
+func ReadRecent(path string) ([]RecentEntry, error) {
+	var recents []RecentEntry
+
+	if _, err := os.Stat(path); err != nil {
+		return nil, err
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		entry := make([]byte, 1024+256+256)
+		n, err := file.Read(entry)
+		if err == io.EOF || n == 0 {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		empty := true
+		for _, b := range entry {
+			if b != 0 {
+				empty = false
+			}
+		}
+		if empty {
+			break
+		}
+
+		recents = append(recents, RecentEntry{
+			Directory: strings.Trim(string(entry[:1024]), "\x00"),
+			Name:      strings.Trim(string(entry[1024:1280]), "\x00"),
+			Label:     strings.Trim(string(entry[1280:1536]), "\x00"),
+		})
+	}
+
+	return recents, nil
+}
+
+type MGLFile struct {
+	XMLName xml.Name `xml:"file"`
+	Delay   int      `xml:"delay,attr"`
+	Type    string   `xml:"type,attr"`
+	Index   int      `xml:"index,attr"`
+	Path    string   `xml:"path,attr"`
+}
+
+type MGL struct {
+	XMLName xml.Name `xml:"mistergamedescription"`
+	Rbf     string   `xml:"rbf"`
+	SetName string   `xml:"setname"`
+	File    MGLFile  `xml:"file"`
+}
+
+func ReadMgl(path string) (MGL, error) {
+	var mgl MGL
+
+	if _, err := os.Stat(path); err != nil {
+		return mgl, err
+	}
+
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return mgl, err
+	}
+
+	err = xml.Unmarshal(file, &mgl)
+	if err != nil {
+		return mgl, err
+	}
+
+	return mgl, nil
 }

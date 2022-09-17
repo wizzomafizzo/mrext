@@ -1,9 +1,10 @@
 package main
 
 import (
-	"io"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -11,14 +12,82 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 // TODO: confirm recent ini setting is on
 // TODO: store game as hash
 // TODO: read mgl launches from cores_recent
 // TODO: handle failed mgl launch
-// TODO: function to get active games folder
-// TODO: function to read recent files properly
+// TODO: ticker interval and save interval should be configurable
+// TODO: ignore menu core by default
+
+func setActiveGame(path string) error {
+	file, err := os.Create(config.ActiveGameFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getActiveGame() (string, error) {
+	data, err := os.ReadFile(config.ActiveGameFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+func loadRecent(filename string) error {
+	if !strings.Contains(filename, "_recent") {
+		return nil
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("error opening game file: %w", err)
+	}
+	defer file.Close()
+
+	recents, err := mister.ReadRecent(filename)
+	if err != nil {
+		return fmt.Errorf("error reading recent file: %w", err)
+	} else if len(recents) == 0 {
+		return nil
+	}
+
+	newest := recents[0]
+
+	if strings.HasSuffix(filename, "cores_recent.cfg") {
+		if strings.HasSuffix(strings.ToLower(newest.Name), ".mgl") {
+			mglPath := mister.ResolvePath(filepath.Join(newest.Directory, newest.Name))
+			mgl, err := mister.ReadMgl(mglPath)
+			if err != nil {
+				return fmt.Errorf("error reading mgl file: %w", err)
+			}
+
+			err = setActiveGame(mgl.File.Path)
+			if err != nil {
+				return fmt.Errorf("error setting active game: %w", err)
+			}
+		}
+	} else {
+		err = setActiveGame(filepath.Join(newest.Directory, newest.Name))
+		if err != nil {
+			return fmt.Errorf("error setting active game: %w", err)
+		}
+	}
+
+	return nil
+}
 
 type Tracker struct {
 	logger     *log.Logger
@@ -30,7 +99,7 @@ type Tracker struct {
 	gameTimes  map[string]int32
 }
 
-func (t *Tracker) loadCore() bool {
+func (t *Tracker) loadCore() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -39,64 +108,40 @@ func (t *Tracker) loadCore() bool {
 
 	if err != nil {
 		t.logger.Println("error reading core name:", err)
-		return false
+		// TODO: clear actives?
+		return
 	}
 
 	if coreName != t.activeCore {
+		// TODO: log events
 		if coreName == "" || coreName == "MENU" {
-			// clear loaded game
+			t.activeCore = ""
 			t.activeGame = ""
+			// TODO: set active
+		} else {
+			t.activeCore = coreName
+			t.logger.Println("core changed:", t.activeCore)
 		}
-		t.activeCore = coreName
-		t.logger.Println("core changed:", t.activeCore)
-		return true
-	} else {
-		return false
 	}
 }
 
-func (t *Tracker) loadGame(filename string) bool {
+func (t *Tracker) loadGame() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	if strings.Contains(filename, "_recent") {
-		if strings.HasSuffix(filename, "cores_recent.cfg") {
-			return false
-		}
-
-		file, err := os.Open(filename)
-		if err != nil {
-			t.logger.Println("error opening game file:", err)
-			return false
-		}
-		defer file.Close()
-
-		folderBuf := make([]byte, 1024)
-		n, err := file.Read(folderBuf)
-		if err != nil && err != io.EOF {
-			t.logger.Println("error reading game folder:", err)
-			return false
-		}
-		gameFolder := string(folderBuf[:n])
-
-		nameBuf := make([]byte, 256)
-		n, err = file.Read(nameBuf)
-		if err != nil && err != io.EOF {
-			t.logger.Println("error reading game name:", err)
-			return false
-		}
-		gameName := string(nameBuf[:n])
-
-		gameFile := gameFolder + "/" + gameName
-
-		if gameName != t.activeGame {
-			t.activeGame = gameName
-			t.logger.Println("game changed:", gameFile)
-			return true
-		}
+	activeGame, err := getActiveGame()
+	if err != nil {
+		t.logger.Println("error getting active game:", err)
+		return
 	}
 
-	return false
+	// TODO: always convert to an absolute path
+
+	if activeGame != t.activeGame {
+		t.activeGame = activeGame
+		t.logger.Println("game changed:", t.activeGame)
+		// TODO: log event
+	}
 }
 
 func (t *Tracker) tick() {
@@ -105,16 +150,14 @@ func (t *Tracker) tick() {
 
 	if t.activeCore != "" {
 		t.coreTimes[t.activeCore]++
-		t.logger.Println("core time:", t.activeCore, t.coreTimes[t.activeCore])
 	}
 
 	if t.activeGame != "" {
 		t.gameTimes[t.activeGame]++
-		t.logger.Println("game time:", t.activeGame, t.gameTimes[t.activeGame])
 	}
 }
 
-func startFileWatch(logger *log.Logger, tracker *Tracker) (*fsnotify.Watcher, error) {
+func startFileWatch(tracker *Tracker) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -130,15 +173,20 @@ func startFileWatch(logger *log.Logger, tracker *Tracker) (*fsnotify.Watcher, er
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if event.Name == config.CoreNameFile {
 						tracker.loadCore()
+					} else if event.Name == config.ActiveGameFile {
+						tracker.loadGame()
 					} else if strings.HasPrefix(event.Name, config.CoreConfigFolder) {
-						tracker.loadGame(event.Name)
+						err = loadRecent(event.Name)
+						if err != nil {
+							tracker.logger.Println("error loading recent file:", err)
+						}
 					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
-				logger.Println("error on watch event:", err)
+				tracker.logger.Println("error on watcher:", err)
 			}
 		}
 	}()
@@ -153,10 +201,15 @@ func startFileWatch(logger *log.Logger, tracker *Tracker) (*fsnotify.Watcher, er
 		return nil, err
 	}
 
+	err = watcher.Add(config.ActiveGameFile)
+	if err != nil {
+		return nil, err
+	}
+
 	return watcher, nil
 }
 
-func startTicker(logger *log.Logger, tracker *Tracker) {
+func startTicker(tracker *Tracker) {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0
@@ -180,15 +233,18 @@ func main() {
 	}
 
 	tracker.loadCore()
+	if _, err := os.Stat(config.ActiveGameFile); err != nil {
+		setActiveGame("")
+	}
 
-	watcher, err := startFileWatch(logger, tracker)
+	watcher, err := startFileWatch(tracker)
 	if err != nil {
 		logger.Println("error starting file watch:", err)
 		os.Exit(1)
 	}
 	defer watcher.Close()
 
-	startTicker(logger, tracker)
+	startTicker(tracker)
 
 	<-make(chan struct{})
 }

@@ -4,6 +4,7 @@ const SdFolder = "/media/fat"
 const CoreConfigFolder = SdFolder + "/config"
 
 const IndexName = "index"
+const ActiveGameFile = "/tmp/ACTIVEGAME"
 
 const CoreNameFile = "/tmp/CORENAME"
 const CurrentPathFile = "/tmp/CURRENTPATH"
