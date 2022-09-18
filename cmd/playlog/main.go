@@ -17,7 +17,6 @@ import (
 )
 
 // TODO: confirm recent ini setting is on
-// TODO: store game as hash
 // TODO: handle failed mgl launch
 // TODO: ticker interval and save interval should be configurable
 
@@ -68,16 +67,23 @@ func loadRecent(filename string) error {
 	return nil
 }
 
+const (
+	eventActionCoreStart = iota
+	eventActionCoreStop
+	eventActionGameStart
+	eventActionGameStop
+)
+
 type Event struct {
 	timestamp time.Time
-	action    string
+	action    int
 	target    string
-	totalTime int32 // for recovery from power loss
+	totalTime int // for recovery from power loss
 }
 
 type CoreTime struct {
 	name string
-	time int32
+	time int
 }
 
 type GameTime struct {
@@ -85,7 +91,7 @@ type GameTime struct {
 	path   string
 	name   string
 	folder string
-	time   int32
+	time   int
 }
 
 type Tracker struct {
@@ -98,18 +104,59 @@ type Tracker struct {
 	gameTimes  map[string]GameTime
 }
 
+func (t *Tracker) addEvent(action int, target string) {
+	totalTime := 0
+
+	if action == eventActionCoreStart || action == eventActionCoreStop {
+		if coreTime, ok := t.coreTimes[target]; ok {
+			totalTime = coreTime.time
+		}
+	} else if action == eventActionGameStart || action == eventActionGameStop {
+		if gameTime, ok := t.gameTimes[target]; ok {
+			totalTime = gameTime.time
+		}
+	}
+
+	t.events = append(t.events, Event{
+		timestamp: time.Now(),
+		action:    action,
+		target:    target,
+		totalTime: totalTime,
+	})
+
+	actionLabel := ""
+	switch action {
+	case eventActionCoreStart:
+		actionLabel = "core started"
+	case eventActionCoreStop:
+		actionLabel = "core stopped"
+	case eventActionGameStart:
+		actionLabel = "game started"
+	case eventActionGameStop:
+		actionLabel = "game stopped"
+	}
+
+	t.logger.Printf("%s: %s (%ds)", actionLabel, target, totalTime)
+}
+
 // Load the current running core and set it as active.
 func (t *Tracker) loadCore() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	stopCore := func() {
+		if t.activeCore != "" {
+			t.addEvent(eventActionCoreStop, t.activeCore)
+			t.activeCore = ""
+		}
+	}
+
 	data, err := os.ReadFile(config.CoreNameFile)
 	coreName := string(data)
 
 	if err != nil {
-		t.activeCore = ""
-		mister.SetActiveGame("")
 		t.logger.Println("error reading core name:", err)
+		stopCore()
 		return
 	}
 
@@ -118,21 +165,21 @@ func (t *Tracker) loadCore() {
 	}
 
 	if coreName != t.activeCore {
-		// TODO: log events
 		if coreName == "" {
-			t.logger.Println("core exited:", t.activeCore)
-			t.activeCore = ""
-			mister.SetActiveGame("")
-		} else {
-			t.activeCore = coreName
-			if _, ok := t.coreTimes[coreName]; !ok {
-				t.coreTimes[coreName] = CoreTime{
-					name: coreName,
-					time: 0,
-				}
-			}
-			t.logger.Println("core changed:", t.coreTimes[coreName])
+			stopCore()
+			return
 		}
+
+		t.activeCore = coreName
+
+		if _, ok := t.coreTimes[coreName]; !ok {
+			t.coreTimes[coreName] = CoreTime{
+				name: coreName,
+				time: 0,
+			}
+		}
+
+		t.addEvent(eventActionCoreStart, coreName)
 	}
 }
 
@@ -141,21 +188,20 @@ func (t *Tracker) loadGame() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	exitGame := func() {
+	stopGame := func() {
 		if t.activeGame != "" {
-			// TODO: log event
-			t.logger.Println("game exited:", t.activeGame)
+			t.addEvent(eventActionGameStop, t.activeGame)
 			t.activeGame = ""
 		}
 	}
 
 	activeGame, err := mister.GetActiveGame()
 	if err != nil {
-		exitGame()
 		t.logger.Println("error getting active game:", err)
+		stopGame()
 		return
 	} else if activeGame == "" {
-		exitGame()
+		stopGame()
 		return
 	}
 
@@ -174,8 +220,9 @@ func (t *Tracker) loadGame() {
 	id := fmt.Sprintf("%s/%s", folder, filename)
 
 	if id != t.activeGame {
-		exitGame()
+		stopGame()
 		t.activeGame = id
+
 		if _, ok := t.gameTimes[id]; !ok {
 			t.gameTimes[id] = GameTime{
 				id:     id,
@@ -185,8 +232,8 @@ func (t *Tracker) loadGame() {
 				time:   0,
 			}
 		}
-		t.logger.Println("game started:", t.gameTimes[id])
-		// TODO: log event
+
+		t.addEvent(eventActionGameStart, id)
 	}
 }
 
@@ -240,7 +287,7 @@ func startFileWatch(tracker *Tracker) (*fsnotify.Watcher, error) {
 				if !ok {
 					return
 				}
-				tracker.logger.Println("error on watcher:", err)
+				tracker.logger.Println("error in watcher:", err)
 			}
 		}
 	}()
