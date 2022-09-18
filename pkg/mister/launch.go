@@ -98,6 +98,9 @@ func LaunchGame(system *games.System, path string) error {
 		if err != nil {
 			return err
 		}
+		if ActiveGameEnabled() {
+			SetActiveGame(path)
+		}
 	default:
 		err := launchTempMgl(system, path)
 		if err != nil {
