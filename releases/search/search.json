@@ -1,16 +1,14 @@
 {
   "db_id": "mrext/search",
-  "timestamp": 1662433696,
+  "timestamp": 1663516235,
   "files": {
     "Scripts/search.sh": {
-      "hash": "51d0b285201deee8f88bff68113f2736",
-      "size": 3739848,
+      "hash": "879817f25c168707ed099b4597cb0c21",
+      "size": 3800960,
       "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh"
     }
   },
   "folders": {
-    "Scripts": {
-      "tags": null
-    }
+    "Scripts": {}
   }
 }
