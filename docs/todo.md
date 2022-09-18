@@ -11,7 +11,7 @@ High level features, ideas and changes.
 - [ ] Custom system scan and launch functions to support Amiga MegaAGS image
 - [ ] Support setname attribute on child systems
 - [ ] Support names.txt console names
-- [ ] Read main mister ini
+- [x] Read main mister ini
 - [ ] Linux startup manager
 - [ ] Theme for curses dialog
 - [ ] Rewrite Games Menu in mrext (big speed improvement and minor UI improvement)
