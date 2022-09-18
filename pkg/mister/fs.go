@@ -39,17 +39,22 @@ func GetActiveGame() (string, error) {
 	return string(data), nil
 }
 
-// Convert a launchable relative path to an absolute path if required.
+// Convert a launchable path to an absolute path.
 func ResolvePath(path string) string {
 	if path == "" {
 		return path
 	}
 
-	if filepath.IsAbs(path) {
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(config.SdFolder)
+
+	abs, err := filepath.Abs(path)
+	if err != nil {
 		return path
-	} else {
-		return filepath.Join(config.SdFolder, path)
 	}
+
+	return abs
 }
 
 // Search for directories in root that start with "_".
