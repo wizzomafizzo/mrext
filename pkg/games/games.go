@@ -153,14 +153,19 @@ func GetSystemPaths() map[string][]string {
 }
 
 // Given any path, return what systems it could be for.
-func FolderToSystems(path string) []*System {
-	var systems []*System
+func FolderToSystems(path string) []System {
+	var systems []System
 	path = strings.ToLower(path)
 	validGamesFolder := false
 	gamesFolder := ""
 
 	for _, folder := range config.GamesFolders {
-		if strings.HasPrefix(path, strings.ToLower(folder)) {
+		gamesSub := filepath.Join(folder, config.GamesFolderSubfolder)
+		if strings.HasPrefix(path, strings.ToLower(gamesSub)) {
+			validGamesFolder = true
+			gamesFolder = gamesSub
+			break
+		} else if strings.HasPrefix(path, strings.ToLower(folder)) {
 			validGamesFolder = true
 			gamesFolder = folder
 			break
@@ -174,7 +179,7 @@ func FolderToSystems(path string) []*System {
 	for _, system := range Systems {
 		systemPath := strings.ToLower(filepath.Join(gamesFolder, system.Folder))
 		if strings.HasPrefix(path, systemPath) {
-			systems = append(systems, &system)
+			systems = append(systems, system)
 		}
 	}
 

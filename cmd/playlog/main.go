@@ -12,40 +12,17 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 // TODO: confirm recent ini setting is on
 // TODO: store game as hash
-// TODO: read mgl launches from cores_recent
 // TODO: handle failed mgl launch
 // TODO: ticker interval and save interval should be configurable
-// TODO: ignore menu core by default
 
-func setActiveGame(path string) error {
-	file, err := os.Create(config.ActiveGameFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(path)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getActiveGame() (string, error) {
-	data, err := os.ReadFile(config.ActiveGameFile)
-	if err != nil {
-		return "", err
-	}
-
-	return string(data), nil
-}
-
+// Read a core's recent file and attempt to write the newest entry's
+// launchable path to ACTIVEGAME.
 func loadRecent(filename string) error {
 	if !strings.Contains(filename, "_recent") {
 		return nil
@@ -67,6 +44,7 @@ func loadRecent(filename string) error {
 	newest := recents[0]
 
 	if strings.HasSuffix(filename, "cores_recent.cfg") {
+		// main menu's recent file, written when launching mgls
 		if strings.HasSuffix(strings.ToLower(newest.Name), ".mgl") {
 			mglPath := mister.ResolvePath(filepath.Join(newest.Directory, newest.Name))
 			mgl, err := mister.ReadMgl(mglPath)
@@ -74,13 +52,14 @@ func loadRecent(filename string) error {
 				return fmt.Errorf("error reading mgl file: %w", err)
 			}
 
-			err = setActiveGame(mgl.File.Path)
+			err = mister.SetActiveGame(mgl.File.Path)
 			if err != nil {
 				return fmt.Errorf("error setting active game: %w", err)
 			}
 		}
 	} else {
-		err = setActiveGame(filepath.Join(newest.Directory, newest.Name))
+		// individual core's recent file
+		err = mister.SetActiveGame(filepath.Join(newest.Directory, newest.Name))
 		if err != nil {
 			return fmt.Errorf("error setting active game: %w", err)
 		}
@@ -89,16 +68,37 @@ func loadRecent(filename string) error {
 	return nil
 }
 
+type Event struct {
+	timestamp time.Time
+	action    string
+	target    string
+	totalTime int32 // for recovery from power loss
+}
+
+type CoreTime struct {
+	name string
+	time int32
+}
+
+type GameTime struct {
+	id     string
+	path   string
+	name   string
+	folder string
+	time   int32
+}
+
 type Tracker struct {
 	logger     *log.Logger
 	mu         sync.Mutex
 	activeCore string
 	activeGame string
-	events     []string
-	coreTimes  map[string]int32
-	gameTimes  map[string]int32
+	events     []Event
+	coreTimes  map[string]CoreTime
+	gameTimes  map[string]GameTime
 }
 
+// Load the current running core and set it as active.
 func (t *Tracker) loadCore() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -107,56 +107,110 @@ func (t *Tracker) loadCore() {
 	coreName := string(data)
 
 	if err != nil {
+		t.activeCore = ""
+		mister.SetActiveGame("")
 		t.logger.Println("error reading core name:", err)
-		// TODO: clear actives?
 		return
+	}
+
+	if coreName == "MENU" {
+		coreName = ""
 	}
 
 	if coreName != t.activeCore {
 		// TODO: log events
-		if coreName == "" || coreName == "MENU" {
+		if coreName == "" {
+			t.logger.Println("core exited:", t.activeCore)
 			t.activeCore = ""
-			t.activeGame = ""
-			// TODO: set active
+			mister.SetActiveGame("")
 		} else {
 			t.activeCore = coreName
-			t.logger.Println("core changed:", t.activeCore)
+			if _, ok := t.coreTimes[coreName]; !ok {
+				t.coreTimes[coreName] = CoreTime{
+					name: coreName,
+					time: 0,
+				}
+			}
+			t.logger.Println("core changed:", t.coreTimes[coreName])
 		}
 	}
 }
 
+// Load the current running game and set it as active.
 func (t *Tracker) loadGame() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	activeGame, err := getActiveGame()
+	exitGame := func() {
+		if t.activeGame != "" {
+			// TODO: log event
+			t.logger.Println("game exited:", t.activeGame)
+			t.activeGame = ""
+		}
+	}
+
+	activeGame, err := mister.GetActiveGame()
 	if err != nil {
+		exitGame()
 		t.logger.Println("error getting active game:", err)
+		return
+	} else if activeGame == "" {
+		exitGame()
 		return
 	}
 
-	// TODO: always convert to an absolute path
+	path := mister.ResolvePath(activeGame)
+	filename := filepath.Base(path)
+	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-	if activeGame != t.activeGame {
-		t.activeGame = activeGame
-		t.logger.Println("game changed:", t.activeGame)
+	systems := games.FolderToSystems(path)
+	var folder string
+	if len(systems) == 0 {
+		folder = "UNKNOWN"
+	} else {
+		folder = systems[0].Folder
+	}
+
+	id := fmt.Sprintf("%s/%s", folder, filename)
+
+	if id != t.activeGame {
+		exitGame()
+		t.activeGame = id
+		if _, ok := t.gameTimes[id]; !ok {
+			t.gameTimes[id] = GameTime{
+				id:     id,
+				path:   path,
+				name:   name,
+				folder: folder,
+				time:   0,
+			}
+		}
+		t.logger.Println("game started:", t.gameTimes[id])
 		// TODO: log event
 	}
 }
 
+// Increment time of active core and game.
 func (t *Tracker) tick() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if t.activeCore != "" {
-		t.coreTimes[t.activeCore]++
+		if coreTime, ok := t.coreTimes[t.activeCore]; ok {
+			coreTime.time++
+			t.coreTimes[t.activeCore] = coreTime
+		}
 	}
 
 	if t.activeGame != "" {
-		t.gameTimes[t.activeGame]++
+		if gameTime, ok := t.gameTimes[t.activeGame]; ok {
+			gameTime.time++
+			t.gameTimes[t.activeGame] = gameTime
+		}
 	}
 }
 
+// Start thread for monitoring changes to all files relating to core/game launches.
 func startFileWatch(tracker *Tracker) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -209,6 +263,7 @@ func startFileWatch(tracker *Tracker) (*fsnotify.Watcher, error) {
 	return watcher, nil
 }
 
+// Start thread for updating core/game play times.
 func startTicker(tracker *Tracker) {
 	ticker := time.NewTicker(time.Second)
 	go func() {
@@ -227,14 +282,14 @@ func main() {
 		logger:     logger,
 		activeCore: "",
 		activeGame: "",
-		events:     []string{},
-		coreTimes:  map[string]int32{},
-		gameTimes:  map[string]int32{},
+		events:     []Event{},
+		coreTimes:  map[string]CoreTime{},
+		gameTimes:  map[string]GameTime{},
 	}
 
 	tracker.loadCore()
-	if _, err := os.Stat(config.ActiveGameFile); err != nil {
-		setActiveGame("")
+	if !mister.ActiveGameEnabled() {
+		mister.SetActiveGame("")
 	}
 
 	watcher, err := startFileWatch(tracker)
