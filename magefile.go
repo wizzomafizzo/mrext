@@ -202,7 +202,7 @@ type updateDbFile struct {
 }
 
 type updateDbFolder struct {
-	Tags []string `json:"tags"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 type updateDb struct {
@@ -223,6 +223,7 @@ func getMd5Hash(path string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
+// TODO: use the one in utils
 func getFileSize(path string) (int64, error) {
 	file, err := os.Open(path)
 	if err != nil {
