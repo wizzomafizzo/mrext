@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,11 +15,16 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-// TODO: confirm recent ini setting is on
+// TODO: offer to enable recents option and reboot
 // TODO: handle failed mgl launch
 // TODO: ticker interval and save interval should be configurable
+// TODO: add to startup
+// TODO: database storage
+// TODO: fix event log after power loss
+// TODO: enable logging to file
 
 // Read a core's recent file and attempt to write the newest entry's
 // launchable path to ACTIVEGAME.
@@ -161,6 +167,7 @@ func (t *Tracker) loadCore() {
 	}
 
 	if coreName == "MENU" {
+		mister.SetActiveGame("")
 		coreName = ""
 	}
 
@@ -322,7 +329,7 @@ func startTicker(tracker *Tracker) {
 	}()
 }
 
-func main() {
+func startService() {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
 	tracker := &Tracker{
@@ -349,4 +356,30 @@ func main() {
 	startTicker(tracker)
 
 	<-make(chan struct{})
+}
+
+func main() {
+	service := flag.String("service", "", "manage playlog service")
+	flag.Parse()
+
+	if !mister.RecentsOptionEnabled() {
+		fmt.Println("The \"recents\" option must be enabled for Play Log to work. Configure it in the MiSTer.ini file and reboot.")
+		os.Exit(1)
+	}
+
+	startupExists, _ := mister.StartupEntryExists("mrext/playlog")
+	if !startupExists {
+		fmt.Print("Play Log must be set to run on MiSTer startup. ")
+		answer := utils.YesOrNoPrompt("Add it now?")
+		if answer {
+			os.Exit(1)
+		} else {
+			os.Exit(1)
+		}
+	}
+
+	if *service == "start" {
+		startService()
+		os.Exit(0)
+	}
 }
