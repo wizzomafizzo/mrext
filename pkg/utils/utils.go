@@ -145,3 +145,11 @@ func Md5Sum(path string) (string, error) {
 	io.Copy(hash, file)
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
+
+// TODO: how to make this work with a controller?
+func YesOrNoPrompt(prompt string) bool {
+	var response string
+	fmt.Printf("%s [y/N] ", prompt)
+	fmt.Scanln(&response)
+	return strings.ToLower(response) == "y" || strings.ToLower(response) == "yes"
+}
