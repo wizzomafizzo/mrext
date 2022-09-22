@@ -82,7 +82,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -98,7 +98,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -138,7 +138,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "s",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -183,7 +183,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -222,42 +222,41 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
 	},
-	// TODO: ColecoVision doesn't work at all, tried many delays.
-	// "ColecoVision": {
-	// 	// TODO: Remove .sg from here, keep in meta, after multi-folder.
-	// 	Id:     "ColecoVision",
-	// 	Name:   "ColecoVision",
-	// 	Alias:  []string{"Coleco"},
-	// 	Folder: "Coleco",
-	// 	Rbf:    "_Console/ColecoVision",
-	// 	AltRbf: AltRbfOpts{
-	// 		AltRbfYC: []string{"ColecoVisionYC"},
-	// 	},
-	// 	FileTypes: []FileType{
-	// 		{
-	// 			Exts: []string{".col", ".bin", ".rom"},
-	// 			Mgl: &MglParams{
-	// 				Delay:    1,
-	// 				FileType: "f",
-	// 				Index:    0,
-	// 			},
-	// 		},
-	// 		{
-	// 			Label: "SG-1000",
-	// 			Exts:  []string{".sg"},
-	// 			Mgl: &MglParams{
-	// 				Delay:    1,
-	// 				FileType: "f",
-	// 				Index:    1,
-	// 			},
-	// 		},
-	// 	},
-	// },
+	"ColecoVision": {
+		// TODO: Remove .sg from here, keep in meta, after multi-folder.
+		Id:     "ColecoVision",
+		Name:   "ColecoVision",
+		Alias:  []string{"Coleco"},
+		Folder: "Coleco",
+		Rbf:    "_Console/ColecoVision",
+		AltRbf: AltRbfOpts{
+			AltRbfYC: []string{"ColecoVisionYC"},
+		},
+		FileTypes: []FileType{
+			{
+				Exts: []string{".col", ".bin", ".rom"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    1,
+				},
+			},
+			{
+				Label: "SG-1000",
+				Exts:  []string{".sg"},
+				Mgl: &MglParams{
+					Delay:    1,
+					FileType: "f",
+					Index:    2,
+				},
+			},
+		},
+	},
 	"CreatiVision": {
 		Id:     "CreatiVision",
 		Name:   "VTech CreatiVision",
@@ -309,9 +308,9 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".fds"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 			{
@@ -355,7 +354,7 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".gb"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
 					Index:    1,
 				},
@@ -376,7 +375,7 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".gbc"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
 					Index:    1,
 				},
@@ -393,7 +392,7 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".gb", ".gbc"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
 					Index:    1,
 				},
@@ -431,7 +430,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -450,9 +449,9 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".gba"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -469,9 +468,9 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".gba"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -492,7 +491,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -508,7 +507,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -604,9 +603,9 @@ var Systems = map[string]System{
 			{
 				Exts: []string{".nes", ".nsf"},
 				Mgl: &MglParams{
-					Delay:    1,
+					Delay:    2,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -832,7 +831,7 @@ var Systems = map[string]System{
 	},
 	"VC4000": {
 		Id:     "VC4000",
-		Name:   "VC 4000",
+		Name:   "VC4000",
 		Folder: "VC4000",
 		Rbf:    "_Console/VC4000",
 		FileTypes: []FileType{
@@ -842,7 +841,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -901,7 +900,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "s",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1096,7 +1095,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1114,7 +1113,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1156,7 +1155,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 			{
@@ -1165,13 +1164,13 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    1,
+					Index:    2,
 				},
 			},
 		},
 	},
 	// TODO: Archie
-	//       Can't see anything in CONF_STR.
+	//       Can't see anything in CONF_STR. Mentioned explicitly in menu.
 	"Atari800": {
 		Id:     "Atari800",
 		Name:   "Atari 800XL",
@@ -1252,7 +1251,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 			{
@@ -1469,7 +1468,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1486,7 +1485,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1502,7 +1501,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1597,7 +1596,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "s",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1613,7 +1612,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "s",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1631,7 +1630,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1692,7 +1691,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -1708,7 +1707,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -2034,7 +2033,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -2051,7 +2050,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 			{
@@ -2166,7 +2165,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
@@ -2290,7 +2289,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:    1,
 					FileType: "f",
-					Index:    0,
+					Index:    1,
 				},
 			},
 		},
