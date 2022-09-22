@@ -55,6 +55,7 @@ var Systems = map[string]System{
 	"AdventureVision": {
 		Id:     "AdventureVision",
 		Name:   "Adventure Vision",
+		Alias:  []string{"AVision"},
 		Folder: "AVision",
 		Rbf:    "_Console/AdventureVision",
 		FileTypes: []FileType{
@@ -195,6 +196,7 @@ var Systems = map[string]System{
 	"CasioPV1000": {
 		Id:     "CasioPV1000",
 		Name:   "Casio PV-1000",
+		Alias:  []string{"Casio_PV-1000"},
 		Folder: "Casio_PV-1000",
 		Rbf:    "_Console/Casio_PV-1000",
 		FileTypes: []FileType{
@@ -615,7 +617,7 @@ var Systems = map[string]System{
 		Rbf:    "_Console/Odyssey2",
 		FileTypes: []FileType{
 			{
-				Label: "catridge",
+				Label: "Cartridge",
 				Exts:  []string{".bin"},
 				Mgl: &MglParams{
 					Delay:    1,
@@ -945,6 +947,7 @@ var Systems = map[string]System{
 		Id:        "Amiga",
 		Name:      "Amiga",
 		Folder:    "Amiga",
+		Alias:     []string{"Minimig"},
 		Rbf:       "_Computer/Minimig",
 		FileTypes: nil,
 	},
@@ -995,6 +998,7 @@ var Systems = map[string]System{
 	"AmstradPCW": {
 		Id:     "AmstradPCW",
 		Name:   "Amstrad PCW",
+		Alias:  []string{"Amstrad-PCW"},
 		Folder: "Amstrad PCW",
 		Rbf:    "_Computer/Amstrad-PCW",
 		FileTypes: []FileType{
@@ -1099,6 +1103,7 @@ var Systems = map[string]System{
 	"AppleI": {
 		Id:     "AppleI",
 		Name:   "Apple I",
+		Alias:  []string{"Apple-I"},
 		Folder: "Apple-I",
 		Rbf:    "_Computer/Apple-I",
 		FileTypes: []FileType{
@@ -1116,6 +1121,7 @@ var Systems = map[string]System{
 	"AppleII": {
 		Id:     "AppleII",
 		Name:   "Apple IIe",
+		Alias:  []string{"Apple-II"},
 		Folder: "Apple-II",
 		Rbf:    "_Computer/Apple-II",
 		FileTypes: []FileType{
@@ -1352,6 +1358,7 @@ var Systems = map[string]System{
 	"CasioPV2000": {
 		Id:     "CasioPV2000",
 		Name:   "Casio PV-2000",
+		Alias:  []string{"Casio_PV-2000"},
 		Folder: "Casio_PV-2000",
 		Rbf:    "_Computer/Casio_PV-2000",
 		FileTypes: []FileType{
@@ -1499,9 +1506,10 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	"Laser310": {
-		Id:     "Laser310",
+	"Laser": {
+		Id:     "Laser",
 		Name:   "Laser 350/500/700",
+		Alias:  []string{"Laser310"},
 		Folder: "Laser",
 		Rbf:    "_Computer/Laser310",
 		FileTypes: []FileType{
@@ -1795,6 +1803,7 @@ var Systems = map[string]System{
 	"SordM5": {
 		Id:     "SordM5",
 		Name:   "M5",
+		Alias:  []string{"Sord M5"},
 		Folder: "Sord M5",
 		Rbf:    "_Computer/SordM5",
 		FileTypes: []FileType{
@@ -1821,6 +1830,7 @@ var Systems = map[string]System{
 	"Specialist": {
 		Id:     "Specialist",
 		Name:   "Specialist/MX",
+		Alias:  []string{"SPMX"},
 		Folder: "SPMX",
 		Rbf:    "_Computer/Specialist",
 		FileTypes: []FileType{
@@ -1890,6 +1900,7 @@ var Systems = map[string]System{
 	"TI994A": {
 		Id:     "TI994A",
 		Name:   "TI-99/4A",
+		Alias:  []string{"TI-99_4A"},
 		Folder: "TI-99_4A",
 		Rbf:    "_Computer/Ti994a",
 		FileTypes: []FileType{
@@ -2030,6 +2041,7 @@ var Systems = map[string]System{
 	"Vector06C": {
 		Id:     "Vector06C",
 		Name:   "Vector-06C",
+		Alias:  []string{"Vector06"},
 		Folder: "VECTOR06",
 		Rbf:    "_Computer/Vector-06C",
 		FileTypes: []FileType{
@@ -2161,6 +2173,7 @@ var Systems = map[string]System{
 	"ZXSpectrum": {
 		Id:     "ZXSpectrum",
 		Name:   "ZX Spectrum",
+		Alias:  []string{"Spectrum"},
 		Folder: "Spectrum",
 		Rbf:    "_Computer/ZX-Spectrum",
 		FileTypes: []FileType{
