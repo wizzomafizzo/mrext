@@ -4,10 +4,10 @@
 
 This is a list of all systems supported by the MiSTer Extensions scripts. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if a system is missing or not working.
 
-**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Bally Astrocade](#bally-astrocade), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [VTech CreatiVision](#vtech-creativision), [Famicom Disk System](#famicom-disk-system), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gamate](#gamate), [Game Gear](#game-gear), [Game & Watch](#game-&-watch), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Intellivision](#intellivision), [Master System](#master-system), [Sega CD](#sega-cd), [NES](#nes), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Magnavox Odyssey2](#magnavox-odyssey2), [Playstation](#playstation), [Pokemon Mini](#pokemon-mini), [SNES](#snes), [Genesis 32X](#genesis-32x), [Super Gameboy](#super-gameboy), [SuperVision](#supervision), [TurboGraphx-16](#turbographx-16), [TurboGraphx-16 CD](#turbographx-16-cd), [VC 4000](#vc-4000), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
+**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Bally Astrocade](#bally-astrocade), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [VTech CreatiVision](#vtech-creativision), [Famicom Disk System](#famicom-disk-system), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gamate](#gamate), [Game Gear](#game-gear), [Game & Watch](#game-&-watch), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Intellivision](#intellivision), [Master System](#master-system), [Sega CD](#sega-cd), [NES](#nes), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Magnavox Odyssey2](#magnavox-odyssey2), [Playstation](#playstation), [Pokemon Mini](#pokemon-mini), [SNES](#snes), [Genesis 32X](#genesis-32x), [Super Gameboy](#super-gameboy), [SuperVision](#supervision), [TurboGraphx-16](#turbographx-16), [TurboGraphx-16 CD](#turbographx-16-cd), [VC 4000](#vc-4000), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
 
 
-**Computers:** [Atom](#atom), [Electron](#electron), [Tandy MC-10](#tandy-mc-10), [Amiga](#amiga), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Mattel Aquarius](#mattel-aquarius), [Atari 800XL](#atari-800xl), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Casio PV-2000](#casio-pv-2000), [TRS-80 CoCo 2](#trs-80-coco-2), [EDSAC](#edsac), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC/XT](#pcxt), [PDP-1](#pdp-1), [Commodore PET 2001](#commodore-pet-2001), [PMD 85-2A](#pmd-85-2a), [Sinclair QL](#sinclair-ql), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [M5](#m5), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TS-Config](#ts-config), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Commodore VIC-20](#commodore-vic-20), [Vector-06C](#vector-06c), [X68000](#x68000), [TS-1500](#ts-1500), [ZX Spectrum Next](#zx-spectrum-next), [ZX Spectrum](#zx-spectrum), [PC (486SX)](#pc-486sx)
+**Computers:** [Atom](#atom), [Electron](#electron), [Tandy MC-10](#tandy-mc-10), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Mattel Aquarius](#mattel-aquarius), [Atari 800XL](#atari-800xl), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Casio PV-2000](#casio-pv-2000), [TRS-80 CoCo 2](#trs-80-coco-2), [EDSAC](#edsac), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC/XT](#pcxt), [PDP-1](#pdp-1), [Commodore PET 2001](#commodore-pet-2001), [PMD 85-2A](#pmd-85-2a), [Sinclair QL](#sinclair-ql), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [M5](#m5), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TS-Config](#ts-config), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Commodore VIC-20](#commodore-vic-20), [Vector-06C](#vector-06c), [X68000](#x68000), [TS-1500](#ts-1500), [ZX Spectrum Next](#zx-spectrum-next), [ZX Spectrum](#zx-spectrum), [PC (486SX)](#pc-486sx)
 
 
 **Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8)
@@ -58,11 +58,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Tape | .c10 | 1 | f | 1 |
-
-## Amiga
-
-**ID**: Amiga  | **Aliases**: Minimig  | **Folder**: Amiga | **RBF**: _Computer/Minimig
-
 
 ## Amstrad CPC
 
@@ -325,21 +320,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Disk Drive 3 | .dsk | 1 | s | 3 |
 | Cassette | .cas | 1 | f | 2 |
 
-## ColecoVision
-
-**ID**: ColecoVision  | **Aliases**: Coleco  | **Folder**: Coleco | **RBF**: _Console/ColecoVision
-
-
-| Label | Files | Delay | Type | Index |
-| --- | --- | --- | --- | --- |
-| - | .col, .bin, .rom | 1 | f | 0 |
-| SG-1000 | .sg | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | ColecoVisionYC |
-
 ## VTech CreatiVision
 
 **ID**: CreatiVision  | **Folder**: CreatiVision | **RBF**: _Console/CreatiVision
@@ -373,8 +353,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | NES_LLAPI |
 | YC | NESYC |
+| LLAPI | NES_LLAPI |
 
 ## Gameboy Advance
 
@@ -459,8 +439,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | GameboyYC |
 | LLAPI | Gameboy_LLAPI |
+| YC | GameboyYC |
 
 ## Gameboy (2 Player)
 
@@ -594,8 +574,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | MegaCDYC |
 | LLAPI | MegaCD_LLAPI |
+| YC | MegaCDYC |
 
 ## MultiComp
 

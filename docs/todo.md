@@ -7,7 +7,7 @@ High level features, ideas and changes.
 - [ ] Allow defining multiple folders on a system
 - [ ] Support alternate arcade folders for those sets
 - [ ] Split any remaining cores supporting multiple systems
-- [ ] Check for cores that can be launched by MGL but aren't currently listed
+- [x] Check for cores that can be launched by MGL but aren't currently listed
 - [ ] Custom system scan and launch functions to support Amiga MegaAGS image
 - [ ] Support setname attribute on child systems
 - [ ] Support names.txt console names
