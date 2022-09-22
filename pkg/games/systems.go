@@ -227,36 +227,37 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	"ColecoVision": {
-		// TODO: Remove .sg from here, keep in meta, after multi-folder.
-		Id:     "ColecoVision",
-		Name:   "ColecoVision",
-		Alias:  []string{"Coleco"},
-		Folder: "Coleco",
-		Rbf:    "_Console/ColecoVision",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"ColecoVisionYC"},
-		},
-		FileTypes: []FileType{
-			{
-				Exts: []string{".col", ".bin", ".rom"},
-				Mgl: &MglParams{
-					Delay:    1,
-					FileType: "f",
-					Index:    0,
-				},
-			},
-			{
-				Label: "SG-1000",
-				Exts:  []string{".sg"},
-				Mgl: &MglParams{
-					Delay:    1,
-					FileType: "f",
-					Index:    1,
-				},
-			},
-		},
-	},
+	// TODO: ColecoVision doesn't work at all, tried many delays.
+	// "ColecoVision": {
+	// 	// TODO: Remove .sg from here, keep in meta, after multi-folder.
+	// 	Id:     "ColecoVision",
+	// 	Name:   "ColecoVision",
+	// 	Alias:  []string{"Coleco"},
+	// 	Folder: "Coleco",
+	// 	Rbf:    "_Console/ColecoVision",
+	// 	AltRbf: AltRbfOpts{
+	// 		AltRbfYC: []string{"ColecoVisionYC"},
+	// 	},
+	// 	FileTypes: []FileType{
+	// 		{
+	// 			Exts: []string{".col", ".bin", ".rom"},
+	// 			Mgl: &MglParams{
+	// 				Delay:    1,
+	// 				FileType: "f",
+	// 				Index:    0,
+	// 			},
+	// 		},
+	// 		{
+	// 			Label: "SG-1000",
+	// 			Exts:  []string{".sg"},
+	// 			Mgl: &MglParams{
+	// 				Delay:    1,
+	// 				FileType: "f",
+	// 				Index:    1,
+	// 			},
+	// 		},
+	// 	},
+	// },
 	"CreatiVision": {
 		Id:     "CreatiVision",
 		Name:   "VTech CreatiVision",
@@ -940,17 +941,17 @@ var Systems = map[string]System{
 	},
 	// TODO: Altair8800
 	//       Has a folder but roms are built in.
-	"Amiga": {
-		// TODO: New versions of MegaAGS image support launching individual games,
-		//       will need support for custom scan and launch functions for a core.
-		// TODO: This core has 2 .adf drives and 4 .hdf drives.
-		Id:        "Amiga",
-		Name:      "Amiga",
-		Folder:    "Amiga",
-		Alias:     []string{"Minimig"},
-		Rbf:       "_Computer/Minimig",
-		FileTypes: nil,
-	},
+	// "Amiga": {
+	// 	// TODO: New versions of MegaAGS image support launching individual games,
+	// 	//       will need support for custom scan and launch functions for a core.
+	// 	// TODO: This core has 2 .adf drives and 4 .hdf drives.
+	// 	Id:        "Amiga",
+	// 	Name:      "Amiga",
+	// 	Folder:    "Amiga",
+	// 	Alias:     []string{"Minimig"},
+	// 	Rbf:       "_Computer/Minimig",
+	// 	FileTypes: nil,
+	// },
 	"Amstrad": {
 		Id:     "Amstrad",
 		Name:   "Amstrad CPC",
