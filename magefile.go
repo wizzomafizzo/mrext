@@ -503,6 +503,8 @@ func GenSystemsDoc() {
 				md += fmt.Sprintf("| %s | %s |\n", k, strings.Join(v, ", "))
 			}
 		}
+
+		md += "\n[Back to top](#systems)\n"
 	}
 
 	fp, _ := os.Create(filepath.Join(docsDir, "systems.md"))
