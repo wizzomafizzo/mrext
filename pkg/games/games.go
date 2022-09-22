@@ -98,7 +98,7 @@ func MatchSystemFolder(path string) ([][2]string, error) {
 // Return true if a given files extension is valid for a system.
 func MatchSystemFile(system System, path string) bool {
 	for _, args := range system.FileTypes {
-		for _, ext := range args.Extensions {
+		for _, ext := range args.Exts {
 			if strings.HasSuffix(strings.ToLower(path), ext) {
 				return true
 			}

@@ -15,7 +15,7 @@ func GenerateMgl(system *games.System, path string) (string, error) {
 	var mglDef *games.MglParams
 
 	for _, ft := range system.FileTypes {
-		for _, ext := range ft.Extensions {
+		for _, ext := range ft.Exts {
 			if s.HasSuffix(s.ToLower(path), ext) {
 				mglDef = ft.Mgl
 			}
