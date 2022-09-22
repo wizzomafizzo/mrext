@@ -82,45 +82,26 @@ func init() {
 func main() {
 	// TODO: support an ini file for default values
 
-	filter := flag.String("filter", "", "list of system folders to filter (ex. gba,psx,nes)")
-	ignore := flag.String("ignore", "", "list of system folders to ignore (ex. tgfx16-cd)")
+	filter := flag.String("filter", "", "list of systems to filter (ex. gba,psx,nes)")
+	ignore := flag.String("ignore", "", "list of systems to ignore (ex. tgfx16-cd)")
 	noscan := flag.Bool("noscan", false, "don't index entire system (faster, but less random)")
 	flag.Parse()
 
-	filteredFolders := strings.Split(*filter, ",")
-	ignoredFolders := strings.Split(*ignore, ",")
+	filteredIds := strings.Split(*filter, ",")
+	ignoredIds := strings.Split(*ignore, ",")
 
 	folders := games.GetSystemPaths()
 	if len(folders) == 0 {
 		fmt.Println("No games folders found.")
-		return
+		os.Exit(1)
 	}
 
+	// filter systems
 	var filteredSystemIds []string
-	for _, system := range games.Systems {
-		for _, folder := range filteredFolders {
-			// exception for arcade folder
-			if strings.EqualFold(folder, "arcade") {
-				folder = "_Arcade"
-			}
-
-			if strings.EqualFold(folder, system.Folder) {
-				filteredSystemIds = append(filteredSystemIds, system.Id)
-			}
-		}
-	}
-
-	var ignoredSystemIds []string
-	for _, system := range games.Systems {
-		for _, folder := range ignoredFolders {
-			// exception for arcade folder
-			if strings.EqualFold(folder, "arcade") {
-				folder = "_Arcade"
-			}
-
-			if strings.EqualFold(folder, system.Folder) {
-				ignoredSystemIds = append(ignoredSystemIds, system.Id)
-			}
+	for _, id := range filteredIds {
+		found, _ := games.LookupSystem(id)
+		if found != nil {
+			filteredSystemIds = append(filteredSystemIds, found.Id)
 		}
 	}
 
@@ -129,6 +110,15 @@ func main() {
 			if !utils.Contains(filteredSystemIds, systemId) {
 				delete(folders, systemId)
 			}
+		}
+	}
+
+	// ignore systems
+	var ignoredSystemIds []string
+	for _, id := range ignoredIds {
+		found, _ := games.LookupSystem(id)
+		if found != nil {
+			ignoredSystemIds = append(ignoredSystemIds, found.Id)
 		}
 	}
 
@@ -182,6 +172,7 @@ func main() {
 				continue
 			} else {
 				// we did it
+				fmt.Printf("Launching %s: %s\n", system.Id, game)
 				mister.LaunchGame(system, game)
 				return
 			}
