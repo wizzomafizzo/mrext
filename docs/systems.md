@@ -24,60 +24,50 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | SMS | [Master System](#master-system), [Game Gear](#game-gear) |
 
 ## Atom
-- **ID**: AcornAtom
-- **Folder**: AcornAtom
-- **RBF**: _Computer/AcornAtom
 
-### Supported Files
+**ID**: AcornAtom  | **Folder**: AcornAtom | **RBF**: _Computer/AcornAtom
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .vhd | 1 | s | 0 |
 
 ## Electron
-- **ID**: AcornElectron
-- **Folder**: AcornElectron
-- **RBF**: _Computer/AcornElectron
 
-### Supported Files
+**ID**: AcornElectron  | **Folder**: AcornElectron | **RBF**: _Computer/AcornElectron
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .vhd | 1 | s | 0 |
 
 ## Adventure Vision
-- **ID**: AdventureVision
-- **Folder**: AVision
-- **RBF**: _Console/AdventureVision
 
-### Supported Files
+**ID**: AdventureVision  | **Aliases**: AVision  | **Folder**: AVision | **RBF**: _Console/AdventureVision
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Game | .bin | 1 | f | 1 |
 
 ## Tandy MC-10
-- **ID**: AliceMC10
-- **Folder**: AliceMC10
-- **RBF**: _Computer/AliceMC10
 
-### Supported Files
+**ID**: AliceMC10  | **Folder**: AliceMC10 | **RBF**: _Computer/AliceMC10
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Tape | .c10 | 1 | f | 1 |
 
 ## Amiga
-- **ID**: Amiga
-- **Folder**: Amiga
-- **RBF**: _Computer/Minimig
+
+**ID**: Amiga  | **Aliases**: Minimig  | **Folder**: Amiga | **RBF**: _Computer/Minimig
+
 
 ## Amstrad CPC
-- **ID**: Amstrad
-- **Folder**: Amstrad
-- **RBF**: _Computer/Amstrad
 
-### Supported Files
+**ID**: Amstrad  | **Folder**: Amstrad | **RBF**: _Computer/Amstrad
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -87,11 +77,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Tape | .cdt | 1 | f | 4 |
 
 ## Amstrad PCW
-- **ID**: AmstradPCW
-- **Folder**: Amstrad PCW
-- **RBF**: _Computer/Amstrad-PCW
 
-### Supported Files
+**ID**: AmstradPCW  | **Aliases**: Amstrad-PCW  | **Folder**: Amstrad PCW | **RBF**: _Computer/Amstrad-PCW
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -99,33 +87,27 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | B: | .dsk | 1 | s | 1 |
 
 ## Apogee BK-01
-- **ID**: Apogee
-- **Folder**: APOGEE
-- **RBF**: _Computer/Apogee
 
-### Supported Files
+**ID**: Apogee  | **Folder**: APOGEE | **RBF**: _Computer/Apogee
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .rka, .rkr, .gam | 1 | f | 0 |
 
 ## Apple I
-- **ID**: AppleI
-- **Folder**: Apple-I
-- **RBF**: _Computer/Apple-I
 
-### Supported Files
+**ID**: AppleI  | **Aliases**: Apple-I  | **Folder**: Apple-I | **RBF**: _Computer/Apple-I
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ASCII | .txt | 1 | f | 0 |
 
 ## Apple IIe
-- **ID**: AppleII
-- **Folder**: Apple-II
-- **RBF**: _Computer/Apple-II
 
-### Supported Files
+**ID**: AppleII  | **Aliases**: Apple-II  | **Folder**: Apple-II | **RBF**: _Computer/Apple-II
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -133,11 +115,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | - | .hdv | 1 | s | 1 |
 
 ## Mattel Aquarius
-- **ID**: Aquarius
-- **Folder**: AQUARIUS
-- **RBF**: _Computer/Aquarius
 
-### Supported Files
+**ID**: Aquarius  | **Folder**: AQUARIUS | **RBF**: _Computer/Aquarius
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -145,55 +125,45 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Tape | .caq | 1 | f | 1 |
 
 ## Arcade
-- **ID**: Arcade
-- **Folder**: _Arcade
-- **RBF**: 
 
-### Supported Files
+**ID**: Arcade  | **Folder**: _Arcade | **RBF**: 
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .mra | - | - | - |
 
 ## Arcadia 2001
-- **ID**: Arcadia
-- **Folder**: Arcadia
-- **RBF**: _Console/Arcadia
 
-### Supported Files
+**ID**: Arcadia  | **Folder**: Arcadia | **RBF**: _Console/Arcadia
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 0 |
 
 ## Arduboy
-- **ID**: Arduboy
-- **Folder**: Arduboy
-- **RBF**: _Other/Arduboy
 
-### Supported Files
+**ID**: Arduboy  | **Folder**: Arduboy | **RBF**: _Other/Arduboy
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .bin, .hex | 1 | f | 0 |
 
 ## Bally Astrocade
-- **ID**: Astrocade
-- **Folder**: Astrocade
-- **RBF**: _Console/Astrocade
 
-### Supported Files
+**ID**: Astrocade  | **Folder**: Astrocade | **RBF**: _Console/Astrocade
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .bin | 1 | f | 0 |
 
 ## Atari 2600
-- **ID**: Atari2600
-- **Folder**: ATARI7800
-- **RBF**: _Console/Atari7800
 
-### Supported Files
+**ID**: Atari2600  | **Folder**: ATARI7800 | **RBF**: _Console/Atari7800
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -206,11 +176,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | Atari7800YC |
 
 ## Atari 5200
-- **ID**: Atari5200
-- **Folder**: ATARI5200
-- **RBF**: _Console/Atari5200
 
-### Supported Files
+**ID**: Atari5200  | **Folder**: ATARI5200 | **RBF**: _Console/Atari5200
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -222,11 +190,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | Atari5200YC |
 
 ## Atari 7800
-- **ID**: Atari7800
-- **Folder**: ATARI7800
-- **RBF**: _Console/Atari7800
 
-### Supported Files
+**ID**: Atari7800  | **Folder**: ATARI7800 | **RBF**: _Console/Atari7800
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -240,11 +206,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | Atari7800YC |
 
 ## Atari 800XL
-- **ID**: Atari800
-- **Folder**: ATARI800
-- **RBF**: _Computer/Atari800
 
-### Supported Files
+**ID**: Atari800  | **Folder**: ATARI800 | **RBF**: _Computer/Atari800
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -253,22 +217,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Cartridge | .car, .rom, .bin | 1 | s | 2 |
 
 ## Atari Lynx
-- **ID**: AtariLynx
-- **Folder**: AtariLynx
-- **RBF**: _Console/AtariLynx
 
-### Supported Files
+**ID**: AtariLynx  | **Folder**: AtariLynx | **RBF**: _Console/AtariLynx
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .lnx | 1 | f | 0 |
 
 ## BBC Micro/Master
-- **ID**: BBCMicro
-- **Folder**: BBCMicro
-- **RBF**: _Computer/BBCMicro
 
-### Supported Files
+**ID**: BBCMicro  | **Folder**: BBCMicro | **RBF**: _Computer/BBCMicro
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -277,11 +237,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | - | .ssd, .dsd | 1 | s | 2 |
 
 ## BK0011M
-- **ID**: BK0011M
-- **Folder**: BK0011M
-- **RBF**: _Computer/BK0011M
 
-### Supported Files
+**ID**: BK0011M  | **Folder**: BK0011M | **RBF**: _Computer/BK0011M
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -291,11 +249,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | HDD | .vhd | 1 | s | 0 |
 
 ## Commodore 16
-- **ID**: C16
-- **Folder**: C16
-- **RBF**: _Computer/C16
 
-### Supported Files
+**ID**: C16  | **Folder**: C16 | **RBF**: _Computer/C16
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -304,11 +260,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | - | .prg, .tap, .bin | 1 | f | 1 |
 
 ## Commodore 64
-- **ID**: C64
-- **Folder**: C64
-- **RBF**: _Computer/C64
 
-### Supported Files
+**ID**: C64  | **Folder**: C64 | **RBF**: _Computer/C64
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -322,55 +276,45 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | C64YC |
 
 ## Casio PV-1000
-- **ID**: CasioPV1000
-- **Folder**: Casio_PV-1000
-- **RBF**: _Console/Casio_PV-1000
 
-### Supported Files
+**ID**: CasioPV1000  | **Aliases**: Casio_PV-1000  | **Folder**: Casio_PV-1000 | **RBF**: _Console/Casio_PV-1000
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 1 |
 
 ## Casio PV-2000
-- **ID**: CasioPV2000
-- **Folder**: Casio_PV-2000
-- **RBF**: _Computer/Casio_PV-2000
 
-### Supported Files
+**ID**: CasioPV2000  | **Aliases**: Casio_PV-2000  | **Folder**: Casio_PV-2000 | **RBF**: _Computer/Casio_PV-2000
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 1 |
 
 ## Channel F
-- **ID**: ChannelF
-- **Folder**: ChannelF
-- **RBF**: _Console/ChannelF
 
-### Supported Files
+**ID**: ChannelF  | **Folder**: ChannelF | **RBF**: _Console/ChannelF
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .rom, .bin | 1 | f | 0 |
 
 ## CHIP-8
-- **ID**: Chip8
-- **Folder**: Chip8
-- **RBF**: _Other/Chip8
 
-### Supported Files
+**ID**: Chip8  | **Folder**: Chip8 | **RBF**: _Other/Chip8
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .ch8 | 1 | f | 0 |
 
 ## TRS-80 CoCo 2
-- **ID**: CoCo2
-- **Folder**: CoCo2
-- **RBF**: _Computer/CoCo2
 
-### Supported Files
+**ID**: CoCo2  | **Folder**: CoCo2 | **RBF**: _Computer/CoCo2
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -382,12 +326,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Cassette | .cas | 1 | f | 2 |
 
 ## ColecoVision
-- **ID**: ColecoVision
-- **Aliases**: Coleco
-- **Folder**: Coleco
-- **RBF**: _Console/ColecoVision
 
-### Supported Files
+**ID**: ColecoVision  | **Aliases**: Coleco  | **Folder**: Coleco | **RBF**: _Console/ColecoVision
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -400,11 +341,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | ColecoVisionYC |
 
 ## VTech CreatiVision
-- **ID**: CreatiVision
-- **Folder**: CreatiVision
-- **RBF**: _Console/CreatiVision
 
-### Supported Files
+**ID**: CreatiVision  | **Folder**: CreatiVision | **RBF**: _Console/CreatiVision
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -413,23 +352,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | BASIC | .bas | 1 | f | 3 |
 
 ## EDSAC
-- **ID**: EDSAC
-- **Folder**: EDSAC
-- **RBF**: _Computer/EDSAC
 
-### Supported Files
+**ID**: EDSAC  | **Folder**: EDSAC | **RBF**: _Computer/EDSAC
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Tape | .tap | 1 | f | 1 |
 
 ## Famicom Disk System
-- **ID**: FDS
-- **Aliases**: FamicomDiskSystem
-- **Folder**: NES
-- **RBF**: _Console/NES
 
-### Supported Files
+**ID**: FDS  | **Aliases**: FamicomDiskSystem  | **Folder**: NES | **RBF**: _Console/NES
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -443,12 +377,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | NESYC |
 
 ## Gameboy Advance
-- **ID**: GBA
-- **Aliases**: GameboyAdvance
-- **Folder**: GBA
-- **RBF**: _Console/GBA
 
-### Supported Files
+**ID**: GBA  | **Aliases**: GameboyAdvance  | **Folder**: GBA | **RBF**: _Console/GBA
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -461,11 +392,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | GBAYC |
 
 ## Gameboy Advance (2 Player)
-- **ID**: GBA2P
-- **Folder**: GBA2P
-- **RBF**: _Console/GBA2P
 
-### Supported Files
+**ID**: GBA2P  | **Folder**: GBA2P | **RBF**: _Console/GBA2P
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -477,33 +406,27 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | LLAPI | GBA2P_LLAPI |
 
 ## Galaksija
-- **ID**: Galaksija
-- **Folder**: Galaksija
-- **RBF**: _Computer/Galaksija
 
-### Supported Files
+**ID**: Galaksija  | **Folder**: Galaksija | **RBF**: _Computer/Galaksija
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .tap | 1 | f | 0 |
 
 ## Gamate
-- **ID**: Gamate
-- **Folder**: Gamate
-- **RBF**: _Console/Gamate
 
-### Supported Files
+**ID**: Gamate  | **Folder**: Gamate | **RBF**: _Console/Gamate
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .bin | 1 | f | 1 |
 
 ## Game Gear
-- **ID**: GameGear
-- **Folder**: SMS
-- **RBF**: _Console/SMS
 
-### Supported Files
+**ID**: GameGear  | **Folder**: SMS | **RBF**: _Console/SMS
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -516,23 +439,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | SMSYC |
 
 ## Game & Watch
-- **ID**: GameNWatch
-- **Folder**: GameNWatch
-- **RBF**: _Console/GnW
 
-### Supported Files
+**ID**: GameNWatch  | **Folder**: GameNWatch | **RBF**: _Console/GnW
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .bin | 1 | f | 0 |
 
 ## Gameboy
-- **ID**: Gameboy
-- **Aliases**: GB
-- **Folder**: GAMEBOY
-- **RBF**: _Console/Gameboy
 
-### Supported Files
+**ID**: Gameboy  | **Aliases**: GB  | **Folder**: GAMEBOY | **RBF**: _Console/Gameboy
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -541,27 +459,22 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | Gameboy_LLAPI |
 | YC | GameboyYC |
+| LLAPI | Gameboy_LLAPI |
 
 ## Gameboy (2 Player)
-- **ID**: Gameboy2P
-- **Folder**: GAMEBOY2P
-- **RBF**: _Console/Gameboy2P
 
-### Supported Files
+**ID**: Gameboy2P  | **Folder**: GAMEBOY2P | **RBF**: _Console/Gameboy2P
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .gb, .gbc | 1 | f | 1 |
 
 ## Gameboy Color
-- **ID**: GameboyColor
-- **Aliases**: GBC
-- **Folder**: GAMEBOY
-- **RBF**: _Console/Gameboy
 
-### Supported Files
+**ID**: GameboyColor  | **Aliases**: GBC  | **Folder**: GAMEBOY | **RBF**: _Console/Gameboy
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -574,12 +487,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | GameboyYC |
 
 ## Genesis
-- **ID**: Genesis
-- **Aliases**: MegaDrive
-- **Folder**: Genesis
-- **RBF**: _Console/Genesis
 
-### Supported Files
+**ID**: Genesis  | **Aliases**: MegaDrive  | **Folder**: Genesis | **RBF**: _Console/Genesis
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -592,77 +502,63 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | GenesisYC |
 
 ## Intellivision
-- **ID**: Intellivision
-- **Folder**: Intellivision
-- **RBF**: _Console/Intellivision
 
-### Supported Files
+**ID**: Intellivision  | **Folder**: Intellivision | **RBF**: _Console/Intellivision
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .rom, .int, .bin | 1 | f | 0 |
 
 ## Interact
-- **ID**: Interact
-- **Folder**: Interact
-- **RBF**: _Computer/Interact
 
-### Supported Files
+**ID**: Interact  | **Folder**: Interact | **RBF**: _Computer/Interact
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Tape | .cin, .k7 | 1 | f | 0 |
 
 ## Jupiter Ace
-- **ID**: Jupiter
-- **Folder**: Jupiter
-- **RBF**: _Computer/Jupiter
 
-### Supported Files
+**ID**: Jupiter  | **Folder**: Jupiter | **RBF**: _Computer/Jupiter
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .ace | 1 | f | 0 |
 
 ## Laser 350/500/700
-- **ID**: Laser310
-- **Folder**: Laser
-- **RBF**: _Computer/Laser310
 
-### Supported Files
+**ID**: Laser  | **Aliases**: Laser310  | **Folder**: Laser | **RBF**: _Computer/Laser310
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | VZ Image | .vz | 1 | f | 1 |
 
 ## Lynx 48/96K
-- **ID**: Lynx48
-- **Folder**: Lynx48
-- **RBF**: _Computer/Lynx48
 
-### Supported Files
+**ID**: Lynx48  | **Folder**: Lynx48 | **RBF**: _Computer/Lynx48
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cassette | .tap | 1 | f | 1 |
 
 ## MSX
-- **ID**: MSX
-- **Folder**: MSX
-- **RBF**: _Computer/MSX
 
-### Supported Files
+**ID**: MSX  | **Folder**: MSX | **RBF**: _Computer/MSX
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .vhd | 1 | s | 0 |
 
 ## Macintosh Plus
-- **ID**: MacPlus
-- **Folder**: MACPLUS
-- **RBF**: _Computer/MacPlus
 
-### Supported Files
+**ID**: MacPlus  | **Folder**: MACPLUS | **RBF**: _Computer/MacPlus
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -672,12 +568,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | SCSI-5 | .img, .vhd | 1 | s | 1 |
 
 ## Master System
-- **ID**: MasterSystem
-- **Aliases**: SMS
-- **Folder**: SMS
-- **RBF**: _Console/SMS
 
-### Supported Files
+**ID**: MasterSystem  | **Aliases**: SMS  | **Folder**: SMS | **RBF**: _Console/SMS
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -690,12 +583,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | SMSYC |
 
 ## Sega CD
-- **ID**: MegaCD
-- **Aliases**: SegaCD
-- **Folder**: MegaCD
-- **RBF**: _Console/MegaCD
 
-### Supported Files
+**ID**: MegaCD  | **Aliases**: SegaCD  | **Folder**: MegaCD | **RBF**: _Console/MegaCD
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -704,26 +594,22 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | MegaCD_LLAPI |
 | YC | MegaCDYC |
+| LLAPI | MegaCD_LLAPI |
 
 ## MultiComp
-- **ID**: MultiComp
-- **Folder**: MultiComp
-- **RBF**: _Computer/MultiComp
 
-### Supported Files
+**ID**: MultiComp  | **Folder**: MultiComp | **RBF**: _Computer/MultiComp
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .img | 1 | s | 0 |
 
 ## NES
-- **ID**: NES
-- **Folder**: NES
-- **RBF**: _Console/NES
 
-### Supported Files
+**ID**: NES  | **Folder**: NES | **RBF**: _Console/NES
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -736,11 +622,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | NESYC |
 
 ## Neo Geo MVS/AES
-- **ID**: NeoGeo
-- **Folder**: NEOGEO
-- **RBF**: _Console/NeoGeo
 
-### Supported Files
+**ID**: NeoGeo  | **Folder**: NEOGEO | **RBF**: _Console/NeoGeo
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -754,45 +638,37 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | NeoGeoYC |
 
 ## Magnavox Odyssey2
-- **ID**: Odyssey2
-- **Folder**: ODYSSEY2
-- **RBF**: _Console/Odyssey2
 
-### Supported Files
+**ID**: Odyssey2  | **Folder**: ODYSSEY2 | **RBF**: _Console/Odyssey2
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| catridge | .bin | 1 | f | 1 |
+| Cartridge | .bin | 1 | f | 1 |
 | XROM | .rom | 1 | f | 2 |
 
 ## Orao
-- **ID**: Orao
-- **Folder**: ORAO
-- **RBF**: _Computer/ORAO
 
-### Supported Files
+**ID**: Orao  | **Folder**: ORAO | **RBF**: _Computer/ORAO
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .tap | 1 | f | 0 |
 
 ## Oric
-- **ID**: Oric
-- **Folder**: Oric
-- **RBF**: _Computer/Oric
 
-### Supported Files
+**ID**: Oric  | **Folder**: Oric | **RBF**: _Computer/Oric
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Drive A: | .dsk | 1 | s | 0 |
 
 ## PC/XT
-- **ID**: PCXT
-- **Folder**: PCXT
-- **RBF**: _Computer/PCXT
 
-### Supported Files
+**ID**: PCXT  | **Folder**: PCXT | **RBF**: _Computer/PCXT
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -800,45 +676,36 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | HDD Image | .img | 1 | s | 0 |
 
 ## PDP-1
-- **ID**: PDP1
-- **Folder**: PDP1
-- **RBF**: _Computer/PDP1
 
-### Supported Files
+**ID**: PDP1  | **Folder**: PDP1 | **RBF**: _Computer/PDP1
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .pdp, .rim, .bin | 1 | f | 0 |
 
 ## Commodore PET 2001
-- **ID**: PET2001
-- **Folder**: PET2001
-- **RBF**: _Computer/PET2001
 
-### Supported Files
+**ID**: PET2001  | **Folder**: PET2001 | **RBF**: _Computer/PET2001
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .prg, .tap | 1 | f | 0 |
 
 ## PMD 85-2A
-- **ID**: PMD85
-- **Folder**: PMD85
-- **RBF**: _Computer/PMD85
 
-### Supported Files
+**ID**: PMD85  | **Folder**: PMD85 | **RBF**: _Computer/PMD85
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ROM Pack | .rmm | 1 | f | 1 |
 
 ## Playstation
-- **ID**: PSX
-- **Aliases**: Playstation, PS1
-- **Folder**: PSX
-- **RBF**: _Console/PSX
 
-### Supported Files
+**ID**: PSX  | **Aliases**: Playstation, PS1  | **Folder**: PSX | **RBF**: _Console/PSX
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -852,22 +719,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | DualRAM | PSX_DualSDRAM |
 
 ## Pokemon Mini
-- **ID**: PokemonMini
-- **Folder**: PokemonMini
-- **RBF**: _Console/PokemonMini
 
-### Supported Files
+**ID**: PokemonMini  | **Folder**: PokemonMini | **RBF**: _Console/PokemonMini
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ROM | .min | 1 | f | 1 |
 
 ## Sinclair QL
-- **ID**: QL
-- **Folder**: QL
-- **RBF**: _Computer/QL
 
-### Supported Files
+**ID**: QL  | **Folder**: QL | **RBF**: _Computer/QL
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -875,22 +738,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | MDV Image | .mdv | 1 | f | 2 |
 
 ## RX-78 Gundam
-- **ID**: RX78
-- **Folder**: RX78
-- **RBF**: _Computer/RX78
 
-### Supported Files
+**ID**: RX78  | **Folder**: RX78 | **RBF**: _Computer/RX78
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 1 |
 
 ## SAM Coupe
-- **ID**: SAMCoupe
-- **Folder**: SAMCOUPE
-- **RBF**: _Computer/SAMCoupe
 
-### Supported Files
+**ID**: SAMCoupe  | **Folder**: SAMCOUPE | **RBF**: _Computer/SAMCoupe
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -898,12 +757,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Drive 2 | .dsk, .mgt, .img | 1 | s | 1 |
 
 ## SNES
-- **ID**: SNES
-- **Aliases**: SuperNintendo
-- **Folder**: SNES
-- **RBF**: _Console/SNES
 
-### Supported Files
+**ID**: SNES  | **Aliases**: SuperNintendo  | **Folder**: SNES | **RBF**: _Console/SNES
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -917,11 +773,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | SNESYC |
 
 ## SV-328
-- **ID**: SVI328
-- **Folder**: SVI328
-- **RBF**: _Computer/Svi328
 
-### Supported Files
+**ID**: SVI328  | **Folder**: SVI328 | **RBF**: _Computer/Svi328
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -929,12 +783,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | CAS File | .cas | 1 | f | 2 |
 
 ## Genesis 32X
-- **ID**: Sega32X
-- **Aliases**: S32X, 32X
-- **Folder**: S32X
-- **RBF**: _Console/S32X
 
-### Supported Files
+**ID**: Sega32X  | **Aliases**: S32X, 32X  | **Folder**: S32X | **RBF**: _Console/S32X
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -947,11 +798,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | S32XYC |
 
 ## M5
-- **ID**: SordM5
-- **Folder**: Sord M5
-- **RBF**: _Computer/SordM5
 
-### Supported Files
+**ID**: SordM5  | **Aliases**: Sord M5  | **Folder**: Sord M5 | **RBF**: _Computer/SordM5
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -959,11 +808,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Tape | .cas | 1 | f | 2 |
 
 ## Specialist/MX
-- **ID**: Specialist
-- **Folder**: SPMX
-- **RBF**: _Computer/Specialist
 
-### Supported Files
+**ID**: Specialist  | **Aliases**: SPMX  | **Folder**: SPMX | **RBF**: _Computer/Specialist
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -971,12 +818,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Disk | .odi | 1 | s | 0 |
 
 ## Super Gameboy
-- **ID**: SuperGameboy
-- **Aliases**: SGB
-- **Folder**: SGB
-- **RBF**: _Console/SGB
 
-### Supported Files
+**ID**: SuperGameboy  | **Aliases**: SGB  | **Folder**: SGB | **RBF**: _Console/SGB
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -989,22 +833,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | SGBYC |
 
 ## SuperVision
-- **ID**: SuperVision
-- **Folder**: SuperVision
-- **RBF**: _Console/SuperVision
 
-### Supported Files
+**ID**: SuperVision  | **Folder**: SuperVision | **RBF**: _Console/SuperVision
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin, .sv | 1 | f | 1 |
 
 ## TI-99/4A
-- **ID**: TI994A
-- **Folder**: TI-99_4A
-- **RBF**: _Computer/Ti994a
 
-### Supported Files
+**ID**: TI994A  | **Aliases**: TI-99_4A  | **Folder**: TI-99_4A | **RBF**: _Computer/Ti994a
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1013,11 +853,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | GROM Cart | .bin | 1 | f | 3 |
 
 ## TRS-80
-- **ID**: TRS80
-- **Folder**: TRS-80
-- **RBF**: _Computer/TRS-80
 
-### Supported Files
+**ID**: TRS80  | **Folder**: TRS-80 | **RBF**: _Computer/TRS-80
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1027,33 +865,27 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Cassette | .cas | 1 | f | 1 |
 
 ## TS-Config
-- **ID**: TSConf
-- **Folder**: TSConf
-- **RBF**: _Computer/TSConf
 
-### Supported Files
+**ID**: TSConf  | **Folder**: TSConf | **RBF**: _Computer/TSConf
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Virtual SD | .vhd | 1 | s | 0 |
 
 ## Tatung Einstein
-- **ID**: TatungEinstein
-- **Folder**: TatungEinstein
-- **RBF**: _Computer/TatungEinstein
 
-### Supported Files
+**ID**: TatungEinstein  | **Folder**: TatungEinstein | **RBF**: _Computer/TatungEinstein
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Disk 0 | .dsk | 1 | s | 0 |
 
 ## Tutor
-- **ID**: TomyTutor
-- **Folder**: TomyTutor
-- **RBF**: _Computer/TomyTutor
 
-### Supported Files
+**ID**: TomyTutor  | **Folder**: TomyTutor | **RBF**: _Computer/TomyTutor
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1061,12 +893,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Tape Image | .cas | 1 | s | 0 |
 
 ## TurboGraphx-16
-- **ID**: TurboGraphx16
-- **Aliases**: TGFX16, PCEngine
-- **Folder**: TGFX16
-- **RBF**: _Console/TurboGrafx16
 
-### Supported Files
+**ID**: TurboGraphx16  | **Aliases**: TGFX16, PCEngine  | **Folder**: TGFX16 | **RBF**: _Console/TurboGrafx16
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1080,12 +909,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | TurboGrafx16YC |
 
 ## TurboGraphx-16 CD
-- **ID**: TurboGraphx16CD
-- **Aliases**: TGFX16-CD, PCEngineCD
-- **Folder**: TGFX16-CD
-- **RBF**: _Console/TurboGrafx16
 
-### Supported Files
+**ID**: TurboGraphx16CD  | **Aliases**: TGFX16-CD, PCEngineCD  | **Folder**: TGFX16-CD | **RBF**: _Console/TurboGrafx16
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1098,33 +924,27 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | YC | TurboGrafx16YC |
 
 ## UK101
-- **ID**: UK101
-- **Folder**: UK101
-- **RBF**: _Computer/UK101
 
-### Supported Files
+**ID**: UK101  | **Folder**: UK101 | **RBF**: _Computer/UK101
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ASCII | .txt, .bas, .lod | 1 | f | 0 |
 
 ## VC 4000
-- **ID**: VC4000
-- **Folder**: VC4000
-- **RBF**: _Console/VC4000
 
-### Supported Files
+**ID**: VC4000  | **Folder**: VC4000 | **RBF**: _Console/VC4000
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 0 |
 
 ## Commodore VIC-20
-- **ID**: VIC20
-- **Folder**: VIC20
-- **RBF**: _Computer/VIC20
 
-### Supported Files
+**ID**: VIC20  | **Folder**: VIC20 | **RBF**: _Computer/VIC20
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1133,11 +953,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | - | .prg, .crt, .ct?, .tap | 1 | f | 1 |
 
 ## Vector-06C
-- **ID**: Vector06C
-- **Folder**: VECTOR06
-- **RBF**: _Computer/Vector-06C
 
-### Supported Files
+**ID**: Vector06C  | **Aliases**: Vector06  | **Folder**: VECTOR06 | **RBF**: _Computer/Vector-06C
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1146,11 +964,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Disk B | .fdd | 1 | s | 1 |
 
 ## Vectrex
-- **ID**: Vectrex
-- **Folder**: VECTREX
-- **RBF**: _Console/Vectrex
 
-### Supported Files
+**ID**: Vectrex  | **Folder**: VECTREX | **RBF**: _Console/Vectrex
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1158,22 +974,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Overlay | .ovr | 1 | f | 2 |
 
 ## WonderSwan
-- **ID**: WonderSwan
-- **Folder**: WonderSwan
-- **RBF**: _Console/WonderSwan
 
-### Supported Files
+**ID**: WonderSwan  | **Folder**: WonderSwan | **RBF**: _Console/WonderSwan
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ROM | .ws, .wsc | 1 | f | 1 |
 
 ## X68000
-- **ID**: X68000
-- **Folder**: X68000
-- **RBF**: _Computer/X68000
 
-### Supported Files
+**ID**: X68000  | **Folder**: X68000 | **RBF**: _Computer/X68000
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1183,22 +995,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | RAM | .ram | 1 | s | 3 |
 
 ## TS-1500
-- **ID**: ZX81
-- **Folder**: ZX81
-- **RBF**: _Computer/ZX81
 
-### Supported Files
+**ID**: ZX81  | **Folder**: ZX81 | **RBF**: _Computer/ZX81
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Tape | .0, .p | 1 | f | 0 |
 
 ## ZX Spectrum Next
-- **ID**: ZXNext
-- **Folder**: ZXNext
-- **RBF**: _Computer/ZXNext
 
-### Supported Files
+**ID**: ZXNext  | **Folder**: ZXNext | **RBF**: _Computer/ZXNext
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1207,11 +1015,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Tape | .tzx, .csw | 1 | f | 1 |
 
 ## ZX Spectrum
-- **ID**: ZXSpectrum
-- **Folder**: Spectrum
-- **RBF**: _Computer/ZX-Spectrum
 
-### Supported Files
+**ID**: ZXSpectrum  | **Aliases**: Spectrum  | **Folder**: Spectrum | **RBF**: _Computer/ZX-Spectrum
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
@@ -1221,11 +1027,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | DivMMC | .vhd | 1 | s | 1 |
 
 ## PC (486SX)
-- **ID**: ao486
-- **Folder**: AO486
-- **RBF**: _Computer/ao486
 
-### Supported Files
+**ID**: ao486  | **Folder**: AO486 | **RBF**: _Computer/ao486
+
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |

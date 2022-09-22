@@ -454,17 +454,21 @@ func GenerateSystemsDoc() {
 	for _, s := range systems {
 		md += fmt.Sprintln("\n##", s.Name)
 
-		md += fmt.Sprintf("- **ID**: %s\n", s.Id)
+		var info []string
+
+		info = append(info, fmt.Sprintf("**ID**: %s ", s.Id))
 
 		if len(s.Alias) > 0 {
 			aliases := strings.Join(s.Alias, ", ")
-			md += fmt.Sprintf("- **Aliases**: %s\n", aliases)
+			info = append(info, fmt.Sprintf("**Aliases**: %s ", aliases))
 		}
 
-		md += fmt.Sprintf("- **Folder**: %s\n- **RBF**: %s\n", s.Folder, s.Rbf)
+		info = append(info, fmt.Sprintf("**Folder**: %s", s.Folder))
+		info = append(info, fmt.Sprintf("**RBF**: %s", s.Rbf))
+
+		md += "\n" + strings.Join(info, " | ") + "\n\n"
 
 		if len(s.FileTypes) > 0 {
-			md += "\n### Supported Files\n"
 			md += fmt.Sprintf("\n| Label | Files | Delay | Type | Index |\n| --- | --- | --- | --- | --- |\n")
 
 			for _, f := range s.FileTypes {
