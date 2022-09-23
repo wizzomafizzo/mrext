@@ -358,6 +358,35 @@ func startService() {
 	<-make(chan struct{})
 }
 
+func tryAddStartup() error {
+	var startup mister.Startup
+
+	err := startup.Load()
+	if err != nil {
+		return err
+	}
+
+	if !startup.Exists("mrext/playlog") {
+		if utils.YesOrNoPrompt("Play Log must be set to run on MiSTer startup. Add it now?") {
+			// TODO: prefer not to hardcode the path
+			path := "/media/fat/Scripts/playlog.sh"
+			cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
+
+			err := startup.Add("mrext/playlog", cmd)
+			if err != nil {
+				return err
+			}
+
+			err = startup.Save()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	service := flag.String("service", "", "manage playlog service")
 	flag.Parse()
@@ -367,19 +396,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	startupExists, _ := mister.StartupEntryExists("mrext/playlog")
-	if !startupExists {
-		fmt.Print("Play Log must be set to run on MiSTer startup. ")
-		answer := utils.YesOrNoPrompt("Add it now?")
-		if answer {
-			os.Exit(1)
-		} else {
-			os.Exit(1)
-		}
+	err := tryAddStartup()
+	if err != nil {
+		fmt.Println("Error adding to startup:", err)
 	}
 
 	if *service == "start" {
 		startService()
 		os.Exit(0)
 	}
+
 }
