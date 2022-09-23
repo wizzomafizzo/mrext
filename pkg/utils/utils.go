@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"bufio"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -9,8 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/term"
 )
 
 func IsZip(path string) bool {
@@ -125,13 +128,16 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
-// Remove all characters from a string that are not allowed in filenames.
-func StripBadFileChars(s string) string {
-	badChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
-	for _, c := range badChars {
-		s = strings.ReplaceAll(s, c, "")
+func StripChars(s string, chars string) string {
+	for _, c := range chars {
+		s = strings.ReplaceAll(s, string(c), "")
 	}
 	return s
+}
+
+// Remove all characters from a string that are not allowed in filenames.
+func StripBadFileChars(s string) string {
+	return StripChars(s, "/\\:*?\"<>|")
 }
 
 // Return the MD5 hash of a file on disk.
@@ -146,10 +152,50 @@ func Md5Sum(path string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-// TODO: how to make this work with a controller?
+// Display a yes/no prompt for use with a controller.
 func YesOrNoPrompt(prompt string) bool {
-	var response string
-	fmt.Printf("%s [y/N] ", prompt)
-	fmt.Scanln(&response)
-	return strings.ToLower(response) == "y" || strings.ToLower(response) == "yes"
+	fmt.Printf(prompt + " [DOWN=Yes/UP=No] ")
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	buf := make([]byte, 3)
+	reader.Read(buf)
+
+	term.Restore(int(os.Stdin.Fd()), oldState)
+
+	delay := func() { time.Sleep(400 * time.Millisecond) }
+
+	if buf[0] == 27 && buf[1] == 91 && buf[2] == 66 {
+		fmt.Println("Yes")
+		delay()
+		return true
+	} else {
+		// 27 91 65 is up arrow
+		fmt.Println("No")
+		delay()
+		return false
+	}
+}
+
+// Display an information prompt for use with a controller.
+func InfoPrompt(prompt string) {
+	fmt.Println(prompt)
+	fmt.Println("Press any key to continue...")
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	buf := make([]byte, 1)
+	reader.Read(buf)
+
+	term.Restore(int(os.Stdin.Fd()), oldState)
+
+	time.Sleep(400 * time.Millisecond)
 }
