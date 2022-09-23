@@ -53,9 +53,7 @@ func LookupSystem(id string) (*System, error) {
 		if strings.EqualFold(k, id) {
 			return &v, nil
 		}
-	}
 
-	for _, v := range Systems {
 		for _, alias := range v.Alias {
 			if strings.EqualFold(alias, id) {
 				return &v, nil
@@ -125,10 +123,6 @@ func findSystemFolders(path string) [][2]string {
 	for _, folder := range folders {
 		abs := filepath.Join(path, folder.Name())
 
-		if folder.IsDir() && strings.ToLower(folder.Name()) == config.GamesFolderSubfolder {
-			found = append(found, findSystemFolders(abs)...)
-		}
-
 		matches, err := MatchSystemFolder(abs)
 		if err != nil {
 			continue
@@ -160,12 +154,7 @@ func FolderToSystems(path string) []System {
 	gamesFolder := ""
 
 	for _, folder := range config.GamesFolders {
-		gamesSub := filepath.Join(folder, config.GamesFolderSubfolder)
-		if strings.HasPrefix(path, strings.ToLower(gamesSub)) {
-			validGamesFolder = true
-			gamesFolder = gamesSub
-			break
-		} else if strings.HasPrefix(path, strings.ToLower(folder)) {
+		if strings.HasPrefix(path, strings.ToLower(folder)) {
 			validGamesFolder = true
 			gamesFolder = folder
 			break
@@ -184,6 +173,76 @@ func FolderToSystems(path string) []System {
 	}
 
 	return systems
+}
+
+// Return a slice of all systems.
+func AllSystems() []System {
+	var systems []System
+
+	for _, system := range Systems {
+		systems = append(systems, system)
+	}
+
+	return systems
+}
+
+type activePathMatch struct {
+	System System
+	Path   string
+}
+
+// Return the active path for each system.
+func GetActivePaths(systems []System) []activePathMatch {
+	var matches []activePathMatch
+
+	for _, path := range config.GamesFolders {
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+
+		fns, err := os.ReadDir(path)
+		if err != nil {
+			continue
+		}
+
+		for _, fn := range fns {
+			if !fn.IsDir() {
+				continue
+			}
+
+			for _, system := range systems {
+				if !strings.EqualFold(fn.Name(), system.Folder) {
+					continue
+				}
+
+				systemPath := filepath.Join(path, fn.Name())
+
+				// files, err := os.ReadDir(systemPath)
+				// if err != nil {
+				// 	continue
+				// }
+
+				// if len(files) == 0 {
+				// 	continue
+				// }
+
+				matches = append(matches, activePathMatch{
+					system,
+					systemPath,
+				})
+			}
+
+			if len(matches) == len(systems) {
+				break
+			}
+		}
+
+		if len(matches) == len(systems) {
+			break
+		}
+	}
+
+	return matches
 }
 
 type resultsStack [][]string
