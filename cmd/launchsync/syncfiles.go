@@ -258,6 +258,7 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 			continue
 		}
 
+		// TODO: include extension in regex search?
 		if m[0] == '~' {
 			// regex match
 			if m[1:] == "" {

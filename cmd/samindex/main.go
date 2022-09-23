@@ -13,6 +13,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
+// TODO: add these as aliases
 var idMap = map[string]string{
 	"Gameboy":         "gb",
 	"GameboyColor":    "gbc",
@@ -21,6 +22,14 @@ var idMap = map[string]string{
 	"Sega32X":         "s32x",
 	"TurboGraphx16":   "tgfx16",
 	"TurboGraphx16CD": "tgfx16cd",
+}
+
+func samId(id string) string {
+	if id, ok := idMap[id]; ok {
+		return id
+	}
+
+	return id
 }
 
 func reverseId(id string) string {
@@ -132,14 +141,45 @@ func main() {
 	gamelistDir := flag.String("o", ".", "gamelist files directory")
 	filter := flag.String("s", "all", "list of systems to index (comma separated)")
 	progress := flag.Bool("p", false, "print output for dialog gauge")
-	quiet := flag.Bool("q", false, "suppress all output")
-	detect := flag.Bool("d", false, "list system folders")
+	quiet := flag.Bool("q", false, "suppress all status output")
+	detect := flag.Bool("d", false, "list active system folders")
 	noFilter := flag.Bool("nofilter", false, "don't filter out duplicate games")
 	flag.Parse()
 
+	// filter systems
+	var systems []games.System
+	if *filter == "all" {
+		systems = games.AllSystems()
+	} else {
+		for _, filterId := range strings.Split(*filter, ",") {
+			systemId := reverseId(filterId)
+
+			if system, ok := games.Systems[systemId]; ok {
+				systems = append(systems, system)
+				continue
+			}
+
+			system, err := games.LookupSystem(systemId)
+			if err != nil {
+				continue
+			}
+
+			systems = append(systems, *system)
+		}
+	}
+
+	// find active system paths
+	if *detect {
+		results := games.GetActivePaths(systems)
+		for _, r := range results {
+			fmt.Printf("%s:%s\n", strings.ToLower(samId(r.System.Id)), r.Path)
+		}
+		os.Exit(0)
+	}
+
 	systemPaths := games.GetSystemPaths()
 
-	// filter systems if required
+	// filter system paths if required
 	filteredPaths := make(map[string][]string)
 	if *filter == "all" {
 		filteredPaths = systemPaths
@@ -160,21 +200,6 @@ func main() {
 		}
 	}
 
-	if *detect {
-		for systemId, paths := range filteredPaths {
-			for _, path := range paths {
-				files, err := os.ReadDir(path)
-				if err != nil {
-					continue
-				}
-
-				if len(files) > 0 {
-					fmt.Printf("%s:%s\n", strings.ToLower(reverseId(systemId)), path)
-				}
-			}
-		}
-		return
-	}
-
 	createGamelists(*gamelistDir, filteredPaths, *progress, *quiet, !*noFilter)
+	os.Exit(0)
 }

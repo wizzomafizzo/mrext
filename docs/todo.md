@@ -2,6 +2,7 @@
 
 High level features, ideas and changes.
 
+- [ ] .zip files for all release bins
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
 - [ ] Write all temp mgls to a directory in tmp instead of root
 - [ ] Allow defining multiple folders on a system
