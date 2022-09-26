@@ -64,7 +64,10 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	win.NoutRefresh()
 	gc.Update()
 
-	systemPaths := games.GetSystemPaths()
+	systemPaths := make(map[string][]string)
+	for _, path := range games.GetSystemPaths(games.AllSystems()) {
+		systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
+	}
 	totalSteps := len(systemPaths) + 3
 	currentStep := 2
 

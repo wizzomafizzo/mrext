@@ -13,7 +13,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-// TODO: add these as aliases
 var idMap = map[string]string{
 	"Gameboy":         "gb",
 	"GameboyColor":    "gbc",
@@ -177,29 +176,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	systemPaths := games.GetSystemPaths()
+	systemPaths := games.GetSystemPaths(systems)
+	systemPathsMap := make(map[string][]string)
 
-	// filter system paths if required
-	filteredPaths := make(map[string][]string)
-	if *filter == "all" {
-		filteredPaths = systemPaths
-	} else {
-		filteredSystems := strings.Split(*filter, ",")
-		for _, system := range filteredSystems {
-			for systemId, paths := range systemPaths {
-				if strings.EqualFold(system, systemId) {
-					filteredPaths[systemId] = paths
-				}
-			}
-			// also support sam's system ids
-			for origId, samId := range idMap {
-				if strings.EqualFold(system, samId) {
-					filteredPaths[origId] = systemPaths[origId]
-				}
-			}
-		}
+	for _, p := range systemPaths {
+		systemPathsMap[p.System.Id] = append(systemPathsMap[p.System.Id], p.Path)
 	}
 
-	createGamelists(*gamelistDir, filteredPaths, *progress, *quiet, !*noFilter)
+	createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, !*noFilter)
 	os.Exit(0)
 }
