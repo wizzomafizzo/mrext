@@ -8,9 +8,9 @@ const IndexName = "index"
 const ActiveGameFile = "/tmp/ACTIVEGAME"
 
 const MisterIniFile = SdFolder + "/MiSTer.ini"
-const MisterIniFile_Alt1 = SdFolder + "/MiSTer_alt_1.ini"
-const MisterIniFile_Alt2 = SdFolder + "/MiSTer_alt_2.ini"
-const MisterIniFile_Alt3 = SdFolder + "/MiSTer_alt_3.ini"
+const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
+const MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
+const MisterIniFileAlt3 = SdFolder + "/MiSTer_alt_3.ini"
 
 const StartupFile = SdFolder + "/linux/user-startup.sh"
 

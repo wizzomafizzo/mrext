@@ -402,6 +402,7 @@ var Systems = map[string]System{
 	"GameGear": {
 		Id:     "GameGear",
 		Name:   "Game Gear",
+		Alias:  []string{"GG"},
 		Folder: "SMS",
 		Rbf:    "_Console/SMS",
 		AltRbf: AltRbfOpts{

@@ -40,21 +40,9 @@ func main() {
 			fmt.Printf("%s:%s\n", path.System.Id, path.Path)
 		}
 	} else if *allPaths {
-		systemPaths := games.GetSystemPaths()
-		filteredPaths := make(map[string][]string)
-
-		for systemId, paths := range systemPaths {
-			for _, system := range selectedSystems {
-				if system.Id == systemId {
-					filteredPaths[systemId] = paths
-				}
-			}
-		}
-
-		for k, v := range filteredPaths {
-			for _, p := range v {
-				fmt.Printf("%s:%s\n", k, p)
-			}
+		paths := games.GetSystemPaths(selectedSystems)
+		for _, path := range paths {
+			fmt.Printf("%s:%s\n", path.System.Id, path.Path)
 		}
 	}
 

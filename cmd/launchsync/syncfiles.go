@@ -170,34 +170,24 @@ func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
 	indexFile := filepath.Join(os.TempDir(), "launchsync-index.tar")
 
 	// Restrict index to necessary systems
-	var systems []*games.System
+	var systems []games.System
 	for _, sync := range syncs {
 		for _, game := range sync.games {
-			systems = append(systems, game.system)
+			systems = append(systems, *game.system)
 		}
 	}
 
-	systemPaths := make(map[string][]string)
-	for systemId, path := range games.GetSystemPaths() {
-		for _, system := range systems {
-			if system.Id == systemId {
-				systemPaths[systemId] = path
-				break
-			}
-		}
-	}
+	systemPaths := games.GetSystemPaths(systems)
 
 	systemFiles := make([][2]string, 0)
-	for systemId, paths := range systemPaths {
-		for _, path := range paths {
-			files, err := games.GetFiles(systemId, path)
-			if err != nil {
-				return index, err
-			}
+	for _, path := range systemPaths {
+		files, err := games.GetFiles(path.System.Id, path.Path)
+		if err != nil {
+			return index, err
+		}
 
-			for _, file := range files {
-				systemFiles = append(systemFiles, [2]string{systemId, file})
-			}
+		for _, file := range files {
+			systemFiles = append(systemFiles, [2]string{path.System.Id, file})
 		}
 	}
 

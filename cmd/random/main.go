@@ -88,57 +88,63 @@ func main() {
 	flag.Parse()
 
 	filteredIds := strings.Split(*filter, ",")
-	ignoredIds := strings.Split(*ignore, ",")
+	var filteredSystems []games.System
+	for _, id := range filteredIds {
+		system, _ := games.LookupSystem(id)
+		if system != nil {
+			filteredSystems = append(filteredSystems, *system)
+		}
+	}
 
-	folders := games.GetSystemPaths()
-	if len(folders) == 0 {
+	ignoredIds := strings.Split(*ignore, ",")
+	var ignoredSystems []games.System
+	for _, id := range ignoredIds {
+		found, _ := games.LookupSystem(id)
+		if found != nil {
+			ignoredSystems = append(ignoredSystems, *found)
+		}
+	}
+
+	systems := games.AllSystems()
+
+	// filter systems
+	if len(filteredSystems) > 0 {
+		systems = filteredSystems
+	}
+
+	// ignore systems
+	if len(ignoredSystems) > 0 {
+		var filtered []games.System
+		for _, system := range systems {
+			ignore := false
+			for _, ignored := range ignoredSystems {
+				if system.Id == ignored.Id {
+					ignore = true
+					break
+				}
+			}
+			if !ignore {
+				filtered = append(filtered, system)
+			}
+		}
+		systems = filtered
+	}
+
+	results := games.GetSystemPaths(systems)
+	if len(results) == 0 {
 		fmt.Println("No games folders found.")
 		os.Exit(1)
 	}
 
-	// filter systems
-	var filteredSystemIds []string
-	for _, id := range filteredIds {
-		found, _ := games.LookupSystem(id)
-		if found != nil {
-			filteredSystemIds = append(filteredSystemIds, found.Id)
-		}
-	}
-
-	if *filter != "" {
-		for _, systemId := range utils.MapKeys(folders) {
-			if !utils.Contains(filteredSystemIds, systemId) {
-				delete(folders, systemId)
-			}
-		}
-	}
-
-	// ignore systems
-	var ignoredSystemIds []string
-	for _, id := range ignoredIds {
-		found, _ := games.LookupSystem(id)
-		if found != nil {
-			ignoredSystemIds = append(ignoredSystemIds, found.Id)
-		}
-	}
-
-	if *ignore != "" {
-		for _, systemId := range ignoredSystemIds {
-			delete(folders, systemId)
-		}
-	}
-
 	// pick out the folders that actually have stuff in them
 	populated := make(map[string][]string)
-	for systemId, folders := range folders {
-		for _, folder := range folders {
-			files, err := os.ReadDir(folder)
-			if err != nil {
-				continue
-			}
-			if len(files) > 0 {
-				populated[systemId] = append(populated[systemId], folder)
-			}
+	for _, folder := range results {
+		files, err := os.ReadDir(folder.Path)
+		if err != nil {
+			continue
+		}
+		if len(files) > 0 {
+			populated[folder.System.Id] = append(populated[folder.System.Id], folder.Path)
 		}
 	}
 
