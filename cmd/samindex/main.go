@@ -170,7 +170,7 @@ func main() {
 
 	// find active system paths
 	if *detect {
-		results := games.GetActivePaths(systems)
+		results := games.GetActiveSystemPaths(systems)
 		for _, r := range results {
 			fmt.Printf("%s:%s\n", strings.ToLower(samId(r.System.Id)), r.Path)
 		}
