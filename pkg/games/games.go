@@ -3,13 +3,11 @@ package games
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -64,35 +62,6 @@ func LookupSystem(id string) (*System, error) {
 	return nil, fmt.Errorf("unknown system: %s", id)
 }
 
-// Match a *top level* folder to its systems. Returns a list of pairs of
-// systemId and path.
-func MatchSystemFolder(path string) ([][2]string, error) {
-	var matches [][2]string
-
-	folder, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-
-	name := folder.Name()
-
-	if !folder.IsDir() {
-		return nil, fmt.Errorf("not a directory: %s", path)
-	}
-
-	for k, v := range Systems {
-		if strings.EqualFold(name, v.Folder) {
-			matches = append(matches, [2]string{k, path})
-		}
-	}
-
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("unknown system: %s", name)
-	} else {
-		return matches, nil
-	}
-}
-
 // Return true if a given files extension is valid for a system.
 func MatchSystemFile(system System, path string) bool {
 	for _, args := range system.FileTypes {
@@ -105,76 +74,6 @@ func MatchSystemFile(system System, path string) bool {
 	return false
 }
 
-// Return a list of all possible parent system folders in a given
-// path with their associated system ids.
-func findSystemFolders(path string) [][2]string {
-	var found [][2]string
-
-	root, err := os.Stat(path)
-	if err != nil || !root.IsDir() {
-		return nil
-	}
-
-	folders, err := ioutil.ReadDir(path)
-	if err != nil {
-		return nil
-	}
-
-	for _, folder := range folders {
-		abs := filepath.Join(path, folder.Name())
-
-		matches, err := MatchSystemFolder(abs)
-		if err != nil {
-			continue
-		} else {
-			found = append(found, matches...)
-		}
-	}
-
-	return found
-}
-
-func GetSystemPaths() map[string][]string {
-	var paths = make(map[string][]string)
-
-	for _, rootPath := range config.GamesFolders {
-		for _, result := range findSystemFolders(rootPath) {
-			paths[result[0]] = append(paths[result[0]], result[1])
-		}
-	}
-
-	return paths
-}
-
-// Given any path, return what systems it could be for.
-func FolderToSystems(path string) []System {
-	var systems []System
-	path = strings.ToLower(path)
-	validGamesFolder := false
-	gamesFolder := ""
-
-	for _, folder := range config.GamesFolders {
-		if strings.HasPrefix(path, strings.ToLower(folder)) {
-			validGamesFolder = true
-			gamesFolder = folder
-			break
-		}
-	}
-
-	if !validGamesFolder {
-		return nil
-	}
-
-	for _, system := range Systems {
-		systemPath := strings.ToLower(filepath.Join(gamesFolder, system.Folder))
-		if strings.HasPrefix(path, systemPath) {
-			systems = append(systems, system)
-		}
-	}
-
-	return systems
-}
-
 // Return a slice of all systems.
 func AllSystems() []System {
 	var systems []System
@@ -184,65 +83,6 @@ func AllSystems() []System {
 	}
 
 	return systems
-}
-
-type activePathMatch struct {
-	System System
-	Path   string
-}
-
-// Return the active path for each system.
-func GetActivePaths(systems []System) []activePathMatch {
-	var matches []activePathMatch
-
-	for _, path := range config.GamesFolders {
-		if _, err := os.Stat(path); err != nil {
-			continue
-		}
-
-		fns, err := os.ReadDir(path)
-		if err != nil {
-			continue
-		}
-
-		for _, fn := range fns {
-			if !fn.IsDir() {
-				continue
-			}
-
-			for _, system := range systems {
-				if !strings.EqualFold(fn.Name(), system.Folder) {
-					continue
-				}
-
-				systemPath := filepath.Join(path, fn.Name())
-
-				// files, err := os.ReadDir(systemPath)
-				// if err != nil {
-				// 	continue
-				// }
-
-				// if len(files) == 0 {
-				// 	continue
-				// }
-
-				matches = append(matches, activePathMatch{
-					system,
-					systemPath,
-				})
-			}
-
-			if len(matches) == len(systems) {
-				break
-			}
-		}
-
-		if len(matches) == len(systems) {
-			break
-		}
-	}
-
-	return matches
 }
 
 type resultsStack [][]string
@@ -482,55 +322,4 @@ func FileExists(path string) bool {
 	}
 
 	return false
-}
-
-type fileChecker struct {
-	zipCache map[string]map[string]struct{}
-}
-
-func (fc *fileChecker) cacheZip(zipPath string, files []string) {
-	fc.zipCache[zipPath] = make(map[string]struct{})
-	for _, file := range files {
-		fc.zipCache[zipPath][file] = struct{}{}
-	}
-}
-
-func (fc *fileChecker) existsZip(zipPath string, file string) bool {
-	if _, ok := fc.zipCache[zipPath]; !ok {
-		files, err := utils.ListZip(zipPath)
-		if err != nil {
-			return false
-		}
-
-		fc.cacheZip(zipPath, files)
-	}
-
-	if _, ok := fc.zipCache[zipPath][file]; !ok {
-		return false
-	}
-
-	return true
-}
-
-func (fc *fileChecker) Exists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-
-	zipMatch := zipRe.FindStringSubmatch(path)
-	if zipMatch != nil {
-		zipPath := zipMatch[1]
-		file := zipMatch[2]
-
-		return fc.existsZip(zipPath, file)
-	}
-
-	return false
-}
-
-func NewFileChecker() *fileChecker {
-	return &fileChecker{
-		zipCache: make(map[string]map[string]struct{}),
-	}
 }

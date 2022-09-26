@@ -81,6 +81,11 @@ var apps = []app{
 		bin:  "playlog.sh",
 		// releaseId: "mrext/playlog",
 	},
+	{
+		name: "mm",
+		path: filepath.Join(cwd, "cmd", "mm"),
+		bin:  "mm",
+	},
 }
 
 type externalApp struct {
@@ -350,9 +355,9 @@ func Release(name string) {
 		dbFp, _ := os.Create(filepath.Join(rd, a.name+".json"))
 		dbFp.Write(dbFileJson)
 		dbFp.Close()
-	}
 
-	UpdateAllDb()
+		UpdateAllDb()
+	}
 }
 
 func MakeKernelImage() {
