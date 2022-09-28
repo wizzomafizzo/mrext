@@ -34,9 +34,10 @@ const (
 // conflict in the future.
 var CoreGroups = map[string][]System{
 	"Atari7800": {Systems["Atari7800"], Systems["Atari2600"]},
-	"NES":       {Systems["NES"], Systems["FDS"]},
+	"NES":       {Systems["NES"], Systems["NESMusic"], Systems["FDS"]},
 	"Gameboy":   {Systems["Gameboy"], Systems["GameboyColor"]},
 	"SMS":       {Systems["MasterSystem"], Systems["GameGear"]},
+	"SNES":      {Systems["SNES"], Systems["SNESMusic"]},
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?
@@ -591,7 +592,6 @@ var Systems = map[string]System{
 		},
 	},
 	"NES": {
-		// TODO: Split off NSF music to separate system.
 		Id:     "NES",
 		Name:   "NES",
 		Folder: "NES",
@@ -602,7 +602,27 @@ var Systems = map[string]System{
 		},
 		FileTypes: []FileType{
 			{
-				Exts: []string{".nes", ".nsf"},
+				Exts: []string{".nes"},
+				Mgl: &MglParams{
+					Delay:    2,
+					FileType: "f",
+					Index:    1,
+				},
+			},
+		},
+	},
+	"NESMusic": {
+		Id:     "NESMusic",
+		Name:   "NES Music",
+		Folder: "NES",
+		Rbf:    "_Console/NES",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"NES_LLAPI"},
+			AltRbfYC:    []string{"NESYC"},
+		},
+		FileTypes: []FileType{
+			{
+				Exts: []string{".nsf"},
 				Mgl: &MglParams{
 					Delay:    2,
 					FileType: "f",
@@ -748,7 +768,6 @@ var Systems = map[string]System{
 	},
 	// TODO: Saturn
 	"SNES": {
-		// TODO: Split games and music.
 		Id:     "SNES",
 		Name:   "SNES",
 		Alias:  []string{"SuperNintendo"},
@@ -767,6 +786,18 @@ var Systems = map[string]System{
 					Index:    0,
 				},
 			},
+		},
+	},
+	"SNESMusic": {
+		Id:     "SNESMusic",
+		Name:   "SNES Music",
+		Folder: "SNES",
+		Rbf:    "_Console/SNES",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"SNES_LLAPI"},
+			AltRbfYC:    []string{"SNESYC"},
+		},
+		FileTypes: []FileType{
 			{
 				Exts: []string{".spc"},
 				Mgl: &MglParams{
