@@ -13,6 +13,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
+// SAM uses slightly different system IDs.
 var idMap = map[string]string{
 	"Gameboy":         "gb",
 	"GameboyColor":    "gbc",
@@ -23,6 +24,19 @@ var idMap = map[string]string{
 	"TurboGraphx16CD": "tgfx16cd",
 }
 
+// Only allow these extensions to be indexed.
+// Any systems not listed will allow all extensions.
+var extMap = map[string][]string{
+	"Atari5200": {".a52", ".car"},
+	"Atari7800": {".a78"},
+	"C64":       {".crt", ".prg"},
+	"Genesis":   {".gen", ".md"},
+	"NeoGeo":    {".neo"},
+	// TODO: will be an issue in the future with sms and sg
+	"TurboGraphx16": {".pce", ".sgx"},
+}
+
+// Convert an internal system ID to a SAM ID if possible.
 func samId(id string) string {
 	if id, ok := idMap[id]; ok {
 		return id
@@ -31,6 +45,7 @@ func samId(id string) string {
 	return id
 }
 
+// Convert a SAM system ID to an internal ID if possible.
 func reverseId(id string) string {
 	for k, v := range idMap {
 		if strings.EqualFold(v, id) {
@@ -41,6 +56,7 @@ func reverseId(id string) string {
 	return id
 }
 
+// Return the filename of the gamelist for a given system ID.
 func gamelistFilename(systemId string) string {
 	var prefix string
 	if id, ok := idMap[systemId]; ok {
@@ -52,6 +68,7 @@ func gamelistFilename(systemId string) string {
 	return strings.ToLower(prefix) + "_gamelist.txt"
 }
 
+// Generate a gamelist file for a system with given results.
 func writeGamelist(gamelistDir string, systemId string, files []string) {
 	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemId))
 	tmpPath, err := os.CreateTemp("", "gamelist-*.txt")
@@ -71,6 +88,7 @@ func writeGamelist(gamelistDir string, systemId string, files []string) {
 	}
 }
 
+// Generate gamelists for all systems. Main workflow of app.
 func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) {
 	start := time.Now()
 
@@ -116,6 +134,21 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 		if filter {
 			systemFiles = games.FilterUniqueFilenames(systemFiles)
 		}
+
+		// filter out certain extensions
+		filteredFiles := make([]string, 0)
+		if filterExts, ok := extMap[systemId]; ok {
+			for _, file := range systemFiles {
+				path := strings.ToLower(file)
+				for _, ext := range filterExts {
+					if strings.HasSuffix(path, ext) {
+						filteredFiles = append(filteredFiles, file)
+						break
+					}
+				}
+			}
+		}
+		systemFiles = filteredFiles
 
 		if len(systemFiles) > 0 {
 			totalGames += len(systemFiles)
