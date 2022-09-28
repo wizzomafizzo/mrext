@@ -972,17 +972,17 @@ var Systems = map[string]System{
 	},
 	// TODO: Altair8800
 	//       Has a folder but roms are built in.
-	// "Amiga": {
-	// 	// TODO: New versions of MegaAGS image support launching individual games,
-	// 	//       will need support for custom scan and launch functions for a core.
-	// 	// TODO: This core has 2 .adf drives and 4 .hdf drives.
-	// 	Id:        "Amiga",
-	// 	Name:      "Amiga",
-	// 	Folder:    "Amiga",
-	// 	Alias:     []string{"Minimig"},
-	// 	Rbf:       "_Computer/Minimig",
-	// 	FileTypes: nil,
-	// },
+	"Amiga": {
+		// TODO: New versions of MegaAGS image support launching individual games,
+		//       will need support for custom scan and launch functions for a core.
+		// TODO: This core has 2 .adf drives and 4 .hdf drives. No CONF_STR.
+		Id:        "Amiga",
+		Name:      "Amiga",
+		Folder:    "Amiga",
+		Alias:     []string{"Minimig"},
+		Rbf:       "_Computer/Minimig",
+		FileTypes: nil,
+	},
 	"Amstrad": {
 		Id:     "Amstrad",
 		Name:   "Amstrad CPC",
