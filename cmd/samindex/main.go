@@ -142,7 +142,7 @@ func main() {
 	progress := flag.Bool("p", false, "print output for dialog gauge")
 	quiet := flag.Bool("q", false, "suppress all status output")
 	detect := flag.Bool("d", false, "list active system folders")
-	noFilter := flag.Bool("nofilter", false, "don't filter out duplicate games")
+	noDupes := flag.Bool("nodupes", false, "filter out duplicate games")
 	flag.Parse()
 
 	// filter systems
@@ -183,6 +183,6 @@ func main() {
 		systemPathsMap[p.System.Id] = append(systemPathsMap[p.System.Id], p.Path)
 	}
 
-	createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, !*noFilter)
+	createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, *noDupes)
 	os.Exit(0)
 }
