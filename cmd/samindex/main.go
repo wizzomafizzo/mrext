@@ -136,7 +136,7 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 		}
 
 		// filter out certain extensions
-		filteredFiles := make([]string, 0)
+		var filteredFiles []string
 		if filterExts, ok := extMap[systemId]; ok {
 			for _, file := range systemFiles {
 				path := strings.ToLower(file)
@@ -147,8 +147,8 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 					}
 				}
 			}
+			systemFiles = filteredFiles
 		}
-		systemFiles = filteredFiles
 
 		if len(systemFiles) > 0 {
 			totalGames += len(systemFiles)
