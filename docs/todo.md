@@ -23,3 +23,5 @@ High level features, ideas and changes.
 - [ ] Dynamic menu background changer
 - [ ] Joystick custom mapping daemon
 - [ ] Launch game on mister boot
+- [ ] Monitor menu selections to add custom actions
+- [ ] Rsync frontend
