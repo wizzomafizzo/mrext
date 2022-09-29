@@ -89,7 +89,7 @@ func writeGamelist(gamelistDir string, systemId string, files []string) {
 }
 
 // Generate gamelists for all systems. Main workflow of app.
-func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) {
+func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) int {
 	start := time.Now()
 
 	if !quiet && !progress {
@@ -167,6 +167,8 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 			fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
 		}
 	}
+
+	return totalGames
 }
 
 func main() {
@@ -216,6 +218,11 @@ func main() {
 		systemPathsMap[p.System.Id] = append(systemPathsMap[p.System.Id], p.Path)
 	}
 
-	createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, *noDupes)
-	os.Exit(0)
+	total := createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, *noDupes)
+
+	if total == 0 {
+		os.Exit(8)
+	} else {
+		os.Exit(0)
+	}
 }
