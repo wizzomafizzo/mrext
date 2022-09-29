@@ -33,9 +33,9 @@ func GetGroup(groupId string) (System, error) {
 	}
 
 	merged = CoreGroups[groupId][0]
-	merged.FileTypes = make([]FileType, 0)
+	merged.Slots = make([]FileType, 0)
 	for _, s := range CoreGroups[groupId] {
-		merged.FileTypes = append(merged.FileTypes, s.FileTypes...)
+		merged.Slots = append(merged.Slots, s.Slots...)
 	}
 
 	return merged, nil
@@ -64,7 +64,7 @@ func LookupSystem(id string) (*System, error) {
 
 // Return true if a given files extension is valid for a system.
 func MatchSystemFile(system System, path string) bool {
-	for _, args := range system.FileTypes {
+	for _, args := range system.Slots {
 		for _, ext := range args.Exts {
 			if strings.HasSuffix(strings.ToLower(path), ext) {
 				return true

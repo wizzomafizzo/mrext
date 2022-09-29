@@ -14,7 +14,7 @@ import (
 func GenerateMgl(system *games.System, path string) (string, error) {
 	var mglDef *games.MglParams
 
-	for _, ft := range system.FileTypes {
+	for _, ft := range system.Slots {
 		for _, ext := range ft.Exts {
 			if s.HasSuffix(s.ToLower(path), ext) {
 				mglDef = ft.Mgl
@@ -27,7 +27,7 @@ func GenerateMgl(system *games.System, path string) (string, error) {
 	} else {
 		return fmt.Sprintf(
 			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../..%s\"/>\n</mistergamedescription>\n",
-			system.Rbf, mglDef.Delay, mglDef.FileType, mglDef.Index, path,
+			system.Rbf, mglDef.Delay, mglDef.Slot, mglDef.Index, path,
 		), nil
 	}
 }
