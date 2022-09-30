@@ -15,25 +15,24 @@ import (
 
 // SAM uses slightly different system IDs.
 var idMap = map[string]string{
-	"Gameboy":         "gb",
-	"GameboyColor":    "gbc",
-	"GameGear":        "gg",
-	"MasterSystem":    "sms",
-	"Sega32X":         "s32x",
-	"TurboGraphx16":   "tgfx16",
-	"TurboGraphx16CD": "tgfx16cd",
+	"Gameboy":        "gb",
+	"GameboyColor":   "gbc",
+	"GameGear":       "gg",
+	"MasterSystem":   "sms",
+	"Sega32X":        "s32x",
+	"TurboGrafx16":   "tgfx16",
+	"TurboGrafx16CD": "tgfx16cd",
 }
 
 // Only allow these extensions to be indexed.
 // Any systems not listed will allow all extensions.
 var extMap = map[string][]string{
-	"Atari5200": {".a52", ".car"},
-	"Atari7800": {".a78"},
-	"C64":       {".crt", ".prg"},
-	"Genesis":   {".gen", ".md"},
-	"NeoGeo":    {".neo"},
-	// TODO: will be an issue in the future with sms and sg
-	"TurboGraphx16": {".pce", ".sgx"},
+	"Atari5200":    {".a52", ".car"},
+	"Atari7800":    {".a78"},
+	"C64":          {".crt", ".prg"},
+	"Genesis":      {".gen", ".md"},
+	"NeoGeo":       {".neo"},
+	"TurboGrafx16": {".pce", ".sgx"},
 }
 
 // Convert an internal system ID to a SAM ID if possible.
