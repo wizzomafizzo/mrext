@@ -21,6 +21,7 @@ func GetSystem(id string) (*System, error) {
 }
 
 func GetGroup(groupId string) (System, error) {
+	// TODO: does this need to support multiple folders?
 	var merged System
 	if _, ok := CoreGroups[groupId]; !ok {
 		return merged, fmt.Errorf("no system group found for %s", groupId)
