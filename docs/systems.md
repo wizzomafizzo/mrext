@@ -4,10 +4,10 @@
 
 This is a list of all systems supported by the MiSTer Extensions scripts. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if a system is missing or not working.
 
-**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [NES](#nes), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Playstation](#playstation), [Pokemon Mini](#pokemon-mini), [SNES](#snes), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperVision](#supervision), [TurboGraphx-16](#turbographx-16), [TurboGraphx-16 CD](#turbographx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
+**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [NES](#nes), [NES Music](#nes-music), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Playstation](#playstation), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGraphx-16](#turbographx-16), [TurboGraphx-16 CD](#turbographx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
 
 
-**Computers:** [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
+**Computers:** [Amiga](#amiga), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
 
 
 **Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8)
@@ -19,13 +19,16 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | ID | Systems |
 | --- | --- |
 | Atari7800 | [Atari 7800](#atari-7800), [Atari 2600](#atari-2600) |
+| Coleco | [](#), [SG-1000](#sg-1000) |
 | Gameboy | [Gameboy](#gameboy), [Gameboy Color](#gameboy-color) |
-| NES | [NES](#nes), [Famicom Disk System](#famicom-disk-system) |
-| SMS | [Master System](#master-system), [Game Gear](#game-gear) |
+| NES | [NES](#nes), [NES Music](#nes-music), [Famicom Disk System](#famicom-disk-system) |
+| SMS | [Master System](#master-system), [Game Gear](#game-gear), [](#) |
+| SNES | [SNES](#snes), [SNES Music](#snes-music) |
+| TGFX16 | [](#), [SuperGrafx](#supergrafx) |
 
 ## Adventure Vision
 
-**ID**: AdventureVision  | **Aliases**: AVision  | **Folder**: AVision | **RBF**: _Console/AdventureVision
+**ID**: AdventureVision  | **Aliases**: AVision  | **Folders**: AVision | **RBF**: _Console/AdventureVision
 
 
 | Label | Files | Delay | Type | Index |
@@ -34,9 +37,16 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Amiga
+
+**ID**: Amiga  | **Aliases**: Minimig  | **Folders**: Amiga | **RBF**: _Computer/Minimig
+
+
+[Back to top](#systems)
+
 ## Amstrad CPC
 
-**ID**: Amstrad  | **Folder**: Amstrad | **RBF**: _Computer/Amstrad
+**ID**: Amstrad  | **Folders**: Amstrad | **RBF**: _Computer/Amstrad
 
 
 | Label | Files | Delay | Type | Index |
@@ -50,7 +60,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Amstrad PCW
 
-**ID**: AmstradPCW  | **Aliases**: Amstrad-PCW  | **Folder**: Amstrad PCW | **RBF**: _Computer/Amstrad-PCW
+**ID**: AmstradPCW  | **Aliases**: Amstrad-PCW  | **Folders**: Amstrad PCW | **RBF**: _Computer/Amstrad-PCW
 
 
 | Label | Files | Delay | Type | Index |
@@ -62,7 +72,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Apogee BK-01
 
-**ID**: Apogee  | **Folder**: APOGEE | **RBF**: _Computer/Apogee
+**ID**: Apogee  | **Folders**: APOGEE | **RBF**: _Computer/Apogee
 
 
 | Label | Files | Delay | Type | Index |
@@ -73,7 +83,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Apple I
 
-**ID**: AppleI  | **Aliases**: Apple-I  | **Folder**: Apple-I | **RBF**: _Computer/Apple-I
+**ID**: AppleI  | **Aliases**: Apple-I  | **Folders**: Apple-I | **RBF**: _Computer/Apple-I
 
 
 | Label | Files | Delay | Type | Index |
@@ -84,7 +94,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Apple IIe
 
-**ID**: AppleII  | **Aliases**: Apple-II  | **Folder**: Apple-II | **RBF**: _Computer/Apple-II
+**ID**: AppleII  | **Aliases**: Apple-II  | **Folders**: Apple-II | **RBF**: _Computer/Apple-II
 
 
 | Label | Files | Delay | Type | Index |
@@ -96,7 +106,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Arcade
 
-**ID**: Arcade  | **Folder**: _Arcade | **RBF**: 
+**ID**: Arcade  | **Folders**: _Arcade | **RBF**: 
 
 
 | Label | Files | Delay | Type | Index |
@@ -107,7 +117,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Arcadia 2001
 
-**ID**: Arcadia  | **Folder**: Arcadia | **RBF**: _Console/Arcadia
+**ID**: Arcadia  | **Folders**: Arcadia | **RBF**: _Console/Arcadia
 
 
 | Label | Files | Delay | Type | Index |
@@ -118,7 +128,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Arduboy
 
-**ID**: Arduboy  | **Folder**: Arduboy | **RBF**: _Other/Arduboy
+**ID**: Arduboy  | **Folders**: Arduboy | **RBF**: _Other/Arduboy
 
 
 | Label | Files | Delay | Type | Index |
@@ -129,7 +139,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari 2600
 
-**ID**: Atari2600  | **Folder**: ATARI7800 | **RBF**: _Console/Atari7800
+**ID**: Atari2600  | **Folders**: ATARI7800 | **RBF**: _Console/Atari7800
 
 
 | Label | Files | Delay | Type | Index |
@@ -146,7 +156,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari 5200
 
-**ID**: Atari5200  | **Folder**: ATARI5200 | **RBF**: _Console/Atari5200
+**ID**: Atari5200  | **Folders**: ATARI5200 | **RBF**: _Console/Atari5200
 
 
 | Label | Files | Delay | Type | Index |
@@ -162,7 +172,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari 7800
 
-**ID**: Atari7800  | **Folder**: ATARI7800 | **RBF**: _Console/Atari7800
+**ID**: Atari7800  | **Folders**: ATARI7800 | **RBF**: _Console/Atari7800
 
 
 | Label | Files | Delay | Type | Index |
@@ -180,7 +190,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari 800XL
 
-**ID**: Atari800  | **Folder**: ATARI800 | **RBF**: _Computer/Atari800
+**ID**: Atari800  | **Folders**: ATARI800 | **RBF**: _Computer/Atari800
 
 
 | Label | Files | Delay | Type | Index |
@@ -193,7 +203,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari Lynx
 
-**ID**: AtariLynx  | **Folder**: AtariLynx | **RBF**: _Console/AtariLynx
+**ID**: AtariLynx  | **Folders**: AtariLynx | **RBF**: _Console/AtariLynx
 
 
 | Label | Files | Delay | Type | Index |
@@ -204,7 +214,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atom
 
-**ID**: AcornAtom  | **Folder**: AcornAtom | **RBF**: _Computer/AcornAtom
+**ID**: AcornAtom  | **Folders**: AcornAtom | **RBF**: _Computer/AcornAtom
 
 
 | Label | Files | Delay | Type | Index |
@@ -215,7 +225,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## BBC Micro/Master
 
-**ID**: BBCMicro  | **Folder**: BBCMicro | **RBF**: _Computer/BBCMicro
+**ID**: BBCMicro  | **Folders**: BBCMicro | **RBF**: _Computer/BBCMicro
 
 
 | Label | Files | Delay | Type | Index |
@@ -228,7 +238,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## BK0011M
 
-**ID**: BK0011M  | **Folder**: BK0011M | **RBF**: _Computer/BK0011M
+**ID**: BK0011M  | **Folders**: BK0011M | **RBF**: _Computer/BK0011M
 
 
 | Label | Files | Delay | Type | Index |
@@ -242,7 +252,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Bally Astrocade
 
-**ID**: Astrocade  | **Folder**: Astrocade | **RBF**: _Console/Astrocade
+**ID**: Astrocade  | **Folders**: Astrocade | **RBF**: _Console/Astrocade
 
 
 | Label | Files | Delay | Type | Index |
@@ -253,7 +263,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## CHIP-8
 
-**ID**: Chip8  | **Folder**: Chip8 | **RBF**: _Other/Chip8
+**ID**: Chip8  | **Folders**: Chip8 | **RBF**: _Other/Chip8
 
 
 | Label | Files | Delay | Type | Index |
@@ -264,7 +274,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Casio PV-1000
 
-**ID**: CasioPV1000  | **Aliases**: Casio_PV-1000  | **Folder**: Casio_PV-1000 | **RBF**: _Console/Casio_PV-1000
+**ID**: CasioPV1000  | **Aliases**: Casio_PV-1000  | **Folders**: Casio_PV-1000 | **RBF**: _Console/Casio_PV-1000
 
 
 | Label | Files | Delay | Type | Index |
@@ -275,7 +285,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Casio PV-2000
 
-**ID**: CasioPV2000  | **Aliases**: Casio_PV-2000  | **Folder**: Casio_PV-2000 | **RBF**: _Computer/Casio_PV-2000
+**ID**: CasioPV2000  | **Aliases**: Casio_PV-2000  | **Folders**: Casio_PV-2000 | **RBF**: _Computer/Casio_PV-2000
 
 
 | Label | Files | Delay | Type | Index |
@@ -286,7 +296,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Channel F
 
-**ID**: ChannelF  | **Folder**: ChannelF | **RBF**: _Console/ChannelF
+**ID**: ChannelF  | **Folders**: ChannelF | **RBF**: _Console/ChannelF
 
 
 | Label | Files | Delay | Type | Index |
@@ -297,13 +307,12 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## ColecoVision
 
-**ID**: ColecoVision  | **Aliases**: Coleco  | **Folder**: Coleco | **RBF**: _Console/ColecoVision
+**ID**: ColecoVision  | **Aliases**: Coleco  | **Folders**: Coleco | **RBF**: _Console/ColecoVision
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .col, .bin, .rom | 1 | f | 1 |
-| SG-1000 | .sg | 1 | f | 2 |
 
 ### Alternate Cores
 | Set | RBFs |
@@ -314,7 +323,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Commodore 16
 
-**ID**: C16  | **Folder**: C16 | **RBF**: _Computer/C16
+**ID**: C16  | **Folders**: C16 | **RBF**: _Computer/C16
 
 
 | Label | Files | Delay | Type | Index |
@@ -327,7 +336,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Commodore 64
 
-**ID**: C64  | **Folder**: C64 | **RBF**: _Computer/C64
+**ID**: C64  | **Folders**: C64 | **RBF**: _Computer/C64
 
 
 | Label | Files | Delay | Type | Index |
@@ -345,7 +354,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Commodore PET 2001
 
-**ID**: PET2001  | **Folder**: PET2001 | **RBF**: _Computer/PET2001
+**ID**: PET2001  | **Folders**: PET2001 | **RBF**: _Computer/PET2001
 
 
 | Label | Files | Delay | Type | Index |
@@ -356,7 +365,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Commodore VIC-20
 
-**ID**: VIC20  | **Folder**: VIC20 | **RBF**: _Computer/VIC20
+**ID**: VIC20  | **Folders**: VIC20 | **RBF**: _Computer/VIC20
 
 
 | Label | Files | Delay | Type | Index |
@@ -369,7 +378,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## EDSAC
 
-**ID**: EDSAC  | **Folder**: EDSAC | **RBF**: _Computer/EDSAC
+**ID**: EDSAC  | **Folders**: EDSAC | **RBF**: _Computer/EDSAC
 
 
 | Label | Files | Delay | Type | Index |
@@ -380,7 +389,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Electron
 
-**ID**: AcornElectron  | **Folder**: AcornElectron | **RBF**: _Computer/AcornElectron
+**ID**: AcornElectron  | **Folders**: AcornElectron | **RBF**: _Computer/AcornElectron
 
 
 | Label | Files | Delay | Type | Index |
@@ -391,7 +400,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Famicom Disk System
 
-**ID**: FDS  | **Aliases**: FamicomDiskSystem  | **Folder**: NES | **RBF**: _Console/NES
+**ID**: FDS  | **Aliases**: FamicomDiskSystem  | **Folders**: NES | **RBF**: _Console/NES
 
 
 | Label | Files | Delay | Type | Index |
@@ -409,7 +418,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Galaksija
 
-**ID**: Galaksija  | **Folder**: Galaksija | **RBF**: _Computer/Galaksija
+**ID**: Galaksija  | **Folders**: Galaksija | **RBF**: _Computer/Galaksija
 
 
 | Label | Files | Delay | Type | Index |
@@ -420,7 +429,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Gamate
 
-**ID**: Gamate  | **Folder**: Gamate | **RBF**: _Console/Gamate
+**ID**: Gamate  | **Folders**: Gamate | **RBF**: _Console/Gamate
 
 
 | Label | Files | Delay | Type | Index |
@@ -431,7 +440,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Game & Watch
 
-**ID**: GameNWatch  | **Folder**: GameNWatch | **RBF**: _Console/GnW
+**ID**: GameNWatch  | **Folders**: GameNWatch | **RBF**: _Console/GnW
 
 
 | Label | Files | Delay | Type | Index |
@@ -442,7 +451,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Game Gear
 
-**ID**: GameGear  | **Folder**: SMS | **RBF**: _Console/SMS
+**ID**: GameGear  | **Aliases**: GG  | **Folders**: SMS | **RBF**: _Console/SMS
 
 
 | Label | Files | Delay | Type | Index |
@@ -452,14 +461,14 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | SMS_LLAPI |
 | YC | SMSYC |
+| LLAPI | SMS_LLAPI |
 
 [Back to top](#systems)
 
 ## Gameboy
 
-**ID**: Gameboy  | **Aliases**: GB  | **Folder**: GAMEBOY | **RBF**: _Console/Gameboy
+**ID**: Gameboy  | **Aliases**: GB  | **Folders**: GAMEBOY | **RBF**: _Console/Gameboy
 
 
 | Label | Files | Delay | Type | Index |
@@ -469,14 +478,14 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | Gameboy_LLAPI |
 | YC | GameboyYC |
+| LLAPI | Gameboy_LLAPI |
 
 [Back to top](#systems)
 
 ## Gameboy (2 Player)
 
-**ID**: Gameboy2P  | **Folder**: GAMEBOY2P | **RBF**: _Console/Gameboy2P
+**ID**: Gameboy2P  | **Folders**: GAMEBOY2P | **RBF**: _Console/Gameboy2P
 
 
 | Label | Files | Delay | Type | Index |
@@ -487,7 +496,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Gameboy Advance
 
-**ID**: GBA  | **Aliases**: GameboyAdvance  | **Folder**: GBA | **RBF**: _Console/GBA
+**ID**: GBA  | **Aliases**: GameboyAdvance  | **Folders**: GBA | **RBF**: _Console/GBA
 
 
 | Label | Files | Delay | Type | Index |
@@ -504,7 +513,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Gameboy Advance (2 Player)
 
-**ID**: GBA2P  | **Folder**: GBA2P | **RBF**: _Console/GBA2P
+**ID**: GBA2P  | **Folders**: GBA2P | **RBF**: _Console/GBA2P
 
 
 | Label | Files | Delay | Type | Index |
@@ -520,7 +529,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Gameboy Color
 
-**ID**: GameboyColor  | **Aliases**: GBC  | **Folder**: GAMEBOY | **RBF**: _Console/Gameboy
+**ID**: GameboyColor  | **Aliases**: GBC  | **Folders**: GAMEBOY | **RBF**: _Console/Gameboy
 
 
 | Label | Files | Delay | Type | Index |
@@ -537,7 +546,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Genesis
 
-**ID**: Genesis  | **Aliases**: MegaDrive  | **Folder**: Genesis | **RBF**: _Console/Genesis
+**ID**: Genesis  | **Aliases**: MegaDrive  | **Folders**: Genesis | **RBF**: _Console/Genesis
 
 
 | Label | Files | Delay | Type | Index |
@@ -547,14 +556,14 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | Genesis_LLAPI |
 | YC | GenesisYC |
+| LLAPI | Genesis_LLAPI |
 
 [Back to top](#systems)
 
 ## Genesis 32X
 
-**ID**: Sega32X  | **Aliases**: S32X, 32X  | **Folder**: S32X | **RBF**: _Console/S32X
+**ID**: Sega32X  | **Aliases**: S32X, 32X  | **Folders**: S32X | **RBF**: _Console/S32X
 
 
 | Label | Files | Delay | Type | Index |
@@ -571,7 +580,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Intellivision
 
-**ID**: Intellivision  | **Folder**: Intellivision | **RBF**: _Console/Intellivision
+**ID**: Intellivision  | **Folders**: Intellivision | **RBF**: _Console/Intellivision
 
 
 | Label | Files | Delay | Type | Index |
@@ -582,7 +591,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Interact
 
-**ID**: Interact  | **Folder**: Interact | **RBF**: _Computer/Interact
+**ID**: Interact  | **Folders**: Interact | **RBF**: _Computer/Interact
 
 
 | Label | Files | Delay | Type | Index |
@@ -593,7 +602,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Jupiter Ace
 
-**ID**: Jupiter  | **Folder**: Jupiter | **RBF**: _Computer/Jupiter
+**ID**: Jupiter  | **Folders**: Jupiter | **RBF**: _Computer/Jupiter
 
 
 | Label | Files | Delay | Type | Index |
@@ -604,7 +613,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Laser 350/500/700
 
-**ID**: Laser  | **Aliases**: Laser310  | **Folder**: Laser | **RBF**: _Computer/Laser310
+**ID**: Laser  | **Aliases**: Laser310  | **Folders**: Laser | **RBF**: _Computer/Laser310
 
 
 | Label | Files | Delay | Type | Index |
@@ -615,7 +624,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Lynx 48/96K
 
-**ID**: Lynx48  | **Folder**: Lynx48 | **RBF**: _Computer/Lynx48
+**ID**: Lynx48  | **Folders**: Lynx48 | **RBF**: _Computer/Lynx48
 
 
 | Label | Files | Delay | Type | Index |
@@ -626,7 +635,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## M5
 
-**ID**: SordM5  | **Aliases**: Sord M5  | **Folder**: Sord M5 | **RBF**: _Computer/SordM5
+**ID**: SordM5  | **Aliases**: Sord M5  | **Folders**: Sord M5 | **RBF**: _Computer/SordM5
 
 
 | Label | Files | Delay | Type | Index |
@@ -638,7 +647,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## MSX
 
-**ID**: MSX  | **Folder**: MSX | **RBF**: _Computer/MSX
+**ID**: MSX  | **Folders**: MSX | **RBF**: _Computer/MSX
 
 
 | Label | Files | Delay | Type | Index |
@@ -649,7 +658,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Macintosh Plus
 
-**ID**: MacPlus  | **Folder**: MACPLUS | **RBF**: _Computer/MacPlus
+**ID**: MacPlus  | **Folders**: MACPLUS | **RBF**: _Computer/MacPlus
 
 
 | Label | Files | Delay | Type | Index |
@@ -663,7 +672,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Magnavox Odyssey2
 
-**ID**: Odyssey2  | **Folder**: ODYSSEY2 | **RBF**: _Console/Odyssey2
+**ID**: Odyssey2  | **Folders**: ODYSSEY2 | **RBF**: _Console/Odyssey2
 
 
 | Label | Files | Delay | Type | Index |
@@ -675,12 +684,12 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Master System
 
-**ID**: MasterSystem  | **Aliases**: SMS  | **Folder**: SMS | **RBF**: _Console/SMS
+**ID**: MasterSystem  | **Aliases**: SMS  | **Folders**: SMS | **RBF**: _Console/SMS
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| - | .sms, .sg | 1 | f | 1 |
+| - | .sms | 1 | f | 1 |
 
 ### Alternate Cores
 | Set | RBFs |
@@ -692,7 +701,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Mattel Aquarius
 
-**ID**: Aquarius  | **Folder**: AQUARIUS | **RBF**: _Computer/Aquarius
+**ID**: Aquarius  | **Folders**: AQUARIUS | **RBF**: _Computer/Aquarius
 
 
 | Label | Files | Delay | Type | Index |
@@ -704,7 +713,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## MultiComp
 
-**ID**: MultiComp  | **Folder**: MultiComp | **RBF**: _Computer/MultiComp
+**ID**: MultiComp  | **Folders**: MultiComp | **RBF**: _Computer/MultiComp
 
 
 | Label | Files | Delay | Type | Index |
@@ -715,12 +724,29 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## NES
 
-**ID**: NES  | **Folder**: NES | **RBF**: _Console/NES
+**ID**: NES  | **Folders**: NES | **RBF**: _Console/NES
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| - | .nes, .nsf | 2 | f | 1 |
+| - | .nes | 2 | f | 1 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| LLAPI | NES_LLAPI |
+| YC | NESYC |
+
+[Back to top](#systems)
+
+## NES Music
+
+**ID**: NESMusic  | **Folders**: NES | **RBF**: _Console/NES
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .nsf | 2 | f | 1 |
 
 ### Alternate Cores
 | Set | RBFs |
@@ -732,7 +758,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Neo Geo MVS/AES
 
-**ID**: NeoGeo  | **Folder**: NEOGEO | **RBF**: _Console/NeoGeo
+**ID**: NeoGeo  | **Folders**: NEOGEO | **RBF**: _Console/NeoGeo
 
 
 | Label | Files | Delay | Type | Index |
@@ -743,14 +769,14 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | NeoGeoYC |
 | LLAPI | NeoGeo_LLAPI |
+| YC | NeoGeoYC |
 
 [Back to top](#systems)
 
 ## Orao
 
-**ID**: Orao  | **Folder**: ORAO | **RBF**: _Computer/ORAO
+**ID**: Orao  | **Folders**: ORAO | **RBF**: _Computer/ORAO
 
 
 | Label | Files | Delay | Type | Index |
@@ -761,7 +787,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Oric
 
-**ID**: Oric  | **Folder**: Oric | **RBF**: _Computer/Oric
+**ID**: Oric  | **Folders**: Oric | **RBF**: _Computer/Oric
 
 
 | Label | Files | Delay | Type | Index |
@@ -772,7 +798,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## PC (486SX)
 
-**ID**: ao486  | **Folder**: AO486 | **RBF**: _Computer/ao486
+**ID**: ao486  | **Folders**: AO486 | **RBF**: _Computer/ao486
 
 
 | Label | Files | Delay | Type | Index |
@@ -788,7 +814,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## PC/XT
 
-**ID**: PCXT  | **Folder**: PCXT | **RBF**: _Computer/PCXT
+**ID**: PCXT  | **Folders**: PCXT | **RBF**: _Computer/PCXT
 
 
 | Label | Files | Delay | Type | Index |
@@ -800,7 +826,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## PDP-1
 
-**ID**: PDP1  | **Folder**: PDP1 | **RBF**: _Computer/PDP1
+**ID**: PDP1  | **Folders**: PDP1 | **RBF**: _Computer/PDP1
 
 
 | Label | Files | Delay | Type | Index |
@@ -811,7 +837,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## PMD 85-2A
 
-**ID**: PMD85  | **Folder**: PMD85 | **RBF**: _Computer/PMD85
+**ID**: PMD85  | **Folders**: PMD85 | **RBF**: _Computer/PMD85
 
 
 | Label | Files | Delay | Type | Index |
@@ -822,7 +848,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Playstation
 
-**ID**: PSX  | **Aliases**: Playstation, PS1  | **Folder**: PSX | **RBF**: _Console/PSX
+**ID**: PSX  | **Aliases**: Playstation, PS1  | **Folders**: PSX | **RBF**: _Console/PSX
 
 
 | Label | Files | Delay | Type | Index |
@@ -840,7 +866,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Pokemon Mini
 
-**ID**: PokemonMini  | **Folder**: PokemonMini | **RBF**: _Console/PokemonMini
+**ID**: PokemonMini  | **Folders**: PokemonMini | **RBF**: _Console/PokemonMini
 
 
 | Label | Files | Delay | Type | Index |
@@ -851,7 +877,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## RX-78 Gundam
 
-**ID**: RX78  | **Folder**: RX78 | **RBF**: _Computer/RX78
+**ID**: RX78  | **Folders**: RX78 | **RBF**: _Computer/RX78
 
 
 | Label | Files | Delay | Type | Index |
@@ -862,7 +888,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## SAM Coupe
 
-**ID**: SAMCoupe  | **Folder**: SAMCOUPE | **RBF**: _Computer/SAMCoupe
+**ID**: SAMCoupe  | **Folders**: SAMCOUPE | **RBF**: _Computer/SAMCoupe
 
 
 | Label | Files | Delay | Type | Index |
@@ -872,14 +898,46 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## SG-1000
+
+**ID**: SG1000  | **Folders**: SG1000, Coleco, SMS | **RBF**: _Console/ColecoVision
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| SG-1000 | .sg | 1 | f | 2 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| YC | ColecoVisionYC |
+
+[Back to top](#systems)
+
 ## SNES
 
-**ID**: SNES  | **Aliases**: SuperNintendo  | **Folder**: SNES | **RBF**: _Console/SNES
+**ID**: SNES  | **Aliases**: SuperNintendo  | **Folders**: SNES | **RBF**: _Console/SNES
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .sfc, .smc, .bin, .bs | 2 | f | 0 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| YC | SNESYC |
+| LLAPI | SNES_LLAPI |
+
+[Back to top](#systems)
+
+## SNES Music
+
+**ID**: SNESMusic  | **Folders**: SNES | **RBF**: _Console/SNES
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
 | - | .spc | 2 | f | 1 |
 
 ### Alternate Cores
@@ -892,7 +950,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## SV-328
 
-**ID**: SVI328  | **Folder**: SVI328 | **RBF**: _Computer/Svi328
+**ID**: SVI328  | **Folders**: SVI328 | **RBF**: _Computer/Svi328
 
 
 | Label | Files | Delay | Type | Index |
@@ -904,7 +962,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Sega CD
 
-**ID**: MegaCD  | **Aliases**: SegaCD  | **Folder**: MegaCD | **RBF**: _Console/MegaCD
+**ID**: MegaCD  | **Aliases**: SegaCD  | **Folders**: MegaCD | **RBF**: _Console/MegaCD
 
 
 | Label | Files | Delay | Type | Index |
@@ -921,7 +979,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Sinclair QL
 
-**ID**: QL  | **Folder**: QL | **RBF**: _Computer/QL
+**ID**: QL  | **Folders**: QL | **RBF**: _Computer/QL
 
 
 | Label | Files | Delay | Type | Index |
@@ -933,7 +991,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Specialist/MX
 
-**ID**: Specialist  | **Aliases**: SPMX  | **Folder**: SPMX | **RBF**: _Computer/Specialist
+**ID**: Specialist  | **Aliases**: SPMX  | **Folders**: SPMX | **RBF**: _Computer/Specialist
 
 
 | Label | Files | Delay | Type | Index |
@@ -945,7 +1003,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Super Gameboy
 
-**ID**: SuperGameboy  | **Aliases**: SGB  | **Folder**: SGB | **RBF**: _Console/SGB
+**ID**: SuperGameboy  | **Aliases**: SGB  | **Folders**: SGB | **RBF**: _Console/SGB
 
 
 | Label | Files | Delay | Type | Index |
@@ -960,9 +1018,26 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## SuperGrafx
+
+**ID**: SuperGrafx  | **Folders**: TGFX16 | **RBF**: _Console/TurboGrafx16
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| SuperGrafx | .sgx | 1 | f | 1 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| LLAPI | TurboGrafx16_LLAPI |
+| YC | TurboGrafx16YC |
+
+[Back to top](#systems)
+
 ## SuperVision
 
-**ID**: SuperVision  | **Folder**: SuperVision | **RBF**: _Console/SuperVision
+**ID**: SuperVision  | **Folders**: SuperVision | **RBF**: _Console/SuperVision
 
 
 | Label | Files | Delay | Type | Index |
@@ -973,7 +1048,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TI-99/4A
 
-**ID**: TI994A  | **Aliases**: TI-99_4A  | **Folder**: TI-99_4A | **RBF**: _Computer/Ti994a
+**ID**: TI994A  | **Aliases**: TI-99_4A  | **Folders**: TI-99_4A | **RBF**: _Computer/Ti994a
 
 
 | Label | Files | Delay | Type | Index |
@@ -986,7 +1061,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TRS-80
 
-**ID**: TRS80  | **Folder**: TRS-80 | **RBF**: _Computer/TRS-80
+**ID**: TRS80  | **Folders**: TRS-80 | **RBF**: _Computer/TRS-80
 
 
 | Label | Files | Delay | Type | Index |
@@ -1000,7 +1075,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TRS-80 CoCo 2
 
-**ID**: CoCo2  | **Folder**: CoCo2 | **RBF**: _Computer/CoCo2
+**ID**: CoCo2  | **Folders**: CoCo2 | **RBF**: _Computer/CoCo2
 
 
 | Label | Files | Delay | Type | Index |
@@ -1016,7 +1091,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TS-1500
 
-**ID**: ZX81  | **Folder**: ZX81 | **RBF**: _Computer/ZX81
+**ID**: ZX81  | **Folders**: ZX81 | **RBF**: _Computer/ZX81
 
 
 | Label | Files | Delay | Type | Index |
@@ -1027,7 +1102,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TS-Config
 
-**ID**: TSConf  | **Folder**: TSConf | **RBF**: _Computer/TSConf
+**ID**: TSConf  | **Folders**: TSConf | **RBF**: _Computer/TSConf
 
 
 | Label | Files | Delay | Type | Index |
@@ -1038,7 +1113,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Tandy MC-10
 
-**ID**: AliceMC10  | **Folder**: AliceMC10 | **RBF**: _Computer/AliceMC10
+**ID**: AliceMC10  | **Folders**: AliceMC10 | **RBF**: _Computer/AliceMC10
 
 
 | Label | Files | Delay | Type | Index |
@@ -1049,7 +1124,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Tatung Einstein
 
-**ID**: TatungEinstein  | **Folder**: TatungEinstein | **RBF**: _Computer/TatungEinstein
+**ID**: TatungEinstein  | **Folders**: TatungEinstein | **RBF**: _Computer/TatungEinstein
 
 
 | Label | Files | Delay | Type | Index |
@@ -1060,13 +1135,12 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TurboGraphx-16
 
-**ID**: TurboGraphx16  | **Aliases**: TGFX16, PCEngine  | **Folder**: TGFX16 | **RBF**: _Console/TurboGrafx16
+**ID**: TurboGraphx16  | **Aliases**: TGFX16, PCEngine  | **Folders**: TGFX16 | **RBF**: _Console/TurboGrafx16
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | TurboGrafx | .bin, .pce | 1 | f | 0 |
-| SuperGrafx | .sgx | 1 | f | 1 |
 
 ### Alternate Cores
 | Set | RBFs |
@@ -1078,7 +1152,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## TurboGraphx-16 CD
 
-**ID**: TurboGraphx16CD  | **Aliases**: TGFX16-CD, PCEngineCD  | **Folder**: TGFX16-CD | **RBF**: _Console/TurboGrafx16
+**ID**: TurboGraphx16CD  | **Aliases**: TGFX16-CD, PCEngineCD  | **Folders**: TGFX16-CD | **RBF**: _Console/TurboGrafx16
 
 
 | Label | Files | Delay | Type | Index |
@@ -1095,7 +1169,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Tutor
 
-**ID**: TomyTutor  | **Folder**: TomyTutor | **RBF**: _Computer/TomyTutor
+**ID**: TomyTutor  | **Folders**: TomyTutor | **RBF**: _Computer/TomyTutor
 
 
 | Label | Files | Delay | Type | Index |
@@ -1107,7 +1181,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## UK101
 
-**ID**: UK101  | **Folder**: UK101 | **RBF**: _Computer/UK101
+**ID**: UK101  | **Folders**: UK101 | **RBF**: _Computer/UK101
 
 
 | Label | Files | Delay | Type | Index |
@@ -1118,7 +1192,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## VC4000
 
-**ID**: VC4000  | **Folder**: VC4000 | **RBF**: _Console/VC4000
+**ID**: VC4000  | **Folders**: VC4000 | **RBF**: _Console/VC4000
 
 
 | Label | Files | Delay | Type | Index |
@@ -1129,7 +1203,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## VTech CreatiVision
 
-**ID**: CreatiVision  | **Folder**: CreatiVision | **RBF**: _Console/CreatiVision
+**ID**: CreatiVision  | **Folders**: CreatiVision | **RBF**: _Console/CreatiVision
 
 
 | Label | Files | Delay | Type | Index |
@@ -1142,7 +1216,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Vector-06C
 
-**ID**: Vector06C  | **Aliases**: Vector06  | **Folder**: VECTOR06 | **RBF**: _Computer/Vector-06C
+**ID**: Vector06C  | **Aliases**: Vector06  | **Folders**: VECTOR06 | **RBF**: _Computer/Vector-06C
 
 
 | Label | Files | Delay | Type | Index |
@@ -1155,7 +1229,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Vectrex
 
-**ID**: Vectrex  | **Folder**: VECTREX | **RBF**: _Console/Vectrex
+**ID**: Vectrex  | **Folders**: VECTREX | **RBF**: _Console/Vectrex
 
 
 | Label | Files | Delay | Type | Index |
@@ -1167,7 +1241,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## WonderSwan
 
-**ID**: WonderSwan  | **Folder**: WonderSwan | **RBF**: _Console/WonderSwan
+**ID**: WonderSwan  | **Folders**: WonderSwan | **RBF**: _Console/WonderSwan
 
 
 | Label | Files | Delay | Type | Index |
@@ -1178,7 +1252,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## X68000
 
-**ID**: X68000  | **Folder**: X68000 | **RBF**: _Computer/X68000
+**ID**: X68000  | **Folders**: X68000 | **RBF**: _Computer/X68000
 
 
 | Label | Files | Delay | Type | Index |
@@ -1192,7 +1266,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## ZX Spectrum
 
-**ID**: ZXSpectrum  | **Aliases**: Spectrum  | **Folder**: Spectrum | **RBF**: _Computer/ZX-Spectrum
+**ID**: ZXSpectrum  | **Aliases**: Spectrum  | **Folders**: Spectrum | **RBF**: _Computer/ZX-Spectrum
 
 
 | Label | Files | Delay | Type | Index |
@@ -1206,7 +1280,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## ZX Spectrum Next
 
-**ID**: ZXNext  | **Folder**: ZXNext | **RBF**: _Computer/ZXNext
+**ID**: ZXNext  | **Folders**: ZXNext | **RBF**: _Computer/ZXNext
 
 
 | Label | Files | Delay | Type | Index |
