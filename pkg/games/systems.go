@@ -49,7 +49,8 @@ var CoreGroups = map[string][]System{
 			},
 		},
 	}},
-	"SNES": {Systems["SNES"], Systems["SNESMusic"]},
+	"SNES":   {Systems["SNES"], Systems["SNESMusic"]},
+	"TGFX16": {Systems["TurboGrafx16"], Systems["SuperGrafx"]},
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?
@@ -826,6 +827,27 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	"SuperGrafx": {
+		Id:     "SuperGrafx",
+		Name:   "SuperGrafx",
+		Folder: []string{"TGFX16"},
+		Rbf:    "_Console/TurboGrafx16",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"TurboGrafx16_LLAPI"},
+			AltRbfYC:    []string{"TurboGrafx16YC"},
+		},
+		Slots: []Slot{
+			{
+				Label: "SuperGrafx",
+				Exts:  []string{".sgx"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
 	"TurboGraphx16": {
 		Id:     "TurboGraphx16",
 		Name:   "TurboGraphx-16",
@@ -844,15 +866,6 @@ var Systems = map[string]System{
 					Delay:  1,
 					Method: "f",
 					Index:  0,
-				},
-			},
-			{
-				Label: "SuperGrafx",
-				Exts:  []string{".sgx"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  1,
 				},
 			},
 		},
