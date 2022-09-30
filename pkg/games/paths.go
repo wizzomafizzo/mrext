@@ -75,9 +75,11 @@ func FolderToSystems(path string) []System {
 	}
 
 	for _, system := range Systems {
-		systemPath := strings.ToLower(filepath.Join(gamesFolder, system.Folder))
-		if strings.HasPrefix(path, systemPath) {
-			systems = append(systems, system)
+		for _, folder := range system.Folder {
+			systemPath := strings.ToLower(filepath.Join(gamesFolder, folder))
+			if strings.HasPrefix(path, systemPath) {
+				systems = append(systems, system)
+			}
 		}
 	}
 
@@ -101,13 +103,15 @@ func GetSystemPaths(systems []System) []PathResult {
 				continue
 			}
 
-			systemFolder := filepath.Join(gf, system.Folder)
-			path, err := getCaseInsensitiveDir(listFolder, systemFolder)
-			if err != nil {
-				continue
-			}
+			for _, folder := range system.Folder {
+				systemFolder := filepath.Join(gf, folder)
+				path, err := getCaseInsensitiveDir(listFolder, systemFolder)
+				if err != nil {
+					continue
+				}
 
-			matches = append(matches, PathResult{system, path})
+				matches = append(matches, PathResult{system, path})
+			}
 		}
 	}
 
@@ -130,14 +134,23 @@ func GetActiveSystemPaths(systems []System) []PathResult {
 				continue
 			}
 
-			systemFolder := filepath.Join(gf, system.Folder)
-			path, err := getCaseInsensitiveDir(listFolder, systemFolder)
-			if err != nil {
-				continue
+			found := false
+
+			for _, folder := range system.Folder {
+				systemFolder := filepath.Join(gf, folder)
+				path, err := getCaseInsensitiveDir(listFolder, systemFolder)
+				if err != nil {
+					continue
+				}
+
+				matches = append(matches, PathResult{system, path})
+				found = true
+				break
 			}
 
-			matches = append(matches, PathResult{system, path})
-			break
+			if found {
+				break
+			}
 		}
 
 		if len(matches) == len(systems) {

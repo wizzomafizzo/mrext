@@ -218,10 +218,10 @@ func (t *Tracker) loadGame() {
 
 	systems := games.FolderToSystems(path)
 	var folder string
-	if len(systems) == 0 {
+	if len(systems) == 0 || len(systems[0].Folder) == 0 {
 		folder = "UNKNOWN"
 	} else {
-		folder = systems[0].Folder
+		folder = systems[0].Folder[0]
 	}
 
 	id := fmt.Sprintf("%s/%s", folder, filename)

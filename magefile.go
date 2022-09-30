@@ -473,10 +473,10 @@ func GenSystemsDoc() {
 
 		md += "\n" + strings.Join(info, " | ") + "\n\n"
 
-		if len(s.FileTypes) > 0 {
+		if len(s.Slots) > 0 {
 			md += fmt.Sprintf("\n| Label | Files | Delay | Type | Index |\n| --- | --- | --- | --- | --- |\n")
 
-			for _, f := range s.FileTypes {
+			for _, f := range s.Slots {
 				files := "-"
 				if len(f.Exts) > 0 {
 					files = strings.Join(f.Exts, ", ")
@@ -493,7 +493,7 @@ func GenSystemsDoc() {
 
 				if f.Mgl != nil {
 					delay = fmt.Sprintf("%d", f.Mgl.Delay)
-					fileType = f.Mgl.FileType
+					fileType = f.Mgl.Slot
 					index = fmt.Sprintf("%d", f.Mgl.Index)
 				}
 
