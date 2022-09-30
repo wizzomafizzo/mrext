@@ -493,7 +493,7 @@ func GenSystemsDoc() {
 
 				if f.Mgl != nil {
 					delay = fmt.Sprintf("%d", f.Mgl.Delay)
-					fileType = f.Mgl.Slot
+					fileType = f.Mgl.Method
 					index = fmt.Sprintf("%d", f.Mgl.Index)
 				}
 
