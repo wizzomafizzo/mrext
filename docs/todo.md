@@ -5,9 +5,9 @@ High level features, ideas and changes.
 - [ ] .zip files for all release bins
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
 - [ ] Write all temp mgls to a directory in tmp instead of root
-- [ ] Allow defining multiple folders on a system
+- [x] Allow defining multiple folders on a system
 - [ ] Support alternate arcade folders for those sets
-- [ ] Split any remaining cores supporting multiple systems
+- [x] Split any remaining cores supporting multiple systems
 - [x] Check for cores that can be launched by MGL but aren't currently listed
 - [ ] Custom system scan and launch functions to support Amiga MegaAGS image
 - [ ] Support setname attribute on child systems
@@ -24,4 +24,4 @@ High level features, ideas and changes.
 - [ ] Joystick custom mapping daemon
 - [ ] Launch game on mister boot
 - [ ] Monitor menu selections to add custom actions
-- [ ] Rsync frontend
+- [ ] Rclone frontend
