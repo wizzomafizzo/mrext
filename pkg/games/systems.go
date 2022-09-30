@@ -34,10 +34,22 @@ const (
 // conflict in the future.
 var CoreGroups = map[string][]System{
 	"Atari7800": {Systems["Atari7800"], Systems["Atari2600"]},
-	"NES":       {Systems["NES"], Systems["NESMusic"], Systems["FDS"]},
+	"Coleco":    {Systems["Coleco"], Systems["SG1000"]},
 	"Gameboy":   {Systems["Gameboy"], Systems["GameboyColor"]},
-	"SMS":       {Systems["MasterSystem"], Systems["GameGear"]},
-	"SNES":      {Systems["SNES"], Systems["SNESMusic"]},
+	"NES":       {Systems["NES"], Systems["NESMusic"], Systems["FDS"]},
+	"SMS": {Systems["MasterSystem"], Systems["GameGear"], System{
+		Slots: []Slot{
+			{
+				Exts: []string{".sg"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	}},
+	"SNES": {Systems["SNES"], Systems["SNESMusic"]},
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?
@@ -48,8 +60,7 @@ var CoreGroups = map[string][]System{
 // TODO: custom launch function
 // TODO: support for multiple folders (think about symlink support here, check for dupes)
 // TODO: could cut down on work scanning by folder rather than system
-// TODO: add folder name aliases
-// TODO: may need to support globbing on extensions
+// TODO: support globbing on extensions
 
 var Systems = map[string]System{
 	// Consoles
@@ -229,7 +240,6 @@ var Systems = map[string]System{
 		},
 	},
 	"ColecoVision": {
-		// TODO: Remove .sg from here, keep in meta, after multi-folder.
 		Id:     "ColecoVision",
 		Name:   "ColecoVision",
 		Alias:  []string{"Coleco"},
@@ -245,15 +255,6 @@ var Systems = map[string]System{
 					Delay:  1,
 					Method: "f",
 					Index:  1,
-				},
-			},
-			{
-				Label: "SG-1000",
-				Exts:  []string{".sg"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
 				},
 			},
 		},
@@ -516,7 +517,6 @@ var Systems = map[string]System{
 	},
 	// TODO: Jaguar
 	"MasterSystem": {
-		// TODO: Split off SG-1000 (prefer Coleco core).
 		Id:     "MasterSystem",
 		Name:   "Master System",
 		Alias:  []string{"SMS"},
@@ -528,7 +528,7 @@ var Systems = map[string]System{
 		},
 		Slots: []Slot{
 			{
-				Exts: []string{".sms", ".sg"},
+				Exts: []string{".sms"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
@@ -726,8 +726,26 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	// TODO: SG-1000
-	//       Include Coleco and SMS folders.
+	"SG1000": {
+		Id:     "SG1000",
+		Name:   "SG-1000",
+		Folder: []string{"SG1000", "Coleco", "SMS"},
+		Rbf:    "_Console/ColecoVision",
+		AltRbf: AltRbfOpts{
+			AltRbfYC: []string{"ColecoVisionYC"},
+		},
+		Slots: []Slot{
+			{
+				Label: "SG-1000",
+				Exts:  []string{".sg"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  2,
+				},
+			},
+		},
+	},
 	"SuperGameboy": {
 		Id:     "SuperGameboy",
 		Name:   "Super Gameboy",
