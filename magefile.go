@@ -468,7 +468,7 @@ func GenSystemsDoc() {
 			info = append(info, fmt.Sprintf("**Aliases**: %s ", aliases))
 		}
 
-		info = append(info, fmt.Sprintf("**Folder**: %s", s.Folder))
+		info = append(info, fmt.Sprintf("**Folders**: %s", strings.Join(s.Folder, ", ")))
 		info = append(info, fmt.Sprintf("**RBF**: %s", s.Rbf))
 
 		md += "\n" + strings.Join(info, " | ") + "\n\n"
