@@ -33,7 +33,7 @@ func GetGroup(groupId string) (System, error) {
 	}
 
 	merged = CoreGroups[groupId][0]
-	merged.Slots = make([]FileType, 0)
+	merged.Slots = make([]Slot, 0)
 	for _, s := range CoreGroups[groupId] {
 		merged.Slots = append(merged.Slots, s.Slots...)
 	}
