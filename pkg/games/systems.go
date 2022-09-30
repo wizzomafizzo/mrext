@@ -34,10 +34,11 @@ const (
 // conflict in the future.
 var CoreGroups = map[string][]System{
 	"Atari7800": {Systems["Atari7800"], Systems["Atari2600"]},
-	"Coleco":    {Systems["Coleco"], Systems["SG1000"]},
+	"Coleco":    {Systems["ColecoVision"], Systems["SG1000"]},
 	"Gameboy":   {Systems["Gameboy"], Systems["GameboyColor"]},
 	"NES":       {Systems["NES"], Systems["NESMusic"], Systems["FDS"]},
 	"SMS": {Systems["MasterSystem"], Systems["GameGear"], System{
+		Name: "SG-1000",
 		Slots: []Slot{
 			{
 				Exts: []string{".sg"},
@@ -848,9 +849,9 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	"TurboGraphx16": {
-		Id:     "TurboGraphx16",
-		Name:   "TurboGraphx-16",
+	"TurboGrafx16": {
+		Id:     "TurboGrafx16",
+		Name:   "TurboGrafx-16",
 		Alias:  []string{"TGFX16", "PCEngine"},
 		Folder: []string{"TGFX16"},
 		Rbf:    "_Console/TurboGrafx16",
@@ -870,9 +871,9 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	"TurboGraphx16CD": {
-		Id:     "TurboGraphx16CD",
-		Name:   "TurboGraphx-16 CD",
+	"TurboGrafx16CD": {
+		Id:     "TurboGrafx16CD",
+		Name:   "TurboGrafx-16 CD",
 		Alias:  []string{"TGFX16-CD", "PCEngineCD"},
 		Folder: []string{"TGFX16-CD"},
 		Rbf:    "_Console/TurboGrafx16",
