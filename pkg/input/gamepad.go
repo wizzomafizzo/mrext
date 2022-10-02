@@ -1,4 +1,4 @@
-package gamepad
+package input
 
 /*
  #include <linux/input.h>
