@@ -52,6 +52,12 @@ type app struct {
 
 var apps = []app{
 	{
+		name: "favorites",
+		path: filepath.Join(cwd, "cmd", "favorites"),
+		bin:  "addfav",
+		// releaseId: "mrext/favorites",
+	},
+	{
 		name:      "random",
 		path:      filepath.Join(cwd, "cmd", "random"),
 		bin:       "random.sh",
