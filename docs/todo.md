@@ -20,6 +20,7 @@ High level features, ideas and changes.
 - [ ] Rewrite BGM in mrext (volume control, flac support, improved UI and audio control)
 - [ ] Investigate arcade high scores display
 - [ ] Time tracking stats (how long you've played a system/game)
+- [ ] Auto generate favorites list of most played games
 - [ ] Dynamic menu background changer
 - [ ] Joystick custom mapping daemon
 - [ ] Launch game on mister boot

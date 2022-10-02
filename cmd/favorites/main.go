@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -24,14 +26,16 @@ func main() {
 		*favName = utils.StripBadFileChars(*favName)
 	}
 
-	// TODO: won't work with zips
-	if _, err := os.Stat(*gameFile); os.IsNotExist(err) {
+	if !games.FileExists(*gameFile) {
 		fmt.Printf("Game file does not exist: %s\n", *gameFile)
 		os.Exit(1)
 	}
 
+	if !filepath.IsAbs(*menuFolder) {
+		*menuFolder = filepath.Join(config.SdFolder, *menuFolder)
+	}
+
 	if _, err := os.Stat(*menuFolder); os.IsNotExist(err) {
-		// TODO: check relative?
 		fmt.Printf("Menu folder does not exist: %s\n", *menuFolder)
 		os.Exit(1)
 	}
