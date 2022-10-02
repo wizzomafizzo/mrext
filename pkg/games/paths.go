@@ -79,6 +79,7 @@ func FolderToSystems(path string) []System {
 			systemPath := strings.ToLower(filepath.Join(gamesFolder, folder))
 			if strings.HasPrefix(path, systemPath) {
 				systems = append(systems, system)
+				break
 			}
 		}
 	}
