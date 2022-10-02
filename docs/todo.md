@@ -25,3 +25,4 @@ High level features, ideas and changes.
 - [ ] Launch game on mister boot
 - [ ] Monitor menu selections to add custom actions
 - [ ] Rclone frontend
+- [ ] Favorite cmd line utility
