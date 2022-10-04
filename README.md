@@ -85,6 +85,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
   The same, but specifically for 4:3 CRT screens.
 
+- [MiSTress](https://github.com/sigboe/MiSTress)
+
+  An RSS reader for MiSTer. Display the latest core updates right on your wallpaper.
+
 ### Ports
 
 - [MiSTer Basilisk II](https://github.com/bbond007/MiSTer_BasiliskII)
@@ -128,6 +132,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 - [Official Scripts](https://github.com/MiSTer-devel/Scripts_MiSTer)
 
   The official MiSTer scripts repository. A miscellaneous collection of small scripts for various system tasks and configuration.
+
+- [reMiSTer](https://github.com/sigboe/reMiSTer)
+
+  A tool for using your keyboard on MiSTer over the network.
 
 ### Updaters
 
