@@ -44,7 +44,6 @@ func main() {
 
 	if *systemId == "auto" {
 		systems := games.FolderToSystems(*gameFile)
-
 		if len(systems) == 0 {
 			fmt.Printf("Could not determine system for game: %s\n", *gameFile)
 			os.Exit(1)
@@ -52,7 +51,6 @@ func main() {
 
 		system = systems[0]
 	} else {
-		var err error
 		lookup, err := games.LookupSystem(*systemId)
 		if err != nil {
 			fmt.Printf("Invalid system ID: %s\n", *systemId)
