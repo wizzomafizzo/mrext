@@ -52,6 +52,11 @@ type app struct {
 
 var apps = []app{
 	{
+		name: "background",
+		path: filepath.Join(cwd, "cmd", "background"),
+		bin:  "background",
+	},
+	{
 		name: "favorites",
 		path: filepath.Join(cwd, "cmd", "favorites"),
 		bin:  "addfav",
