@@ -6,12 +6,10 @@ import sys
 import glob
 import re
 import zipfile
+import configparser
 
 # TODO: smarter cores link creation
 # TODO: cleanup cores links
-# TODO: dynamic win height/width
-# TODO: make msg windows smaller?
-# TODO: reuse dialog config in scripts?
 
 FAVORITES_DEFAULT = "_@Favorites"
 FAVORITES_NAMES = {"fav"}
@@ -32,153 +30,157 @@ ALLOWED_SD_FILES = {
     "_games",
     "_other",
     "_utility",
+    "_llapi",
+    "_ycarcade",
     "cifs",
     "games",
 }
 
-# set to True to use LLAPI cores if found; set to False to ignore LLAPI cores
-ENABLE_LLAPI = False
+# shallow search of rbfs on sd
+def all_rbfs() -> list[str]:
+    rbfs = []
+    for i in os.listdir(SD_ROOT):
+        if i.lower().endswith(".rbf"):
+            rbfs.append(i)
+        elif i.lower() in ALLOWED_SD_FILES:
+            for ic in os.listdir(os.path.join(SD_ROOT, i)):
+                if ic.lower().endswith(".rbf"):
+                    rbfs.append(i + "/" + ic)
+    return rbfs
 
-# assume each LLAPI core isn't there before we check for
-LLAPI_ATARI7800 = False
-LLAPI_GAMEBOY = False
-LLAPI_GBA2P = False
-LLAPI_GBA = False
-LLAPI_GENESIS = False
-LLAPI_MEGACD = False
-LLAPI_NEOGEO = False
-LLAPI_NES = False
-LLAPI_S32X = False
-LLAPI_SGB = False
-LLAPI_SMS = False
-LLAPI_SNES = False
-LLAPI_TGFX16_CD = False
-LLAPI_TGFX16 = False
 
-# test for presence of LLAPI cores; if there, add to browser
-if ENABLE_LLAPI:
-    if os.path.exists(os.path.join(SD_ROOT, "_llapi")):
-        # LLAPI_FOUND = True
-        ALLOWED_SD_FILES.add("_llapi")
-        llapi_dir = os.path.join(SD_ROOT, "_llapi")
-        LLAPI_ATARI7800 = len(glob.glob(os.path.join(llapi_dir, "Atari7800*.rbf"))) > 0
-        LLAPI_GAMEBOY = len(glob.glob(os.path.join(llapi_dir, "GBA2P*.rbf"))) > 0
-        LLAPI_GBA2P = len(glob.glob(os.path.join(llapi_dir, "GBA*.rbf"))) > 0
-        LLAPI_GBA = len(glob.glob(os.path.join(llapi_dir, "Gameboy*.rbf"))) > 0
-        LLAPI_GENESIS = len(glob.glob(os.path.join(llapi_dir, "Genesis*.rbf"))) > 0
-        LLAPI_MEGACD = len(glob.glob(os.path.join(llapi_dir, "MegaCD*.rbf"))) > 0
-        LLAPI_NEOGEO = len(glob.glob(os.path.join(llapi_dir, "NeoGeo*.rbf"))) > 0
-        LLAPI_NES = len(glob.glob(os.path.join(llapi_dir, "NES*.rbf"))) > 0
-        LLAPI_S32X = len(glob.glob(os.path.join(llapi_dir, "S32X*.rbf"))) > 0
-        LLAPI_SGB = len(glob.glob(os.path.join(llapi_dir, "SGB*.rbf"))) > 0
-        LLAPI_SMS = len(glob.glob(os.path.join(llapi_dir, "SMS*.rbf"))) > 0
-        LLAPI_SNES = len(glob.glob(os.path.join(llapi_dir, "SNES*.rbf"))) > 0
-        LLAPI_TGFX16_CD = len(glob.glob(os.path.join(llapi_dir, "TurboGrafx16*.rbf"))) > 0
-        LLAPI_TGFX16 = len(glob.glob(os.path.join(llapi_dir, "TurboGrafx16*.rbf"))) > 0
+LLAPI_CORES = (
+    ("ATARI7800", "Atari7800_LLAPI"),
+    ("GAMEBOY", "Gameboy_LLAPI"),
+    ("GBA2P", "GBA2P_LLAPI"),
+    ("GBA", "GBA_LLAPI"),
+    ("Genesis", "Genesis_LLAPI"),
+    ("MegaCD", "MegaCD_LLAPI"),
+    ("NeoGeo", "NeoGeo_LLAPI"),
+    ("NES", "NES_LLAPI"),
+    ("S32X", "S32X_LLAPI"),
+    ("SGB", "SGB_LLAPI"),
+    ("SMS", "SMS_LLAPI"),
+    ("SNES", "SNES_LLAPI"),
+    ("TGFX16-CD", "TurboGrafx16_LLAPI"),
+    ("TGFX16", "TurboGrafx16_LLAPI"),
+)
+
+YC_CORES = (
+    ("ATARI2600", "Atari7800YC"),
+    ("ATARI7800", "Atari7800YC"),
+    ("C64", "C64YC"),
+    ("Coleco", "ColecoVisionYC"),
+    ("GAMEBOY", "GameboyYC"),
+    ("Genesis", "GenesisYC"),
+    ("MegaCD", "MegaCDYC"),
+    ("NeoGeo", "NeoGeoYC"),
+    ("NES", "NESYC"),
+    ("PSX", "PSXYC"),
+    ("S32X", "S32XYC"),
+    ("SGB", "SGBYC"),
+    ("SMS", "SMSYC"),
+    ("SNES", "SNESYC"),
+    ("TGFX16-CD", "TurboGrafx16YC"),
+    ("TGFX16", "TurboGrafx16YC"),
+)
+
+
+def find_alt_core(
+    alt_cores: tuple[tuple[str]], system_id: str, default_rbf: str
+) -> str:
+    core = None
+
+    for rbf in alt_cores:
+        if rbf[0] == system_id:
+            core = rbf[1]
+
+    if core is None:
+        return default_rbf
+
+    for rbf in all_rbfs():
+        folder = os.path.dirname(rbf)
+        fn = os.path.basename(rbf)
+        if fn.startswith(core):
+            return os.path.join(folder, core)
+
+    return default_rbf
+
+
+ALT_CORES = {
+    "llapi": lambda system_id, rbf: find_alt_core(LLAPI_CORES, system_id, rbf),
+    "yc": lambda system_id, rbf: find_alt_core(YC_CORES, system_id, rbf),
+}
+ALT_CORE_CONFIG = None
 
 CORE_FILES = {".rbf", ".mra", ".mgl"}
 
 # (<games folder name>, <relative rbf location>, (<set of file extensions>, <delay>, <type>, <index>)[])
 MGL_MAP = (
+    ("Arcadia", "_Console/Arcadia", (({".bin"}, 1, "f", 1),)),
+    ("AVision", "_Console/AdventureVision", (({".bin"}, 1, "f", 1),)),
+    ("Astrocade", "_Console/Astrocade", (({".bin"}, 1, "f", 1),)),
     ("ATARI2600", "_Console/Atari7800", (({".a78", ".a26", ".bin"}, 1, "f", 1),)),
+    (
+        "ATARI5200",
+        "_Console/Atari5200",
+        (({".car", ".a52", ".bin", ".rom"}, 1, "s", 1),),
+    ),
+    ("ATARI7800", "_Console/Atari7800", (({".a78", ".a26", ".bin"}, 1, "f", 1),)),
     ("AtariLynx", "_Console/AtariLynx", (({".lnx"}, 1, "f", 0),)),
     ("C64", "_Computer/C64", (({".prg", ".crt", ".reu", ".tap"}, 1, "f", 1),)),
+    ("ChannelF", "_Console/ChannelF", (({".rom", ".bin"}, 1, "f", 1),)),
     (
         "Coleco",
         "_Console/ColecoVision",
-        (({".col", ".bin", ".rom", ".sg"}, 1, "f", 0),),
+        (({".col", ".bin", ".rom"}, 1, "f", 1), ({".sg"}, 1, "f", 2)),
     ),
-    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb", ".gbc"}, 1, "f", 1),)),
+    ("CreatiVision", "_Console/CreatiVision", (({".rom", ".bin"}, 1, "f", 1),)),
+    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb", ".gbc"}, 2, "f", 1),)),
+    ("GAMEBOY", "_Console/Gameboy", (({".gb", ".gbc"}, 2, "f", 1),)),
+    ("Gamate", "_Console/Gamate", (({".bin"}, 1, "f", 1),)),
+    ("GameNWatch", "_Console/GnW", (({".bin"}, 1, "f", 1),)),
+    ("GBA2P", "_Console/GBA2P", (({".gba"}, 2, "f", 0),)),
+    ("GBA", "_Console/GBA", (({".gba"}, 2, "f", 1),)),
+    ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
+    (
+        "Intellivision",
+        "_Console/Intellivision",
+        (({".rom", ".int", ".bin"}, 1, "f", 1),),
+    ),
+    ("MegaCD", "_Console/MegaCD", (({".cue", ".chd"}, 1, "s", 0),)),
+    (
+        "NeoGeo",
+        "_Console/NeoGeo",
+        (({".neo"}, 1, "f", 1), ({".iso", ".bin"}, 1, "s", 1)),
+    ),
+    ("NES", "_Console/NES", (({".nes", ".fds", ".nsf"}, 2, "f", 1),)),
+    ("NEOGEO", "_Console/NeoGeo", (({".neo"}, 1, "f", 1),)),
+    ("ODYSSEY2", "_Console/Odyssey2", (({".bin"}, 1, "f", 1),)),
     ("PSX", "_Console/PSX", (({".cue", ".chd"}, 1, "s", 1),)),
+    ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
+    ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 1),)),
+    ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
+    ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),
+    ("SNES", "_Console/SNES", (({".sfc", ".smc", ".bin", ".bs"}, 2, "f", 0),)),
+    ("SuperVision", "_Console/SuperVision", (({".bin", ".sv"}, 1, "s", 1),)),
+    (
+        "TGFX16-CD",
+        "_Console/TurboGrafx16",
+        (({".cue", ".chd"}, 1, "s", 0),),
+    ),
+    (
+        "TGFX16",
+        "_Console/TurboGrafx16",
+        (
+            ({".pce", ".bin"}, 1, "f", 0),
+            ({".sgx"}, 1, "f", 1),
+        ),
+    ),
+    ("VC4000", "_Console/VC4000", (({".bin"}, 1, "f", 1),)),
     ("VECTREX", "_Console/Vectrex", (({".ovr", ".vec", ".bin", ".rom"}, 1, "f", 1),)),
     ("WonderSwan", "_Console/WonderSwan", (({".wsc", ".ws"}, 1, "f", 1),)),
 )
-
-core = ""
-# select which core to add to MGL_MAP, based on each configuration choice
-if ENABLE_LLAPI and LLAPI_ATARI7800:
-    core = "_LLAPI/Atari7800_LLAPI"
-else:
-    core = "_Console/Atari7800"
-MGL_MAP = MGL_MAP + (("ATARI7800", core, (({".a78", ".a26", ".bin"}, 1, "f", 1),)),)
-
-if ENABLE_LLAPI and LLAPI_GBA2P:
-    core = "_LLAPI/GBA2P_LLAPI"
-else:
-    core = "_Console/GBA2P"
-MGL_MAP = MGL_MAP + (("GBA2P", core, (({".gba"}, 1, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_GBA:
-    core = "_LLAPI/GBA_LLAPI"
-else:
-    core = "_Console/GBA"
-MGL_MAP = MGL_MAP + (("GBA", core, (({".gba"}, 1, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_GAMEBOY:
-    core = "_LLAPI/Gameboy_LLAPI"
-else:
-    core = "_Console/Gameboy"
-MGL_MAP = MGL_MAP + (("GAMEBOY", core, (({".gb", ".gbc"}, 1, "f", 1),)),)
-
-if ENABLE_LLAPI and LLAPI_GENESIS:
-    core = "_LLAPI/Genesis_LLAPI"
-else:
-    core = "_Console/Genesis"
-MGL_MAP = MGL_MAP + (("Genesis", core, (({".bin", ".gen", ".md"}, 1, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_MEGACD:
-    core = "_LLAPI/MegaCD_LLAPI"
-else:
-    core = "_Console/MegaCD"
-MGL_MAP = MGL_MAP + (("MegaCD", core, (({".cue", ".chd"}, 1, "s", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_NEOGEO:
-    core = "_LLAPI/NeoGeo_LLAPI"
-else:
-    core = "_Console/NeoGeo"
-MGL_MAP = MGL_MAP + (("NeoGeo", core, (({".neo"}, 1, "f", 1), ({".iso", ".bin"}, 1, "s", 1)),),)
-
-if ENABLE_LLAPI and LLAPI_NES:
-    core = "_LLAPI/NES_LLAPI"
-else:
-    core = "_Console/NES"
-MGL_MAP = MGL_MAP + (("NES", core, (({".nes", ".fds", ".nsf"}, 1, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_S32X:
-    core = "_LLAPI/S32X_LLAPI"
-else:
-    core = "_Console/S32X"
-MGL_MAP = MGL_MAP + (("S32X", core, (({".32x"}, 1, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_SGB:
-    core = "_LLAPI/SGB_LLAPI"
-else:
-    core = "_Console/SGB"
-MGL_MAP = MGL_MAP + (("SGB", core, (({".gb", ".gbc"}, 1, "f", 1),)),)
-
-if ENABLE_LLAPI and LLAPI_SMS:
-    core = "_LLAPI/SMS_LLAPI"
-else:
-    core = "_Console/SMS"
-MGL_MAP = MGL_MAP + (("SMS", core, (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),)
-
-if ENABLE_LLAPI and LLAPI_SNES:
-    core = "_LLAPI/SNES_LLAPI"
-else:
-    core = "_Console/SNES"
-MGL_MAP = MGL_MAP + (("SNES", core, (({".sfc", ".smc"}, 2, "f", 0),)),)
-
-if ENABLE_LLAPI and LLAPI_TGFX16_CD:
-    core = "_LLAPI/TurboGrafx16_LLAPI"
-else:
-    core = "_Console/TurboGrafx16"
-MGL_MAP = MGL_MAP + (("TGFX16-CD", core, (({".cue", ".chd"}, 1, "s", 0),),),)
-
-if ENABLE_LLAPI and LLAPI_TGFX16:
-    core = "_LLAPI/TurboGrafx16_LLAPI"
-else:
-    core = "_Console/TurboGrafx16"
-MGL_MAP = MGL_MAP + (("TGFX16", core, (({".pce", ".bin"}, 1, "f", 0), ({".sgx"}, 1, "f", 1),),),)
 
 GAMES_FOLDERS = (
     "/media/fat",
@@ -201,6 +203,22 @@ SELECTION_HISTORY = {
 BAD_CHARS = '<>:"/\|?*'
 
 ZIP_CACHE = {}
+
+INI_FILENAME = "favorites.ini"
+INI_PATH = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), INI_FILENAME)
+if os.path.exists(INI_PATH):
+    ini = configparser.ConfigParser()
+    ini.read(INI_PATH)
+    ALT_CORE_CONFIG = ini.get("cores", "all", fallback=ALT_CORE_CONFIG)
+    if ALT_CORE_CONFIG not in ALT_CORES:
+        ALT_CORE_CONFIG = None
+
+
+def get_system_core(system_id, rbf):
+    if ALT_CORE_CONFIG is None:
+        return rbf
+    else:
+        return ALT_CORES[ALT_CORE_CONFIG](system_id, rbf)
 
 
 def get_selection(path: str):
@@ -1078,6 +1096,8 @@ def add_favorite_workflow():
         if rbf is None or mgl_def is None:
             # this shouldn't really happen due to the contraints on the file picker
             raise Exception("Rom file type does not match any MGL definition")
+
+        rbf = get_system_core(file_type, rbf)
 
         mgl_data = make_mgl(
             rbf,

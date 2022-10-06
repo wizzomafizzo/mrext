@@ -115,6 +115,7 @@ def wait_core_change():
 
 
 class Player:
+    mutex = threading.Lock()
     player = None
     playing = None
     playback = DEFAULT_PLAYBACK
@@ -407,6 +408,8 @@ class Player:
         def handler(cmd: str):
             global PLAY_IN_CORE
 
+            self.mutex.acquire()
+
             log("Received command: {}".format(cmd))
             if cmd == "stop":
                 self.stop_playlist()
@@ -415,6 +418,7 @@ class Player:
             elif cmd == "skip":
                 self.stop()
             elif cmd == "pid":
+                self.mutex.release()
                 return os.getpid()
             elif cmd == "status":
                 if self.playing is not None:
@@ -429,6 +433,7 @@ class Player:
                     filename = os.path.basename(self.playing)
                 else:
                     filename = ""
+                self.mutex.release()
                 return "{}\t{}\t{}\t{}".format(
                     is_playing, self.playback, playlist, filename
                 )
@@ -449,6 +454,7 @@ class Player:
                 PLAY_IN_CORE = False
             elif cmd.startswith("get"):
                 args = cmd.split(" ", 1)
+                self.mutex.release()
                 if len(args) > 1:
                     if args[1] == "playlist":
                         return self.playlist
@@ -463,6 +469,8 @@ class Player:
                         return ""
             else:
                 log("Unknown command")
+
+            self.mutex.release()
 
         def listener():
             while True:
@@ -521,10 +529,10 @@ class Player:
                         filename = os.path.join(BOOT_FOLDER, core_folder, f)
                         if self.is_valid_file(filename):
                             tracks.append(filename)
-                    
+
                     if len(tracks) == 0:
                         return
-                    
+
                     time.sleep(CORE_BOOT_DELAY)
                     log("Playing core boot track...")
                     self.play(tracks[random_index(tracks)])
@@ -578,11 +586,15 @@ def start_service(player: Player):
             pass
         elif new_core == MENU_CORE:
             log("Switched to menu core, starting playlist...")
+            player.mutex.acquire()
             player.start_playlist()
+            player.mutex.release()
         elif new_core != MENU_CORE:
             log("Exited menu core, stopping playlist...")
+            player.mutex.acquire()
             player.stop_playlist()
             player.play_core_boot(new_core)
+            player.mutex.release()
 
         core = new_core
 
@@ -723,7 +735,7 @@ def display_gui():
     while button == 0:
         status = get_status()
         playlists = get_playlists()
-        
+
         selection, button = menu(status, playlists, config, last_item)
 
         if selection is None:

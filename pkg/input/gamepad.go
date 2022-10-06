@@ -50,6 +50,7 @@ func ioctl(fd, cmd, ptr uintptr) error {
 }
 
 func readEvent(devFile string) {
+	// TODO: may not ever be useful since menu grabs all inputs
 	file, err := os.OpenFile(devFile, os.O_RDONLY, 0666)
 	if err != nil {
 		panic(err)
@@ -66,7 +67,10 @@ func readEvent(devFile string) {
 	fmt.Printf("%x", buf)
 }
 
+// Read a single from of input from a grabbed joystick device.
 func readGrabbedJoyState(devFile string) []jsEvent {
+	// this works because of a quirk in the legacy joystick interface that
+	// lets you poll it for input even if the device is grabbed
 	fd, err := syscall.Open(devFile, syscall.O_RDONLY|syscall.O_NONBLOCK, 0666)
 	if err != nil {
 		panic(err)
