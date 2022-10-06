@@ -219,7 +219,7 @@ func (t *Tracker) loadGame() {
 	systems := games.FolderToSystems(path)
 	var folder string
 	if len(systems) == 0 || len(systems[0].Folder) == 0 {
-		folder = "UNKNOWN"
+		folder = "__UNKNOWN__"
 	} else {
 		folder = systems[0].Folder[0]
 	}
