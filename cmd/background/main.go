@@ -6,6 +6,14 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/input"
 )
 
+// TODO: read mister resolution
+// TODO: read mister .pf fonts
+// TODO: draw battery status to image
+// TODO: get bgm status
+// TODO: draw bgm status to image
+// TODO: draw menu rects to image
+// TODO: test more controller batteries
+
 func main() {
 	gps, err := input.GetGamepads()
 	if err != nil {
