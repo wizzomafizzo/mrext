@@ -151,6 +151,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
   
   If you're reading this, you already use it. Don't forget to check the advanced options.
 
+- [Update tty2xxx](https://github.com/ojaksch/MiSTer_update_tty2xxx)
+
+  A unified updater script for the various MiSTer display projects.
+
 - [Yet another random MiSTer utility script (YARMUS)](https://github.com/jayp76/MiSTer_get_optional_installers)
 
   A script to install a lot of MiSTer scripts at once. It includes many things on this list, plus extra custom installers for software like [DevilutionX](https://github.com/diasurgical/devilutionX), [Cave Story](https://nxengine.sourceforge.io/) and homebrew packs.
