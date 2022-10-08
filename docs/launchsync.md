@@ -1,14 +1,14 @@
-# Launch Sync
+# LaunchSync
 
-Launch Sync allows people to create, share and maintain live-updating game playlists for the MiSTer.
+LaunchSync allows people to create, share and maintain live-updating game playlists for the MiSTer.
 
-You create a [sync file](#sync-files) with a list of games, someone copies the file to their MiSTer, and Launch Sync will use it to generate a working list of game shortcuts in the MiSTer main menu. Sync files are subscriptable, so you can publish changes to your playlist and people will see your updates on their own system.
+You create a [sync file](#sync-files) with a list of games, someone copies the file to their MiSTer, and LaunchSync will use it to generate a working list of game shortcuts in the MiSTer main menu. Sync files are subscriptable, so you can publish changes to your playlist and people will see your updates on their own system.
 
-[![Download Launch Sync](download.png "Download Launch Sync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Download LaunchSync](download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 
 ## Install
 
-Download [Launch Sync](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+Download [LaunchSync](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```
@@ -21,13 +21,13 @@ db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/laun
 1. Place at least one sync file in the root of your SD card or in a menu folder. Menu folders are folders which start with an underscore (`_`)
 2. Run `launchsync` from the MiSTer `Scripts` menu
 
-Launch Sync will search for all sync files on the MiSTer, check for sync file updates online, create folders for new sync files, and then create or update all shortcuts for listed games.
+LaunchSync will search for all sync files on the MiSTer, check for sync file updates online, create folders for new sync files, and then create or update all shortcuts for listed games.
 
-*NOTE: Currently Launch Sync must be run manually to update. In the future, it will be possible to have it run on MiSTer startup and automatically sync shortcuts in the background.*
+*NOTE: Currently LaunchSync must be run manually to update. In the future, it will be possible to have it run on MiSTer startup and automatically sync shortcuts in the background.*
 
 ### Sync Files
 
-Launch Sync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
+LaunchSync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
 
 ## Creating Sync Files
 
@@ -102,7 +102,7 @@ match = Cool Game (Europe)
 match = Cool Game
 ```
 
-A single game entry can have multiple `match` fields. When searching for a game, Launch Sync will try each query top to bottom in sequence until a match is found. This is useful if you have a very specific file in mind, but are ok with a fallback option.
+A single game entry can have multiple `match` fields. When searching for a game, LaunchSync will try each query top to bottom in sequence until a match is found. This is useful if you have a very specific file in mind, but are ok with a fallback option.
 
 If a game is not found, a placeholder shortcut is created in the menu. It won't work but it will let the user know it's missing.
 
