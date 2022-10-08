@@ -15,7 +15,7 @@ High level features, ideas and changes.
 - [x] Read main mister ini
 - [ ] Linux startup manager
 - [ ] Theme for curses dialog
-- [ ] Rewrite Games Menu in mrext (big speed improvement and minor UI improvement)
+- [ ] Rewrite GamesMenu in mrext (big speed improvement and minor UI improvement)
 - [ ] Rewrite Favorites in mrext (major UI improvements)
 - [ ] Rewrite BGM in mrext (volume control, flac support, improved UI and audio control)
 - [ ] Investigate arcade high scores display

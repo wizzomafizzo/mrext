@@ -29,17 +29,17 @@ Create and manage shortcuts for your favorite games. Favorites allows you to pic
 [![Download Favorites](docs/download.png "Download Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh)
 [![Readme Favorites](docs/readme.png "Readme Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites)
 
-## Games Menu
-Browse your entire collection from the main MiSTer menu. Games Menu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
+## GamesMenu
+Browse your entire collection from the main MiSTer menu. GamesMenu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
 
-[![Download Games Menu](docs/download.png "Download Games Menu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh)
-[![Readme Games Menu](docs/readme.png "Readme Games Menu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
+[![Download GamesMenu](docs/download.png "Download GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh)
+[![Readme GamesMenu](docs/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
 
-## Launch Sync
-Create shareable and subscriptable game playlists. Launch Sync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
+## LaunchSync
+Create shareable and subscriptable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
-[![Download Launch Sync](docs/download.png "Download Launch Sync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
-[![Readme Launch Sync](docs/readme.png "Readme Launch Sync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
+[![Download LaunchSync](docs/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Readme LaunchSync](docs/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
