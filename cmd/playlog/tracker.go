@@ -14,8 +14,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
-// TODO: make configurable
-const writeDbInterval = 60
+const defaultSaveInterval = 60
 
 const (
 	eventActionCoreStart = iota
@@ -235,7 +234,7 @@ func (tr *tracker) loadGame() {
 }
 
 // Increment time of active core and game.
-func (tr *tracker) tick() {
+func (tr *tracker) tick(interval int) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -243,7 +242,7 @@ func (tr *tracker) tick() {
 		if ct, ok := tr.coreTimes[tr.activeCore]; ok {
 			ct.time++
 
-			if ct.time%writeDbInterval == 0 {
+			if ct.time%interval == 0 {
 				err := tr.db.updateCore(ct)
 				if err != nil {
 					tr.logger.Println("error updating core time:", err)
@@ -258,7 +257,7 @@ func (tr *tracker) tick() {
 		if gt, ok := tr.gameTimes[tr.activeGame]; ok {
 			gt.time++
 
-			if gt.time%writeDbInterval == 0 {
+			if gt.time%interval == 0 {
 				err := tr.db.updateGame(gt)
 				if err != nil {
 					tr.logger.Println("error updating game time:", err)
@@ -271,12 +270,12 @@ func (tr *tracker) tick() {
 }
 
 // Start thread for updating core/game play times.
-func (tr *tracker) startTicker() {
+func (tr *tracker) startTicker(interval int) {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0
 		for range ticker.C {
-			tr.tick()
+			tr.tick(interval)
 			count++
 		}
 	}()
