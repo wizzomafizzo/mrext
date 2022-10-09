@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
@@ -18,7 +19,7 @@ import (
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
 
-func startService() {
+func startService(cfg config.UserConfig) {
 	tr, err := newTracker()
 	if err != nil {
 		tr.logger.Println("error opening database:", err)
@@ -37,7 +38,13 @@ func startService() {
 	}
 	defer watcher.Close()
 
-	tr.startTicker()
+	var interval int
+	if cfg.PlayLog.SaveEvery > 0 {
+		interval = cfg.PlayLog.SaveEvery
+	} else {
+		interval = defaultSaveInterval
+	}
+	tr.startTicker(interval)
 
 	<-make(chan struct{})
 }
@@ -51,7 +58,7 @@ func tryAddStartup() error {
 	}
 
 	if !startup.Exists("mrext/playlog") {
-		if utils.YesOrNoPrompt("Play Log must be set to run on MiSTer startup. Add it now?") {
+		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
 			// TODO: prefer not to hardcode the path
 			path := "/media/fat/Scripts/playlog.sh"
 			cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
@@ -76,7 +83,7 @@ func main() {
 	flag.Parse()
 
 	if !mister.RecentsOptionEnabled() {
-		fmt.Println("The \"recents\" option must be enabled for Play Log to work. Configure it in the MiSTer.ini file and reboot.")
+		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
 	}
 
@@ -85,8 +92,14 @@ func main() {
 		fmt.Println("Error adding to startup:", err)
 	}
 
+	cfg, err := config.LoadUserConfig()
+	if err != nil {
+		fmt.Println("Error loading config:", err)
+		os.Exit(1)
+	}
+
 	if *service == "start" {
-		startService()
+		startService(cfg)
 		os.Exit(0)
 	}
 

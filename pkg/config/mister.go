@@ -4,11 +4,6 @@ package config
 const SdFolder = "/media/fat"
 const CoreConfigFolder = SdFolder + "/config"
 
-// TODO: hardcode index as "search.db"
-const IndexName = "index"
-const ActiveGameFile = "/tmp/ACTIVEGAME"
-const PlayLogDbFile = SdFolder + "/playlog.db"
-
 const MisterIniFile = SdFolder + "/MiSTer.ini"
 const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
 const MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
