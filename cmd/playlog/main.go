@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -12,15 +13,14 @@ import (
 
 // TODO: offer to enable recents option and reboot
 // TODO: handle failed mgl launch
-// TODO: ticker interval and save interval should be configurable
 // TODO: fix event log after power loss
 // TODO: enable logging to file
 // TODO: compatibility with GameEventHub
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
 
-func startService(cfg config.UserConfig) {
-	tr, err := newTracker()
+func startService(logger *log.Logger, cfg config.UserConfig) {
+	tr, err := newTracker(logger)
 	if err != nil {
 		tr.logger.Println("error opening database:", err)
 		os.Exit(1)
@@ -82,6 +82,9 @@ func main() {
 	service := flag.String("service", "", "manage playlog service")
 	flag.Parse()
 
+	// TODO: log to file on -debug
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
 	if !mister.RecentsOptionEnabled() {
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
@@ -99,7 +102,7 @@ func main() {
 	}
 
 	if *service == "start" {
-		startService(cfg)
+		startService(logger, cfg)
 		os.Exit(0)
 	}
 
