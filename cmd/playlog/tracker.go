@@ -54,8 +54,7 @@ type tracker struct {
 	gameTimes  map[string]gameTime
 }
 
-func newTracker() (*tracker, error) {
-	logger := log.New(os.Stdout, "", log.LstdFlags)
+func newTracker(logger *log.Logger) (*tracker, error) {
 	db, err := openPlayLogDb()
 	if err != nil {
 		return nil, err
@@ -234,7 +233,7 @@ func (tr *tracker) loadGame() {
 }
 
 // Increment time of active core and game.
-func (tr *tracker) tick(interval int) {
+func (tr *tracker) tick(saveInterval int) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -242,7 +241,7 @@ func (tr *tracker) tick(interval int) {
 		if ct, ok := tr.coreTimes[tr.activeCore]; ok {
 			ct.time++
 
-			if ct.time%interval == 0 {
+			if ct.time%saveInterval == 0 {
 				err := tr.db.updateCore(ct)
 				if err != nil {
 					tr.logger.Println("error updating core time:", err)
@@ -257,7 +256,7 @@ func (tr *tracker) tick(interval int) {
 		if gt, ok := tr.gameTimes[tr.activeGame]; ok {
 			gt.time++
 
-			if gt.time%interval == 0 {
+			if gt.time%saveInterval == 0 {
 				err := tr.db.updateGame(gt)
 				if err != nil {
 					tr.logger.Println("error updating game time:", err)
@@ -270,12 +269,12 @@ func (tr *tracker) tick(interval int) {
 }
 
 // Start thread for updating core/game play times.
-func (tr *tracker) startTicker(interval int) {
+func (tr *tracker) startTicker(saveInterval int) {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0
 		for range ticker.C {
-			tr.tick(interval)
+			tr.tick(saveInterval)
 			count++
 		}
 	}()
