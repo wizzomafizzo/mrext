@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -19,12 +21,38 @@ import (
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
 
+const defaultSaveInterval = 60 * 5 // seconds
+const pidFile = "/tmp/playlog.pid"
+
+// TODO: stop service
+
 func startService(logger *log.Logger, cfg config.UserConfig) {
+	// TODO: should be a unified lib for managing apps as services
+	if _, err := os.Stat(pidFile); err == nil {
+		logger.Println("playlog service already running")
+		os.Exit(1)
+	} else {
+		logger.Println("starting playlog service")
+		pid := os.Getpid()
+		os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", pid)), 0644)
+	}
+
 	tr, err := newTracker(logger)
 	if err != nil {
 		tr.logger.Println("error opening database:", err)
 		os.Exit(1)
 	}
+
+	// TODO: and this, move to separate lib
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		tr.logger.Println("stopping playlog service")
+		tr.stopAll()
+		os.Remove(pidFile)
+		os.Exit(0)
+	}()
 
 	tr.loadCore()
 	if !mister.ActiveGameEnabled() {

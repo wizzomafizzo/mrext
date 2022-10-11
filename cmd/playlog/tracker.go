@@ -14,8 +14,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
-const defaultSaveInterval = 60
-
 const (
 	eventActionCoreStart = iota
 	eventActionCoreStop
@@ -55,6 +53,7 @@ type tracker struct {
 }
 
 func newTracker(logger *log.Logger) (*tracker, error) {
+	logger.Println("starting tracker")
 	db, err := openPlayLogDb()
 	if err != nil {
 		return nil, err
@@ -109,28 +108,31 @@ func (tr *tracker) addEvent(action int, target string) {
 	tr.logger.Printf("%s: %s (%ds)", actionLabel, target, totalTime)
 }
 
+func (tr *tracker) stopCore() bool {
+	if tr.activeCore != "" {
+		if ct, ok := tr.coreTimes[tr.activeCore]; ok && ct.time > 0 {
+			tr.db.updateCore(ct)
+		}
+
+		tr.addEvent(eventActionCoreStop, tr.activeCore)
+		tr.activeCore = ""
+		return true
+	} else {
+		return false
+	}
+}
+
 // Load the current running core and set it as active.
 func (tr *tracker) loadCore() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
-
-	stopCore := func() {
-		if tr.activeCore != "" {
-			if ct, ok := tr.coreTimes[tr.activeCore]; ok && ct.time > 0 {
-				tr.db.updateCore(ct)
-			}
-
-			tr.addEvent(eventActionCoreStop, tr.activeCore)
-			tr.activeCore = ""
-		}
-	}
 
 	data, err := os.ReadFile(config.CoreNameFile)
 	coreName := string(data)
 
 	if err != nil {
 		tr.logger.Println("error reading core name:", err)
-		stopCore()
+		tr.stopCore()
 		return
 	}
 
@@ -140,7 +142,7 @@ func (tr *tracker) loadCore() {
 	}
 
 	if coreName != tr.activeCore {
-		stopCore()
+		tr.stopCore()
 
 		tr.activeCore = coreName
 
@@ -166,29 +168,32 @@ func (tr *tracker) loadCore() {
 	}
 }
 
+func (tr *tracker) stopGame() bool {
+	if tr.activeGame != "" {
+		if gt, ok := tr.gameTimes[tr.activeGame]; ok && gt.time > 0 {
+			tr.db.updateGame(gt)
+		}
+
+		tr.addEvent(eventActionGameStop, tr.activeGame)
+		tr.activeGame = ""
+		return true
+	} else {
+		return false
+	}
+}
+
 // Load the current running game and set it as active.
 func (tr *tracker) loadGame() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
-	stopGame := func() {
-		if tr.activeGame != "" {
-			if gt, ok := tr.gameTimes[tr.activeGame]; ok && gt.time > 0 {
-				tr.db.updateGame(gt)
-			}
-
-			tr.addEvent(eventActionGameStop, tr.activeGame)
-			tr.activeGame = ""
-		}
-	}
-
 	activeGame, err := mister.GetActiveGame()
 	if err != nil {
 		tr.logger.Println("error getting active game:", err)
-		stopGame()
+		tr.stopGame()
 		return
 	} else if activeGame == "" {
-		stopGame()
+		tr.stopGame()
 		return
 	}
 
@@ -198,16 +203,14 @@ func (tr *tracker) loadGame() {
 
 	systems := games.FolderToSystems(path)
 	var folder string
-	if len(systems) == 0 || len(systems[0].Folder) == 0 {
-		folder = "__UNKNOWN__" // TODO: move this
-	} else {
+	if len(systems) > 0 && len(systems[0].Folder) > 0 {
 		folder = systems[0].Folder[0]
 	}
 
 	id := fmt.Sprintf("%s/%s", folder, filename)
 
 	if id != tr.activeGame {
-		stopGame()
+		tr.stopGame()
 
 		tr.activeGame = id
 
@@ -232,6 +235,13 @@ func (tr *tracker) loadGame() {
 	}
 }
 
+func (tr *tracker) stopAll() {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+	tr.stopCore()
+	tr.stopGame()
+}
+
 // Increment time of active core and game.
 func (tr *tracker) tick(saveInterval int) {
 	tr.mu.Lock()
@@ -242,6 +252,7 @@ func (tr *tracker) tick(saveInterval int) {
 			ct.time++
 
 			if ct.time%saveInterval == 0 {
+				tr.logger.Printf("saving core time: %s (%ds)", ct.name, ct.time)
 				err := tr.db.updateCore(ct)
 				if err != nil {
 					tr.logger.Println("error updating core time:", err)
@@ -257,6 +268,7 @@ func (tr *tracker) tick(saveInterval int) {
 			gt.time++
 
 			if gt.time%saveInterval == 0 {
+				tr.logger.Printf("saving game time: %s (%ds)", gt.id, gt.time)
 				err := tr.db.updateGame(gt)
 				if err != nil {
 					tr.logger.Println("error updating game time:", err)
@@ -270,6 +282,7 @@ func (tr *tracker) tick(saveInterval int) {
 
 // Start thread for updating core/game play times.
 func (tr *tracker) startTicker(saveInterval int) {
+	tr.logger.Printf("starting ticker with save interval %ds", saveInterval)
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0
