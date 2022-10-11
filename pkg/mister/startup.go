@@ -52,7 +52,7 @@ func (s *Startup) Load() error {
 		cmds := make([]string, 0)
 		enabled := false
 
-		if lines[0][0] == '#' {
+		if len(lines[0]) > 0 && lines[0][0] == '#' {
 			name = strings.TrimSpace(lines[0][1:])
 			cmds = append(cmds, lines[1:]...)
 		} else {

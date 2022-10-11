@@ -31,3 +31,5 @@ High level features, ideas and changes.
 - [x] Favorite cmd line utility
 - [ ] Screenshot manager/viewer
 - [ ] Auto-overclock for munt
+- [ ] How to improve CRT support
+- [ ] Bulk operations on shortcuts
