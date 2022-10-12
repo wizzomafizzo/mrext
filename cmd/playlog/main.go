@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -77,6 +78,30 @@ func startService(logger *log.Logger, cfg config.UserConfig) {
 	<-make(chan struct{})
 }
 
+func stopService(logger *log.Logger) {
+	if _, err := os.Stat(pidFile); err == nil {
+		pid, err := os.ReadFile(pidFile)
+		if err != nil {
+			logger.Println("error reading pid file:", err)
+			os.Exit(1)
+		}
+
+		pidInt, err := strconv.Atoi(string(pid))
+		if err != nil {
+			logger.Println("error parsing pid:", err)
+			os.Exit(1)
+		}
+
+		err = syscall.Kill(pidInt, syscall.SIGTERM)
+		if err != nil {
+			logger.Println("error stopping service:", err)
+			os.Exit(1)
+		}
+	} else {
+		logger.Println("playlog service not running")
+	}
+}
+
 func tryAddStartup() error {
 	var startup mister.Startup
 
@@ -107,7 +132,7 @@ func tryAddStartup() error {
 }
 
 func main() {
-	service := flag.String("service", "", "manage playlog service")
+	service := flag.String("service", "", "manage playlog service (start, stop, restart)")
 	flag.Parse()
 
 	// TODO: log to file on -debug
@@ -129,9 +154,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *service == "start" {
+	if *service == "exec" {
+		startService(logger, cfg)
+		os.Exit(0)
+	} else if *service == "start" {
+		args := []string{os.Args[0], "-service", "exec"}
+		_, err := syscall.ForkExec(os.Args[0], args, &syscall.ProcAttr{})
+		if err != nil {
+			fmt.Println("Error starting service:", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	} else if *service == "stop" {
+		stopService(logger)
+		os.Exit(0)
+	} else if *service == "restart" {
+		stopService(logger)
+		// TODO: check if this needs a delay
 		startService(logger, cfg)
 		os.Exit(0)
 	}
-
 }
