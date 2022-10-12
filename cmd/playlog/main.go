@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"syscall"
@@ -22,8 +24,9 @@ import (
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
 
-const defaultSaveInterval = 60 * 5 // seconds
+const defaultSaveInterval = 120 // seconds
 const pidFile = "/tmp/playlog.pid"
+const logFile = "/tmp/playlog.log"
 
 // TODO: stop service
 
@@ -135,15 +138,22 @@ func main() {
 	service := flag.String("service", "", "manage playlog service (start, stop, restart)")
 	flag.Parse()
 
-	// TODO: log to file on -debug
-	logger := log.New(os.Stdout, "", log.LstdFlags)
+	// TODO: log to file if debug option active
+	lf, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+		os.Exit(1)
+	}
+	defer lf.Close()
+	writer := io.MultiWriter(os.Stdout, lf)
+	logger := log.New(writer, "", log.LstdFlags)
 
 	if !mister.RecentsOptionEnabled() {
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
 	}
 
-	err := tryAddStartup()
+	err = tryAddStartup()
 	if err != nil {
 		fmt.Println("Error adding to startup:", err)
 	}
@@ -158,8 +168,7 @@ func main() {
 		startService(logger, cfg)
 		os.Exit(0)
 	} else if *service == "start" {
-		args := []string{os.Args[0], "-service", "exec"}
-		_, err := syscall.ForkExec(os.Args[0], args, &syscall.ProcAttr{})
+		err := exec.Command(os.Args[0], "-service", "exec", "&").Start()
 		if err != nil {
 			fmt.Println("Error starting service:", err)
 			os.Exit(1)
