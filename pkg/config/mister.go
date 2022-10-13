@@ -16,6 +16,8 @@ const CurrentPathFile = "/tmp/CURRENTPATH"
 const StartPathFile = "/tmp/STARTPATH"
 const FullPathFile = "/tmp/FULLPATH"
 
+const MenuCore = "MENU"
+
 const CmdInterface = "/dev/MiSTer_cmd"
 
 // TODO: this can't be hardcoded if we want dynamic arcade folders

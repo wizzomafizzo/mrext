@@ -17,12 +17,11 @@ import (
 )
 
 // TODO: offer to enable recents option and reboot
-// TODO: handle failed mgl launch
 // TODO: fix event log after power loss
-// TODO: enable logging to file
 // TODO: compatibility with GameEventHub
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
+// TODO: disbale write interval with 0
 
 const defaultSaveInterval = 120 // seconds
 const pidFile = "/tmp/playlog.pid"
@@ -148,6 +147,7 @@ func main() {
 	writer := io.MultiWriter(os.Stdout, lf)
 	logger := log.New(writer, "", log.LstdFlags)
 
+	// TODO: these errors should be logged to file
 	if !mister.RecentsOptionEnabled() {
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
@@ -158,6 +158,7 @@ func main() {
 		fmt.Println("Error adding to startup:", err)
 	}
 
+	// TODO: log user config to file
 	cfg, err := config.LoadUserConfig()
 	if err != nil {
 		fmt.Println("Error loading config:", err)
