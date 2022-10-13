@@ -17,7 +17,6 @@ import (
 )
 
 // TODO: offer to enable recents option and reboot
-// TODO: fix event log after power loss
 // TODO: compatibility with GameEventHub
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
@@ -26,8 +25,6 @@ import (
 const defaultSaveInterval = 120 // seconds
 const pidFile = "/tmp/playlog.pid"
 const logFile = "/tmp/playlog.log"
-
-// TODO: stop service
 
 func startService(logger *log.Logger, cfg config.UserConfig) {
 	// TODO: should be a unified lib for managing apps as services
@@ -42,7 +39,7 @@ func startService(logger *log.Logger, cfg config.UserConfig) {
 
 	tr, err := newTracker(logger)
 	if err != nil {
-		tr.logger.Println("error opening database:", err)
+		logger.Println("error starting tracker:", err)
 		os.Exit(1)
 	}
 
