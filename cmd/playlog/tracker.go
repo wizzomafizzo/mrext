@@ -59,6 +59,13 @@ func newTracker(logger *log.Logger) (*tracker, error) {
 		return nil, err
 	}
 
+	fixed, err := db.fixPowerLoss()
+	if err != nil {
+		return nil, err
+	} else if fixed {
+		logger.Println("fixed missing events from power loss")
+	}
+
 	return &tracker{
 		logger:     logger,
 		db:         db,
