@@ -25,8 +25,9 @@ func GenerateMgl(system *games.System, path string) (string, error) {
 	if mglDef == nil {
 		return "", fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
 	} else {
+		// TODO: generate this from xml
 		return fmt.Sprintf(
-			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../..%s\"/>\n</mistergamedescription>\n",
+			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n</mistergamedescription>\n",
 			system.Rbf, mglDef.Delay, mglDef.Method, mglDef.Index, path,
 		), nil
 	}
