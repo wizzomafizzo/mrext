@@ -22,7 +22,6 @@ import (
 // TODO: hashing functions (including inside zips)
 // TODO: disbale write interval with 0
 
-const defaultSaveInterval = 120 // seconds
 const pidFile = "/tmp/playlog.pid"
 const logFile = "/tmp/playlog.log"
 
@@ -70,7 +69,7 @@ func startService(logger *log.Logger, cfg config.UserConfig) {
 	if cfg.PlayLog.SaveEvery > 0 {
 		interval = cfg.PlayLog.SaveEvery
 	} else {
-		interval = defaultSaveInterval
+		interval = 0
 	}
 	tr.startTicker(interval)
 
