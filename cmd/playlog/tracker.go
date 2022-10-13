@@ -116,6 +116,7 @@ func (tr *tracker) stopCore() bool {
 
 		tr.addEvent(eventActionCoreStop, tr.activeCore)
 		tr.activeCore = ""
+
 		return true
 	} else {
 		return false
@@ -136,7 +137,7 @@ func (tr *tracker) loadCore() {
 		return
 	}
 
-	if coreName == "MENU" {
+	if coreName == config.MenuCore {
 		mister.SetActiveGame("")
 		coreName = ""
 	}
@@ -165,6 +166,10 @@ func (tr *tracker) loadCore() {
 		}
 
 		tr.addEvent(eventActionCoreStart, coreName)
+
+		if !strings.HasPrefix(tr.activeGame, tr.activeCore) {
+			tr.stopGame()
+		}
 	}
 }
 
