@@ -259,11 +259,13 @@ func (tr *tracker) tick(saveInterval int) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
+	saveSeconds := saveInterval * 60
+
 	if tr.activeCore != "" {
 		if ct, ok := tr.coreTimes[tr.activeCore]; ok {
 			ct.time++
 
-			if ct.time%saveInterval == 0 {
+			if saveInterval > 0 && ct.time%saveSeconds == 0 {
 				tr.logger.Printf("saving core time: %s (%ds)", ct.name, ct.time)
 				err := tr.db.updateCore(ct)
 				if err != nil {
@@ -279,7 +281,7 @@ func (tr *tracker) tick(saveInterval int) {
 		if gt, ok := tr.gameTimes[tr.activeGame]; ok {
 			gt.time++
 
-			if gt.time%saveInterval == 0 {
+			if saveInterval > 0 && gt.time%saveSeconds == 0 {
 				tr.logger.Printf("saving game time: %s (%ds)", gt.id, gt.time)
 				err := tr.db.updateGame(gt)
 				if err != nil {
@@ -294,7 +296,7 @@ func (tr *tracker) tick(saveInterval int) {
 
 // Start thread for updating core/game play times.
 func (tr *tracker) startTicker(saveInterval int) {
-	tr.logger.Printf("starting ticker with save interval %ds", saveInterval)
+	tr.logger.Printf("starting ticker with save interval %dm", saveInterval)
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0
