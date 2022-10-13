@@ -3,13 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -20,7 +22,6 @@ import (
 // TODO: compatibility with GameEventHub
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
-// TODO: disbale write interval with 0
 
 const pidFile = "/tmp/playlog.pid"
 const logFile = "/tmp/playlog.log"
@@ -110,11 +111,14 @@ func tryAddStartup() error {
 
 	if !startup.Exists("mrext/playlog") {
 		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
-			// TODO: prefer not to hardcode the path
-			path := "/media/fat/Scripts/playlog.sh"
+			path, err := filepath.Abs(os.Args[0])
+			if err != nil {
+				return err
+			}
+
 			cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
 
-			err := startup.Add("mrext/playlog", cmd)
+			err = startup.Add("mrext/playlog", cmd)
 			if err != nil {
 				return err
 			}
@@ -133,30 +137,27 @@ func main() {
 	service := flag.String("service", "", "manage playlog service (start, stop, restart)")
 	flag.Parse()
 
-	// TODO: log to file if debug option active
-	lf, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		fmt.Println("Error opening log file:", err)
-		os.Exit(1)
-	}
-	defer lf.Close()
-	writer := io.MultiWriter(os.Stdout, lf)
-	logger := log.New(writer, "", log.LstdFlags)
+	logger := log.New(&lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    1,
+		MaxBackups: 2,
+	}, "", log.LstdFlags)
 
-	// TODO: these errors should be logged to file
 	if !mister.RecentsOptionEnabled() {
+		logger.Println("recents option not enabled")
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
 	}
 
-	err = tryAddStartup()
+	err := tryAddStartup()
 	if err != nil {
+		logger.Println("error adding startup:", err)
 		fmt.Println("Error adding to startup:", err)
 	}
 
-	// TODO: log user config to file
 	cfg, err := config.LoadUserConfig()
 	if err != nil {
+		logger.Println("error loading user config:", err)
 		fmt.Println("Error loading config:", err)
 		os.Exit(1)
 	}
@@ -167,7 +168,7 @@ func main() {
 	} else if *service == "start" {
 		err := exec.Command(os.Args[0], "-service", "exec", "&").Start()
 		if err != nil {
-			fmt.Println("Error starting service:", err)
+			logger.Println("error starting service:", err)
 			os.Exit(1)
 		}
 		os.Exit(0)

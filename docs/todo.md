@@ -33,3 +33,4 @@ High level features, ideas and changes.
 - [ ] Auto-overclock for munt
 - [ ] How to improve CRT support
 - [ ] Bulk operations on shortcuts
+- [ ] Discord integration
