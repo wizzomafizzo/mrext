@@ -8,7 +8,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-// TODO: add entry to startup
 // TODO: delete entry from startup
 // TODO: enable/disable entry in startup
 // TODO: check if service is running
@@ -35,28 +34,33 @@ func (s *Startup) Load() error {
 		return err
 	}
 
-	sections := strings.Split(string(contents), "\n\n")
+	lines := strings.Split(string(contents), "\n")
+	sections := make([][]string, 0)
 
-	for i, section := range sections {
-		if len(section) == 0 {
+	section := make([]string, 0)
+	for i, line := range lines {
+		if i == 0 && strings.HasPrefix(line, "#!") {
 			continue
 		}
 
-		lines := strings.Split(section, "\n")
-
-		if i == 0 && strings.HasPrefix(lines[0], "#!") {
-			continue
+		if len(line) == 0 && len(section) != 0 {
+			sections = append(sections, section)
+			section = make([]string, 0)
+		} else if len(line) > 0 {
+			section = append(section, line)
 		}
+	}
 
+	for _, section := range sections {
 		name := ""
 		cmds := make([]string, 0)
 		enabled := false
 
-		if len(lines[0]) > 0 && lines[0][0] == '#' {
-			name = strings.TrimSpace(lines[0][1:])
-			cmds = append(cmds, lines[1:]...)
+		if len(section[0]) > 0 && section[0][0] == '#' {
+			name = strings.TrimSpace(section[0][1:])
+			cmds = append(cmds, section[1:]...)
 		} else {
-			cmds = append(cmds, lines...)
+			cmds = append(cmds, section...)
 		}
 
 		for _, line := range cmds {
@@ -75,7 +79,11 @@ func (s *Startup) Load() error {
 		}
 	}
 
-	s.Entries = entries
+	if len(entries) > 0 {
+		s.Entries = entries
+	} else {
+		return fmt.Errorf("no startup entries found")
+	}
 
 	return nil
 }
