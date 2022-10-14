@@ -149,12 +149,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO: say if an entry was added
 	err := tryAddStartup()
 	if err != nil {
 		logger.Println("error adding startup:", err)
 		fmt.Println("Error adding to startup:", err)
 	}
 
+	// TODO: need to be able to load default values
 	cfg, err := config.LoadUserConfig()
 	if err != nil {
 		logger.Println("error loading user config:", err)
@@ -162,15 +164,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *service == "exec" {
-		startService(logger, cfg)
-		os.Exit(0)
-	} else if *service == "start" {
+	start := func() {
 		err := exec.Command(os.Args[0], "-service", "exec", "&").Start()
 		if err != nil {
 			logger.Println("error starting service:", err)
 			os.Exit(1)
 		}
+	}
+
+	if *service == "exec" {
+		startService(logger, cfg)
+		os.Exit(0)
+	} else if *service == "start" {
+		start()
 		os.Exit(0)
 	} else if *service == "stop" {
 		stopService(logger)
@@ -182,7 +188,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO: launch service if not running
+	// TODO: more robust way to check if running
+	if _, err := os.Stat(pidFile); err != nil {
+		start()
+	}
 
 	db, err := openPlayLogDb()
 	if err != nil {
@@ -197,8 +206,38 @@ func main() {
 		fmt.Println("Error getting top cores:", err)
 		os.Exit(1)
 	}
-
+	maxCoreLen := 0
 	for _, core := range cores {
-		fmt.Printf("%s: %d\n", core.name, core.time)
+		if len(core.name) > maxCoreLen {
+			maxCoreLen = len(core.name)
+		}
+	}
+
+	games, err := db.topGames(10)
+	if err != nil {
+		logger.Println("error getting top games:", err)
+		fmt.Println("Error getting top games:", err)
+		os.Exit(1)
+	}
+	maxGameLen := 0
+	for _, game := range games {
+		if len(game.name) > maxGameLen {
+			maxGameLen = len(game.name)
+		}
+	}
+
+	fmt.Println("Top played cores:")
+	// TODO: convert names using names.txt
+	for _, core := range cores {
+		hours := core.time / 3600
+		minutes := (core.time % 3600) / 60
+		fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.name, hours, minutes)
+	}
+	fmt.Println()
+	fmt.Println("Top played games:")
+	for _, game := range games {
+		hours := game.time / 3600
+		minutes := (game.time % 3600) / 60
+		fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.name, hours, minutes)
 	}
 }
