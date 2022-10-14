@@ -4,6 +4,8 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
+[Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md) • [Todo List](docs/todo.md)
+
 ## Install
 
 All scripts listed can be installed by downloading the linked file, placing it in the `Scripts` folder on your SD card, and running it from the `Scripts` menu on your MiSTer. No scripts require a keyboard to use or any additional dependencies.
