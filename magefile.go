@@ -87,10 +87,10 @@ var apps = []app{
 		releaseId: "mrext/launchsync",
 	},
 	{
-		name: "playlog",
-		path: filepath.Join(cwd, "cmd", "playlog"),
-		bin:  "playlog.sh",
-		// releaseId: "mrext/playlog",
+		name:      "playlog",
+		path:      filepath.Join(cwd, "cmd", "playlog"),
+		bin:       "playlog.sh",
+		releaseId: "mrext/playlog",
 	},
 	{
 		name: "mm",
