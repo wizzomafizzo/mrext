@@ -20,36 +20,36 @@ Each script also provides its own individual update file if you only want certai
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
 
-[![Download BGM](docs/download.png "Download BGM")](https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh)
-[![Readme BGM](docs/readme.png "Readme BGM")](https://github.com/wizzomafizzo/MiSTer_BGM)
+[![Download BGM](docs/images/download.png "Download BGM")](https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh)
+[![Readme BGM](docs/images/readme.png "Readme BGM")](https://github.com/wizzomafizzo/MiSTer_BGM)
 
 ## Favorites
 Create and manage shortcuts for your favorite games. Favorites allows you to pick any game or core from your system and automatically generate a shortcut to it in the MiSTer menu.
 
-[![Download Favorites](docs/download.png "Download Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh)
-[![Readme Favorites](docs/readme.png "Readme Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites)
+[![Download Favorites](docs/images/download.png "Download Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh)
+[![Readme Favorites](docs/images/readme.png "Readme Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites)
 
 ## GamesMenu
 Browse your entire collection from the main MiSTer menu. GamesMenu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
 
-[![Download GamesMenu](docs/download.png "Download GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh)
-[![Readme GamesMenu](docs/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
+[![Download GamesMenu](docs/images/download.png "Download GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh)
+[![Readme GamesMenu](docs/images/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
 
 ## LaunchSync
 Create shareable and subscriptable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
-[![Download LaunchSync](docs/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
-[![Readme LaunchSync](docs/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
+[![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
 
-[![Download Random](docs/download.png "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
+[![Download Random](docs/images/download.png "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
 
 ## Search
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
 
-[![Download Search](docs/download.png "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
+[![Download Search](docs/images/download.png "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
 
 ## Other Projects
 
