@@ -106,6 +106,48 @@ func (p *playLogDb) addEvent(event eventAction) error {
 	return err
 }
 
+func (p *playLogDb) topCores(n int) ([]coreTime, error) {
+	rows, err := p.db.Query("select name, time from core_times order by time desc limit ?", n)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cores []coreTime
+	for rows.Next() {
+		var core coreTime
+		err = rows.Scan(&core.name, &core.time)
+		if err != nil {
+			return nil, err
+		}
+
+		cores = append(cores, core)
+	}
+
+	return cores, nil
+}
+
+func (p *playLogDb) topGames(n int) ([]gameTime, error) {
+	rows, err := p.db.Query("select id, path, name, folder, time from game_times order by time desc limit ?", n)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var games []gameTime
+	for rows.Next() {
+		var game gameTime
+		err = rows.Scan(&game.id, &game.path, &game.name, &game.folder, &game.time)
+		if err != nil {
+			return nil, err
+		}
+
+		games = append(games, game)
+	}
+
+	return games, nil
+}
+
 func (p *playLogDb) fixPowerLoss() (bool, error) {
 	// FIXME: repeating a lot of code here?
 	var lastEvent eventAction

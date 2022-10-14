@@ -181,4 +181,24 @@ func main() {
 		startService(logger, cfg)
 		os.Exit(0)
 	}
+
+	// TODO: launch service if not running
+
+	db, err := openPlayLogDb()
+	if err != nil {
+		logger.Println("error opening db:", err)
+		fmt.Println("Error opening database:", err)
+		os.Exit(1)
+	}
+
+	cores, err := db.topCores(10)
+	if err != nil {
+		logger.Println("error getting top cores:", err)
+		fmt.Println("Error getting top cores:", err)
+		os.Exit(1)
+	}
+
+	for _, core := range cores {
+		fmt.Printf("%s: %d\n", core.name, core.time)
+	}
 }
