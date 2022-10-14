@@ -156,8 +156,11 @@ func main() {
 		fmt.Println("Error adding to startup:", err)
 	}
 
-	// TODO: need to be able to load default values
-	cfg, err := config.LoadUserConfig()
+	cfg, err := config.LoadUserConfig(config.UserConfig{
+		PlayLog: config.PlayLogConfig{
+			SaveEvery: 5, // minutes
+		},
+	})
 	if err != nil {
 		logger.Println("error loading user config:", err)
 		fmt.Println("Error loading config:", err)

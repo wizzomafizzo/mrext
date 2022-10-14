@@ -9,33 +9,34 @@ import (
 
 // TODO: default values?
 
-type altCoresConfig struct {
+type AltCoresConfig struct {
 	LLAPI   []string `ini:"llapi,omitempty" delim:","`
 	YC      []string `ini:"yc,omitempty" delim:","`
 	DualRAM []string `ini:"dualram,omitempty" delim:","`
 }
 
-type launchSyncConfig struct{}
+type LaunchSyncConfig struct{}
 
-type playLogConfig struct {
+type PlayLogConfig struct {
 	SaveEvery int `ini:"save_every,omitempty"`
 }
 
-type randomConfig struct{}
+type RandomConfig struct{}
 
-type searchConfig struct{}
+type SearchConfig struct{}
 
 type UserConfig struct {
-	AltCores   altCoresConfig
-	LaunchSync launchSyncConfig
-	PlayLog    playLogConfig
-	Random     randomConfig
-	Search     searchConfig
+	AltCores   AltCoresConfig
+	LaunchSync LaunchSyncConfig
+	PlayLog    PlayLogConfig
+	Random     RandomConfig
+	Search     SearchConfig
 }
 
-func LoadUserConfig() (UserConfig, error) {
-	// TODO: load up central default ini first
-	var userConfig UserConfig
+func LoadUserConfig(defaultConfig UserConfig) (UserConfig, error) {
+	userConfig := defaultConfig
+
+	// TODO: central default ini first
 
 	// TODO: check if this can be a relative path
 	appFolder := filepath.Dir(os.Args[0])
