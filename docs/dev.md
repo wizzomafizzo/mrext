@@ -32,7 +32,7 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 
 ### Optional Dependencies
 
-- [NCURSES](https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/)
+- [ncurses](https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/)
 
   Just the dev files, and whatever version your favourite distro offers. This is only necessary if you want to build desktop versions of the applications that have GUIs. MiSTer builds pull this in automatically for the Docker images. Don't even bother trying to get this to work on Windows.
 
@@ -67,6 +67,15 @@ These are the important commands:
   Builds a binary of the target application for MiSTer, copies it to the appropriate folder in `releases`, generates an updated `<target>.json` repo file for use with `update` and `update_all` on MiSTer and updates the combined `all.json` repo file.
 
 Binary releases all go in the `releases` folder.
+
+Some builds may display warnings such as this:
+
+```
+/usr/bin/ld: /tmp/go-link-600559994/000029.o: in function `mygetgrouplist':
+/_/os/user/getgrouplist_unix.go:15: warning: Using 'getgrouplist' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+```
+
+They can be ignored. Some low-level things do not support static linking, but the Docker build environment matches the MiSTer image just to be safe (basically just the glibc major version).
 
 ## Project Layout
 
