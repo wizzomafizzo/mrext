@@ -66,7 +66,7 @@ func Generate(files [][2]string, indexPath string) error {
 		f.Close()
 	}
 
-	tmpIndexPath := filepath.Join(tmpDir, config.SearchDbFile)
+	tmpIndexPath := filepath.Join(tmpDir, filepath.Base(config.SearchDbFile))
 
 	indexTar, err := os.Create(tmpIndexPath)
 	if err != nil {

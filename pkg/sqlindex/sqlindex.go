@@ -39,7 +39,7 @@ func getDb() (*sql.DB, error) {
 }
 
 func Generate(files [][2]string, statusFn func(count int)) error {
-	tmpDbPath := filepath.Join(os.TempDir(), config.SearchDbFile+".db")
+	tmpDbPath := filepath.Join(os.TempDir(), filepath.Base(config.SearchDbFile))
 	if err := os.Remove(tmpDbPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
