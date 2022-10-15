@@ -47,6 +47,7 @@ Create shareable and subscriptable game playlists. LaunchSync automatically gene
 Instantly launch a random game in your collection from the Scripts menu.
 
 [![Download Random](docs/images/download.png "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
+[![Readme Random](docs/images/readme.png "Readme Random")](https://github.com/wizzomafizzo/mrext/tree/main/docs/random.md)
 
 ## Search
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
