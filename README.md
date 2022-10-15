@@ -43,6 +43,12 @@ Create shareable and subscriptable game playlists. LaunchSync automatically gene
 [![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 [![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
 
+## PlayLog
+Track and report on what games you've been playing on your MiSTer.
+
+[![Download PlayLog](docs/images/download.png "Download PlayLog")](https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh)
+[![Readme PlayLog](docs/images/readme.png "Readme PlayLog")](https://github.com/wizzomafizzo/mrext/tree/main/docs/playlog.md)
+
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
 

@@ -30,6 +30,8 @@ High level features, ideas and changes.
 - [ ] How to improve CRT support
 - [ ] Bulk operations on shortcuts
 - [ ] Discord integration
+- [ ] Uninstall instructions for all scripts
+- [ ] Example .ini files?
 - [x] Allow defining multiple folders on a system
 - [x] Split any remaining cores supporting multiple systems
 - [x] Check for cores that can be launched by MGL but aren't currently listed
