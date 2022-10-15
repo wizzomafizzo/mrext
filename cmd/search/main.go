@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-
-	s "strings"
+	"strings"
 
 	gc "github.com/rthornton128/goncurses"
 
@@ -15,6 +14,10 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
+
+// TODO: list display window showing 2 values per row (left and right aligned)
+// TODO: list display window with selected/deselected status per item
+// TODO: small popup selection menu dialog
 
 func newIndexChannel() chan txtindex.Index {
 	ic := make(chan txtindex.Index, 1)
@@ -57,7 +60,7 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	}
 
 	clearText := func() {
-		win.MovePrint(1, 2, s.Repeat(" ", width-4))
+		win.MovePrint(1, 2, strings.Repeat(" ", width-4))
 	}
 
 	win.MovePrint(1, 2, "Finding games folders...")
