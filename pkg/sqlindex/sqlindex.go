@@ -29,16 +29,8 @@ func setupDb(db *sql.DB) error {
 	return nil
 }
 
-func GetIndexPath() string {
-	if _, err := os.Stat(config.SdFolder); err == nil {
-		return filepath.Join(config.SdFolder, config.IndexName+".db")
-	} else {
-		return config.IndexName + ".db"
-	}
-}
-
 func getDb() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", GetIndexPath())
+	db, err := sql.Open("sqlite3", config.SearchDbFile)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +39,7 @@ func getDb() (*sql.DB, error) {
 }
 
 func Generate(files [][2]string, statusFn func(count int)) error {
-	tmpDbPath := filepath.Join(os.TempDir(), config.IndexName+".db")
+	tmpDbPath := filepath.Join(os.TempDir(), config.SearchDbFile+".db")
 	if err := os.Remove(tmpDbPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -85,12 +77,11 @@ func Generate(files [][2]string, statusFn func(count int)) error {
 	insertStmt.Close()
 	db.Close()
 
-	dbPath := GetIndexPath()
-	if err := os.Remove(dbPath); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(config.SearchDbFile); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	utils.MoveFile(tmpDbPath, dbPath)
+	utils.MoveFile(tmpDbPath, config.SearchDbFile)
 
 	return nil
 }

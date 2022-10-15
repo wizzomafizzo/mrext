@@ -3,7 +3,6 @@
 High level features, ideas and changes.
 
 - [ ] Pack all binaries with upx
-- [ ] Documentation for random and search
 - [ ] Add category core groups like console/computer/handheld/sega/etc.
 - [ ] Set a sane default systems filter on random
 - [ ] Make up some example random launchers and link them
@@ -32,6 +31,7 @@ High level features, ideas and changes.
 - [ ] Discord integration
 - [ ] Uninstall instructions for all scripts
 - [ ] Example .ini files?
+- [x] Documentation for random and search
 - [x] Allow defining multiple folders on a system
 - [x] Split any remaining cores supporting multiple systems
 - [x] Check for cores that can be launched by MGL but aren't currently listed

@@ -8,6 +8,7 @@ import (
 
 	gc "github.com/rthornton128/goncurses"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -18,7 +19,7 @@ import (
 func newIndexChannel() chan txtindex.Index {
 	ic := make(chan txtindex.Index, 1)
 	go func() {
-		index, err := txtindex.Open(txtindex.GetIndexPath())
+		index, err := txtindex.Open(config.SearchDbFile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -86,7 +87,7 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	win.NoutRefresh()
 	gc.Update()
 
-	if err := txtindex.Generate(files, txtindex.GetIndexPath()); err != nil {
+	if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
 		log.Fatal(err)
 	}
 
