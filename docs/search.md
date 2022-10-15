@@ -12,8 +12,8 @@ Download [Search](https://github.com/wizzomafizzo/mrext/raw/main/releases/search
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```
-[mrext/random]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.json
+[mrext/search]
+db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.json
 ```
 
 ## Usage
