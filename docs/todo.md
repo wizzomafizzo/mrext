@@ -4,7 +4,9 @@ High level features, ideas and changes.
 
 - [ ] Pack all binaries with upx
 - [ ] Documentation for random and search
-- [ ] Screenshot buttons for all scripts
+- [ ] Add category core groups like console/computer/handheld/sega/etc.
+- [ ] Set a sane default systems filter on random
+- [ ] Make up some example random launchers and link them
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
 - [ ] Write all temp mgls to a directory in tmp instead of root
 - [x] Allow defining multiple folders on a system
