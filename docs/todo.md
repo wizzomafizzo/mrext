@@ -31,6 +31,7 @@ High level features, ideas and changes.
 - [ ] Discord integration
 - [ ] Uninstall instructions for all scripts
 - [ ] Example .ini files?
+- [ ] Apps should detect stuff like scummvm and doom as a "core running"
 - [x] Documentation for random and search
 - [x] Allow defining multiple folders on a system
 - [x] Split any remaining cores supporting multiple systems

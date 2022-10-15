@@ -66,10 +66,16 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	gc.Update()
 
 	systemPaths := make(map[string][]string)
+
 	for _, path := range games.GetSystemPaths(games.AllSystems()) {
 		systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
 	}
-	totalSteps := len(systemPaths) + 3
+
+	totalSteps := 0
+	for _, systems := range systemPaths {
+		totalSteps += len(systems)
+	}
+	totalSteps += 3
 	currentStep := 2
 
 	files, _ := games.GetAllFiles(systemPaths, func(system string, path string) {
