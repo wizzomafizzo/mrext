@@ -53,6 +53,7 @@ Instantly launch a random game in your collection from the Scripts menu.
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
 
 [![Download Search](docs/images/download.png "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
+[![Readme Search](docs/images/readme.png "Readme Search")](https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md)
 
 ## Other Projects
 
