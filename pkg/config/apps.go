@@ -1,6 +1,5 @@
 package config
 
-// TODO: hardcode index as "search.db"
-const IndexName = "index"
 const ActiveGameFile = "/tmp/ACTIVEGAME"
+const SearchDbFile = SdFolder + "/search.db"
 const PlayLogDbFile = SdFolder + "/playlog.db"

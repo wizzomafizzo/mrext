@@ -27,6 +27,6 @@ db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.j
 
 At the moment, re-indexing of games must be triggered manually. You might need to do this if you've made changes to the games on your MiSTer.
 
-Just delete this file: `/media/fat/index.db`
+Just delete this file: `/media/fat/search.db`
 
 Search will create a new database next time you launch it.

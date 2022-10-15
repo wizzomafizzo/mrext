@@ -14,18 +14,8 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-var indexFilename = config.IndexName + ".tar"
-
-func GetIndexPath() string {
-	if _, err := os.Stat(config.SdFolder); err == nil {
-		return filepath.Join(config.SdFolder, indexFilename)
-	} else {
-		return indexFilename
-	}
-}
-
 func Exists() bool {
-	_, err := os.Stat(GetIndexPath())
+	_, err := os.Stat(config.SearchDbFile)
 	return err == nil
 }
 
@@ -76,7 +66,7 @@ func Generate(files [][2]string, indexPath string) error {
 		f.Close()
 	}
 
-	tmpIndexPath := filepath.Join(tmpDir, indexFilename)
+	tmpIndexPath := filepath.Join(tmpDir, config.SearchDbFile)
 
 	indexTar, err := os.Create(tmpIndexPath)
 	if err != nil {
