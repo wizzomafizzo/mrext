@@ -8,12 +8,24 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func ListPicker(stdscr *gc.Window, title string, items []string, buttons []string, defaultButton int) (int, int, error) {
-	selectedItem := 0
-	selectedButton := defaultButton
+type ListPickerOpts struct {
+	Title         string
+	Buttons       []string
+	DefaultButton int
+	ShowTotal     bool
+	Width         int
+	Height        int
+}
 
-	height := 18
-	width := 70
+func ListPicker(stdscr *gc.Window, opts ListPickerOpts, items []string) (int, int, error) {
+	selectedItem := 0
+	selectedButton := opts.DefaultButton
+
+	pgUpName := "PgUp"
+	pgDownName := "PgDn"
+
+	height := opts.Height
+	width := opts.Width
 
 	viewStart := 0
 	viewHeight := height - 4
@@ -44,7 +56,7 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 		}
 	}
 
-	win, err := NewWindow(stdscr, height, width, title, -1)
+	win, err := NewWindow(stdscr, height, width, opts.Title, -1)
 	if err != nil {
 		return -1, -1, err
 	}
@@ -119,15 +131,17 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 		// }
 
 		// buttons
-		DrawActionButtons(win, buttons, selectedButton, 4)
+		DrawActionButtons(win, opts.Buttons, selectedButton, 4)
 		win.NoutRefresh()
 
 		// location indicators
-		totalStatus := fmt.Sprintf("%*d/%d", len(fmt.Sprint(len(items))), selectedItem+1, len(items))
-		if err != nil {
-			return -1, -1, err
+		if opts.ShowTotal {
+			totalStatus := fmt.Sprintf("%*d/%d", len(fmt.Sprint(len(items))), selectedItem+1, len(items))
+			if err != nil {
+				return -1, -1, err
+			}
+			win.MovePrint(0, 2, totalStatus)
 		}
-		win.MovePrint(0, 2, totalStatus)
 
 		if viewStart > 0 {
 			win.MoveAddChar(0, width-3, gc.ACS_UARROW)
@@ -165,10 +179,10 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 			if selectedButton > 0 {
 				selectedButton--
 			} else {
-				selectedButton = len(buttons) - 1
+				selectedButton = len(opts.Buttons) - 1
 			}
 		case gc.KEY_RIGHT:
-			if selectedButton < len(buttons)-1 {
+			if selectedButton < len(opts.Buttons)-1 {
 				selectedButton++
 			} else {
 				selectedButton = 0
@@ -180,9 +194,9 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 		case gc.KEY_ENTER, 10, 13:
 			if selectedButton == 2 {
 				return selectedButton, selectedItem, nil
-			} else if buttons[selectedButton] == "PgUp" {
+			} else if opts.Buttons[selectedButton] == pgUpName {
 				pageUp()
-			} else if buttons[selectedButton] == "PgDn" {
+			} else if opts.Buttons[selectedButton] == pgDownName {
 				pageDown()
 			} else {
 				return selectedButton, -1, nil
@@ -191,4 +205,13 @@ func ListPicker(stdscr *gc.Window, title string, items []string, buttons []strin
 	}
 
 	return -1, -1, nil
+}
+
+func KeyValueListPicker(stdscr *gc.Window, opts ListPickerOpts, items [][2]string) (int, int, error) {
+	strItems := make([]string, len(items))
+	for i, item := range items {
+		strItems[i] = item[0] + " " + item[1]
+	}
+
+	return ListPicker(stdscr, opts, strItems)
 }
