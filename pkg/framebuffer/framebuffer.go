@@ -24,24 +24,30 @@ import "C"
 import (
 	"fmt"
 	"image"
+	"image/color"
+	"os"
 	"unsafe"
+
+	"golang.org/x/term"
 )
 
 type Framebuffer struct {
-	Fd           int
-	BitsPerPixel int
-	XRes         int
-	YRes         int
-	Data         []byte
-	XOffset      int
-	YOffset      int
-	LineLength   int
-	ScreenSize   int
+	fd           int
+	bitsPerPixel int
+	xRes         int
+	yRes         int
+	data         []byte
+	xOffset      int
+	yOffset      int
+	lineLength   int
+	screenSize   int
 }
 
 func (fb *Framebuffer) Open() error {
-	// hide cursor
-	fmt.Print("\033[?25l")
+	_, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
 
 	dev_file := C.CString("/dev/fb0")
 	fd, err := C.openFrameBuffer(dev_file)
@@ -61,62 +67,80 @@ func (fb *Framebuffer) Open() error {
 		return err
 	}
 
-	fb.BitsPerPixel = int(vinfo.bits_per_pixel)
-	fb.XRes = int(vinfo.xres)
-	fb.YRes = int(vinfo.yres)
-	fb.XOffset = int(vinfo.xoffset)
-	fb.YOffset = int(vinfo.yoffset)
-	fb.LineLength = int(finfo.line_length)
-	fb.ScreenSize = int(finfo.smem_len)
+	fb.bitsPerPixel = int(vinfo.bits_per_pixel)
+	fb.xRes = int(vinfo.xres)
+	fb.yRes = int(vinfo.yres)
+	fb.xOffset = int(vinfo.xoffset)
+	fb.yOffset = int(vinfo.yoffset)
+	fb.lineLength = int(finfo.line_length)
+	fb.screenSize = int(finfo.smem_len)
 
-	addr := uintptr(C.mmap(nil, C.size_t(fb.ScreenSize), C.PROT_READ|C.PROT_WRITE, C.MAP_SHARED, fd, 0))
+	addr := uintptr(C.mmap(nil, C.size_t(fb.screenSize), C.PROT_READ|C.PROT_WRITE, C.MAP_SHARED, fd, 0))
 
 	var sl = struct {
 		addr uintptr
 		len  int
 		cap  int
-	}{addr, fb.ScreenSize, fb.ScreenSize}
+	}{addr, fb.screenSize, fb.screenSize}
 
-	fb.Data = *(*[]byte)(unsafe.Pointer(&sl))
+	fb.data = *(*[]byte)(unsafe.Pointer(&sl))
 
 	return nil
 }
 
 func (fb *Framebuffer) Close() {
-	C.munmap(unsafe.Pointer(&fb.Data[0]), C.size_t(fb.ScreenSize))
-	C.close(C.int(fb.Fd))
+	C.munmap(unsafe.Pointer(&fb.data[0]), C.size_t(fb.screenSize))
+	C.close(C.int(fb.fd))
 }
 
-func (fb *Framebuffer) Set(x int, y int, r uint32, g uint32, b uint32, a uint32) error {
-	if x < 0 || x > fb.XRes || y < 0 || y > fb.YRes {
-		return fmt.Errorf("pixel coords out of bounds: %d, %d", x, y)
+func (fb *Framebuffer) ColorModel() color.Model {
+	return color.RGBAModel
+}
+
+func (fb *Framebuffer) Bounds() image.Rectangle {
+	return image.Rect(0, 0, fb.xRes, fb.yRes)
+}
+
+func (fb *Framebuffer) At(x, y int) color.Color {
+	if x < 0 || x >= fb.xRes || y < 0 || y >= fb.yRes {
+		return color.Black
 	}
 
-	location := (x+fb.XOffset)*(fb.BitsPerPixel/8) + (y+fb.YOffset)*fb.LineLength
+	addr := (fb.xOffset + x + (fb.yOffset+y)*fb.lineLength) * fb.bitsPerPixel / 8
 
-	fb.Data[location+3] = byte(a & 0xff)
-	fb.Data[location+2] = byte(r & 0xff)
-	fb.Data[location+1] = byte(g & 0xff)
-	fb.Data[location] = byte(b & 0xff)
+	b := fb.data[addr]
+	g := fb.data[addr+1]
+	r := fb.data[addr+2]
+	a := fb.data[addr+3]
 
-	return nil
+	return color.RGBA{r, g, b, a}
 }
 
-func (fb *Framebuffer) Fill(r, g, b, a uint32) {
-	for y := 0; y < fb.YRes; y++ {
-		for x := 0; x < fb.XRes; x++ {
-			fb.Set(x, y, r, g, b, a)
+func (fb *Framebuffer) Set(x, y int, c color.Color) {
+	if x < 0 || x > fb.xRes || y < 0 || y > fb.yRes {
+		return
+	}
+
+	r, g, b, a := c.RGBA()
+	addr := (x+fb.xOffset)*(fb.bitsPerPixel/8) + (y+fb.yOffset)*fb.lineLength
+
+	fb.data[addr] = byte(b)
+	fb.data[addr+1] = byte(g)
+	fb.data[addr+2] = byte(r)
+	fb.data[addr+3] = byte(a)
+}
+
+func (fb *Framebuffer) Fill(c color.Color) {
+	// draw.Draw(&fb, fb.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	for y := 0; y < fb.yRes; y++ {
+		for x := 0; x < fb.xRes; x++ {
+			fb.Set(x, y, c)
 		}
 	}
 }
 
-func (fb *Framebuffer) SetImage(xOffset int, yOffset int, image image.Image) {
-	bounds := image.Bounds()
-
-	for y := 0; y < bounds.Max.Y; y++ {
-		for x := 0; x < bounds.Max.X; x++ {
-			r, g, b, a := image.At(x, y).RGBA()
-			fb.Set(x+xOffset, y+yOffset, r&0xff, g&0xff, b&0xff, a&0xff)
-		}
-	}
+func (fb *Framebuffer) ReadKey() (byte, error) {
+	var b [1]byte
+	_, err := os.Stdin.Read(b[:])
+	return b[0], err
 }
