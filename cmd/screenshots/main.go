@@ -1,10 +1,24 @@
 package main
 
 import (
-	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/png"
+	"os"
 
 	"github.com/wizzomafizzo/mrext/pkg/framebuffer"
 )
+
+func getImageFromFilePath(filePath string) (image.Image, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	image, err := png.Decode(f)
+	return image, err
+}
 
 func main() {
 	var fb framebuffer.Framebuffer
@@ -15,7 +29,15 @@ func main() {
 	}
 	defer fb.Close()
 
-	fb.Fill(255, 255, 255, 0)
-	fmt.Scanln()
-	fb.Fill(0, 0, 0, 0)
+	fb.Fill(color.White)
+
+	img, err := getImageFromFilePath("/media/fat/screenshots/MENU/20221004_144640-screen.png")
+	if err != nil {
+		panic(err)
+	}
+
+	draw.Draw(&fb, fb.Bounds(), img, image.Point{}, draw.Src)
+
+	fb.ReadKey()
+	fb.Fill(color.Black)
 }
