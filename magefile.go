@@ -74,6 +74,12 @@ var apps = []app{
 		bin:  "samindex",
 	},
 	{
+		name: "screenshots",
+		path: filepath.Join(cwd, "cmd", "screenshots"),
+		bin:  "screenshots.sh",
+		// releaseId: "mrext/screenshots",
+	},
+	{
 		name:      "search",
 		path:      filepath.Join(cwd, "cmd", "search"),
 		bin:       "search.sh",
