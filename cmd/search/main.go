@@ -19,6 +19,8 @@ import (
 // TODO: list display window with selected/deselected status per item
 // TODO: small popup selection menu dialog
 
+// Create a channel that will be used to pass the index around. This is so
+// the index file can be loaded in the background on startup.
 func newIndexChannel() chan txtindex.Index {
 	ic := make(chan txtindex.Index, 1)
 	go func() {
@@ -103,6 +105,37 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	return nil
 }
 
+func mainOptionsWindow(stdscr *gc.Window) error {
+	options := [][2]string{
+		{"Rescan games...", ""},
+	}
+
+	button, selected, err := curses.KeyValueListPicker(stdscr, curses.ListPickerOpts{
+		Title:         "Options",
+		Buttons:       []string{"Select", "Back"},
+		DefaultButton: 0,
+		ShowTotal:     false,
+		Width:         70,
+		Height:        18,
+	}, options)
+
+	if err != nil {
+		return err
+	}
+
+	if button == 0 {
+		switch selected {
+		case 0:
+			generateIndexWindow(stdscr)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err error) {
 	stdscr.Erase()
 	stdscr.NoutRefresh()
@@ -116,6 +149,11 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 	}
 
 	if button == 0 {
+		err = mainOptionsWindow(stdscr)
+		if err != nil {
+			return err
+		}
+
 		return searchWindow(stdscr, ic, text)
 	} else if button == 1 {
 		if len(text) == 0 {
@@ -150,7 +188,14 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 		stdscr.NoutRefresh()
 		gc.Update()
 
-		button, selected, err := curses.ListPicker(stdscr, "Launch Game", names, []string{"PgUp", "PgDn", "Launch", "Options", "Cancel"}, 2)
+		button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
+			Title:         "Launch Game",
+			Buttons:       []string{"PgUp", "PgDn", "Launch", "Options", "Cancel"},
+			DefaultButton: 2,
+			ShowTotal:     true,
+			Width:         70,
+			Height:        18,
+		}, names)
 		if err != nil {
 			log.Fatal(err)
 		}

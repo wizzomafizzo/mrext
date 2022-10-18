@@ -23,7 +23,10 @@ type PlayLogConfig struct {
 
 type RandomConfig struct{}
 
-type SearchConfig struct{}
+type SearchConfig struct {
+	Filter []string `ini:"filter,omitempty" delim:","`
+	Sort   string   `ini:"sort,omitempty"`
+}
 
 type UserConfig struct {
 	AltCores   AltCoresConfig
