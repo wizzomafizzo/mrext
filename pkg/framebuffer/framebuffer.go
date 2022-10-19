@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"os"
 	"unsafe"
 
@@ -44,6 +45,7 @@ type Framebuffer struct {
 }
 
 func (fb *Framebuffer) Open() error {
+	fmt.Print("\033[?25l")
 	_, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return err
@@ -54,7 +56,7 @@ func (fb *Framebuffer) Open() error {
 	C.free(unsafe.Pointer(dev_file))
 
 	if err != nil {
-		return fmt.Errorf("error opening framebuffer device: %v", err)
+		return err
 	}
 
 	var finfo C.struct_fb_fix_screeninfo
@@ -89,6 +91,7 @@ func (fb *Framebuffer) Open() error {
 }
 
 func (fb *Framebuffer) Close() {
+	fb.Fill(color.Black)
 	C.munmap(unsafe.Pointer(&fb.data[0]), C.size_t(fb.screenSize))
 	C.close(C.int(fb.fd))
 }
@@ -101,13 +104,16 @@ func (fb *Framebuffer) Bounds() image.Rectangle {
 	return image.Rect(0, 0, fb.xRes, fb.yRes)
 }
 
+func (fb *Framebuffer) addressAt(x, y int) int {
+	return (x+fb.xOffset)*(fb.bitsPerPixel/8) + (y+fb.yOffset)*fb.lineLength
+}
+
 func (fb *Framebuffer) At(x, y int) color.Color {
 	if x < 0 || x >= fb.xRes || y < 0 || y >= fb.yRes {
 		return color.Black
 	}
 
-	addr := (fb.xOffset + x + (fb.yOffset+y)*fb.lineLength) * fb.bitsPerPixel / 8
-
+	addr := fb.addressAt(x, y)
 	b := fb.data[addr]
 	g := fb.data[addr+1]
 	r := fb.data[addr+2]
@@ -122,8 +128,7 @@ func (fb *Framebuffer) Set(x, y int, c color.Color) {
 	}
 
 	r, g, b, a := c.RGBA()
-	addr := (x+fb.xOffset)*(fb.bitsPerPixel/8) + (y+fb.yOffset)*fb.lineLength
-
+	addr := fb.addressAt(x, y)
 	fb.data[addr] = byte(b)
 	fb.data[addr+1] = byte(g)
 	fb.data[addr+2] = byte(r)
@@ -131,12 +136,7 @@ func (fb *Framebuffer) Set(x, y int, c color.Color) {
 }
 
 func (fb *Framebuffer) Fill(c color.Color) {
-	// draw.Draw(&fb, fb.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
-	for y := 0; y < fb.yRes; y++ {
-		for x := 0; x < fb.xRes; x++ {
-			fb.Set(x, y, c)
-		}
-	}
+	draw.Draw(fb, fb.Bounds(), &image.Uniform{c}, image.Point{}, draw.Src)
 }
 
 func (fb *Framebuffer) ReadKey() (byte, error) {

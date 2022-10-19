@@ -3,6 +3,7 @@ package config
 // TODO: should this be hardcoded? how common is usb0 setup?
 const SdFolder = "/media/fat"
 const CoreConfigFolder = SdFolder + "/config"
+const FontFolder = SdFolder + "/font"
 
 const MisterIniFile = SdFolder + "/MiSTer.ini"
 const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
