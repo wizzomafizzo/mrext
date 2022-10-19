@@ -39,5 +39,4 @@ func main() {
 	draw.Draw(&fb, fb.Bounds(), img, image.Point{}, draw.Src)
 
 	fb.ReadKey()
-	fb.Fill(color.Black)
 }
