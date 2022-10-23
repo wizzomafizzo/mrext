@@ -4,11 +4,17 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
+**MiSTer Extensions is now available through [Update All](https://github.com/theypsilon/Update_All_MiSTer)! Enable it in the *Unofficial Scripts* menu to install all scripts at once.**
+
 [Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md) • [Todo List](docs/todo.md)
 
 ## Install
 
-All scripts listed can be installed by downloading the linked file, placing it in the `Scripts` folder on your SD card, and running it from the `Scripts` menu on your MiSTer. No scripts require a keyboard to use or any additional dependencies.
+### Update All
+
+Open the [Update All](https://github.com/theypsilon/Update_All_MiSTer) settings menu, the `Unofficial Scripts` submenu, and enable the MiSTer Extensions repository from there.
+
+### Update/Downloader
 
 Add the following to your `downloader.ini` file to install everything at once through the `update` script:
 
@@ -17,7 +23,11 @@ Add the following to your `downloader.ini` file to install everything at once th
 db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/all.json
 ```
 
-Each script also provides its own individual update file if you only want certain ones.
+Each script also provides its own individual update file if you only want certain ones. Check the script's README.
+
+### Manual
+
+All scripts listed can be installed by downloading the linked file below, placing it in the `Scripts` folder on your SD card, and running it from the `Scripts` menu on your MiSTer.
 
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
