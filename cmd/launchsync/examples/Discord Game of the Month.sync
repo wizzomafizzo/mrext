@@ -28,3 +28,16 @@ match = ~^Super Mario World \(.+\)
 [Phantasy Star IV]
 system = Genesis
 match = Phantasy Star IV
+
+[Castlevania IV]
+system = SNES
+match = Castlevania IV (USA)
+
+[Castlevania - Rondo of Blood]
+system = TurboGrafx16CD
+match = Castlevania - Rondo of Blood
+match = Rondo of Blood
+
+[Castlevania - Bloodlines]
+system = Genesis
+match = Castlevania - Bloodlines (USA)
