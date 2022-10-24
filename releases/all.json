@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1665720400,
+  "timestamp": 1666577371,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "05746d1b66d9d38280c3b79c01b5f3dc",
@@ -18,8 +18,8 @@
       "url": "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"
     },
     "Scripts/launchsync.sh": {
-      "hash": "851ef9fd0dc1f238d9b954359b3e39ab",
-      "size": 7207723,
+      "hash": "6ae9c257b3ecc01650112051b41552e9",
+      "size": 7272608,
       "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh"
     },
     "Scripts/playlog.sh": {

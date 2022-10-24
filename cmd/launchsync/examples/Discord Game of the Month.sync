@@ -1,7 +1,7 @@
 name = Discord Game of the Month
 author = MiSTer Discord Community
 url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
-updated = 2022-10-23
+updated = 2022-10-24 00:00
 
 [Crystalis]
 system = NES
@@ -34,7 +34,7 @@ system = SNES
 match = Castlevania IV (USA)
 
 [Castlevania - Rondo of Blood]
-system = TurboGraphx16CD
+system = TGFX16-CD
 match = Castlevania - Rondo of Blood
 match = Rondo of Blood
 
