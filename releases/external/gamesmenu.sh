@@ -36,7 +36,7 @@ MGL_MAP = (
     ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 0),)),
     ("MegaCD", "_Console/MegaCD", (({".cue", ".chd"}, 1, "s", 0),)),
     (
-        "NeoGeo",
+        "NEOGEO",
         "_Console/NeoGeo",
         (({".neo", ".zip"}, 1, "f", 1), ({".iso", ".bin"}, 1, "s", 1)),
     ),

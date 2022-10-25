@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1666577371,
+  "timestamp": 1666669951,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "05746d1b66d9d38280c3b79c01b5f3dc",
@@ -13,7 +13,7 @@
       "url": "https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh"
     },
     "Scripts/gamesmenu.sh": {
-      "hash": "8618620b7347cdf19082560a038fd469",
+      "hash": "6ab15267e295f8de08497cadc7240952",
       "size": 12316,
       "url": "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"
     },
