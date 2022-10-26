@@ -71,7 +71,7 @@ The `url` field is optional, but is required if you want your sync file to auto-
 updated = 2022-09-01
 ```
 
-The `updated` field is optional unless the `url` field exists. It's used to check if an update is actually required. It can be in the format `YYYY-MM-DD` or `YYYY-MM-DD hh:mm`.
+The `updated` field is only required if a `url` is set. It's used to check if an update is actually necessary. It can be in the format `YYYY-MM-DD` or `YYYY-MM-DD hh:mm`.
 
 ### Game Sections
 
@@ -81,7 +81,11 @@ Each game in a sync file is defined with a section header:
 [My Favorite Game]
 ```
 
-This starts the section, and also defines the name of the shortcut that will be created in the MiSTer menu. It should be unique but there can be as many as you want. Same as the `name` field in the header, it can't contain any of these characters: `/ \ : * ? " < > |`
+This starts the section, and also defines the name of the shortcut that will be created in the MiSTer menu. It must be unique and there can be as many as you want. Similar to the `name` field in the header, it can't contain any of these characters: `\ : * ? " < > |`
+
+A game's name *can* contain forward slashes (`/`), which will allow you to specify subfolders for a game's launcher to be placed in. Any folders contained in the name will be automatically created and prefixed with a `_` character so they will display in the menu. You can specify the same folder for multiple games.
+
+For example, these are all valid section headers: `[Game]`, `[PSX/Game]` and `[Some/Deep Folder/Game]`.
 
 ```
 system = NES
