@@ -13,7 +13,6 @@ import (
 
 // TODO: handle filename being too long (255 chars)
 // TODO: add system id to mgl name if many systems, and config option
-// TODO: search root for sync files
 // TODO: mention about shortcuts ordering in mister menu
 
 func testSyncFile(path string) {
@@ -102,6 +101,7 @@ func main() {
 		fmt.Print("Searching for sync files... ")
 	}
 	menuFolders := mister.GetMenuFolders(config.SdFolder)
+	menuFolders = append(menuFolders, config.SdFolder)
 	syncFiles := getSyncFiles(menuFolders)
 	var syncs []*syncFile
 
