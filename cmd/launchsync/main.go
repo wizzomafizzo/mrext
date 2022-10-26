@@ -69,7 +69,7 @@ func testSyncFile(path string) {
 		} else {
 			fn = game.name + ".mgl"
 		}
-		fmt.Printf("Path:    %s\n", filepath.Join(sf.folder, fn))
+		fmt.Printf("Path:    %s\n", filepath.Join(sf.folder, game.folder, fn))
 
 		fmt.Printf("Matches: %d\n", len(game.matches))
 
@@ -133,7 +133,7 @@ func main() {
 		if *verbose || !*update {
 			fmt.Printf("%d/%d: %s... ", i+1, len(syncs), sync.name)
 		}
-		newSync, updated, err := checkForUpdate(sync)
+		newSync, updated, err := checkForChanges(sync)
 		if err != nil {
 			if *verbose || !*update {
 				fmt.Printf("error: %s\n", err)

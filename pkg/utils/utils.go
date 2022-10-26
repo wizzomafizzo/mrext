@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -198,4 +199,63 @@ func InfoPrompt(prompt string) {
 	term.Restore(int(os.Stdin.Fd()), oldState)
 
 	time.Sleep(400 * time.Millisecond)
+}
+
+func IsEmptyDir(path string) (bool, error) {
+	fs, err := os.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+
+	return len(fs) == 0, nil
+}
+
+// Remove all empty folders in a path, including folders containing only empty
+// folders and the path itself.
+func RemoveEmptyDirs(path string) error {
+	var dirs []string
+
+	err := filepath.WalkDir(path, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for i := len(dirs) - 1; i >= 0; i-- {
+		dir := dirs[i]
+
+		empty, err := IsEmptyDir(dir)
+		if err != nil {
+			return err
+		}
+
+		if empty {
+			err = os.Remove(dir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	rootEmpty, err := IsEmptyDir(path)
+	if err != nil {
+		return err
+	} else if rootEmpty {
+		err = os.Remove(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
