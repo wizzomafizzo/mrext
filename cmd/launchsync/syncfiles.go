@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/ini.v1"
@@ -17,7 +19,9 @@ import (
 )
 
 type syncFileGame struct {
+	id      string
 	name    string
+	folder  string
 	system  *games.System
 	matches []string
 }
@@ -41,6 +45,40 @@ func getSyncFiles(paths []string) []string {
 		}
 	}
 	return syncFiles
+}
+
+// Parse a section name and return a cleaned and formatted filename and relative folder path.
+func readSectionName(sectionName string) (name string, path string, err error) {
+	parts := strings.Split(sectionName, "/")
+
+	if len(parts) < 1 {
+		return "", "", fmt.Errorf("invalid section name: %s", sectionName)
+	} else if len(parts) == 1 {
+		// root level file
+		return utils.StripBadFileChars(parts[0]), "", nil
+	}
+
+	name = utils.StripBadFileChars(parts[len(parts)-1])
+
+	var folders []string
+
+	for i := 0; i < len(parts)-1; i++ {
+		fn := utils.StripBadFileChars(parts[i])
+
+		if fn == "" || fn == "." || fn == ".." || fn == "_" {
+			break
+		}
+
+		if fn[0] != '_' {
+			fn = "_" + fn
+		}
+
+		folders = append(folders, fn)
+	}
+
+	path = filepath.Join(folders...)
+
+	return name, path, nil
 }
 
 func readSyncFile(path string) (*syncFile, error) {
@@ -67,14 +105,17 @@ func readSyncFile(path string) (*syncFile, error) {
 
 	sf.url = cfg.Section("DEFAULT").Key("url").String()
 
-	if cfg.Section("DEFAULT").HasKey("url") {
-		sf.updated, err = cfg.Section("DEFAULT").Key("updated").TimeFormat("2006-01-02")
+	if cfg.Section("DEFAULT").HasKey("updated") {
+		updated := cfg.Section("DEFAULT").Key("updated")
+		sf.updated, err = updated.TimeFormat("2006-01-02")
 		if err != nil {
-			sf.updated, err = cfg.Section("DEFAULT").Key("updated").TimeFormat("2006-01-02 15:04")
+			sf.updated, err = updated.TimeFormat("2006-01-02 15:04")
 			if err != nil {
 				return nil, fmt.Errorf("invalid updated date/time: %s", err)
 			}
 		}
+	} else if sf.url != "" {
+		return nil, fmt.Errorf("updated field is required with a url")
 	}
 
 	for _, section := range cfg.Sections() {
@@ -84,17 +125,21 @@ func readSyncFile(path string) (*syncFile, error) {
 
 		var game syncFileGame
 
-		// TODO: support subfolders
-		game.name = utils.StripBadFileChars(section.Name())
+		game.id = section.Name()
+
+		game.name, game.folder, err = readSectionName(game.id)
+		if err != nil {
+			return nil, err
+		}
 
 		if game.name == "" {
-			return nil, fmt.Errorf("missing name in %s", section.Name())
+			return nil, fmt.Errorf("missing name in %s", game.id)
 		}
 
 		systemName := section.Key("system").String()
 		system, err := games.LookupSystem(systemName)
 		if err != nil {
-			return nil, fmt.Errorf("invalid system in %s: %s", section.Name(), err)
+			return nil, fmt.Errorf("invalid system in %s: %s", game.id, err)
 		} else {
 			game.system = system
 		}
@@ -103,7 +148,7 @@ func readSyncFile(path string) (*syncFile, error) {
 		game.matches = append(game.matches, matches...)
 
 		if len(game.matches) == 0 {
-			return nil, fmt.Errorf("missing matches in %s", section.Name())
+			return nil, fmt.Errorf("missing matches in %s", game.id)
 		}
 
 		sf.games = append(sf.games, game)
@@ -205,26 +250,43 @@ func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
 	return index, nil
 }
 
-func checkForUpdate(sync *syncFile) (*syncFile, bool, error) {
-	// TODO: diff sync/removals could work without a url
+func checkForChanges(sync *syncFile) (*syncFile, bool, error) {
 	newSync, updated, err := updateSyncFile(sync)
 	if err != nil {
 		return sync, false, err
 	}
 
-	if updated {
-		var newNames []string
+	if updated || sync.url == "" {
+		var newPaths []string
 		for _, game := range newSync.games {
-			newNames = append(newNames, game.name)
+			path := filepath.Join(sync.folder, game.folder)
+			newPaths = append(newPaths, mister.GetLauncherFilename(game.system, path, game.name))
+			newPaths = append(newPaths, notFoundFilename(sync.folder, game))
 		}
 
 		// delete removed games
 		if _, ok := os.Stat(sync.folder); ok == nil {
-			for _, game := range sync.games {
-				if !utils.Contains(newNames, game.name) {
-					mister.DeleteLauncher(mister.GetLauncherFilename(game.system, sync.folder, game.name))
-					os.Remove(notFoundFilename(sync.folder, game.name))
+			err := filepath.WalkDir(sync.folder, func(path string, info fs.DirEntry, err error) error {
+				if err != nil {
+					return err
 				}
+
+				if !info.IsDir() {
+					if !utils.Contains(newPaths, path) {
+						return os.Remove(path)
+					}
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				return newSync, true, err
+			}
+
+			err = utils.RemoveEmptyDirs(sync.folder)
+			if err != nil {
+				return newSync, true, err
 			}
 		}
 
@@ -234,8 +296,8 @@ func checkForUpdate(sync *syncFile) (*syncFile, bool, error) {
 	}
 }
 
-func notFoundFilename(folder string, name string) string {
-	return filepath.Join(folder, name+" [NOT FOUND].mgl")
+func notFoundFilename(folder string, game syncFileGame) string {
+	return filepath.Join(folder, game.folder, game.name+" [NOT FOUND].mgl")
 }
 
 func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
@@ -248,7 +310,6 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 			continue
 		}
 
-		// TODO: include extension in regex search?
 		if m[0] == '~' {
 			// regex match
 			if m[1:] == "" {
@@ -266,6 +327,7 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 		}
 	}
 
+	// top level folder creation
 	if _, ok := os.Stat(sync.folder); ok != nil {
 		err := os.Mkdir(sync.folder, 0755)
 		if err != nil {
@@ -273,24 +335,38 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 		}
 	}
 
+	// optional subfolder creation
+	if game.folder != "" {
+		err := os.MkdirAll(filepath.Join(sync.folder, game.folder), 0755)
+		if err != nil {
+			return "", false, err
+		}
+	}
+
+	launcherFolder := filepath.Join(sync.folder, game.folder)
+	launcherFn := mister.GetLauncherFilename(game.system, launcherFolder, game.name)
+	notFoundFn := notFoundFilename(sync.folder, game)
+
 	if match.Name != "" {
+		// found a match
 		// TODO: don't write if it's the same file
-		_, err := mister.CreateLauncher(game.system, match.Path, sync.folder, game.name)
+		_, err := mister.CreateLauncher(game.system, match.Path, launcherFolder, game.name)
 		if err != nil {
 			return "", false, err
 		}
 
-		if _, err := os.Stat(notFoundFilename(sync.folder, game.name)); err == nil {
-			os.Remove(notFoundFilename(sync.folder, game.name))
-		}
+		os.Remove(notFoundFn)
 
 		return filepath.Base(match.Path), true, nil
 	} else {
-		fp, err := os.Create(notFoundFilename(sync.folder, game.name))
+		// no match
+		fp, err := os.Create(notFoundFn)
 		if err != nil {
 			return "", false, err
 		}
 		defer fp.Close()
+
+		os.Remove(launcherFn)
 
 		return "", false, nil
 	}
