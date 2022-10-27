@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -43,6 +44,7 @@ type gameTime struct {
 
 type tracker struct {
 	logger     *log.Logger
+	config     *config.UserConfig
 	db         *playLogDb
 	mu         sync.Mutex
 	activeCore string
@@ -52,7 +54,7 @@ type tracker struct {
 	gameTimes  map[string]gameTime
 }
 
-func newTracker(logger *log.Logger) (*tracker, error) {
+func newTracker(logger *log.Logger, cfg *config.UserConfig) (*tracker, error) {
 	logger.Println("starting tracker")
 	db, err := openPlayLogDb()
 	if err != nil {
@@ -68,6 +70,7 @@ func newTracker(logger *log.Logger) (*tracker, error) {
 
 	return &tracker{
 		logger:     logger,
+		config:     cfg,
 		db:         db,
 		activeCore: "",
 		activeGame: "",
@@ -75,6 +78,23 @@ func newTracker(logger *log.Logger) (*tracker, error) {
 		coreTimes:  map[string]coreTime{},
 		gameTimes:  map[string]gameTime{},
 	}, nil
+}
+
+func (tr *tracker) execHook(bin string, arg string) {
+	if bin == "" {
+		return
+	}
+
+	go func() {
+		cmd := exec.Command(bin, arg)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		tr.logger.Printf("executing hook: %s %s", bin, arg)
+		err := cmd.Run()
+		if err != nil {
+			tr.logger.Println("error running hook:", err)
+		}
+	}()
 }
 
 func (tr *tracker) addEvent(action int, target string) {
@@ -103,12 +123,16 @@ func (tr *tracker) addEvent(action int, target string) {
 	actionLabel := ""
 	switch action {
 	case eventActionCoreStart:
+		tr.execHook(tr.config.PlayLog.OnCoreStart, target)
 		actionLabel = "core started"
 	case eventActionCoreStop:
+		tr.execHook(tr.config.PlayLog.OnCoreStop, target)
 		actionLabel = "core stopped"
 	case eventActionGameStart:
+		tr.execHook(tr.config.PlayLog.OnGameStart, target)
 		actionLabel = "game started"
 	case eventActionGameStop:
+		tr.execHook(tr.config.PlayLog.OnGameStop, target)
 		actionLabel = "game stopped"
 	}
 
