@@ -22,11 +22,12 @@ import (
 // TODO: compatibility with GameEventHub
 //       https://github.com/christopher-roelofs/GameEventHub/blob/main/mister.py
 // TODO: hashing functions (including inside zips)
+// TODO: create example ini file
 
 const pidFile = "/tmp/playlog.pid"
 const logFile = "/tmp/playlog.log"
 
-func startService(logger *log.Logger, cfg config.UserConfig) {
+func startService(logger *log.Logger, cfg *config.UserConfig) {
 	// TODO: should be a unified lib for managing apps as services
 	if _, err := os.Stat(pidFile); err == nil {
 		logger.Println("playlog service already running")
@@ -37,7 +38,7 @@ func startService(logger *log.Logger, cfg config.UserConfig) {
 		os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", pid)), 0644)
 	}
 
-	tr, err := newTracker(logger)
+	tr, err := newTracker(logger, cfg)
 	if err != nil {
 		logger.Println("error starting tracker:", err)
 		os.Exit(1)
@@ -176,7 +177,7 @@ func main() {
 	}
 
 	if *service == "exec" {
-		startService(logger, cfg)
+		startService(logger, &cfg)
 		os.Exit(0)
 	} else if *service == "start" {
 		start()
@@ -187,7 +188,7 @@ func main() {
 	} else if *service == "restart" {
 		stopService(logger)
 		// TODO: check if this needs a delay
-		startService(logger, cfg)
+		startService(logger, &cfg)
 		os.Exit(0)
 	}
 

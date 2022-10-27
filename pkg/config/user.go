@@ -18,7 +18,11 @@ type AltCoresConfig struct {
 type LaunchSyncConfig struct{}
 
 type PlayLogConfig struct {
-	SaveEvery int `ini:"save_every,omitempty"`
+	SaveEvery   int    `ini:"save_every,omitempty"`
+	OnCoreStart string `ini:"on_core_start,omitempty"`
+	OnCoreStop  string `ini:"on_core_stop,omitempty"`
+	OnGameStart string `ini:"on_game_start,omitempty"`
+	OnGameStop  string `ini:"on_game_stop,omitempty"`
 }
 
 type RandomConfig struct{}
