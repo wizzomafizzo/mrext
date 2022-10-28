@@ -266,12 +266,6 @@ def display_generate_mgls(system_names):
     system_paths = get_system_paths()
     system_names = [x for x in system_names if not x.startswith("ZOPT")]
 
-    # display_message(
-    #     "",
-    #     height=6,
-    #     title="Creating Index",
-    # )
-
     def display_progress(msg, pct):
         args = [
             "dialog",
@@ -375,13 +369,52 @@ def display_menu(system_paths):
         return None
 
 
+def display_yesno(msg, title="Games Menu"):
+    args = [
+        "dialog",
+        "--title",
+        title,
+        "--ok-label",
+        "Yes",
+        "--cancel-label",
+        "No",
+        "--yesno",
+        msg,
+        "5",
+        "75",
+    ]
+
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
+    return result.returncode == 0
+
+
+def display_welcome():
+    msg = """Games Menu generates a set of direct shortcuts to games in your MiSTer menu. Select the systems you want to be included on the next screen, and then select Generate Menu. A new Games menu will appear in the main MiSTer menu. Shortcuts will reflect the layout of games on disk.
+
+WARNING: Shortcuts can take up much more disk space than expected, depending on how many games you have. For example, a full set of all selectable systems can take up to 10GB of disk space. This is based on the number of games, not game file size."""
+
+    display_message(msg, height=13)
+
+
 if __name__ == "__main__":
+    if not os.path.exists(GAMES_MENU_PATH):
+        display_welcome()
+
     system_paths = get_system_paths()
     systems = display_menu(system_paths)
     print("")
 
     if systems is not None:
         if len(systems) == 0 or systems[0] == "":
+            do_delete = display_yesno("Remove the Games menu from your system?")
+
+            if do_delete:
+                print("")
+                print("Deleting Games menu folder...", end="", flush=True)
+                if os.path.exists(GAMES_MENU_PATH):
+                    shutil.rmtree(GAMES_MENU_PATH)
+                print("Done!", flush=True)
+
             sys.exit(0)
 
         if not os.path.exists(GAMES_MENU_PATH):
