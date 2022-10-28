@@ -4,6 +4,7 @@ package config
 const SdFolder = "/media/fat"
 const CoreConfigFolder = SdFolder + "/config"
 const FontFolder = SdFolder + "/font"
+const TempFolder = "/tmp"
 
 const MisterIniFile = SdFolder + "/MiSTer.ini"
 const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
@@ -12,10 +13,10 @@ const MisterIniFileAlt3 = SdFolder + "/MiSTer_alt_3.ini"
 
 const StartupFile = SdFolder + "/linux/user-startup.sh"
 
-const CoreNameFile = "/tmp/CORENAME"
-const CurrentPathFile = "/tmp/CURRENTPATH"
-const StartPathFile = "/tmp/STARTPATH"
-const FullPathFile = "/tmp/FULLPATH"
+const CoreNameFile = TempFolder + "/CORENAME"
+const CurrentPathFile = TempFolder + "/CURRENTPATH"
+const StartPathFile = TempFolder + "/STARTPATH"
+const FullPathFile = TempFolder + "/FULLPATH"
 
 const MenuCore = "MENU"
 
