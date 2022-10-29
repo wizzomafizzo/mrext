@@ -17,14 +17,16 @@ type ServiceEntry func() (func() error, error)
 type Service struct {
 	Name   string
 	Logger *Logger
+	daemon bool
 	start  ServiceEntry
 	stop   func() error
 }
 
 type ServiceArgs struct {
-	Name   string
-	Logger *Logger
-	Entry  ServiceEntry
+	Name     string
+	Logger   *Logger
+	Entry    ServiceEntry
+	NoDaemon bool
 }
 
 func NewService(args ServiceArgs) (*Service, error) {
@@ -39,6 +41,7 @@ func NewService(args ServiceArgs) (*Service, error) {
 	return &Service{
 		Name:   args.Name,
 		Logger: args.Logger,
+		daemon: !args.NoDaemon,
 		start:  args.Entry,
 	}, nil
 }
@@ -108,6 +111,24 @@ func (s *Service) Running() bool {
 	return err == nil
 }
 
+func (s *Service) stopService() error {
+	s.Logger.Info("stopping %s service", s.Name)
+
+	err := s.stop()
+	if err != nil {
+		s.Logger.Error("error stopping %s service: %s", s.Name, err)
+		return err
+	}
+
+	err = s.removePidFile()
+	if err != nil {
+		s.Logger.Error("error removing pid file: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 // Set up signal handler to stop service on SIGINT or SIGTERM. Exits the application on signal.
 func (s *Service) setupStopService() {
 	sigs := make(chan os.Signal, 1)
@@ -116,17 +137,8 @@ func (s *Service) setupStopService() {
 	go func() {
 		<-sigs
 
-		s.Logger.Info("stopping %s service", s.Name)
-
-		err := s.stop()
+		err := s.stopService()
 		if err != nil {
-			s.Logger.Error("error stopping %s service: %s", s.Name, err)
-			os.Exit(1)
-		}
-
-		err = s.removePidFile()
-		if err != nil {
-			s.Logger.Error("error removing pid file: %s", err)
 			os.Exit(1)
 		}
 
@@ -140,6 +152,8 @@ func (s *Service) startService() {
 		s.Logger.Error("%s service already running", s.Name)
 		os.Exit(1)
 	}
+
+	s.Logger.Info("starting %s service", s.Name)
 
 	err := s.createPidFile()
 	if err != nil {
@@ -162,7 +176,16 @@ func (s *Service) startService() {
 	s.setupStopService()
 	s.stop = stop
 
-	<-make(chan struct{})
+	if s.daemon {
+		<-make(chan struct{})
+	} else {
+		err := s.stopService()
+		if err != nil {
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+	}
 }
 
 // Start a new service daemon in the background.
@@ -173,7 +196,7 @@ func (s *Service) Start() error {
 
 	err := exec.Command(os.Args[0], "-service", "exec", "&").Start()
 	if err != nil {
-		return fmt.Errorf("error starting % service: %w", s.Name, err)
+		return fmt.Errorf("error starting %s service: %w", s.Name, err)
 	}
 
 	return nil
@@ -203,7 +226,7 @@ func (s *Service) Stop() error {
 	return nil
 }
 
-func (s *Service) FlagHandler(cmd *string) {
+func (s *Service) ServiceHandler(cmd *string) {
 	if *cmd == "exec" {
 		s.startService()
 		os.Exit(0)
@@ -249,5 +272,8 @@ func (s *Service) FlagHandler(cmd *string) {
 		}
 
 		os.Exit(0)
+	} else if *cmd != "" {
+		fmt.Printf("Invalid service command: %s", *cmd)
+		os.Exit(1)
 	}
 }
