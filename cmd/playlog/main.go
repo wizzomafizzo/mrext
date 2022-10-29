@@ -109,7 +109,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	svc.FlagHandler(svcOpt)
+	svc.ServiceHandler(svcOpt)
 
 	err = tryAddStartup()
 	if err != nil {
