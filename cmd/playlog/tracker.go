@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 const (
@@ -43,7 +43,7 @@ type gameTime struct {
 }
 
 type tracker struct {
-	logger     *log.Logger
+	logger     *service.Logger
 	config     *config.UserConfig
 	db         *playLogDb
 	mu         sync.Mutex
@@ -54,8 +54,8 @@ type tracker struct {
 	gameTimes  map[string]gameTime
 }
 
-func newTracker(logger *log.Logger, cfg *config.UserConfig) (*tracker, error) {
-	logger.Println("starting tracker")
+func newTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker, error) {
+	logger.Info("starting tracker")
 	db, err := openPlayLogDb()
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func newTracker(logger *log.Logger, cfg *config.UserConfig) (*tracker, error) {
 	if err != nil {
 		return nil, err
 	} else if fixed {
-		logger.Println("fixed missing events from power loss")
+		logger.Warn("fixed missing events from power loss")
 	}
 
 	return &tracker{
@@ -89,10 +89,10 @@ func (tr *tracker) execHook(bin string, arg string) {
 		cmd := exec.Command(bin, arg)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		tr.logger.Printf("executing hook: %s %s", bin, arg)
+		tr.logger.Info("executing hook: %s %s", bin, arg)
 		err := cmd.Run()
 		if err != nil {
-			tr.logger.Println("error running hook:", err)
+			tr.logger.Error("error running hook: %s", err)
 		}
 	}()
 }
@@ -136,7 +136,7 @@ func (tr *tracker) addEvent(action int, target string) {
 		actionLabel = "game stopped"
 	}
 
-	tr.logger.Printf("%s: %s (%ds)", actionLabel, target, totalTime)
+	tr.logger.Info("%s: %s (%ds)", actionLabel, target, totalTime)
 }
 
 func (tr *tracker) stopCore() bool {
@@ -163,7 +163,7 @@ func (tr *tracker) loadCore() {
 	coreName := string(data)
 
 	if err != nil {
-		tr.logger.Println("error reading core name:", err)
+		tr.logger.Error("error reading core name: %s", err)
 		tr.stopCore()
 		return
 	}
@@ -190,7 +190,7 @@ func (tr *tracker) loadCore() {
 					time: 0,
 				}
 			} else if err != nil {
-				tr.logger.Println("error loading core time:", err)
+				tr.logger.Error("error loading core time: %s", err)
 			} else {
 				tr.coreTimes[coreName] = ct
 			}
@@ -225,7 +225,7 @@ func (tr *tracker) loadGame() {
 
 	activeGame, err := mister.GetActiveGame()
 	if err != nil {
-		tr.logger.Println("error getting active game:", err)
+		tr.logger.Error("error getting active game: %s", err)
 		tr.stopGame()
 		return
 	} else if activeGame == "" {
@@ -261,7 +261,7 @@ func (tr *tracker) loadGame() {
 					time:   0,
 				}
 			} else if err != nil {
-				tr.logger.Println("error loading game time:", err)
+				tr.logger.Error("error loading game time: %s", err)
 			} else {
 				tr.gameTimes[id] = gt
 			}
@@ -290,10 +290,10 @@ func (tr *tracker) tick(saveInterval int) {
 			ct.time++
 
 			if saveInterval > 0 && ct.time%saveSeconds == 0 {
-				tr.logger.Printf("saving core time: %s (%ds)", ct.name, ct.time)
+				tr.logger.Info("saving core time: %s (%ds)", ct.name, ct.time)
 				err := tr.db.updateCore(ct)
 				if err != nil {
-					tr.logger.Println("error updating core time:", err)
+					tr.logger.Error("error updating core time: %s", err)
 				}
 			}
 
@@ -306,10 +306,10 @@ func (tr *tracker) tick(saveInterval int) {
 			gt.time++
 
 			if saveInterval > 0 && gt.time%saveSeconds == 0 {
-				tr.logger.Printf("saving game time: %s (%ds)", gt.id, gt.time)
+				tr.logger.Info("saving game time: %s (%ds)", gt.id, gt.time)
 				err := tr.db.updateGame(gt)
 				if err != nil {
-					tr.logger.Println("error updating game time:", err)
+					tr.logger.Error("error updating game time: %s", err)
 				}
 			}
 
@@ -320,7 +320,7 @@ func (tr *tracker) tick(saveInterval int) {
 
 // Start thread for updating core/game play times.
 func (tr *tracker) startTicker(saveInterval int) {
-	tr.logger.Printf("starting ticker with save interval %dm", saveInterval)
+	tr.logger.Info("starting ticker with save interval %dm", saveInterval)
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		count := 0

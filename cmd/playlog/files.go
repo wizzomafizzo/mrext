@@ -14,10 +14,12 @@ import (
 
 // Read a core's recent file and attempt to write the newest entry's
 // launchable path to ACTIVEGAME.
-func loadRecent(filename string) error {
+func loadRecent(tr *tracker, filename string) error {
 	if !strings.Contains(filename, "_recent") {
 		return nil
 	}
+
+	// tr.logger.Info("loading recent file: %s", filename)
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -61,6 +63,8 @@ func loadRecent(filename string) error {
 
 // Start thread for monitoring changes to all files relating to core/game launches.
 func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
+	tr.logger.Info("starting file watcher")
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -79,9 +83,9 @@ func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
 					} else if event.Name == config.ActiveGameFile {
 						tr.loadGame()
 					} else if strings.HasPrefix(event.Name, config.CoreConfigFolder) {
-						err = loadRecent(event.Name)
+						err = loadRecent(tr, event.Name)
 						if err != nil {
-							tr.logger.Println("error loading recent file:", err)
+							tr.logger.Error("error loading recent file: %s", err)
 						}
 					}
 				}
@@ -89,7 +93,7 @@ func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
 				if !ok {
 					return
 				}
-				tr.logger.Println("error in watcher:", err)
+				tr.logger.Error("error in watcher: %s", err)
 			}
 		}
 	}()
