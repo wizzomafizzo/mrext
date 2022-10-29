@@ -12,18 +12,19 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
+type ServiceEntry func() (func() error, error)
+
 type Service struct {
 	Name   string
 	Logger *Logger
-	start  func() error
+	start  ServiceEntry
 	stop   func() error
 }
 
 type ServiceArgs struct {
 	Name   string
 	Logger *Logger
-	Start  func() error
-	Stop   func() error
+	Entry  ServiceEntry
 }
 
 func NewService(args ServiceArgs) (*Service, error) {
@@ -36,9 +37,9 @@ func NewService(args ServiceArgs) (*Service, error) {
 	}
 
 	return &Service{
-		Name:  args.Name,
-		start: args.Start,
-		stop:  args.Stop,
+		Name:   args.Name,
+		Logger: args.Logger,
+		start:  args.Entry,
 	}, nil
 }
 
@@ -115,6 +116,8 @@ func (s *Service) setupStopService() {
 	go func() {
 		<-sigs
 
+		s.Logger.Info("stopping %s service", s.Name)
+
 		err := s.stop()
 		if err != nil {
 			s.Logger.Error("error stopping %s service: %s", s.Name, err)
@@ -144,9 +147,7 @@ func (s *Service) startService() {
 		os.Exit(1)
 	}
 
-	s.setupStopService()
-
-	err = s.start()
+	stop, err := s.start()
 	if err != nil {
 		s.Logger.Error("error starting service: %s", err)
 
@@ -157,6 +158,9 @@ func (s *Service) startService() {
 
 		os.Exit(1)
 	}
+
+	s.setupStopService()
+	s.stop = stop
 
 	<-make(chan struct{})
 }
@@ -202,18 +206,23 @@ func (s *Service) Stop() error {
 func (s *Service) FlagHandler(cmd *string) {
 	if *cmd == "exec" {
 		s.startService()
+		os.Exit(0)
 	} else if *cmd == "start" {
 		err := s.Start()
 		if err != nil {
 			s.Logger.Error(err.Error())
 			os.Exit(1)
 		}
+
+		os.Exit(0)
 	} else if *cmd == "stop" {
 		err := s.Stop()
 		if err != nil {
 			s.Logger.Error(err.Error())
 			os.Exit(1)
 		}
+
+		os.Exit(0)
 	} else if *cmd == "restart" {
 		err := s.Stop()
 		if err != nil {
@@ -230,13 +239,15 @@ func (s *Service) FlagHandler(cmd *string) {
 			s.Logger.Error(err.Error())
 			os.Exit(1)
 		}
+
+		os.Exit(0)
 	} else if *cmd == "status" {
 		if s.Running() {
 			fmt.Printf("%s service running\n", s.Name)
 		} else {
 			fmt.Printf("%s service not running\n", s.Name)
 		}
-	}
 
-	os.Exit(0)
+		os.Exit(0)
+	}
 }
