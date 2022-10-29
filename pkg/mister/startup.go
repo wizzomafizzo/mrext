@@ -3,6 +3,7 @@ package mister
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -138,10 +139,8 @@ func (s *Startup) Enable(name string) error {
 }
 
 func (s *Startup) Add(name string, cmd string) error {
-	for _, entry := range s.Entries {
-		if entry.Name == name {
-			return fmt.Errorf("startup entry already exists: %s", name)
-		}
+	if s.Exists(name) {
+		return fmt.Errorf("startup entry already exists: %s", name)
 	}
 
 	s.Entries = append(s.Entries, StartupEntry{
@@ -151,4 +150,15 @@ func (s *Startup) Add(name string, cmd string) error {
 	})
 
 	return nil
+}
+
+func (s *Startup) AddService(name string) error {
+	path, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		return err
+	}
+
+	cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
+
+	return s.Add("mrext/playlog", cmd)
 }

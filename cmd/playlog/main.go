@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -59,14 +58,7 @@ func tryAddStartup() error {
 
 	if !startup.Exists("mrext/playlog") {
 		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
-			path, err := filepath.Abs(os.Args[0])
-			if err != nil {
-				return err
-			}
-
-			cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
-
-			err = startup.Add("mrext/playlog", cmd)
+			err = startup.AddService("mrext/playlog")
 			if err != nil {
 				return err
 			}
@@ -119,7 +111,6 @@ func main() {
 
 	svc.FlagHandler(svcOpt)
 
-	// TODO: say if an entry was added
 	err = tryAddStartup()
 	if err != nil {
 		logger.Error("error adding startup: %s", err)
