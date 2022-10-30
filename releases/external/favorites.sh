@@ -10,6 +10,8 @@ import configparser
 
 # TODO: smarter cores link creation
 # TODO: cleanup cores links
+# TODO: setname support
+# TODO: mention how to get it working on crt
 
 FAVORITES_DEFAULT = "_@Favorites"
 FAVORITES_NAMES = {"fav"}
@@ -369,6 +371,10 @@ def get_mgl_system(path):
                 return core.groups()[0]
 
 
+def dialog_env():
+    return dict(os.environ, DIALOGRC="/media/fat/Scripts/.dialogrc")
+
+
 def display_main_menu():
     config = get_favorites()
 
@@ -427,7 +433,7 @@ def display_main_menu():
             args.append(display)
             number += 1
 
-        result = subprocess.run(args, stderr=subprocess.PIPE)
+        result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
         selection = get_menu_output(result.stderr.decode())
         button = get_menu_output(result.returncode)
@@ -464,7 +470,7 @@ def display_add_favorite_name(item, msg=None):
             WINDOW_DIMENSIONS[0],
             WINDOW_DIMENSIONS[1],
         ]
-        subprocess.run(msg_args)
+        subprocess.run(msg_args, env=dialog_env())
 
     args = [
         "dialog",
@@ -479,7 +485,7 @@ def display_add_favorite_name(item, msg=None):
     orig_name, ext = os.path.splitext(os.path.basename(item))
     args.append(orig_name)
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
     name = str(result.stderr.decode())
     button = get_menu_output(result.returncode)
@@ -501,7 +507,7 @@ def display_edit_folder_name(parent, default_name=None, msg=None):
             WINDOW_DIMENSIONS[0],
             WINDOW_DIMENSIONS[1],
         ]
-        subprocess.run(msg_args)
+        subprocess.run(msg_args, env=dialog_env())
 
     args = [
         "dialog",
@@ -514,7 +520,7 @@ def display_edit_folder_name(parent, default_name=None, msg=None):
         default_name or "_",
     ]
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
     name = str(result.stderr.decode())
     button = get_menu_output(result.returncode)
 
@@ -607,7 +613,7 @@ def display_add_favorite_folder(
         args.append("{}/".format(item))
         idx += 1
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
     selection = get_menu_output(result.stderr.decode())
     button = get_menu_output(result.returncode)
@@ -637,7 +643,7 @@ def display_edit_favorite_name(path, msg=None, default_name=None):
             WINDOW_DIMENSIONS[0],
             WINDOW_DIMENSIONS[1],
         ]
-        subprocess.run(msg_args)
+        subprocess.run(msg_args, env=dialog_env())
 
     args = [
         "dialog",
@@ -655,7 +661,7 @@ def display_edit_favorite_name(path, msg=None, default_name=None):
     else:
         args.append(orig_name)
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
     name = str(result.stderr.decode())
     button = get_menu_output(result.returncode)
@@ -690,7 +696,7 @@ def display_delete_favorite(path):
             WINDOW_DIMENSIONS[0],
             WINDOW_DIMENSIONS[1],
         ]
-        subprocess.run(msg_args)
+        subprocess.run(msg_args, env=dialog_env())
         return
 
     if os.path.isdir(path):
@@ -708,7 +714,7 @@ def display_delete_favorite(path):
         WINDOW_DIMENSIONS[1],
     ]
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
     button = get_menu_output(result.returncode)
 
@@ -763,7 +769,7 @@ def display_modify_item(path):
         "Delete",
     ]
 
-    result = subprocess.run(args, stderr=subprocess.PIPE)
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
     selection = get_menu_output(result.stderr.decode())
     button = get_menu_output(result.returncode)
@@ -978,7 +984,7 @@ def display_launcher_select(start_folder):
             all_items.append(fn)
             idx += 1
 
-        result = subprocess.run(args, stderr=subprocess.PIPE)
+        result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
 
         selection = get_menu_output(result.stderr.decode())
         button = get_menu_output(result.returncode)
@@ -1104,7 +1110,7 @@ def add_favorite_workflow():
             mgl_def[1],
             mgl_def[2],
             mgl_def[3],
-            ("../../../.." + item),
+            ("../../../../.." + item),
         )
         add_favorite_mgl(item, path, mgl_data)
 
