@@ -1,5 +1,7 @@
 package config
 
+const UserConfigEnv = "MREXT_CONFIG"
+
 const ActiveGameFile = TempFolder + "/ACTIVEGAME"
 const SearchDbFile = SdFolder + "/search.db"
 const PlayLogDbFile = SdFolder + "/playlog.db"

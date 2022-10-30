@@ -2,10 +2,13 @@ package service
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -126,6 +129,17 @@ func (s *Service) stopService() error {
 		return err
 	}
 
+	// remove temporary binary
+	tempPath, err := os.Executable()
+	if err != nil {
+		s.Logger.Error("error getting executable path: %s", err)
+	} else if strings.HasPrefix(tempPath, config.TempFolder) {
+		err = os.Remove(tempPath)
+		if err != nil {
+			s.Logger.Error("error removing temporary binary: %s", err)
+		}
+	}
+
 	return nil
 }
 
@@ -194,7 +208,42 @@ func (s *Service) Start() error {
 		return fmt.Errorf("%s service already running", s.Name)
 	}
 
-	err := exec.Command(os.Args[0], "-service", "exec", "&").Start()
+	// create a copy in binary in tmp so the original can be updated
+	binPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("error getting absolute binary path: %w", err)
+	}
+
+	binFile, err := os.Open(binPath)
+	if err != nil {
+		return fmt.Errorf("error opening binary: %w", err)
+	}
+
+	tempPath := filepath.Join(config.TempFolder, filepath.Base(binPath))
+	tempFile, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating temp binary: %w", err)
+	}
+
+	_, err = io.Copy(tempFile, binFile)
+	if err != nil {
+		return fmt.Errorf("error copying binary to temp: %w", err)
+	}
+
+	tempFile.Close()
+	binFile.Close()
+
+	cmd := exec.Command(tempPath, "-service", "exec", "&")
+
+	// point new binary to existing config file
+	configPath := filepath.Join(filepath.Dir(binPath), s.Name+".ini")
+	if _, err := os.Stat(configPath); err == nil {
+		env := os.Environ()
+		cmd.Env = env
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserConfigEnv, configPath))
+	}
+
+	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("error starting %s service: %w", s.Name, err)
 	}

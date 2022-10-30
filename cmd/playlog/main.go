@@ -17,6 +17,8 @@ import (
 // TODO: hashing functions (including inside zips)
 // TODO: create example ini file
 
+const appName = "playlog"
+
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	tr, err := newTracker(logger, cfg)
 	if err != nil {
@@ -56,9 +58,9 @@ func tryAddStartup() error {
 		return err
 	}
 
-	if !startup.Exists("mrext/playlog") {
+	if !startup.Exists("mrext/" + appName) {
 		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
-			err = startup.AddService("mrext/playlog")
+			err = startup.AddService("mrext/" + appName)
 			if err != nil {
 				return err
 			}
@@ -77,9 +79,9 @@ func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	flag.Parse()
 
-	logger := service.NewLogger("playlog")
+	logger := service.NewLogger(appName)
 
-	cfg, err := config.LoadUserConfig(config.UserConfig{
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		PlayLog: config.PlayLogConfig{
 			SaveEvery: 5, // minutes
 		},
@@ -91,10 +93,10 @@ func main() {
 	}
 
 	svc, err := service.NewService(service.ServiceArgs{
-		Name:   "playlog",
+		Name:   appName,
 		Logger: logger,
 		Entry: func() (func() error, error) {
-			return startService(logger, &cfg)
+			return startService(logger, cfg)
 		},
 	})
 	if err != nil {
