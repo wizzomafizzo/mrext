@@ -33,32 +33,40 @@ type SearchConfig struct {
 }
 
 type UserConfig struct {
-	AltCores   AltCoresConfig
-	LaunchSync LaunchSyncConfig
-	PlayLog    PlayLogConfig
-	Random     RandomConfig
-	Search     SearchConfig
+	AltCores   AltCoresConfig   `ini:"altcores,omitempty"`
+	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
+	PlayLog    PlayLogConfig    `ini:"playlog,omitempty"`
+	Random     RandomConfig     `ini:"random,omitempty"`
+	Search     SearchConfig     `ini:"search,omitempty"`
 }
 
-func LoadUserConfig(defaultConfig UserConfig) (UserConfig, error) {
-	userConfig := defaultConfig
-
+func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {
 	// TODO: central default ini first
 
-	// TODO: check if this can be a relative path
-	appFolder := filepath.Dir(os.Args[0])
-	appFile := filepath.Base(os.Args[0])
-	appName := appFile[:len(appFile)-len(filepath.Ext(appFile))]
-	iniPath := filepath.Join(appFolder, appName+".ini")
+	iniPath := os.Getenv(UserConfigEnv)
+
+	if iniPath == "" {
+		absPath, err := os.Executable()
+		if err != nil {
+			return defaultConfig, err
+		}
+
+		iniPath = filepath.Join(filepath.Dir(absPath), name+".ini")
+	}
 
 	if _, err := os.Stat(iniPath); os.IsNotExist(err) {
-		return userConfig, nil
+		return defaultConfig, nil
 	}
 
-	err := ini.MapTo(&userConfig, iniPath)
+	cfg, err := ini.Load(iniPath)
 	if err != nil {
-		return userConfig, err
+		return defaultConfig, err
 	}
 
-	return userConfig, nil
+	err = cfg.StrictMapTo(defaultConfig)
+	if err != nil {
+		return defaultConfig, err
+	}
+
+	return defaultConfig, nil
 }

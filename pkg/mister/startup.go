@@ -3,7 +3,6 @@ package mister
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -153,12 +152,12 @@ func (s *Startup) Add(name string, cmd string) error {
 }
 
 func (s *Startup) AddService(name string) error {
-	path, err := filepath.Abs(os.Args[0])
+	path, err := os.Executable()
 	if err != nil {
 		return err
 	}
 
 	cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
 
-	return s.Add("mrext/playlog", cmd)
+	return s.Add(name, cmd)
 }
