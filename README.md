@@ -79,6 +79,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
 ### Core
 
+- [MGL Core Setnames](https://github.com/RGarciaLago/MGL_Core_Setnames)
+
+  A preset pack of modified core shortcuts which let you have automatic alternate core configs. Useful for cores which support multiple systems or input devices.
+
 - [mister-boot-roms](https://github.com/uberyoji/mister-boot-roms)
 
   Adds high quality MiSTer-themed boot screens to cores which support loadable boot roms.
@@ -89,7 +93,7 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
 ### Frontend
 
-- [Coin-Op](https://github.com/funkycochise/Coin-Op)
+- [Insert Coin](https://github.com/funkycochise/Insert-Coin)
 
   An alternative layout for browsing the Arcade folder.
 
