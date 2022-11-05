@@ -20,7 +20,7 @@ USER build
 
 # install mage
 RUN cd /home/build && \
-    git clone https://github.com/magefile/mage && \
+    git clone https://github.com/magefile/mage --depth 1 && \
     mkdir /home/build/go && \
     cd mage && go run bootstrap.go
 ENV PATH="${PATH}:/home/build/go/bin"

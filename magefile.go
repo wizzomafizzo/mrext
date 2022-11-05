@@ -57,6 +57,11 @@ var apps = []app{
 		bin:  "background",
 	},
 	{
+		name: "remote",
+		path: filepath.Join(cwd, "cmd", "remote"),
+		bin:  "remote.sh",
+	},
+	{
 		name: "favorites",
 		path: filepath.Join(cwd, "cmd", "favorites"),
 		bin:  "addfav",

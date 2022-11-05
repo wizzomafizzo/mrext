@@ -18,10 +18,16 @@ require (
 require github.com/fsnotify/fsnotify v1.5.4
 
 require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
 
-require github.com/bendahl/uinput v1.6.0
+require (
+	github.com/bendahl/uinput v1.6.0
+	github.com/gorilla/mux v1.8.0
+	github.com/rs/cors v1.8.2
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+)
