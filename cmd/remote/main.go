@@ -40,6 +40,9 @@ func main() {
 	router.HandleFunc("/music/playlist", musicPlaylists).Methods("GET")
 	router.HandleFunc("/music/playlist/{playlist}", setMusicPlaylist).Methods("POST")
 
+	router.HandleFunc("/games/search", searchGames).Methods("POST")
+	router.HandleFunc("/games/launch", launchGame).Methods("POST")
+
 	srv := &http.Server{
 		// TODO: restrict this later
 		Handler:      cors.AllowAll().Handler(router),
