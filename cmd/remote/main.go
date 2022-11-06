@@ -27,6 +27,19 @@ func main() {
 	router.HandleFunc("/systems", allSystems).Methods("GET")
 	router.HandleFunc("/systems/{id}", launchCore).Methods("POST")
 
+	router.HandleFunc("/wallpaper", allWallpapers).Methods("GET")
+	router.HandleFunc("/wallpaper/{filename}", viewWallpaper).Methods("GET")
+	router.HandleFunc("/wallpaper/{filename}", setWallpaper).Methods("POST")
+	router.HandleFunc("/wallpaper/{filename}", deleteWallpaper).Methods("DELETE")
+
+	router.HandleFunc("/music", musicStatus).Methods("GET")
+	router.HandleFunc("/music/play", musicPlay).Methods("POST")
+	router.HandleFunc("/music/stop", musicStop).Methods("POST")
+	router.HandleFunc("/music/next", musicSkip).Methods("POST")
+	router.HandleFunc("/music/playback/{playback}", setMusicPlayback).Methods("POST")
+	router.HandleFunc("/music/playlist", musicPlaylists).Methods("GET")
+	router.HandleFunc("/music/playlist/{playlist}", setMusicPlaylist).Methods("POST")
+
 	srv := &http.Server{
 		// TODO: restrict this later
 		Handler:      cors.AllowAll().Handler(router),
