@@ -219,3 +219,19 @@ func LaunchCore(path string) error {
 
 	return nil
 }
+
+func LaunchMenu() error {
+	if _, err := os.Stat(config.CmdInterface); err != nil {
+		return fmt.Errorf("command interface not accessible: %s", err)
+	}
+
+	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
+	if err != nil {
+		return err
+	}
+	defer cmd.Close()
+
+	cmd.WriteString(fmt.Sprintf("load_core %s\n", filepath.Join(config.SdFolder, "menu.rbf")))
+
+	return nil
+}
