@@ -221,6 +221,8 @@ func LaunchCore(path string) error {
 }
 
 func LaunchMenu() error {
+	// FIXME: this messes up on things like GBA vs GBA2P
+
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
