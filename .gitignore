@@ -11,3 +11,4 @@ go.work
 *.tar
 /bin
 /out
+/cmd/remote/_client/build

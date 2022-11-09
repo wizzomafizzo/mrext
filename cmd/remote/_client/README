@@ -1,0 +1,1 @@
+Place the "build" folder here from the built mrext-client project. It will be embedded in the remote.sh binary.
