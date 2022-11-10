@@ -64,6 +64,23 @@ func allWallpapers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: check for file not found
+	activeFile, err := os.Stat(filepath.Join(config.SdFolder, "menu.png"))
+	if err != nil {
+		activeFile, err = os.Stat(filepath.Join(config.SdFolder, "menu.jpg"))
+	}
+
+	if err == nil {
+		active, err := os.Readlink(filepath.Join(config.SdFolder, activeFile.Name()))
+		if err == nil {
+			for i, wallpaper := range wallpapers {
+				if wallpaper.Filename == filepath.Base(active) {
+					wallpapers[i].Active = true
+				}
+			}
+		}
+	}
+
 	json.NewEncoder(w).Encode(wallpapers)
 }
 

@@ -19,7 +19,7 @@ require github.com/fsnotify/fsnotify v1.5.4
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
