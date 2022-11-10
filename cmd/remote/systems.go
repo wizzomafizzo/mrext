@@ -19,6 +19,10 @@ func allSystems(w http.ResponseWriter, r *http.Request) {
 	var systems []System
 
 	for _, system := range games.Systems {
+		if system.Id == "Arcade" {
+			continue
+		}
+
 		systems = append(systems, System{
 			Id:   system.Id,
 			Name: system.Name,
