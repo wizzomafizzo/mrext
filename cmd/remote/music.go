@@ -23,6 +23,10 @@ type MusicState struct {
 	Track    string `json:"track"`
 }
 
+type MusicServiceStatus struct {
+	Running bool `json:"running"`
+}
+
 type MusicPlaylists []string
 
 const musicFolder = config.SdFolder + "/music"
@@ -148,4 +152,17 @@ func musicPlaylists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(playlists)
+}
+
+func musicServiceStatus(w http.ResponseWriter, r *http.Request) {
+	var status MusicServiceStatus
+
+	_, err := os.Stat(musicSocket)
+	if err != nil {
+		status.Running = false
+	} else {
+		status.Running = true
+	}
+
+	json.NewEncoder(w).Encode(status)
 }

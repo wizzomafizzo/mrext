@@ -8,6 +8,7 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type System struct {
@@ -15,11 +16,17 @@ type System struct {
 	Name string `json:"name"`
 }
 
+var ignoreSystems = []string{
+	"Arcade",
+	"NESMusic",
+	"SNESMusic",
+}
+
 func allSystems(w http.ResponseWriter, r *http.Request) {
 	var systems []System
 
 	for _, system := range games.Systems {
-		if system.Id == "Arcade" {
+		if utils.Contains(ignoreSystems, system.Id) {
 			continue
 		}
 

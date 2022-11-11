@@ -275,6 +275,24 @@ func (s *Service) Stop() error {
 	return nil
 }
 
+func (s *Service) Restart() error {
+	err := s.Stop()
+	if err != nil {
+		return err
+	}
+
+	for s.Running() {
+		time.Sleep(1 * time.Second)
+	}
+
+	err = s.Start()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) ServiceHandler(cmd *string) {
 	if *cmd == "exec" {
 		s.startService()
@@ -296,17 +314,7 @@ func (s *Service) ServiceHandler(cmd *string) {
 
 		os.Exit(0)
 	} else if *cmd == "restart" {
-		err := s.Stop()
-		if err != nil {
-			s.Logger.Error(err.Error())
-			os.Exit(1)
-		}
-
-		for s.Running() {
-			time.Sleep(1 * time.Second)
-		}
-
-		err = s.Start()
+		err := s.Restart()
 		if err != nil {
 			s.Logger.Error(err.Error())
 			os.Exit(1)
