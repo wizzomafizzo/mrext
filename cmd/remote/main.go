@@ -11,7 +11,10 @@ import (
 	"strings"
 	"time"
 
+	gc "github.com/rthornton128/goncurses"
+
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -46,7 +49,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("critical server error: %s", err)
 			os.Exit(1)
 		}
@@ -56,31 +59,6 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		srv.Close()
 		return nil
 	}, nil
-}
-
-func tryAddStartup() error {
-	var startup mister.Startup
-
-	err := startup.Load()
-	if err != nil {
-		return err
-	}
-
-	if !startup.Exists("mrext/" + appName) {
-		if utils.YesOrNoPrompt("Configure Remote to launch on MiSTer startup?") {
-			err = startup.AddService("mrext/" + appName)
-			if err != nil {
-				return err
-			}
-
-			err = startup.Save()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func setupApi(subrouter *mux.Router) {
@@ -104,9 +82,14 @@ func setupApi(subrouter *mux.Router) {
 	subrouter.HandleFunc("/music/playback/{playback}", setMusicPlayback).Methods("POST")
 	subrouter.HandleFunc("/music/playlist", musicPlaylists).Methods("GET")
 	subrouter.HandleFunc("/music/playlist/{playlist}", setMusicPlaylist).Methods("POST")
+	subrouter.HandleFunc("/music/service", musicServiceStatus).Methods("GET")
 
 	subrouter.HandleFunc("/games/search", searchGames).Methods("POST")
 	subrouter.HandleFunc("/games/launch", launchGame).Methods("POST")
+
+	subrouter.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	}).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
@@ -128,6 +111,176 @@ func appHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(build)).ServeHTTP(rw, req)
 }
 
+func tryAddStartup(stdscr *gc.Window) error {
+	var startup mister.Startup
+
+	err := startup.Load()
+	if err != nil {
+		return err
+	}
+
+	if !startup.Exists("mrext/" + appName) {
+		win, err := curses.NewWindow(stdscr, 6, 43, "", -1)
+		if err != nil {
+			return err
+		}
+		defer win.Delete()
+
+		var ch gc.Key
+		selected := 0
+
+		for {
+			win.MovePrint(1, 3, "Add Remote service to MiSTer startup?")
+			win.MovePrint(2, 2, "This won't impact MiSTer's performance.")
+			curses.DrawActionButtons(win, []string{"Yes", "No"}, selected, 10)
+
+			win.NoutRefresh()
+			gc.Update()
+
+			ch = win.GetChar()
+
+			if ch == gc.KEY_LEFT {
+				if selected == 0 {
+					selected = 1
+				} else if selected == 1 {
+					selected = 0
+				}
+			} else if ch == gc.KEY_RIGHT {
+				if selected == 0 {
+					selected = 1
+				} else if selected == 1 {
+					selected = 0
+				}
+			} else if ch == gc.KEY_ENTER || ch == 10 || ch == 13 {
+				break
+			} else if ch == gc.KEY_ESC {
+				selected = 1
+				break
+			}
+		}
+
+		if selected == 0 {
+			err = startup.AddService("mrext/" + appName)
+			if err != nil {
+				return err
+			}
+
+			err = startup.Save()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
+	width := 57
+	height := 10
+
+	win, err := curses.NewWindow(stdscr, height, width, "", -1)
+	if err != nil {
+		return err
+	}
+	defer win.Delete()
+
+	printCenter := func(y int, text string) {
+		x := (width - len(text)) / 2
+		win.MovePrint(y, x, text)
+	}
+
+	clearLine := func(y int) {
+		win.MovePrint(y, 2, strings.Repeat(" ", width-4))
+	}
+
+	ip, err := utils.GetLocalIp()
+	appUrl := ""
+	if err != nil {
+		logger.Error("could not get local ip: %s", err)
+		appUrl = fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
+	} else {
+		appUrl = fmt.Sprintf("http://%s:%d", ip, appPort)
+	}
+
+	var ch gc.Key
+	selected := 2
+
+	for {
+		var statusText string
+		var toggleText string
+		running := service.Running()
+		if running {
+			statusText = "Service is RUNNING"
+			toggleText = "Stop"
+		} else {
+			statusText = "Service is NOT RUNNING"
+			toggleText = "Start"
+		}
+
+		clearLine(1)
+		printCenter(1, statusText)
+		clearLine(3)
+		if running {
+			printCenter(3, "Access Remote with this URL:")
+		}
+		clearLine(4)
+		if running {
+			printCenter(4, appUrl)
+		}
+		printCenter(6, "It's safe to exit, the service will continue running.")
+
+		clearLine(8)
+		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Exit"}, selected, 5)
+
+		win.NoutRefresh()
+		gc.Update()
+
+		ch = win.GetChar()
+
+		if ch == gc.KEY_LEFT {
+			if selected == 0 {
+				selected = 2
+			} else {
+				selected--
+			}
+		} else if ch == gc.KEY_RIGHT {
+			if selected == 2 {
+				selected = 0
+			} else {
+				selected++
+			}
+		} else if ch == gc.KEY_ENTER || ch == 10 || ch == 13 {
+			if selected == 0 {
+				if service.Running() {
+					err := service.Stop()
+					if err != nil {
+						logger.Error("could not stop service: %s", err)
+					}
+				} else {
+					err := service.Start()
+					if err != nil {
+						logger.Error("could not start service: %s", err)
+					}
+				}
+				time.Sleep(1 * time.Second)
+			} else if selected == 1 {
+				err := service.Restart()
+				if err != nil {
+					logger.Error("could not restart service: %s", err)
+				}
+				time.Sleep(1 * time.Second)
+			} else {
+				break
+			}
+		} else if ch == gc.KEY_ESC {
+			break
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	flag.Parse()
@@ -135,7 +288,7 @@ func main() {
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
-		fmt.Println("Error loading config:", err)
+		fmt.Println("Error loading config file:", err)
 		os.Exit(1)
 	}
 
@@ -154,12 +307,6 @@ func main() {
 
 	svc.ServiceHandler(svcOpt)
 
-	err = tryAddStartup()
-	if err != nil {
-		logger.Error("error adding startup: %s", err)
-		fmt.Println("Error adding to startup:", err)
-	}
-
 	if !svc.Running() {
 		err := svc.Start()
 		if err != nil {
@@ -169,14 +316,23 @@ func main() {
 		}
 	}
 
-	ip, err := utils.GetLocalIp()
-	appUrl := ""
+	stdscr, err := curses.Setup()
 	if err != nil {
-		logger.Error("could not get local ip: %s", err)
-		appUrl = fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
-	} else {
-		appUrl = fmt.Sprintf("http://%s:%d", ip, appPort)
+		logger.Error("error starting curses: %s", err)
+	}
+	defer gc.End()
+
+	err = tryAddStartup(stdscr)
+	if err != nil {
+		gc.End()
+		logger.Error("error adding startup: %s", err)
+		fmt.Println("Error adding to startup:", err)
 	}
 
-	fmt.Printf("Remote URL: %s\n", appUrl)
+	err = displayServiceInfo(stdscr, svc)
+	if err != nil {
+		gc.End()
+		logger.Error("error displaying service info: %s", err)
+		fmt.Println("Error displaying service info:", err)
+	}
 }

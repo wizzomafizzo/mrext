@@ -57,9 +57,10 @@ var apps = []app{
 		bin:  "background",
 	},
 	{
-		name: "remote",
-		path: filepath.Join(cwd, "cmd", "remote"),
-		bin:  "remote.sh",
+		name:    "remote",
+		path:    filepath.Join(cwd, "cmd", "remote"),
+		bin:     "remote.sh",
+		ldFlags: "-lcurses",
 	},
 	{
 		name: "favorites",
