@@ -16,15 +16,12 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-type MusicState struct {
+type MusicService struct {
+	Running  bool   `json:"running"`
 	Playing  bool   `json:"playing"`
 	Playback string `json:"playback"`
 	Playlist string `json:"playlist"`
 	Track    string `json:"track"`
-}
-
-type MusicServiceStatus struct {
-	Running bool `json:"running"`
 }
 
 type MusicPlaylists []string
@@ -54,29 +51,38 @@ func sendCmd(cmd string) (string, error) {
 	return string(bytes.Trim(buf, "\x00")), nil
 }
 
-func musicStatus(w http.ResponseWriter, r *http.Request) {
-	var state MusicState
+func getMusicServiceStatus() MusicService {
+	var status MusicService
+
+	_, err := os.Stat(musicSocket)
+	if err != nil {
+		status.Running = false
+	} else {
+		status.Running = true
+	}
+
+	if !status.Running {
+		return status
+	}
 
 	resp, err := sendCmd("status")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
-		return
+		logger.Error("error getting bgm status: %s", err)
+		return status
 	}
 
 	states := strings.Split(resp, "\t")
 	if len(states) < 4 {
-		http.Error(w, "invalid response from bgm", http.StatusInternalServerError)
-		log.Println(err)
-		return
+		logger.Error("invalid response from bgm: %s", resp)
+		return status
 	}
 
-	state.Playing = states[0] == "yes"
-	state.Playback = states[1]
-	state.Playlist = states[2]
-	state.Track = states[3]
+	status.Playing = states[0] == "yes"
+	status.Playback = states[1]
+	status.Playlist = states[2]
+	status.Track = states[3]
 
-	json.NewEncoder(w).Encode(state)
+	return status
 }
 
 func musicPlay(w http.ResponseWriter, r *http.Request) {
@@ -152,17 +158,4 @@ func musicPlaylists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(playlists)
-}
-
-func musicServiceStatus(w http.ResponseWriter, r *http.Request) {
-	var status MusicServiceStatus
-
-	_, err := os.Stat(musicSocket)
-	if err != nil {
-		status.Running = false
-	} else {
-		status.Running = true
-	}
-
-	json.NewEncoder(w).Encode(status)
 }

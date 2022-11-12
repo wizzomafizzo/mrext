@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -30,6 +31,27 @@ var logger = service.NewLogger(appName)
 
 //go:embed _client
 var client embed.FS
+
+type ServerStatus struct {
+	Online        bool          `json:"online"`
+	SearchService SearchService `json:"searchService"`
+	MusicService  MusicService  `json:"musicService"`
+}
+
+func getServerStatus(w http.ResponseWriter, r *http.Request) {
+	search := searchService
+	search.checkIndexReady()
+
+	music := getMusicServiceStatus()
+
+	status := ServerStatus{
+		Online:        true,
+		SearchService: search,
+		MusicService:  music,
+	}
+
+	json.NewEncoder(w).Encode(status)
+}
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	router := mux.NewRouter()
@@ -75,21 +97,18 @@ func setupApi(subrouter *mux.Router) {
 	subrouter.HandleFunc("/wallpaper/{filename}", setWallpaper).Methods("POST")
 	subrouter.HandleFunc("/wallpaper/{filename}", deleteWallpaper).Methods("DELETE")
 
-	subrouter.HandleFunc("/music", musicStatus).Methods("GET")
 	subrouter.HandleFunc("/music/play", musicPlay).Methods("POST")
 	subrouter.HandleFunc("/music/stop", musicStop).Methods("POST")
 	subrouter.HandleFunc("/music/next", musicSkip).Methods("POST")
 	subrouter.HandleFunc("/music/playback/{playback}", setMusicPlayback).Methods("POST")
 	subrouter.HandleFunc("/music/playlist", musicPlaylists).Methods("GET")
 	subrouter.HandleFunc("/music/playlist/{playlist}", setMusicPlaylist).Methods("POST")
-	subrouter.HandleFunc("/music/service", musicServiceStatus).Methods("GET")
 
 	subrouter.HandleFunc("/games/search", searchGames).Methods("POST")
 	subrouter.HandleFunc("/games/launch", launchGame).Methods("POST")
+	subrouter.HandleFunc("/games/index", generateSearchIndex).Methods("POST")
 
-	subrouter.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("pong"))
-	}).Methods("GET")
+	subrouter.HandleFunc("/server", getServerStatus).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
@@ -221,14 +240,13 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 		clearLine(1)
 		printCenter(1, statusText)
 		clearLine(3)
+		clearLine(4)
+		clearLine(6)
 		if running {
 			printCenter(3, "Access Remote with this URL:")
-		}
-		clearLine(4)
-		if running {
 			printCenter(4, appUrl)
+			printCenter(6, "It's safe to exit, the service will continue running.")
 		}
-		printCenter(6, "It's safe to exit, the service will continue running.")
 
 		clearLine(8)
 		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Exit"}, selected, 5)
