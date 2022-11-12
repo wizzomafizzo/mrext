@@ -11,10 +11,83 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 )
 
-type SearchResult struct {
+const pageSize = 250
+
+type SearchResultGame struct {
 	System System `json:"system"`
 	Name   string `json:"name"`
 	Path   string `json:"path"`
+}
+
+type SearchResults struct {
+	Data     []SearchResultGame `json:"data"`
+	Total    int                `json:"total"`
+	PageSize int                `json:"pageSize"`
+	Page     int                `json:"page"`
+}
+
+// TODO: being naughty and using a global with multiple threads
+type SearchService struct {
+	Ready       bool   `json:"ready"`
+	Indexing    bool   `json:"indexing"`
+	TotalSteps  int    `json:"totalSteps"`
+	CurrentStep int    `json:"currentStep"`
+	CurrentDesc string `json:"currentDesc"`
+}
+
+// TODO: i think this makes the disk light blink all the time. annoying
+func (s *SearchService) checkIndexReady() {
+	s.Ready = txtindex.Exists()
+}
+
+func (s *SearchService) generateIndex() {
+	if s.Indexing {
+		return
+	}
+
+	s.Indexing = true
+
+	go func() {
+		logger.Info("generating search index")
+		systemPaths := make(map[string][]string)
+
+		for _, path := range games.GetSystemPaths(games.AllSystems()) {
+			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
+		}
+
+		s.TotalSteps = 0
+		s.CurrentStep = 1
+		for _, systems := range systemPaths {
+			s.TotalSteps += len(systems)
+		}
+		s.TotalSteps += 3
+		s.CurrentStep = 2
+		logger.Info("generating search index: %d steps", s.TotalSteps)
+
+		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
+			logger.Info("generating search index: %s", path)
+			system, _ := games.GetSystem(systemId)
+			s.CurrentDesc = system.Name
+			s.CurrentStep++
+		})
+
+		s.CurrentDesc = "Writing to database"
+		if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
+			logger.Error("error generating search index: %s", err)
+		}
+		s.CurrentStep++
+
+		s.Indexing = false
+		s.TotalSteps = 0
+		s.CurrentStep = 0
+		logger.Info("search index generated")
+	}()
+}
+
+var searchService = SearchService{}
+
+func generateSearchIndex(w http.ResponseWriter, r *http.Request) {
+	searchService.generateIndex()
 }
 
 func searchGames(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +109,7 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []SearchResult
+	var results []SearchResultGame
 	search := index.SearchAllByWords(args.Query)
 
 	for _, result := range search {
@@ -45,7 +118,7 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, SearchResultGame{
 			System: System{
 				Id:   system.Id,
 				Name: system.Name,
@@ -55,7 +128,18 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	json.NewEncoder(w).Encode(results)
+	total := len(results)
+
+	if len(results) > pageSize {
+		results = results[:pageSize]
+	}
+
+	json.NewEncoder(w).Encode(&SearchResults{
+		Data:     results,
+		Total:    total,
+		PageSize: pageSize,
+		Page:     1,
+	})
 }
 
 func launchGame(w http.ResponseWriter, r *http.Request) {

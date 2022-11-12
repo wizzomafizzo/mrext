@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,7 +29,7 @@ func listWallpapers() ([]Wallpaper, error) {
 	var wallpapers []Wallpaper
 
 	if _, err := os.Stat(wallpaperFolder); os.IsNotExist(err) {
-		return wallpapers, nil
+		os.Mkdir(wallpaperFolder, 0755)
 	}
 
 	files, err := os.ReadDir(wallpaperFolder)
@@ -120,9 +121,23 @@ func setWallpaper(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: need to check if it's a symlink and back up if not
-	os.Remove(filepath.Join(config.SdFolder, "menu.png"))
-	os.Remove(filepath.Join(config.SdFolder, "menu.jpg"))
+	jpgPath := filepath.Join(config.SdFolder, "menu.jpg")
+	if f, err := os.Lstat(jpgPath); err == nil {
+		if f.Mode()&os.ModeSymlink == os.ModeSymlink {
+			os.Remove(jpgPath)
+		} else {
+			os.Rename(jpgPath, filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix())))
+		}
+	}
+
+	pngPath := filepath.Join(config.SdFolder, "menu.png")
+	if f, err := os.Lstat(pngPath); err == nil {
+		if f.Mode()&os.ModeSymlink == os.ModeSymlink {
+			os.Remove(pngPath)
+		} else {
+			os.Rename(pngPath, filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix())))
+		}
+	}
 
 	err := os.Symlink(filepath.Join(wallpaperFolder, filename), filepath.Join(config.SdFolder, "menu"+ext))
 	if err != nil {
@@ -131,8 +146,14 @@ func setWallpaper(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: don't do this if the menu isn't running
-	mister.LaunchMenu()
+	if _, err := os.Stat(config.CoreNameFile); err == nil {
+		name, err := os.ReadFile(config.CoreNameFile)
+		if err != nil {
+			mister.LaunchMenu()
+		} else if string(name) == config.MenuCore {
+			mister.LaunchMenu()
+		}
+	}
 }
 
 func deleteWallpaper(w http.ResponseWriter, r *http.Request) {
