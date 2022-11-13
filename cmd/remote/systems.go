@@ -52,6 +52,7 @@ func launchCore(w http.ResponseWriter, r *http.Request) {
 	err = mister.LaunchCore(system.Rbf)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("launch core: during launch: %s", err)
 		return
 	}
 }

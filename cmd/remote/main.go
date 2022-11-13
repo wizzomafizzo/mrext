@@ -318,7 +318,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		logger.Error("error creating service: %s", err)
+		logger.Error("creating service: %s", err)
 		fmt.Println("Error creating service:", err)
 		os.Exit(1)
 	}
@@ -328,7 +328,7 @@ func main() {
 	if !svc.Running() {
 		err := svc.Start()
 		if err != nil {
-			logger.Error("error starting service: %s", err)
+			logger.Error("starting service: %s", err)
 			fmt.Println("Error starting service:", err)
 			os.Exit(1)
 		}
@@ -336,21 +336,21 @@ func main() {
 
 	stdscr, err := curses.Setup()
 	if err != nil {
-		logger.Error("error starting curses: %s", err)
+		logger.Error("starting curses: %s", err)
 	}
 	defer gc.End()
 
 	err = tryAddStartup(stdscr)
 	if err != nil {
 		gc.End()
-		logger.Error("error adding startup: %s", err)
+		logger.Error("adding startup: %s", err)
 		fmt.Println("Error adding to startup:", err)
 	}
 
 	err = displayServiceInfo(stdscr, svc)
 	if err != nil {
 		gc.End()
-		logger.Error("error displaying service info: %s", err)
+		logger.Error("displaying service info: %s", err)
 		fmt.Println("Error displaying service info:", err)
 	}
 }

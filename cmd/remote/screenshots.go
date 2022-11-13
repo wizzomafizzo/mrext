@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -63,7 +62,7 @@ func allScreenshots(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Println(err)
+		logger.Error("all screenshots: %s", err)
 	}
 
 	json.NewEncoder(w).Encode(screenshots)
@@ -90,7 +89,7 @@ func takeScreenshot(w http.ResponseWriter, r *http.Request) {
 
 	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 	if err != nil {
-		log.Println(err)
+		logger.Error("take screenshot: %s", err)
 		return
 	}
 	defer cmd.Close()
@@ -118,8 +117,8 @@ func deleteScreenshot(w http.ResponseWriter, r *http.Request) {
 
 	err := os.Remove(path)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("delete screenshot: %s", err)
 		return
 	}
 }
