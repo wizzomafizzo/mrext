@@ -57,7 +57,6 @@ func getCaseInsensitiveDir(fn listDirFn, path string) (string, error) {
 
 // Given any path, return what systems it could be for.
 func FolderToSystems(path string) []System {
-	var systems []System
 	path = strings.ToLower(path)
 	validGamesFolder := false
 	gamesFolder := ""
@@ -74,17 +73,25 @@ func FolderToSystems(path string) []System {
 		return nil
 	}
 
+	var validSystems []System
 	for _, system := range Systems {
 		for _, folder := range system.Folder {
 			systemPath := strings.ToLower(filepath.Join(gamesFolder, folder))
 			if strings.HasPrefix(path, systemPath) {
-				systems = append(systems, system)
+				validSystems = append(validSystems, system)
 				break
 			}
 		}
 	}
 
-	return systems
+	var matchedExtensions []System
+	for _, system := range validSystems {
+		if MatchSystemFile(system, path) {
+			matchedExtensions = append(matchedExtensions, system)
+		}
+	}
+
+	return matchedExtensions
 }
 
 type PathResult struct {
