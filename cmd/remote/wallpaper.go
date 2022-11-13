@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -60,8 +59,8 @@ func allWallpapers(w http.ResponseWriter, r *http.Request) {
 
 	wallpapers, err := listWallpapers()
 	if err != nil {
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("couldn't list wallpapers: %s", err)
 		return
 	}
 
@@ -91,8 +90,8 @@ func viewWallpaper(w http.ResponseWriter, r *http.Request) {
 
 	available, err := listWallpapers()
 	if err != nil {
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("couldn't list wallpapers: %s", err)
 		return
 	}
 
@@ -117,7 +116,7 @@ func setWallpaper(w http.ResponseWriter, r *http.Request) {
 	} else if strings.HasSuffix(strings.ToLower(filename), ".jpg") {
 		ext = ".jpg"
 	} else {
-		http.Error(w, "Invalid file type", http.StatusBadRequest)
+		http.Error(w, "invalid file type", http.StatusBadRequest)
 		return
 	}
 
@@ -141,8 +140,8 @@ func setWallpaper(w http.ResponseWriter, r *http.Request) {
 
 	err := os.Symlink(filepath.Join(wallpaperFolder, filename), filepath.Join(config.SdFolder, "menu"+ext))
 	if err != nil {
-		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("couldn't set wallpaper symlink: %s", err)
 		return
 	}
 

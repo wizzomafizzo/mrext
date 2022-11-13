@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -67,7 +66,7 @@ func getMusicServiceStatus() MusicService {
 
 	resp, err := sendCmd("status")
 	if err != nil {
-		logger.Error("error getting bgm status: %s", err)
+		logger.Error("getting bgm status: %s", err)
 		return status
 	}
 
@@ -89,7 +88,7 @@ func musicPlay(w http.ResponseWriter, r *http.Request) {
 	_, err := sendCmd("play")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("bgm play: %s", err)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -99,7 +98,7 @@ func musicStop(w http.ResponseWriter, r *http.Request) {
 	_, err := sendCmd("stop")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("bgm stop: %s", err)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -109,7 +108,7 @@ func musicSkip(w http.ResponseWriter, r *http.Request) {
 	_, err := sendCmd("skip")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("bgm skip: %s", err)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -122,7 +121,7 @@ func setMusicPlayback(w http.ResponseWriter, r *http.Request) {
 	_, err := sendCmd("set playback " + playback)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("bgm set playback: %s (%s)", err, playback)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -135,7 +134,7 @@ func setMusicPlaylist(w http.ResponseWriter, r *http.Request) {
 	_, err := sendCmd("set playlist " + playlist)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("bgm set playlist: %s (%s)", err, playlist)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -147,7 +146,7 @@ func musicPlaylists(w http.ResponseWriter, r *http.Request) {
 	items, err := os.ReadDir(musicFolder)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("listing bgm playlists: %s", err)
 		return
 	}
 

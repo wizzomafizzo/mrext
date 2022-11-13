@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -35,7 +34,6 @@ type SearchService struct {
 	CurrentDesc string `json:"currentDesc"`
 }
 
-// TODO: i think this makes the disk light blink all the time. annoying
 func (s *SearchService) checkIndexReady() {
 	s.Ready = txtindex.Exists()
 }
@@ -60,12 +58,14 @@ func (s *SearchService) generateIndex() {
 		for _, systems := range systemPaths {
 			s.TotalSteps += len(systems)
 		}
+
+		logger.Info("generating search index: found %d paths", len(systemPaths))
+
 		s.TotalSteps += 3
 		s.CurrentStep = 2
-		logger.Info("generating search index: %d steps", s.TotalSteps)
 
 		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
-			logger.Info("generating search index: %s", path)
+			logger.Info("generating search index: scanning %s", path)
 			system, _ := games.GetSystem(systemId)
 			s.CurrentDesc = system.Name
 			s.CurrentStep++
@@ -73,14 +73,14 @@ func (s *SearchService) generateIndex() {
 
 		s.CurrentDesc = "Writing to database"
 		if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
-			logger.Error("error generating search index: %s", err)
+			logger.Error("generating search index: %s", err)
 		}
 		s.CurrentStep++
 
 		s.Indexing = false
 		s.TotalSteps = 0
 		s.CurrentStep = 0
-		logger.Info("search index generated")
+		logger.Info("search index complete")
 	}()
 }
 
@@ -98,14 +98,14 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&args)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err)
+		logger.Error("search games: decoding request: %s", err)
 		return
 	}
 
 	index, err := txtindex.Open(config.SearchDbFile)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("search games: reading index: %s", err)
 		return
 	}
 
@@ -150,21 +150,21 @@ func launchGame(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&args)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err)
+		logger.Error("launch game: decoding request: %s", err)
 		return
 	}
 
 	systems := games.FolderToSystems(args.Path)
 	if len(systems) == 0 {
 		http.Error(w, "no system found for game", http.StatusBadRequest)
-		log.Println("no system found for game")
+		logger.Error("launch game: no system found for game: %s (%s)", args.Path, systems[0].Id)
 		return
 	}
 
 	err = mister.LaunchGame(&systems[0], args.Path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
+		logger.Error("launch game: during launch: %s", err)
 		return
 	}
 }
