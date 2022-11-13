@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -127,6 +128,13 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 		keys[i] = k
 		i++
 	}
+	return keys
+}
+
+// Return a sorted list of all keys in a map.
+func SortedMapKeys[V any](m map[string]V) []string {
+	keys := MapKeys(m)
+	sort.Strings(keys)
 	return keys
 }
 

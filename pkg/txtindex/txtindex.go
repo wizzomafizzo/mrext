@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	s "strings"
+	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -55,7 +55,7 @@ func Generate(files [][2]string, indexPath string) error {
 		}
 
 		basename := filepath.Base(files[i][1])
-		name := s.TrimSuffix(basename, filepath.Ext(basename))
+		name := strings.TrimSuffix(basename, filepath.Ext(basename))
 
 		pathsFile.WriteString(files[i][1] + "\n")
 		namesFile.WriteString(name + "\n")
@@ -161,7 +161,7 @@ func Open(indexPath string) (Index, error) {
 				return index, err
 			}
 
-			hp := s.Split(header.Name, "__")
+			hp := strings.Split(header.Name, "__")
 
 			if len(hp) != 2 {
 				return index, fmt.Errorf("invalid index file: %s", header.Name)
@@ -199,20 +199,20 @@ func (idx *Index) searchSystemByNameGeneric(test func(string, string) bool, syst
 }
 
 func searchByNameTest(name string, query string) bool {
-	return s.Contains(s.ToLower(name), query)
+	return strings.Contains(strings.ToLower(name), query)
 }
 
 func (idx *Index) SearchAllByName(query string) []SearchResult {
 	var results []SearchResult
-	query = s.ToLower(query)
-	for system := range idx.files {
+	query = strings.ToLower(query)
+	for _, system := range utils.SortedMapKeys(idx.files) {
 		results = append(results, idx.searchSystemByNameGeneric(searchByNameTest, system, query)...)
 	}
 	return results
 }
 
 func (idx *Index) SearchSystemByName(system string, query string) []SearchResult {
-	query = s.ToLower(query)
+	query = strings.ToLower(query)
 	return idx.searchSystemByNameGeneric(searchByNameTest, system, query)
 }
 
@@ -230,7 +230,7 @@ func (idx *Index) SearchSystemByNameRe(system string, query string) []SearchResu
 
 func (idx *Index) SearchSystemByWords(system string, query string) []SearchResult {
 	var results []SearchResult
-	words := s.Split(s.ToLower(query), " ")
+	words := strings.Split(strings.ToLower(query), " ")
 	if len(words) == 0 {
 		return results
 	}
@@ -260,7 +260,7 @@ func (idx *Index) SearchSystemByWords(system string, query string) []SearchResul
 
 func (idx *Index) SearchAllByWords(query string) []SearchResult {
 	var results []SearchResult
-	for system := range idx.files {
+	for _, system := range utils.SortedMapKeys(idx.files) {
 		results = append(results, idx.SearchSystemByWords(system, query)...)
 	}
 	return results
