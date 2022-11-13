@@ -65,6 +65,11 @@ func LookupSystem(id string) (*System, error) {
 
 // Return true if a given files extension is valid for a system.
 func MatchSystemFile(system System, path string) bool {
+	// ignore dot files
+	if strings.HasPrefix(filepath.Base(path), ".") {
+		return false
+	}
+
 	for _, args := range system.Slots {
 		for _, ext := range args.Exts {
 			if strings.HasSuffix(strings.ToLower(path), ext) {
@@ -72,6 +77,7 @@ func MatchSystemFile(system System, path string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
