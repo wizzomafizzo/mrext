@@ -83,11 +83,7 @@ func launchTempMgl(system *games.System, path string) error {
 	return launchFile(tmpFile)
 }
 
-func LaunchGame(system *games.System, path string) error {
-	if system == nil {
-		return fmt.Errorf("no system specified")
-	}
-
+func LaunchGame(system games.System, path string) error {
 	switch s.ToLower(filepath.Ext(path)) {
 	case ".mra":
 		err := launchFile(path)
@@ -100,7 +96,12 @@ func LaunchGame(system *games.System, path string) error {
 			return err
 		}
 	default:
-		err := launchTempMgl(system, path)
+		rbfs := games.SystemsWithRbf()
+		if _, ok := rbfs[system.Id]; ok {
+			system.Rbf = rbfs[system.Id].MglName
+		}
+
+		err := launchTempMgl(&system, path)
 		if err != nil {
 			return err
 		}
@@ -190,23 +191,17 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 }
 
 // Launch a core given a possibly partial path, as per MGL files.
-func LaunchCore(path string) error {
+func LaunchCore(system games.System) error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
 
-	if !filepath.IsAbs(path) {
-		query := filepath.Join(config.SdFolder, path) + "*"
-		matches, err := filepath.Glob(query)
-		if err != nil {
-			return fmt.Errorf("failed to glob for core: %s", err)
-		}
-
-		if len(matches) == 0 {
-			return fmt.Errorf("no cores found matching: %s", query)
-		} else {
-			path = matches[0]
-		}
+	var path string
+	rbfs := games.SystemsWithRbf()
+	if _, ok := rbfs[system.Id]; ok {
+		path = rbfs[system.Id].Path
+	} else {
+		return fmt.Errorf("no core found for system %s", system.Id)
 	}
 
 	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
@@ -221,8 +216,6 @@ func LaunchCore(path string) error {
 }
 
 func LaunchMenu() error {
-	// FIXME: this messes up on things like GBA vs GBA2P
-
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
@@ -233,6 +226,7 @@ func LaunchMenu() error {
 	}
 	defer cmd.Close()
 
+	// TODO: don't hardcode here
 	cmd.WriteString(fmt.Sprintf("load_core %s\n", filepath.Join(config.SdFolder, "menu.rbf")))
 
 	return nil

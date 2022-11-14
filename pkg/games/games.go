@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -329,4 +330,121 @@ func FileExists(path string) bool {
 	}
 
 	return false
+}
+
+type RbfInfo struct {
+	Path      string // full path to RBF file
+	Filename  string // base filename of RBF file
+	ShortName string // base filename without date or extension
+	MglName   string // relative path launchable from MGL file
+}
+
+func ParseRbf(path string) RbfInfo {
+	info := RbfInfo{
+		Path:     path,
+		Filename: filepath.Base(path),
+	}
+
+	if strings.Contains(info.Filename, "_") {
+		info.ShortName = info.Filename[0:strings.LastIndex(info.Filename, "_")]
+	} else {
+		info.ShortName = strings.TrimSuffix(info.Filename, filepath.Ext(info.Filename))
+	}
+
+	if strings.HasPrefix(path, config.SdFolder) {
+		relDir := strings.TrimPrefix(filepath.Dir(path), config.SdFolder+"/")
+		info.MglName = filepath.Join(relDir, info.ShortName)
+	} else {
+		info.MglName = path
+	}
+
+	return info
+}
+
+// Find all rbf files in the top 2 menu levels of the SD card.
+func shallowScanRbf() ([]RbfInfo, error) {
+	results := make([]RbfInfo, 0)
+
+	isRbf := func(file os.DirEntry) bool {
+		return filepath.Ext(strings.ToLower(file.Name())) == ".rbf"
+	}
+
+	infoSymlink := func(path string) (RbfInfo, error) {
+		info, err := os.Lstat(path)
+		if err != nil {
+			return RbfInfo{}, err
+		}
+
+		if info.Mode()&os.ModeSymlink != 0 {
+			newPath, err := os.Readlink(path)
+			if err != nil {
+				return RbfInfo{}, err
+			}
+
+			return ParseRbf(newPath), nil
+		} else {
+			return ParseRbf(path), nil
+		}
+	}
+
+	files, err := os.ReadDir(config.SdFolder)
+	if err != nil {
+		return results, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() && strings.HasPrefix(file.Name(), "_") {
+			subFiles, err := os.ReadDir(filepath.Join(config.SdFolder, file.Name()))
+			if err != nil {
+				continue
+			}
+
+			for _, subFile := range subFiles {
+				if isRbf(subFile) {
+					path := filepath.Join(config.SdFolder, file.Name(), subFile.Name())
+					info, err := infoSymlink(path)
+					if err != nil {
+						continue
+					}
+					results = append(results, info)
+				}
+			}
+		} else if isRbf(file) {
+			path := filepath.Join(config.SdFolder, file.Name())
+			info, err := infoSymlink(path)
+			if err != nil {
+				continue
+			}
+			results = append(results, info)
+		}
+	}
+
+	return results, nil
+}
+
+// Return a map of all system IDs which have an existing rbf file.
+func SystemsWithRbf() map[string]RbfInfo {
+	// TODO: include alt rbfs somehow?
+	results := make(map[string]RbfInfo)
+
+	rbfFiles, err := shallowScanRbf()
+	if err != nil {
+		return results
+	}
+
+	for _, rbfFile := range rbfFiles {
+		for _, system := range Systems {
+			shortName := system.Rbf
+
+			if strings.Contains(shortName, "/") {
+				shortName = shortName[strings.LastIndex(shortName, "/")+1:]
+			}
+
+			if strings.EqualFold(rbfFile.ShortName, shortName) {
+				results[system.Id] = rbfFile
+			}
+		}
+	}
+
+	return results
 }

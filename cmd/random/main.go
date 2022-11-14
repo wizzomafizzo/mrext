@@ -179,7 +179,7 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				mister.LaunchGame(system, game)
+				mister.LaunchGame(*system, game)
 				return
 			}
 		}
@@ -217,7 +217,7 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				mister.LaunchGame(system, game)
+				mister.LaunchGame(*system, game)
 				return
 			}
 		}

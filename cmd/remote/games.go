@@ -161,7 +161,7 @@ func launchGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = mister.LaunchGame(&systems[0], args.Path)
+	err = mister.LaunchGame(systems[0], args.Path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("launch game: during launch: %s", err)
