@@ -150,6 +150,8 @@ func musicPlaylists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	playlists = append(playlists, "none")
+
 	for _, item := range items {
 		if item.IsDir() && item.Name() != "boot" {
 			playlists = append(playlists, item.Name())

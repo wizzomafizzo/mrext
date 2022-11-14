@@ -2,6 +2,7 @@
 
 High level features, ideas and changes.
 
+- [ ] Add dotenv vars to magefile
 - [ ] Pack all binaries with upx
 - [ ] Add category core groups like console/computer/handheld/sega/etc.
 - [ ] Set a sane default systems filter on random
@@ -32,10 +33,10 @@ High level features, ideas and changes.
 - [ ] Uninstall instructions for all scripts
 - [ ] Example .ini files?
 - [ ] Apps should detect stuff like scummvm and doom as a "core running"
-- [x] Documentation for random and search
-- [x] Allow defining multiple folders on a system
-- [x] Split any remaining cores supporting multiple systems
-- [x] Check for cores that can be launched by MGL but aren't currently listed
-- [x] Read main mister ini
-- [x] Time tracking stats (how long you've played a system/game)
-- [x] Favorite cmd line utility
+- [X] Documentation for random and search
+- [X] Allow defining multiple folders on a system
+- [X] Split any remaining cores supporting multiple systems
+- [X] Check for cores that can be launched by MGL but aren't currently listed
+- [X] Read main mister ini
+- [X] Time tracking stats (how long you've played a system/game)
+- [X] Favorite cmd line utility
