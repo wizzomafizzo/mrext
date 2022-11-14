@@ -232,7 +232,7 @@ class Player:
                 folder = os.path.join(MUSIC_FOLDER, name)
             if not os.path.exists(folder):
                 log("Playlist folder does not exist: {}".format(folder))
-                return None
+                return MUSIC_FOLDER
             else:
                 return folder
 
@@ -410,7 +410,6 @@ class Player:
 
             self.mutex.acquire()
 
-            log("Received command: {}".format(cmd))
             if cmd == "stop":
                 self.stop_playlist()
             elif cmd == "play":
@@ -468,19 +467,17 @@ class Player:
                     else:
                         return ""
             else:
-                log("Unknown command")
+                log("Unknown command: {}".format(cmd))
 
             self.mutex.release()
 
         def listener():
             while True:
-                log("Waiting for command...")
                 s.listen()
                 conn, addr = s.accept()
                 data = conn.recv(MESSAGE_SIZE).decode()
                 if data == "quit":
                     break
-                log("Got command, sending so handler...")
                 response = handler(data)
                 if response is not None:
                     conn.send(str(response).encode())
