@@ -25,8 +25,14 @@ var ignoreSystems = []string{
 func allSystems(w http.ResponseWriter, r *http.Request) {
 	var systems []System
 
+	existingSystems := utils.MapKeys(games.SystemsWithRbf())
+
 	for _, system := range games.Systems {
 		if utils.Contains(ignoreSystems, system.Id) {
+			continue
+		}
+
+		if !utils.Contains(existingSystems, system.Id) {
 			continue
 		}
 
@@ -49,7 +55,7 @@ func launchCore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = mister.LaunchCore(system.Rbf)
+	err = mister.LaunchCore(*system)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logger.Error("launch core: during launch: %s", err)

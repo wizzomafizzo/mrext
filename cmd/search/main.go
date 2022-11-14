@@ -208,7 +208,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 				log.Fatal(err)
 			}
 
-			err = mister.LaunchGame(system, game.Path)
+			err = mister.LaunchGame(*system, game.Path)
 			if err != nil {
 				log.Fatal(err)
 			} else {
