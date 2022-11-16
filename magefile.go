@@ -48,6 +48,7 @@ type app struct {
 	bin       string
 	ldFlags   string
 	releaseId string
+	inAll     bool
 }
 
 var apps = []app{
@@ -57,10 +58,11 @@ var apps = []app{
 		bin:  "background",
 	},
 	{
-		name:    "remote",
-		path:    filepath.Join(cwd, "cmd", "remote"),
-		bin:     "remote.sh",
-		ldFlags: "-lcurses",
+		name:      "remote",
+		path:      filepath.Join(cwd, "cmd", "remote"),
+		bin:       "remote.sh",
+		ldFlags:   "-lcurses",
+		releaseId: "mrext/remote",
 	},
 	{
 		name: "favorites",
@@ -73,6 +75,7 @@ var apps = []app{
 		path:      filepath.Join(cwd, "cmd", "random"),
 		bin:       "random.sh",
 		releaseId: "mrext/random",
+		inAll:     true,
 	},
 	{
 		name: "samindex",
@@ -91,18 +94,21 @@ var apps = []app{
 		bin:       "search.sh",
 		ldFlags:   "-lcurses",
 		releaseId: "mrext/search",
+		inAll:     true,
 	},
 	{
 		name:      "launchsync",
 		path:      filepath.Join(cwd, "cmd", "launchsync"),
 		bin:       "launchsync.sh",
 		releaseId: "mrext/launchsync",
+		inAll:     true,
 	},
 	{
 		name:      "playlog",
 		path:      filepath.Join(cwd, "cmd", "playlog"),
 		bin:       "playlog.sh",
 		releaseId: "mrext/playlog",
+		inAll:     true,
 	},
 	{
 		name: "mm",
@@ -275,7 +281,7 @@ func UpdateAllDb() {
 	}
 
 	for _, app := range apps {
-		if app.releaseId == "" {
+		if app.releaseId == "" || !app.inAll {
 			continue
 		}
 
