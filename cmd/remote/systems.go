@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -12,8 +13,9 @@ import (
 )
 
 type System struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
 }
 
 var ignoreSystems = []string{
@@ -39,6 +41,8 @@ func allSystems(w http.ResponseWriter, r *http.Request) {
 		systems = append(systems, System{
 			Id:   system.Id,
 			Name: system.Name,
+			// TODO: error checking
+			Category: strings.Split(system.Rbf, "/")[0][1:],
 		})
 	}
 
