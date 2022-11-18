@@ -154,10 +154,6 @@ func readSyncFile(path string) (*syncFile, error) {
 		sf.games = append(sf.games, game)
 	}
 
-	if len(sf.games) == 0 {
-		return nil, fmt.Errorf("no games found")
-	}
-
 	return &sf, nil
 }
 
@@ -284,9 +280,20 @@ func checkForChanges(sync *syncFile) (*syncFile, bool, error) {
 				return newSync, true, err
 			}
 
-			err = utils.RemoveEmptyDirs(sync.folder)
+			// delete empty folders
+			files, err := os.ReadDir(sync.folder)
 			if err != nil {
 				return newSync, true, err
+			}
+
+			for _, file := range files {
+				if file.IsDir() {
+					path := filepath.Join(sync.folder, file.Name())
+					err = utils.RemoveEmptyDirs(path)
+					if err != nil {
+						return newSync, true, err
+					}
+				}
 			}
 		}
 

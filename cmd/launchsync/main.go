@@ -175,6 +175,14 @@ func main() {
 			fmt.Println("Games:")
 		}
 
+		err := os.MkdirAll(sync.folder, 0755)
+		if err != nil {
+			if *verbose || !*update {
+				fmt.Printf("error creating folder: %s\n", err)
+			}
+			os.Exit(1)
+		}
+
 		for _, game := range sync.games {
 			if *verbose || !*update {
 				fmt.Print("- " + game.name + "... ")
