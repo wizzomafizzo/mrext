@@ -1,10 +1,10 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1668784977,
+  "timestamp": 1672966146,
   "files": {
     "Scripts/bgm.sh": {
-      "hash": "c89bb83b74b678336ac11ca21dabf506",
-      "size": 27089,
+      "hash": "b73bd9c4fc8a7424fdbadd28c967ff5f",
+      "size": 32543,
       "url": "https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh"
     },
     "Scripts/favorites.sh": {
