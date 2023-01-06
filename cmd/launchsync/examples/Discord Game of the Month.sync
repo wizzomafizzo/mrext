@@ -3,41 +3,61 @@ author = MiSTer Discord Community
 url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
 updated = 2022-10-24 00:00
 
-[Crystalis]
+[2022-04 Crystalis]
 system = NES
 match = Crystalis (USA)
 
-[McDonald's Treasure Land Adventure]
+[2022-05 McDonald's Treasure Land Adventure]
 system = Genesis
 match = McDonald's Treasure Land Adventure (USA)
 
-[Vagrant Story]
+[2022-06 Vagrant Story]
 system = PSX
 match = Vagrant Story (USA)
 match = Vagrant Story
 
-[The Legend of Zelda - The Minish Cap]
+[2022-07 The Legend of Zelda - The Minish Cap]
 system = GBA
 match = The Minish Cap
 
-[Super Mario World]
+[2022-08 Super Mario World]
 system = SNES
 match = ~^Super Mario World \(USA\)
 match = ~^Super Mario World \(.+\)
 
-[Phantasy Star IV]
+[2022-09 Phantasy Star IV]
 system = Genesis
 match = Phantasy Star IV
 
-[Castlevania IV]
+[2022-10 Castlevania IV]
 system = SNES
 match = Castlevania IV (USA)
 
-[Castlevania - Rondo of Blood]
+[2022-10 Castlevania - Rondo of Blood]
 system = TGFX16-CD
 match = Castlevania - Rondo of Blood
 match = Rondo of Blood
 
-[Castlevania - Bloodlines]
+[2022-10 Castlevania - Bloodlines]
 system = Genesis
 match = Castlevania - Bloodlines (USA)
+
+[2022-11 Metal Gear Solid (Disc 1)]
+system = PSX
+match = Metal Gear Solid (USA) (Disc 1)
+match = ~^Metal Gear Solid .+ \(Disc 1\)
+
+[2022-11 Metal Gear Solid (Disc 2)]
+system = PSX
+match = Metal Gear Solid (USA) (Disc 2)
+match = ~^Metal Gear Solid .+ \(Disc 2\)
+
+[2022-12 Snatcher]
+system = MegaCD
+match = Snatcher (USA)
+match = Snatcher
+
+[2023-01 Blaster Master]
+system = NES
+match = ~^Blaster Master (USA)$
+match = Blaster Master
