@@ -13,3 +13,4 @@ go.work
 /bin
 /out
 /cmd/remote/_client/build
+.env
