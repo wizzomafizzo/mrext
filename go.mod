@@ -28,6 +28,7 @@ require golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
 require (
 	github.com/bendahl/uinput v1.6.0
 	github.com/gorilla/mux v1.8.0
+	github.com/joho/godotenv v1.4.0
 	github.com/rs/cors v1.8.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

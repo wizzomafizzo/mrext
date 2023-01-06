@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/joho/godotenv/autoload"
+
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 
@@ -29,6 +31,7 @@ var (
 	releasesDir      = filepath.Join(cwd, "releases")
 	releaseUrlPrefix = "https://github.com/wizzomafizzo/mrext/raw/main/releases"
 	docsDir          = filepath.Join(cwd, "docs")
+	upxBin           = os.Getenv("UPX_BIN")
 	// docker arm build
 	armBuild          = filepath.Join(cwd, "scripts", "armbuild")
 	armBuildImageName = "mrext/armbuild"
@@ -358,6 +361,17 @@ func Release(name string) {
 	if err != nil {
 		fmt.Println("Error copying binary", err)
 		os.Exit(1)
+	}
+
+	if upxBin == "" {
+		fmt.Println("UPX is required for releases")
+		os.Exit(1)
+	} else {
+		err := sh.RunV(upxBin, "-9", releaseBin)
+		if err != nil {
+			fmt.Println("Error compressing binary", err)
+			os.Exit(1)
+		}
 	}
 
 	if a.releaseId != "" {
