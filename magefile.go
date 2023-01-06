@@ -192,7 +192,11 @@ func Build(appName string) {
 }
 
 func MakeArmImage() {
-	sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
+	if runtime.GOOS != "linux" {
+		sh.RunV("docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
+	} else {
+		sh.RunV("sudo", "docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
+	}
 }
 
 func Mister(appName string) {
@@ -201,7 +205,11 @@ func Mister(appName string) {
 	modCache := fmt.Sprintf("%s:%s", armModCache, "/home/build/go/pkg/mod")
 	os.Mkdir(armModCache, 0755)
 	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
-	sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
+	if runtime.GOOS != "linux" {
+		sh.RunV("docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
+	} else {
+		sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
+	}
 }
 
 func UpdateExternalApps() {

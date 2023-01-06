@@ -13,13 +13,8 @@ import time
 import signal
 import re
 
-DEFAULT_PLAYBACK = "random"
-DEFAULT_PLAYLIST = None
 MUSIC_FOLDER = "/media/fat/music"
 BOOT_FOLDER = os.path.join(MUSIC_FOLDER, "boot")
-CORE_BOOT_DELAY = 0
-ENABLE_STARTUP = True
-PLAY_IN_CORE = False
 HISTORY_SIZE = 0.2  # ratio of total tracks to keep in play history
 SOCKET_FILE = "/tmp/bgm.sock"
 MESSAGE_SIZE = 4096  # max size of socket payloads
@@ -30,42 +25,58 @@ CORENAME_FILE = "/tmp/CORENAME"
 LOG_FILE = "/tmp/bgm.log"
 INI_FILENAME = "bgm.ini"
 MENU_CORE = "MENU"
-DEBUG = False
-
+CMD_INTERFACE = "/dev/MiSTer_cmd"
+INI_FILE = os.path.join(MUSIC_FOLDER, INI_FILENAME)
+CONFIG_DEFAULTS = {
+    "playback": "random",
+    "playlist": None,
+    "startup": True,
+    "playincore": False,
+    "corebootdelay": 0,
+    "menuvolume": -1,
+    "defaultvolume": -1,
+    "debug": False,
+}
 
 # TODO: separate remote control http server
 # TODO: option to play music after inactivity period
-# TODO: option to adjust adjust volume on menu launch
 
 
-# read ini file
-INI_FILE = os.path.join(MUSIC_FOLDER, INI_FILENAME)
-if os.path.exists(INI_FILE):
-    ini = configparser.ConfigParser()
-    ini.read(INI_FILE)
-    DEFAULT_PLAYBACK = ini.get("bgm", "playback", fallback=DEFAULT_PLAYBACK)
-    DEBUG = ini.getboolean("bgm", "debug", fallback=DEBUG)
-    ENABLE_STARTUP = ini.getboolean("bgm", "startup", fallback=ENABLE_STARTUP)
-    PLAY_IN_CORE = ini.getboolean("bgm", "playincore", fallback=PLAY_IN_CORE)
-    CORE_BOOT_DELAY = ini.getfloat("bgm", "corebootdelay", fallback=CORE_BOOT_DELAY)
-    DEFAULT_PLAYLIST = ini.get("bgm", "playlist", fallback=DEFAULT_PLAYLIST)
-    if DEFAULT_PLAYLIST == "none":
-        DEFAULT_PLAYLIST = None
-else:
-    # create a default ini
+def write_default_ini():
     if os.path.exists(MUSIC_FOLDER):
         with open(INI_FILE, "w") as f:
             f.write(
-                "[bgm]\nplayback = random\nplaylist = none\nstartup = yes\nplayincore = no\ncorebootdelay = 0\ndebug = no\n"
+                "[bgm]\nplayback = random\nplaylist = none\nstartup = yes\nplayincore = no\n"
+                "corebootdelay = 0\nmenuvolume = -1\ndefaultvolume = -1\ndebug = no\n"
             )
 
 
+def get_ini():
+    if not os.path.exists(INI_FILE):
+        write_default_ini()
+
+    ini = configparser.ConfigParser()
+    ini.read(INI_FILE)
+
+    return {
+        "playback": ini.get("bgm", "playback", fallback=CONFIG_DEFAULTS["playback"]),
+        "playlist": ini.get("bgm", "playlist", fallback=CONFIG_DEFAULTS["playlist"]),
+        "startup": ini.getboolean("bgm", "startup", fallback=CONFIG_DEFAULTS["startup"]),
+        "playincore": ini.getboolean("bgm", "playincore", fallback=CONFIG_DEFAULTS["playincore"]),
+        "corebootdelay": ini.getfloat("bgm", "corebootdelay", fallback=CONFIG_DEFAULTS["corebootdelay"]),
+        "menuvolume": ini.getint("bgm", "menuvolume", fallback=CONFIG_DEFAULTS["menuvolume"]),
+        "defaultvolume": ini.getint("bgm", "defaultvolume", fallback=CONFIG_DEFAULTS["defaultvolume"]),
+        "debug": ini.getboolean("bgm", "debug", fallback=CONFIG_DEFAULTS["debug"]),
+    }
+
+
 def log(msg: str, always_print=False):
+    debug = get_ini()["debug"]
     if msg == "":
         return
-    if always_print or DEBUG:
+    if always_print or debug:
         print(msg)
-    if DEBUG:
+    if debug:
         with open(LOG_FILE, "a") as f:
             f.write(
                 "[{}] {}\n".format(
@@ -74,8 +85,18 @@ def log(msg: str, always_print=False):
             )
 
 
-def random_index(list):
-    return random.randint(0, len(list) - 1)
+def run_cmd(cmd: str):
+    # FIXME: for some reason trying to open the cmd interface while a core is
+    #        being loaded can sometimes cause the bgm process to hang waiting
+    #        for the handle. this is an attempt to work around that happening
+    #        but I've got no idea why it happens in the first place
+    return os.system("echo \"{}\" > {}".format(cmd, CMD_INTERFACE))
+    # with open(CMD_INTERFACE, "w") as f:
+    #     f.write(cmd)
+
+
+def random_index(xs):
+    return random.randint(0, len(xs) - 1)
 
 
 def get_core():
@@ -84,6 +105,28 @@ def get_core():
 
     with open(CORENAME_FILE) as f:
         return str(f.read())
+
+
+def volume_mute():
+    run_cmd("volume mute")
+
+
+def volume_unmute():
+    run_cmd("volume unmute")
+
+
+def volume_set(volume: int):
+    if volume < 0:
+        volume = 0
+    if volume > 7:
+        volume = 7
+
+    log("Setting volume to {}".format(volume))
+    run_cmd("volume {}".format(volume))
+
+
+def should_change_volume(ini) -> bool:
+    return ini["menuvolume"] >= 0 and ini["defaultvolume"] >= 0
 
 
 def wait_core_change():
@@ -114,66 +157,84 @@ def wait_core_change():
     return core
 
 
+def is_mp3(filename: str):
+    return filename.lower().endswith(".mp3")
+
+
+def is_pls(filename: str):
+    return filename.lower().endswith(".pls")
+
+
+def is_ogg(filename: str):
+    return filename.lower().endswith(".ogg")
+
+
+def is_wav(filename: str):
+    return filename.lower().endswith(".wav")
+
+
+def is_mid(filename: str):
+    return filename.lower().endswith(".mid")
+
+
+def is_vgm(filename: str):
+    match = re.search(r".*\.(vgm|vgz|vgm\.gz)$", filename.lower())
+    return match is not None
+
+
+def is_valid_file(filename: str):
+    return (
+        is_mp3(filename)
+        or is_ogg(filename)
+        or is_wav(filename)
+        or is_mid(filename)
+        or is_vgm(filename)
+        or is_pls(filename)
+    )
+
+
+def get_loop_amount(filename: str):
+    loop_match = re.search(r"^X(\d\d)_", os.path.basename(filename))
+    if loop_match is not None:
+        return int(loop_match.group(1))
+    else:
+        return 1
+
+
+def get_pls_url(filename: str):
+    with open(filename, "r") as f:
+        contents = f.read()
+        match = re.search(r"https?:.+", contents, re.MULTILINE)
+        if match is not None:
+            return match[0]
+        else:
+            log("Playlist URL not found")
+            return ""
+
+
 class Player:
-    mutex = threading.Lock()
+    mutex = None
     player = None
     playing = None
-    playback = DEFAULT_PLAYBACK
-    playlist = DEFAULT_PLAYLIST
+    playback = CONFIG_DEFAULTS["playback"]
+    playlist = CONFIG_DEFAULTS["playlist"]
+    play_in_core = CONFIG_DEFAULTS["playincore"]
     playlist_thread = None
-    end_playlist = threading.Event()
+    end_playlist = None
     history = []
 
-    def is_mp3(self, filename: str):
-        return filename.lower().endswith(".mp3")
-
-    def is_pls(self, filename: str):
-        return filename.lower().endswith(".pls")
-
-    def is_ogg(self, filename: str):
-        return filename.lower().endswith(".ogg")
-
-    def is_wav(self, filename: str):
-        return filename.lower().endswith(".wav")
-
-    def is_mid(self, filename: str):
-        return filename.lower().endswith(".mid")
-
-    def is_vgm(self, filename: str):
-        match = re.search(".*\.(vgm|vgz|vgm\.gz)$", filename.lower())
-        return match is not None
-
-    def is_valid_file(self, filename: str):
-        return (
-            self.is_mp3(filename)
-            or self.is_ogg(filename)
-            or self.is_wav(filename)
-            or self.is_mid(filename)
-            or self.is_vgm(filename)
-            or self.is_pls(filename)
-        )
-
-    def get_loop_amount(self, filename: str):
-        loop_match = re.search("^X(\d\d)\_", os.path.basename(filename))
-        if loop_match is not None:
-            return int(loop_match.group(1))
-        else:
-            return 1
-
-    def get_pls_url(self, filename: str):
-        with open(filename, "r") as f:
-            contents = f.read()
-            match = re.search("https?:.+", contents, re.MULTILINE)
-            if match is not None:
-                return match[0]
-            else:
-                log("Playlist URL not found")
-                return ""
+    def __init__(self):
+        ini = get_ini()
+        self.playback = ini["playback"]
+        self.playlist = ini["playlist"]
+        self.play_in_core = ini["playincore"]
+        self.mutex = threading.Lock()
+        self.end_playlist = threading.Event()
 
     def play_mp3(self, filename: str):
         # get url from playlist files
-        if self.is_pls(filename):
-            filename = self.get_pls_url(filename)
+        if is_pls(filename):
+            filename = get_pls_url(filename)
 
         args = ("mpg123", "--no-control", filename)
         self.player = subprocess.Popen(
@@ -239,11 +300,11 @@ class Player:
     def filter_tracks(self, files, include_boot=False):
         tracks = []
         for track in files:
-            if include_boot and self.is_valid_file(track):
+            if include_boot and is_valid_file(track):
                 tracks.append(track)
             else:
-                if self.is_valid_file(track) and not track.startswith("_"):
-                    if self.playlist == "all" and not self.is_pls(track):
+                if is_valid_file(track) and not track.startswith("_"):
+                    if self.playlist == "all" and not is_pls(track):
                         tracks.append(track)
                     elif self.playlist != "all":
                         tracks.append(track)
@@ -294,28 +355,28 @@ class Player:
     def play(self, filename: str):
         self.stop()
 
-        if self.is_valid_file(filename):
+        if is_valid_file(filename):
             self.playing = filename
             self.add_history(filename)
             log("Now playing: {}".format(filename))
         else:
             return
 
-        loop = self.get_loop_amount(filename)
+        loop = get_loop_amount(filename)
 
         while loop > 0 and self.playing is not None:
             log("Loop #{}".format(loop))
-            if self.is_mp3(filename):
+            if is_mp3(filename):
                 self.play_mp3(filename)
-            elif self.is_pls(filename):
+            elif is_pls(filename):
                 self.play_mp3(filename)
-            elif self.is_ogg(filename):
+            elif is_ogg(filename):
                 self.play_ogg(filename)
-            elif self.is_wav(filename):
+            elif is_wav(filename):
                 self.play_wav(filename)
-            elif self.is_mid(filename):
+            elif is_mid(filename):
                 self.play_mid(filename)
-            elif self.is_vgm(filename):
+            elif is_vgm(filename):
                 self.play_vgm(filename)
             loop -= 1
 
@@ -396,7 +457,7 @@ class Player:
             name = None
         folder = self.get_playlist_path(name)
         if folder is not None and self.total_tracks(name, include_boot=True) > 0:
-            log("Changed playist: {}".format(name))
+            log("Changed playlist: {}".format(name))
             self.playlist = name
             if self.in_playlist():
                 self.start_playlist()
@@ -406,8 +467,6 @@ class Player:
         s.bind(SOCKET_FILE)
 
         def handler(cmd: str):
-            global PLAY_IN_CORE
-
             self.mutex.acquire()
 
             if cmd == "stop":
@@ -448,9 +507,9 @@ class Player:
                     if self.in_playlist():
                         self.start_playlist()
             elif cmd == "set playincore yes":
-                PLAY_IN_CORE = True
+                self.play_in_core = True
             elif cmd == "set playincore no":
-                PLAY_IN_CORE = False
+                self.play_in_core = False
             elif cmd.startswith("get"):
                 args = cmd.split(" ", 1)
                 self.mutex.release()
@@ -460,7 +519,7 @@ class Player:
                     elif args[1] == "playback":
                         return self.playback
                     elif args[1] == "playincore":
-                        if PLAY_IN_CORE:
+                        if self.play_in_core:
                             return "yes"
                         else:
                             return "no"
@@ -493,13 +552,13 @@ class Player:
         boot_tracks = []
 
         for name in os.listdir(self.get_playlist_path()):
-            if name.startswith("_") and self.is_valid_file(name):
+            if name.startswith("_") and is_valid_file(name):
                 boot_tracks.append(os.path.join(self.get_playlist_path(), name))
 
         # include tracks from global boot folder
         if os.path.exists(BOOT_FOLDER):
             for name in os.listdir(BOOT_FOLDER):
-                if self.is_valid_file(name):
+                if is_valid_file(name):
                     boot_tracks.append(os.path.join(BOOT_FOLDER, name))
 
         if len(boot_tracks) > 0:
@@ -524,13 +583,13 @@ class Player:
 
                     for f in os.listdir(os.path.join(BOOT_FOLDER, core_folder)):
                         filename = os.path.join(BOOT_FOLDER, core_folder, f)
-                        if self.is_valid_file(filename):
+                        if is_valid_file(filename):
                             tracks.append(filename)
 
                     if len(tracks) == 0:
                         return
 
-                    time.sleep(CORE_BOOT_DELAY)
+                    time.sleep(get_ini()["corebootdelay"])
                     log("Playing core boot track...")
                     self.play(tracks[random_index(tracks)])
 
@@ -547,9 +606,9 @@ def send_socket(msg: str):
         return response.decode()
 
 
-def cleanup(player: Player):
-    if player is not None:
-        player.stop_playlist()
+def cleanup(p: Player):
+    if p is not None:
+        p.stop_playlist()
         send_socket("quit")
     if os.path.exists(SOCKET_FILE):
         os.remove(SOCKET_FILE)
@@ -559,38 +618,64 @@ def start_service(player: Player):
     log("Starting service...")
     log("Playlist folder: {}".format(player.get_playlist_path()))
 
+    ini = get_ini()
+
     player.start_remote()
-    # FIXME: make this non-blocking so it can be cut off during core launch
-    #        this only affects people with really long boot sounds
-    player.play_boot()
+    # FIXME: this is a hack to make sure the boot sound doesn't play too loud
+    if should_change_volume(ini):
+        volume_set(ini["menuvolume"])
+        # FIXME: make this non-blocking so it can be cut off during core launch
+        #        this only affects people with really long boot sounds
+        player.play_boot()
+        volume_set(ini["defaultvolume"])
+    else:
+        player.play_boot()
 
     core = get_core()
     # don't start playing if the boot track ran into a core launch
     # do start playing for a bit if the CORENAME file is still being created
-    if core == MENU_CORE or core is None or PLAY_IN_CORE:
-        player.start_playlist(DEFAULT_PLAYBACK)
+    if core == MENU_CORE or core is None or player.play_in_core:
+        if should_change_volume(ini) and core == MENU_CORE:
+            volume_set(ini["menuvolume"])
+        player.start_playlist(ini["playback"])
 
     while True:
         new_core = wait_core_change()
+        ini = get_ini()
 
         if new_core is None:
             log("CORENAME file is missing, exiting...")
             break
 
         if core == new_core:
+            log("CORENAME file changed, but core is the same")
             pass
-        elif PLAY_IN_CORE:
+        elif player.play_in_core:
+            log("playincore is enabled")
             pass
         elif new_core == MENU_CORE:
             log("Switched to menu core, starting playlist...")
+            log("Grabbing mutex")
             player.mutex.acquire()
+            if should_change_volume(ini):
+                log("Changing volume to menu volume")
+                volume_set(ini["menuvolume"])
+            log("Starting playlist")
             player.start_playlist()
+            log("Releasing mutex")
             player.mutex.release()
         elif new_core != MENU_CORE:
             log("Exited menu core, stopping playlist...")
+            log("Grabbing mutex")
             player.mutex.acquire()
+            log("Stopping playlist")
             player.stop_playlist()
+            log("Playing core boot")
             player.play_core_boot(new_core)
+            if should_change_volume(ini):
+                log("Changing volume to default volume")
+                volume_set(ini["defaultvolume"])
+            log("Releasing mutex")
             player.mutex.release()
 
         core = new_core
@@ -612,13 +697,68 @@ def try_add_to_startup():
         log("Added service to startup script.", True)
 
 
-def display_gui():
-    def get_menu_output(output):
-        try:
-            return int(output)
-        except ValueError:
-            return None
+def get_menu_output(output):
+    try:
+        return int(output)
+    except ValueError:
+        return None
 
+
+def active(condition):
+    if condition:
+        return " [ACTIVE]"
+    else:
+        return ""
+
+
+def volume_select_dialog(title: str, blurb: str, current: int, set_live=False) -> (int, int):
+    args = [
+        "dialog",
+        "--title",
+        title,
+        "--ok-label",
+        "Set",
+        "--cancel-label",
+        "Cancel",
+        "--default-item",
+        str(current),
+        "--menu",
+        blurb,
+        "20",
+        "75",
+        "20",
+        "-1",
+        "Disabled (make no changes to volume)" + active(current == -1),
+        "0",
+        "Mute" + active(current == 0),
+        "1",
+        "Level 1" + active(current == 1),
+        "2",
+        "Level 2" + active(current == 2),
+        "3",
+        "Level 3" + active(current == 3),
+        "4",
+        "Level 4" + active(current == 4),
+        "5",
+        "Level 5" + active(current == 5),
+        "6",
+        "Level 6" + active(current == 6),
+        "7",
+        "Level 7 (max)" + active(current == 7),
+    ]
+
+    result = subprocess.run(args, stderr=subprocess.PIPE)
+
+    selection = get_menu_output(result.stderr.decode())
+    button = get_menu_output(result.returncode)
+
+    if button == 0 and selection is not None and selection >= 0 and set_live:
+        volume_set(selection)
+
+    return selection, button
+
+
+def display_gui():
     def get_status():
         # FIXME: this is a hack to give service time to update itself, would be
         #        better if it could check an update was successful before
@@ -645,12 +785,6 @@ def display_gui():
         with open(INI_FILE, "w") as f:
             config.write(f)
 
-    def active(condition):
-        if condition:
-            return " [ACTIVE]"
-        else:
-            return ""
-
     def menu(status, playlists, config, last_item):
         if status[0] == "yes":
             play_text = "Stop playing"
@@ -662,15 +796,27 @@ def display_gui():
         else:
             now_playing = status[3]
 
-        if config.getboolean("bgm", "startup", fallback=ENABLE_STARTUP):
+        if config.getboolean("bgm", "startup", fallback=CONFIG_DEFAULTS["startup"]):
             startup = "Disable startup on boot"
         else:
             startup = "Enable startup on boot"
 
-        if config.getboolean("bgm", "playincore", fallback=PLAY_IN_CORE):
+        if config.getboolean("bgm", "playincore", fallback=CONFIG_DEFAULTS["playincore"]):
             playincore = "Disable music in cores"
         else:
             playincore = "Enable music in cores"
+
+        menu_volume = config.getint("bgm", "menuvolume", fallback=CONFIG_DEFAULTS["menuvolume"])
+        if menu_volume < 0:
+            menu_volume_status = "(disabled)"
+        else:
+            menu_volume_status = "({})".format(menu_volume)
+
+        default_volume = config.getint("bgm", "defaultvolume", fallback=CONFIG_DEFAULTS["defaultvolume"])
+        if default_volume < 0:
+            default_volume_status = "(disabled)"
+        else:
+            default_volume_status = "({})".format(default_volume)
 
         args = [
             "dialog",
@@ -706,12 +852,16 @@ def display_gui():
             "7",
             "CONFIG   > {}".format(playincore),
             "8",
-            "PLAYLIST > None (just top level files)" + active(status[2] == "none"),
+            "CONFIG   > Auto-change menu volume " + menu_volume_status,
             "9",
+            "CONFIG   > Auto-change default volume " + default_volume_status,
+            "10",
+            "PLAYLIST > None (just top level files)" + active(status[2] == "none"),
+            "11",
             "PLAYLIST > All (all playlists combined)" + active(status[2] == "all"),
         ]
 
-        number = 10
+        number = 12
         for playlist in playlists:
             args.append(str(number))
             args.append(
@@ -758,13 +908,13 @@ def display_gui():
             send_socket("set playback disabled")
             config["bgm"]["playback"] = "disabled"
         elif selection == 6:
-            startup = config.getboolean("bgm", "startup", fallback=ENABLE_STARTUP)
+            startup = config.getboolean("bgm", "startup", fallback=CONFIG_DEFAULTS["startup"])
             if startup:
                 config["bgm"]["startup"] = "no"
             else:
                 config["bgm"]["startup"] = "yes"
         elif selection == 7:
-            playincore = config.getboolean("bgm", "playincore", fallback=PLAY_IN_CORE)
+            playincore = config.getboolean("bgm", "playincore", fallback=CONFIG_DEFAULTS["playincore"])
             if playincore:
                 config["bgm"]["playincore"] = "no"
                 send_socket("set playincore no")
@@ -772,25 +922,46 @@ def display_gui():
                 config["bgm"]["playincore"] = "yes"
                 send_socket("set playincore yes")
         elif selection == 8:
+            menu_volume = config.getint("bgm", "menuvolume", fallback=CONFIG_DEFAULTS["menuvolume"])
+            vol_selection, vol_button = volume_select_dialog(
+                "Menu volume", "Automatically change MiSTer's volume in the menu when is open, to adjust music "
+                               "volume. The \"default volume\" setting must also be enabled for this feature to work.",
+                menu_volume, True
+            )
+            if vol_button == 0:
+                config["bgm"]["menuvolume"] = str(vol_selection)
+        elif selection == 9:
+            default_volume = config.getint("bgm", "defaultvolume", fallback=CONFIG_DEFAULTS["defaultvolume"])
+            vol_selection, vol_button = volume_select_dialog(
+                "Default volume", "Automatically revert MiSTer's volume when the menu is closed, to set volume back "
+                                  "to normal. The \"menu volume\" setting must also be enabled for this feature to "
+                                  "work.",
+                default_volume, False
+            )
+            if vol_button == 0:
+                config["bgm"]["defaultvolume"] = str(vol_selection)
+        elif selection == 10:
             send_socket("set playlist none")
             config["bgm"]["playlist"] = "none"
-        elif selection == 9:
+        elif selection == 11:
             send_socket("set playlist all")
             config["bgm"]["playlist"] = "all"
-        elif selection > 9:
-            name = playlists[selection - 10]
+        elif selection > 11:
+            name = playlists[selection - 12]
             send_socket("set playlist {}".format(name))
             config["bgm"]["playlist"] = name
 
 
 if __name__ == "__main__":
+    ini = get_ini()
+
     if len(sys.argv) == 2:
         if sys.argv[1] == "exec":
             if os.path.exists(SOCKET_FILE):
                 log("BGM service is already running, exiting...", True)
                 sys.exit()
 
-            def stop(sn=0, f=0):
+            def stop(sn=0, f=None):
                 log("Stopping service ({})".format(sn))
                 cleanup(player)
                 sys.exit()
@@ -801,7 +972,7 @@ if __name__ == "__main__":
             start_service(player)
             stop()
         elif sys.argv[1] == "start":
-            if not ENABLE_STARTUP:
+            if not ini["startup"]:
                 log("Auto-start is disabled in configuration", True)
                 sys.exit()
             os.system("{} exec &".format(os.path.join(SCRIPTS_FOLDER, "bgm.sh")))
