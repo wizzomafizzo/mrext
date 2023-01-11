@@ -58,7 +58,7 @@ def get_ini():
     ini = configparser.ConfigParser()
     ini.read(INI_FILE)
 
-    return {
+    config = {
         "playback": ini.get("bgm", "playback", fallback=CONFIG_DEFAULTS["playback"]),
         "playlist": ini.get("bgm", "playlist", fallback=CONFIG_DEFAULTS["playlist"]),
         "startup": ini.getboolean("bgm", "startup", fallback=CONFIG_DEFAULTS["startup"]),
@@ -68,6 +68,11 @@ def get_ini():
         "defaultvolume": ini.getint("bgm", "defaultvolume", fallback=CONFIG_DEFAULTS["defaultvolume"]),
         "debug": ini.getboolean("bgm", "debug", fallback=CONFIG_DEFAULTS["debug"]),
     }
+
+    if config["playlist"] == "none":
+        config["playlist"] = None
+
+    return config
 
 
 def log(msg: str, always_print=False):
