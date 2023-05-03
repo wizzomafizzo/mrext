@@ -367,6 +367,14 @@ func Release(name string) {
 		fmt.Println("UPX is required for releases")
 		os.Exit(1)
 	} else {
+		if runtime.GOOS != "windows" {
+			err := os.Chmod(releaseBin, 0755)
+			if err != nil {
+				fmt.Println("Error chmoding upx", err)
+				os.Exit(1)
+			}
+		}
+
 		err := sh.RunV(upxBin, "-9", releaseBin)
 		if err != nil {
 			fmt.Println("Error compressing binary", err)
