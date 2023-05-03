@@ -2,9 +2,12 @@ package input
 
 import (
 	"github.com/bendahl/uinput"
+	"time"
 )
 
-// TODO: needs delays on connect and between presses
+// TODO: needs delays on connect if not running as a daemon
+
+const sleepTime = 40 * time.Millisecond
 
 type Keyboard struct {
 	Device uinput.Keyboard
@@ -27,28 +30,44 @@ func (k *Keyboard) Close() {
 	k.Device.Close()
 }
 
+func (k *Keyboard) Press(key int) {
+	k.Device.KeyDown(key)
+	time.Sleep(sleepTime)
+	k.Device.KeyUp(key)
+}
+
+func (k *Keyboard) Combo(keys ...int) {
+	for _, key := range keys {
+		k.Device.KeyDown(key)
+	}
+	time.Sleep(sleepTime)
+	for _, key := range keys {
+		k.Device.KeyUp(key)
+	}
+}
+
 func (k *Keyboard) VolumeUp() {
-	k.Device.KeyPress(uinput.KeyVolumeup)
+	k.Press(uinput.KeyVolumeup)
 }
 
 func (k *Keyboard) VolumeDown() {
-	k.Device.KeyPress(uinput.KeyVolumedown)
+	k.Press(uinput.KeyVolumedown)
 }
 
 func (k *Keyboard) VolumeMute() {
-	k.Device.KeyPress(uinput.KeyMute)
+	k.Press(uinput.KeyMute)
 }
 
 func (k *Keyboard) Menu() {
-	k.Device.KeyPress(uinput.KeyEsc)
+	k.Press(uinput.KeyEsc)
 }
 
 func (k *Keyboard) Back() {
-	k.Device.KeyPress(uinput.KeyBackspace)
+	k.Press(uinput.KeyBackspace)
 }
 
 func (k *Keyboard) Confirm() {
-	k.Device.KeyPress(uinput.KeyEnter)
+	k.Press(uinput.KeyEnter)
 }
 
 func (k *Keyboard) Cancel() {
@@ -56,81 +75,65 @@ func (k *Keyboard) Cancel() {
 }
 
 func (k *Keyboard) Up() {
-	k.Device.KeyPress(uinput.KeyUp)
+	k.Press(uinput.KeyUp)
 }
 
 func (k *Keyboard) Down() {
-	k.Device.KeyPress(uinput.KeyDown)
+	k.Press(uinput.KeyDown)
 }
 
 func (k *Keyboard) Left() {
-	k.Device.KeyPress(uinput.KeyLeft)
+	k.Press(uinput.KeyLeft)
 }
 
 func (k *Keyboard) Right() {
-	k.Device.KeyPress(uinput.KeyRight)
+	k.Press(uinput.KeyRight)
 }
 
 func (k *Keyboard) Osd() {
-	k.Device.KeyPress(uinput.KeyF12)
+	k.Press(uinput.KeyF12)
 }
 
 func (k *Keyboard) CoreSelect() {
-	k.Device.KeyDown(uinput.KeyLeftalt)
-	k.Osd()
-	k.Device.KeyUp(uinput.KeyLeftalt)
+	k.Combo(uinput.KeyLeftalt, uinput.KeyF12)
 }
 
 func (k *Keyboard) Screenshot() {
-	k.Device.KeyDown(uinput.KeyLeftmeta)
-	k.Device.KeyPress(uinput.KeyPrint)
-	k.Device.KeyUp(uinput.KeyLeftmeta)
+	// TODO: for the life of me, I can't make the regular Win+PrtScn combo
+	//       work. this is a hardcoded alternate combo which *does* work,
+	//       but it's disabled on PS/2 keyboard or in PS/2 mode or something
+	k.Combo(uinput.KeyLeftalt, uinput.KeyScrolllock)
 }
 
 func (k *Keyboard) RawScreenshot() {
-	k.Device.KeyDown(uinput.KeyLeftshift)
-	k.Device.KeyDown(uinput.KeyLeftmeta)
-	k.Device.KeyPress(uinput.KeyPrint)
-	k.Device.KeyUp(uinput.KeyLeftmeta)
-	k.Device.KeyUp(uinput.KeyLeftshift)
+	// TODO: see above
+	k.Combo(uinput.KeyLeftalt, uinput.KeyLeftshift, uinput.KeyScrolllock)
 }
 
 func (k *Keyboard) User() {
-	k.Device.KeyDown(uinput.KeyLeftctrl)
-	k.Device.KeyDown(uinput.KeyLeftalt)
-	k.Device.KeyPress(uinput.KeyRightalt)
-	k.Device.KeyUp(uinput.KeyLeftalt)
-	k.Device.KeyUp(uinput.KeyLeftctrl)
+	k.Combo(uinput.KeyLeftctrl, uinput.KeyLeftalt, uinput.KeyRightalt)
 }
 
 func (k *Keyboard) Reset() {
-	k.Device.KeyDown(uinput.KeyLeftshift)
-	k.Device.KeyDown(uinput.KeyLeftctrl)
-	k.Device.KeyDown(uinput.KeyLeftalt)
-	k.Device.KeyPress(uinput.KeyRightalt)
-	k.Device.KeyUp(uinput.KeyLeftalt)
-	k.Device.KeyUp(uinput.KeyLeftctrl)
-	k.Device.KeyUp(uinput.KeyLeftshift)
+	k.Combo(uinput.KeyLeftshift, uinput.KeyLeftctrl, uinput.KeyLeftalt)
 }
 
 func (k *Keyboard) PairBluetooth() {
-	k.Device.KeyPress(uinput.KeyF11)
+	k.Press(uinput.KeyF11)
 }
 
 func (k *Keyboard) ChangeBackground() {
-	k.Device.KeyPress(uinput.KeyF1)
+	k.Press(uinput.KeyF1)
 }
 
 func (k *Keyboard) ToggleCoreDates() {
-	k.Device.KeyPress(uinput.KeyF2)
+	k.Press(uinput.KeyF2)
 }
 
 func (k *Keyboard) Console() {
-	k.Device.KeyPress(uinput.KeyF3)
+	k.Press(uinput.KeyF3)
 }
 
 func (k *Keyboard) ComputerOsd() {
-	k.Device.KeyDown(uinput.KeyLeftmeta)
-	k.Device.KeyPress(uinput.KeyF12)
-	k.Device.KeyUp(uinput.KeyLeftmeta)
+	k.Combo(uinput.KeyLeftmeta, uinput.KeyF12)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"io/fs"
 	"net/http"
 	"os"
@@ -54,17 +55,23 @@ func getServerStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
+	kbd, err := input.NewKeyboard()
+	if err != nil {
+		logger.Error("failed to initialize keyboard: %s", err)
+		return nil, err
+	}
+
 	router := mux.NewRouter()
-	setupApi(router.PathPrefix("/api").Subrouter())
+	setupApi(router.PathPrefix("/api").Subrouter(), kbd)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
-	cors := cors.New(cors.Options{
+	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "DELETE", "PUT"},
 	})
 
 	srv := &http.Server{
-		Handler:      cors.Handler(router),
+		Handler:      corsHandler.Handler(router),
 		Addr:         ":" + fmt.Sprint(appPort),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -78,12 +85,13 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}()
 
 	return func() error {
+		kbd.Close()
 		srv.Close()
 		return nil
 	}, nil
 }
 
-func setupApi(subrouter *mux.Router) {
+func setupApi(subrouter *mux.Router, kbd input.Keyboard) {
 	subrouter.HandleFunc("/screenshots", allScreenshots).Methods("GET")
 	subrouter.HandleFunc("/screenshots", takeScreenshot).Methods("POST")
 	subrouter.HandleFunc("/screenshots/{core}/{image}", viewScreenshot).Methods("GET")
@@ -109,6 +117,8 @@ func setupApi(subrouter *mux.Router) {
 	subrouter.HandleFunc("/games/index", generateSearchIndex).Methods("POST")
 
 	subrouter.HandleFunc("/server", getServerStatus).Methods("GET")
+
+	subrouter.HandleFunc("/control/keyboard/{key}", handleKeyboard(kbd)).Methods("POST")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

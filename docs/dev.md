@@ -29,6 +29,8 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 - [Docker](https://www.docker.com/)
 
   Used for building all the MiSTer binaries. You also need to configure cross-compilation in Docker since ARM images are used for the build process. Podman should also work, but the build scripts use Docker explicitly.
+  
+  On Linux, enable cross-platform builds with something like this: `apt install qemu binfmt-support qemu-user-static`
 
 ### Optional Dependencies
 
