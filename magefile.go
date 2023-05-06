@@ -370,7 +370,7 @@ func Release(name string) {
 		if runtime.GOOS != "windows" {
 			err := os.Chmod(releaseBin, 0755)
 			if err != nil {
-				fmt.Println("Error chmoding upx", err)
+				fmt.Println("Error chmoding release bin", err)
 				os.Exit(1)
 			}
 		}

@@ -1,19 +1,46 @@
-- [X] Stop BGM logging socket commands
-- [X] Detect and mention if BGM is installed but not running?
-- [X] Add support for BGM "none" playlist
-- [ ] Color scheme support (Mistua brown, Tron cyan, Wiki purple) w/ fast switching
-- [X] Add logging to server
-- [X] Ignore dot files in games indexing
-- [X] Show only cores that are installed
-- [ ] Ini settings screen
-- [ ] Ini switcher support
-- [ ] Work on aria tags and general accessibility concerns
-- [ ] Look into localisation support
-- [ ] Add feedback to start/stop and restart buttons
-- [ ] Adjust window height with content of manager
-- [X] Many games won't launch for some reason
-- [X] Search should return in a determinate order
-- [ ] Match screenshots to save states
-- [ ] Save manager
-- [ ] Presets manager/creator
-- [ ] Patch for SAM to use BGM shutdown commands
+- Ini settings screen
+- Ini switcher support
+- Work on aria tags and general accessibility concerns
+- Look into localisation support
+- Match screenshots to save states
+- Save (state) manager
+- Presets manager/creator
+- Patch for SAM to use BGM shutdown commands
+- Show current playing game
+- Show recently played games list
+- Manage favourites
+- File manager
+- "Community" page (forums, wiki, discord, etc.)
+- Dashboard/default page (recently played, favourites, etc.)
+- Link to GitHub bottom of menu
+- Audio feedback
+- Themes mimicking retro systems
+- Change font size option
+- Custom background image
+- Full music player (song selection)
+- Filter searches by system, sorting etc.
+- Save search for later
+- Show game info (description, release date, screenshots, etc.)
+- Show system/core info
+- Icons only view for systems
+- Option to hide systems/pin favourites
+- Bulk delete screenshots
+- Bulk add favourites
+- Screenshots linked to save states
+- Tag screenshots
+- Sort/filter screenshots
+- Full on screen keyboard
+- Virtual controller
+- Set screenshot as mister bg
+- Tag/favourite wallpapers
+- Smaller view for wallpapers
+- Delete/upload wallpaper
+- Revert back to random wallpaper
+- Launch other scripts (updates)
+- Report if connection is lost
+- Control what systems are indexed (?)
+- Search pagination
+- Use ArcadeDatabase for reference? https://github.com/Toryalai1/MiSTer_ArcadeDatabase/blob/main/ArcadeDatabase_CSV/ArcadeDatabase230429_1.csv
+- API documentation
+- Offer API-only binary
+- Launch random game

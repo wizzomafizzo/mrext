@@ -90,9 +90,52 @@ func generateSearchIndex(w http.ResponseWriter, r *http.Request) {
 	searchService.generateIndex()
 }
 
+type listSystemsPayloadSystem struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type listSystemsPayload struct {
+	Systems []listSystemsPayloadSystem `json:"systems"`
+}
+
+func listSystems(w http.ResponseWriter, _ *http.Request) {
+	index, err := txtindex.Open(config.SearchDbFile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("search games: reading index: %s", err)
+		return
+	}
+
+	payload := listSystemsPayload{
+		Systems: make([]listSystemsPayloadSystem, 0),
+	}
+
+	for _, system := range index.Systems() {
+		id := system
+		sysDef, ok := games.Systems[id]
+		if !ok {
+			continue
+		}
+
+		payload.Systems = append(payload.Systems, listSystemsPayloadSystem{
+			Id:   id,
+			Name: sysDef.Name,
+		})
+	}
+
+	err = json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("search games: encoding response: %s", err)
+		return
+	}
+}
+
 func searchGames(w http.ResponseWriter, r *http.Request) {
 	var args struct {
-		Query string `json:"query"`
+		Query  string `json:"query"`
+		System string `json:"system"`
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&args)
@@ -110,7 +153,13 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []SearchResultGame
-	search := index.SearchAllByWords(args.Query)
+	var search []txtindex.SearchResult
+
+	if args.System == "all" || args.System == "" {
+		search = index.SearchAllByWords(args.Query)
+	} else {
+		search = index.SearchSystemByWords(args.System, args.Query)
+	}
 
 	for _, result := range search {
 		system, err := games.GetSystem(result.System)
@@ -134,12 +183,17 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 		results = results[:pageSize]
 	}
 
-	json.NewEncoder(w).Encode(&SearchResults{
+	err = json.NewEncoder(w).Encode(&SearchResults{
 		Data:     results,
 		Total:    total,
 		PageSize: pageSize,
 		Page:     1,
 	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("search games: encoding response: %s", err)
+		return
+	}
 }
 
 func launchGame(w http.ResponseWriter, r *http.Request) {

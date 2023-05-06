@@ -273,3 +273,7 @@ func (idx *Index) Total() int {
 	}
 	return total
 }
+
+func (idx *Index) Systems() []string {
+	return utils.SortedMapKeys(idx.files)
+}

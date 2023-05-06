@@ -2,8 +2,8 @@
 
 High level features, ideas and changes.
 
-- [ ] Add dotenv vars to magefile
-- [ ] Pack all binaries with upx
+- [X] Add dotenv vars to magefile
+- [X] Pack all binaries with upx
 - [ ] Add category core groups like console/computer/handheld/sega/etc.
 - [ ] Set a sane default systems filter on random
 - [ ] Make up some example random launchers and link them
