@@ -1,10 +1,32 @@
 package main
 
 import (
+	"github.com/bendahl/uinput"
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"net/http"
+	"strconv"
 )
+
+func handleRawKeyboard(kbd input.Keyboard) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		keyQ := vars["key"]
+
+		key, err := strconv.Atoi(keyQ)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("raw keyboard input (%s) is invalid: %s", keyQ, err)
+			return
+		}
+
+		if key < 0 {
+			kbd.Combo(uinput.KeyLeftshift, -key)
+		} else {
+			kbd.Press(key)
+		}
+	}
+}
 
 func handleKeyboard(kbd input.Keyboard) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

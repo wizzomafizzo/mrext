@@ -120,6 +120,7 @@ func setupApi(subrouter *mux.Router, kbd input.Keyboard) {
 	subrouter.HandleFunc("/server", getServerStatus).Methods("GET")
 
 	subrouter.HandleFunc("/controls/keyboard/{key}", handleKeyboard(kbd)).Methods("POST")
+	subrouter.HandleFunc("/controls/keyboard_raw/{key}", handleRawKeyboard(kbd)).Methods("POST")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

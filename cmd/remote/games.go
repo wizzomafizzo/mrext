@@ -152,7 +152,7 @@ func searchGames(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []SearchResultGame
+	var results = make([]SearchResultGame, 0)
 	var search []txtindex.SearchResult
 
 	if args.System == "all" || args.System == "" {
