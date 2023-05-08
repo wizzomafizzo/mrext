@@ -4,7 +4,7 @@
 
 This is a list of all systems supported by the MiSTer Extensions scripts. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if a system is missing or not working.
 
-**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [NES](#nes), [NES Music](#nes-music), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Playstation](#playstation), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [WonderSwan](#wonderswan)
+**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [Mega Duck](#mega-duck), [NES](#nes), [NES Music](#nes-music), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Playstation](#playstation), [Pocket Challenge V2](#pocket-challenge-v2), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Saturn](#saturn), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [WonderSwan](#wonderswan), [WonderSwan Color](#wonderswan-color)
 
 
 **Computers:** [Amiga](#amiga), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
@@ -139,7 +139,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Atari 2600
 
-**ID**: Atari2600  | **Folders**: ATARI7800 | **RBF**: _Console/Atari7800
+**ID**: Atari2600  | **Folders**: ATARI7800, Atari2600 | **RBF**: _Console/Atari7800
 
 
 | Label | Files | Delay | Type | Index |
@@ -451,7 +451,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Game Gear
 
-**ID**: GameGear  | **Aliases**: GG  | **Folders**: SMS | **RBF**: _Console/SMS
+**ID**: GameGear  | **Aliases**: GG  | **Folders**: SMS, GameGear | **RBF**: _Console/SMS
 
 
 | Label | Files | Delay | Type | Index |
@@ -529,7 +529,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Gameboy Color
 
-**ID**: GameboyColor  | **Aliases**: GBC  | **Folders**: GAMEBOY | **RBF**: _Console/Gameboy
+**ID**: GameboyColor  | **Aliases**: GBC  | **Folders**: GAMEBOY, GBC | **RBF**: _Console/Gameboy
 
 
 | Label | Files | Delay | Type | Index |
@@ -694,8 +694,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | SMSYC |
 | LLAPI | SMS_LLAPI |
+| YC | SMSYC |
 
 [Back to top](#systems)
 
@@ -708,6 +708,23 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin | 1 | f | 1 |
 | Tape | .caq | 1 | f | 2 |
+
+[Back to top](#systems)
+
+## Mega Duck
+
+**ID**: MegaDuck  | **Folders**: GAMEBOY, MegaDuck | **RBF**: _Console/Gameboy
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .bin | 2 | f | 1 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| LLAPI | Gameboy_LLAPI |
+| YC | GameboyYC |
 
 [Back to top](#systems)
 
@@ -769,8 +786,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | NeoGeoYC |
 | LLAPI | NeoGeo_LLAPI |
+| YC | NeoGeoYC |
 
 [Back to top](#systems)
 
@@ -864,6 +881,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Pocket Challenge V2
+
+**ID**: PocketChallengeV2  | **Folders**: WonderSwan, PocketChallengeV2 | **RBF**: _Console/WonderSwan
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| ROM | .pc2 | 1 | f | 1 |
+
+[Back to top](#systems)
+
 ## Pokemon Mini
 
 **ID**: PokemonMini  | **Folders**: PokemonMini | **RBF**: _Console/PokemonMini
@@ -943,8 +971,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| LLAPI | SNES_LLAPI |
 | YC | SNESYC |
+| LLAPI | SNES_LLAPI |
 
 [Back to top](#systems)
 
@@ -957,6 +985,22 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | Cartridge | .bin, .rom | 1 | f | 1 |
 | CAS File | .cas | 1 | f | 2 |
+
+[Back to top](#systems)
+
+## Saturn
+
+**ID**: Saturn  | **Folders**: Saturn | **RBF**: _Console/Saturn
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| Disk | .cue | 1 | s | 0 |
+
+### Alternate Cores
+| Set | RBFs |
+| --- | --- |
+| DualRAM | Saturn_DS |
 
 [Back to top](#systems)
 
@@ -1030,8 +1074,8 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 ### Alternate Cores
 | Set | RBFs |
 | --- | --- |
-| YC | TurboGrafx16YC |
 | LLAPI | TurboGrafx16_LLAPI |
+| YC | TurboGrafx16YC |
 
 [Back to top](#systems)
 
@@ -1246,7 +1290,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| ROM | .ws, .wsc | 1 | f | 1 |
+| ROM | .ws | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## WonderSwan Color
+
+**ID**: WonderSwanColor  | **Folders**: WonderSwan, WonderSwanColor | **RBF**: _Console/WonderSwan
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| ROM | .wsc | 1 | f | 1 |
 
 [Back to top](#systems)
 

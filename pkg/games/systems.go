@@ -15,13 +15,14 @@ type Slot struct {
 type AltRbfOpts map[string][]string
 
 type System struct {
-	Id     string
-	Name   string
-	Alias  []string
-	Folder []string
-	Rbf    string
-	AltRbf AltRbfOpts
-	Slots  []Slot
+	Id      string
+	Name    string
+	Alias   []string
+	SetName string
+	Folder  []string
+	Rbf     string
+	AltRbf  AltRbfOpts
+	Slots   []Slot
 }
 
 const (
@@ -118,10 +119,11 @@ var Systems = map[string]System{
 		},
 	},
 	"Atari2600": {
-		Id:     "Atari2600",
-		Name:   "Atari 2600",
-		Folder: []string{"ATARI7800"},
-		Rbf:    "_Console/Atari7800",
+		Id:      "Atari2600",
+		Name:    "Atari 2600",
+		Folder:  []string{"ATARI7800", "Atari2600"},
+		SetName: "Atari2600",
+		Rbf:     "_Console/Atari7800",
 		AltRbf: AltRbfOpts{
 			AltRbfLLAPI: []string{"Atari7800_LLAPI"},
 			AltRbfYC:    []string{"Atari7800YC"},
@@ -366,11 +368,12 @@ var Systems = map[string]System{
 		},
 	},
 	"GameboyColor": {
-		Id:     "GameboyColor",
-		Name:   "Gameboy Color",
-		Alias:  []string{"GBC"},
-		Folder: []string{"GAMEBOY"},
-		Rbf:    "_Console/Gameboy",
+		Id:      "GameboyColor",
+		Name:    "Gameboy Color",
+		Alias:   []string{"GBC"},
+		Folder:  []string{"GAMEBOY", "GBC"},
+		SetName: "GBC",
+		Rbf:     "_Console/Gameboy",
 		AltRbf: AltRbfOpts{
 			AltRbfLLAPI: []string{"Gameboy_LLAPI"},
 			AltRbfYC:    []string{"GameboyYC"},
@@ -404,11 +407,12 @@ var Systems = map[string]System{
 		},
 	},
 	"GameGear": {
-		Id:     "GameGear",
-		Name:   "Game Gear",
-		Alias:  []string{"GG"},
-		Folder: []string{"SMS"},
-		Rbf:    "_Console/SMS",
+		Id:      "GameGear",
+		Name:    "Game Gear",
+		Alias:   []string{"GG"},
+		Folder:  []string{"SMS", "GameGear"},
+		SetName: "GameGear",
+		Rbf:     "_Console/SMS",
 		AltRbf: AltRbfOpts{
 			AltRbfLLAPI: []string{"SMS_LLAPI"},
 			AltRbfYC:    []string{"SMSYC"},
@@ -561,6 +565,26 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	"MegaDuck": {
+		Id:     "MegaDuck",
+		Name:   "Mega Duck",
+		Folder: []string{"GAMEBOY", "MegaDuck"},
+		Rbf:    "_Console/Gameboy",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"Gameboy_LLAPI"},
+			AltRbfYC:    []string{"GameboyYC"},
+		},
+		Slots: []Slot{
+			{
+				Exts: []string{".bin"},
+				Mgl: &MglParams{
+					Delay:  2,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
 	"NeoGeo": {
 		Id:     "NeoGeo",
 		Name:   "Neo Geo MVS/AES",
@@ -655,6 +679,24 @@ var Systems = map[string]System{
 					Delay:  1,
 					Method: "f",
 					Index:  2,
+				},
+			},
+		},
+	},
+	"PocketChallengeV2": {
+		Id:      "PocketChallengeV2",
+		Name:    "Pocket Challenge V2",
+		Folder:  []string{"WonderSwan", "PocketChallengeV2"},
+		SetName: "PocketChallengeV2",
+		Rbf:     "_Console/WonderSwan",
+		Slots: []Slot{
+			{
+				Label: "ROM",
+				Exts:  []string{".pc2"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  1,
 				},
 			},
 		},
@@ -786,7 +828,26 @@ var Systems = map[string]System{
 			},
 		},
 	},
-	// TODO: Saturn
+	"Saturn": {
+		Id:     "Saturn",
+		Name:   "Saturn",
+		Folder: []string{"Saturn"},
+		Rbf:    "_Console/Saturn",
+		AltRbf: AltRbfOpts{
+			AltRbfDualRAM: []string{"Saturn_DS"},
+		},
+		Slots: []Slot{
+			{
+				Label: "Disk",
+				Exts:  []string{".cue"}, // TODO: .chd support later
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
+					Index:  0,
+				},
+			},
+		},
+	},
 	"SNES": {
 		Id:     "SNES",
 		Name:   "SNES",
@@ -943,7 +1004,25 @@ var Systems = map[string]System{
 		Slots: []Slot{
 			{
 				Label: "ROM",
-				Exts:  []string{".ws", ".wsc"},
+				Exts:  []string{".ws"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
+	"WonderSwanColor": {
+		Id:      "WonderSwanColor",
+		Name:    "WonderSwan Color",
+		Folder:  []string{"WonderSwan", "WonderSwanColor"},
+		SetName: "WonderSwanColor",
+		Rbf:     "_Console/WonderSwan",
+		Slots: []Slot{
+			{
+				Label: "ROM",
+				Exts:  []string{".wsc"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
