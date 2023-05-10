@@ -222,3 +222,23 @@ func launchGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func launchFile(w http.ResponseWriter, r *http.Request) {
+	var args struct {
+		Path string `json:"path"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&args)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("launch file: decoding request: %s", err)
+		return
+	}
+
+	err = mister.LaunchGenericFile(args.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("launch file: during launch: %s", err)
+		return
+	}
+}

@@ -101,9 +101,9 @@ func setupApi(subrouter *mux.Router, kbd input.Keyboard) {
 	subrouter.HandleFunc("/systems/{id}", launchCore).Methods("POST")
 
 	subrouter.HandleFunc("/wallpapers", allWallpapers).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename}", viewWallpaper).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename}", setWallpaper).Methods("POST")
-	subrouter.HandleFunc("/wallpapers/{filename}", deleteWallpaper).Methods("DELETE")
+	subrouter.HandleFunc("/wallpapers/{filename:.*}", viewWallpaper).Methods("GET")
+	subrouter.HandleFunc("/wallpapers/{filename:.*}", setWallpaper).Methods("POST")
+	subrouter.HandleFunc("/wallpapers/{filename:.*}", deleteWallpaper).Methods("DELETE")
 
 	subrouter.HandleFunc("/music/play", musicPlay).Methods("POST")
 	subrouter.HandleFunc("/music/stop", musicStop).Methods("POST")
@@ -117,10 +117,15 @@ func setupApi(subrouter *mux.Router, kbd input.Keyboard) {
 	subrouter.HandleFunc("/games/launch", launchGame).Methods("POST")
 	subrouter.HandleFunc("/games/index", generateSearchIndex).Methods("POST")
 
+	subrouter.HandleFunc("/launch", launchFile).Methods("POST")
+
 	subrouter.HandleFunc("/server", getServerStatus).Methods("GET")
 
 	subrouter.HandleFunc("/controls/keyboard/{key}", handleKeyboard(kbd)).Methods("POST")
 	subrouter.HandleFunc("/controls/keyboard_raw/{key}", handleRawKeyboard(kbd)).Methods("POST")
+
+	subrouter.HandleFunc("/menu/view/", listMenuFolder).Methods("GET")
+	subrouter.HandleFunc("/menu/view/{path:.*}", listMenuFolder).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

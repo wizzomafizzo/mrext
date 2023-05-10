@@ -1,3 +1,4 @@
+- Setname support for systems (game gear)
 - Ini settings screen
 - Ini switcher support
 - Work on aria tags and general accessibility concerns
@@ -29,7 +30,6 @@
 - Screenshots linked to save states
 - Tag screenshots
 - Sort/filter screenshots
-- Full on screen keyboard
 - Virtual controller
 - Set screenshot as mister bg
 - Tag/favourite wallpapers

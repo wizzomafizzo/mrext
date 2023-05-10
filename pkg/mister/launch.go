@@ -59,7 +59,8 @@ func launchFile(path string) error {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
 
-	if !(s.HasSuffix(s.ToLower(path), ".mgl") || s.HasSuffix(s.ToLower(path), ".mra")) {
+	// TODO: clean up
+	if !(s.HasSuffix(s.ToLower(path), ".mgl") || s.HasSuffix(s.ToLower(path), ".mra") || s.HasSuffix(s.ToLower(path), ".rbf")) {
 		return fmt.Errorf("not a valid launch file: %s", path)
 	}
 
@@ -195,7 +196,7 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 	}
 }
 
-// Launch a core given a possibly partial path, as per MGL files.
+// LaunchCore Launch a core given a possibly partial path, as per MGL files.
 func LaunchCore(system games.System) error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
@@ -235,4 +236,34 @@ func LaunchMenu() error {
 	cmd.WriteString(fmt.Sprintf("load_core %s\n", filepath.Join(config.SdFolder, "menu.rbf")))
 
 	return nil
+}
+
+// LaunchGenericFile Given a generic file path, launch it using the correct method, if possible.
+func LaunchGenericFile(path string) error {
+	file, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("path is not accessible: %s", err)
+	}
+
+	if file.IsDir() {
+		return fmt.Errorf("path is a directory")
+	}
+
+	ext := s.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".mra":
+		return launchFile(path)
+	case ".mgl":
+		return launchFile(path)
+	case ".rbf":
+		return launchFile(path)
+	default:
+		systems := games.FolderToSystems(path)
+		if len(systems) == 0 {
+			return fmt.Errorf("unknown file type: %s", ext)
+		}
+
+		system := systems[0]
+		return launchTempMgl(&system, path)
+	}
 }
