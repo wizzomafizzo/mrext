@@ -1,4 +1,4 @@
-package main
+package tracker
 
 import (
 	"fmt"
@@ -13,19 +13,22 @@ import (
 )
 
 // Read a core's recent file and attempt to write the newest entry's
-// launchable path to ACTIVEGAME.
-func loadRecent(tr *tracker, filename string) error {
+// launch-able path to ACTIVEGAME.
+func loadRecent(tr *Tracker, filename string) error {
 	if !strings.Contains(filename, "_recent") {
 		return nil
 	}
-
-	// tr.logger.Info("loading recent file: %s", filename)
 
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("error opening game file: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			tr.Logger.Error("error closing file: %v", err)
+		}
+	}(file)
 
 	recents, err := mister.ReadRecent(filename)
 	if err != nil {
@@ -61,9 +64,9 @@ func loadRecent(tr *tracker, filename string) error {
 	return nil
 }
 
-// Start thread for monitoring changes to all files relating to core/game launches.
-func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
-	tr.logger.Info("starting file watcher")
+// StartFileWatch Start thread for monitoring changes to all files relating to core/game launches.
+func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
+	tr.Logger.Info("starting file watcher")
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -79,13 +82,13 @@ func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if event.Name == config.CoreNameFile {
-						tr.loadCore()
+						tr.LoadCore()
 					} else if event.Name == config.ActiveGameFile {
 						tr.loadGame()
 					} else if strings.HasPrefix(event.Name, config.CoreConfigFolder) {
 						err = loadRecent(tr, event.Name)
 						if err != nil {
-							tr.logger.Error("error loading recent file: %s", err)
+							tr.Logger.Error("error loading recent file: %s", err)
 						}
 					}
 				}
@@ -93,7 +96,7 @@ func startFileWatch(tr *tracker) (*fsnotify.Watcher, error) {
 				if !ok {
 					return
 				}
-				tr.logger.Error("error in watcher: %s", err)
+				tr.Logger.Error("error in watcher: %s", err)
 			}
 		}
 	}()

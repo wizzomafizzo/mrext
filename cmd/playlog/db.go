@@ -5,13 +5,10 @@ import (
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 
 	_ "github.com/mattn/go-sqlite3"
 )
-
-func noResults(err error) bool {
-	return err == sql.ErrNoRows
-}
 
 type playLogDb struct {
 	db *sql.DB
@@ -29,6 +26,10 @@ func openPlayLogDb() (*playLogDb, error) {
 	pldb.setupDb()
 
 	return pldb, nil
+}
+
+func (p *playLogDb) NoResults(err error) bool {
+	return err == sql.ErrNoRows
 }
 
 func (p *playLogDb) setupDb() error {
@@ -67,10 +68,10 @@ func (p *playLogDb) setupDb() error {
 	return nil
 }
 
-func (p *playLogDb) getCore(name string) (coreTime, error) {
-	var core coreTime
+func (p *playLogDb) GetCore(name string) (tracker.CoreTime, error) {
+	var core tracker.CoreTime
 
-	err := p.db.QueryRow("select name, time from core_times where name = ?", name).Scan(&core.name, &core.time)
+	err := p.db.QueryRow("select name, time from core_times where name = ?", name).Scan(&core.Name, &core.Time)
 
 	if err != nil {
 		return core, err
@@ -79,15 +80,24 @@ func (p *playLogDb) getCore(name string) (coreTime, error) {
 	return core, nil
 }
 
-func (p *playLogDb) updateCore(core coreTime) error {
-	_, err := p.db.Exec("insert or replace into core_times (name, time) values (?, ?)", core.name, core.time)
+func (p *playLogDb) UpdateCore(core tracker.CoreTime) error {
+	_, err := p.db.Exec("insert or replace into core_times (name, time) values (?, ?)", core.Name, core.Time)
 	return err
 }
 
-func (p *playLogDb) getGame(id string) (gameTime, error) {
-	var game gameTime
+func (p *playLogDb) GetGame(id string) (tracker.GameTime, error) {
+	var game tracker.GameTime
 
-	err := p.db.QueryRow("select id, path, name, folder, time from game_times where id = ?", id).Scan(&game.id, &game.path, &game.name, &game.folder, &game.time)
+	err := p.db.QueryRow(
+		"select id, path, name, folder, time from game_times where id = ?",
+		id,
+	).Scan(
+		&game.Id,
+		&game.Path,
+		&game.Name,
+		&game.Folder,
+		&game.Time,
+	)
 
 	if err != nil {
 		return game, err
@@ -96,27 +106,40 @@ func (p *playLogDb) getGame(id string) (gameTime, error) {
 	return game, nil
 }
 
-func (p *playLogDb) updateGame(game gameTime) error {
-	_, err := p.db.Exec("insert or replace into game_times (id, path, name, folder, time) values (?, ?, ?, ?, ?)", game.id, game.path, game.name, game.folder, game.time)
+func (p *playLogDb) UpdateGame(game tracker.GameTime) error {
+	_, err := p.db.Exec(
+		"insert or replace into game_times (id, path, name, folder, time) values (?, ?, ?, ?, ?)",
+		game.Id,
+		game.Path,
+		game.Name,
+		game.Folder,
+		game.Time,
+	)
 	return err
 }
 
-func (p *playLogDb) addEvent(event eventAction) error {
-	_, err := p.db.Exec("insert into events (timestamp, action, target, total_time) values (?, ?, ?, ?)", event.timestamp, event.action, event.target, event.totalTime)
+func (p *playLogDb) AddEvent(event tracker.EventAction) error {
+	_, err := p.db.Exec(
+		"insert into events (timestamp, action, target, total_time) values (?, ?, ?, ?)",
+		event.Timestamp,
+		event.Action,
+		event.Target,
+		event.TotalTime,
+	)
 	return err
 }
 
-func (p *playLogDb) topCores(n int) ([]coreTime, error) {
+func (p *playLogDb) topCores(n int) ([]tracker.CoreTime, error) {
 	rows, err := p.db.Query("select name, time from core_times order by time desc limit ?", n)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var cores []coreTime
+	var cores []tracker.CoreTime
 	for rows.Next() {
-		var core coreTime
-		err = rows.Scan(&core.name, &core.time)
+		var core tracker.CoreTime
+		err = rows.Scan(&core.Name, &core.Time)
 		if err != nil {
 			return nil, err
 		}
@@ -127,17 +150,17 @@ func (p *playLogDb) topCores(n int) ([]coreTime, error) {
 	return cores, nil
 }
 
-func (p *playLogDb) topGames(n int) ([]gameTime, error) {
+func (p *playLogDb) topGames(n int) ([]tracker.GameTime, error) {
 	rows, err := p.db.Query("select id, path, name, folder, time from game_times order by time desc limit ?", n)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var games []gameTime
+	var games []tracker.GameTime
 	for rows.Next() {
-		var game gameTime
-		err = rows.Scan(&game.id, &game.path, &game.name, &game.folder, &game.time)
+		var game tracker.GameTime
+		err = rows.Scan(&game.Id, &game.Path, &game.Name, &game.Folder, &game.Time)
 		if err != nil {
 			return nil, err
 		}
@@ -148,28 +171,37 @@ func (p *playLogDb) topGames(n int) ([]gameTime, error) {
 	return games, nil
 }
 
-func (p *playLogDb) fixPowerLoss() (bool, error) {
+func (p *playLogDb) FixPowerLoss() (bool, error) {
 	// FIXME: repeating a lot of code here?
-	var lastEvent eventAction
+	var lastEvent tracker.EventAction
 	fixed := false
 
 	// cores
-	err := p.db.QueryRow("select timestamp, action, target, total_time from events where action = ? or action = ? order by timestamp desc", eventActionCoreStart, eventActionCoreStop).Scan(&lastEvent.timestamp, &lastEvent.action, &lastEvent.target, &lastEvent.totalTime)
-	if noResults(err) {
+	err := p.db.QueryRow(
+		"select timestamp, action, target, total_time from events where action = ? or action = ? order by timestamp desc",
+		tracker.EventActionCoreStart,
+		tracker.EventActionCoreStop,
+	).Scan(
+		&lastEvent.Timestamp,
+		&lastEvent.Action,
+		&lastEvent.Target,
+		&lastEvent.TotalTime,
+	)
+	if p.NoResults(err) {
 		// skip
 	} else if err != nil {
 		return fixed, err
-	} else if lastEvent.action == eventActionCoreStart {
-		newEvent := eventAction{
-			timestamp: lastEvent.timestamp.Add(time.Second),
-			action:    eventActionCoreStop,
-			target:    lastEvent.target,
-			totalTime: lastEvent.totalTime,
+	} else if lastEvent.Action == tracker.EventActionCoreStart {
+		newEvent := tracker.EventAction{
+			Timestamp: lastEvent.Timestamp.Add(time.Second),
+			Action:    tracker.EventActionCoreStop,
+			Target:    lastEvent.Target,
+			TotalTime: lastEvent.TotalTime,
 		}
 
-		ct, err := p.getCore(lastEvent.target)
-		if noResults(err) {
-			err := p.addEvent(newEvent)
+		ct, err := p.GetCore(lastEvent.Target)
+		if p.NoResults(err) {
+			err := p.AddEvent(newEvent)
 			if err != nil {
 				return fixed, err
 			}
@@ -177,12 +209,12 @@ func (p *playLogDb) fixPowerLoss() (bool, error) {
 		} else if err != nil {
 			return fixed, err
 		} else {
-			offset := ct.time - lastEvent.totalTime
+			offset := ct.Time - lastEvent.TotalTime
 			if offset > 0 {
-				newEvent.totalTime = ct.time
-				newEvent.timestamp = lastEvent.timestamp.Add(time.Second * time.Duration(offset))
+				newEvent.TotalTime = ct.Time
+				newEvent.Timestamp = lastEvent.Timestamp.Add(time.Second * time.Duration(offset))
 			}
-			err := p.addEvent(newEvent)
+			err := p.AddEvent(newEvent)
 			if err != nil {
 				return fixed, err
 			}
@@ -191,22 +223,31 @@ func (p *playLogDb) fixPowerLoss() (bool, error) {
 	}
 
 	// games
-	err = p.db.QueryRow("select timestamp, action, target, total_time from events where action = ? or action = ? order by timestamp desc", eventActionGameStart, eventActionGameStop).Scan(&lastEvent.timestamp, &lastEvent.action, &lastEvent.target, &lastEvent.totalTime)
-	if noResults(err) {
+	err = p.db.QueryRow(
+		"select timestamp, action, target, total_time from events where action = ? or action = ? order by timestamp desc",
+		tracker.EventActionGameStart,
+		tracker.EventActionGameStop,
+	).Scan(
+		&lastEvent.Timestamp,
+		&lastEvent.Action,
+		&lastEvent.Target,
+		&lastEvent.TotalTime,
+	)
+	if p.NoResults(err) {
 		// skip
 	} else if err != nil {
 		return fixed, err
-	} else if lastEvent.action == eventActionGameStart {
-		newEvent := eventAction{
-			timestamp: lastEvent.timestamp.Add(time.Second),
-			action:    eventActionGameStop,
-			target:    lastEvent.target,
-			totalTime: lastEvent.totalTime,
+	} else if lastEvent.Action == tracker.EventActionGameStart {
+		newEvent := tracker.EventAction{
+			Timestamp: lastEvent.Timestamp.Add(time.Second),
+			Action:    tracker.EventActionGameStop,
+			Target:    lastEvent.Target,
+			TotalTime: lastEvent.TotalTime,
 		}
 
-		gt, err := p.getGame(lastEvent.target)
-		if noResults(err) {
-			err := p.addEvent(newEvent)
+		gt, err := p.GetGame(lastEvent.Target)
+		if p.NoResults(err) {
+			err := p.AddEvent(newEvent)
 			if err != nil {
 				return fixed, err
 			}
@@ -214,12 +255,12 @@ func (p *playLogDb) fixPowerLoss() (bool, error) {
 		} else if err != nil {
 			return fixed, err
 		} else {
-			offset := gt.time - lastEvent.totalTime
+			offset := gt.Time - lastEvent.TotalTime
 			if offset > 0 {
-				newEvent.totalTime = gt.time
-				newEvent.timestamp = lastEvent.timestamp.Add(time.Second * time.Duration(offset))
+				newEvent.TotalTime = gt.Time
+				newEvent.Timestamp = lastEvent.Timestamp.Add(time.Second * time.Duration(offset))
 			}
-			err := p.addEvent(newEvent)
+			err := p.AddEvent(newEvent)
 			if err != nil {
 				return fixed, err
 			}

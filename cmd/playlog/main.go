@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"os"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -20,20 +21,28 @@ import (
 const appName = "playlog"
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
-	tr, err := newTracker(logger, cfg)
+	db, err := openPlayLogDb()
+	if err != nil {
+		return nil, err
+	}
+
+	tr, err := tracker.NewTracker(logger, cfg, db)
 	if err != nil {
 		logger.Error("error starting tracker: %s", err)
 		os.Exit(1)
 	}
 
-	tr.loadCore()
+	tr.LoadCore()
 	if !mister.ActiveGameEnabled() {
-		mister.SetActiveGame("")
+		err := mister.SetActiveGame("")
+		if err != nil {
+			tr.Logger.Error("error setting active game: %s", err)
+		}
 	}
 
-	watcher, err := startFileWatch(tr)
+	watcher, err := tracker.StartFileWatch(tr)
 	if err != nil {
-		tr.logger.Error("error starting file watch: %s", err)
+		tr.Logger.Error("error starting file watch: %s", err)
 		os.Exit(1)
 	}
 
@@ -41,11 +50,14 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	if cfg.PlayLog.SaveEvery > 0 {
 		interval = cfg.PlayLog.SaveEvery
 	}
-	tr.startTicker(interval)
+	tr.StartTicker(interval)
 
 	return func() error {
-		watcher.Close()
-		tr.stopAll()
+		err := watcher.Close()
+		if err != nil {
+			tr.Logger.Error("error closing file watcher: %s", err)
+		}
+		tr.StopAll()
 		return nil
 	}, nil
 }
@@ -143,8 +155,8 @@ func main() {
 	}
 	maxCoreLen := 0
 	for _, core := range cores {
-		if len(core.name) > maxCoreLen {
-			maxCoreLen = len(core.name)
+		if len(core.Name) > maxCoreLen {
+			maxCoreLen = len(core.Name)
 		}
 	}
 
@@ -156,23 +168,23 @@ func main() {
 	}
 	maxGameLen := 0
 	for _, game := range games {
-		if len(game.name) > maxGameLen {
-			maxGameLen = len(game.name)
+		if len(game.Name) > maxGameLen {
+			maxGameLen = len(game.Name)
 		}
 	}
 
 	fmt.Println("Top played cores:")
 	// TODO: convert names using names.txt
 	for _, core := range cores {
-		hours := core.time / 3600
-		minutes := (core.time % 3600) / 60
-		fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.name, hours, minutes)
+		hours := core.Time / 3600
+		minutes := (core.Time % 3600) / 60
+		fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.Name, hours, minutes)
 	}
 	fmt.Println()
 	fmt.Println("Top played games:")
 	for _, game := range games {
-		hours := game.time / 3600
-		minutes := (game.time % 3600) / 60
-		fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.name, hours, minutes)
+		hours := game.Time / 3600
+		minutes := (game.Time % 3600) / 60
+		fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.Name, hours, minutes)
 	}
 }
