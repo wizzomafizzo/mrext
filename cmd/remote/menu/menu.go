@@ -1,9 +1,10 @@
-package main
+package menu
 
 import (
 	"bufio"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,7 +15,7 @@ import (
 const menuRoot = "/media/fat"
 const namesTxtPath = "/media/fat/names.txt"
 
-type MenuItem struct {
+type Item struct {
 	Name     string     `json:"name"`
 	NamesTxt *string    `json:"namesTxt,omitempty"`
 	Path     string     `json:"path"`
@@ -25,8 +26,8 @@ type MenuItem struct {
 }
 
 type ListMenuPayload struct {
-	Up    *string    `json:"up,omitempty"`
-	Items []MenuItem `json:"items"`
+	Up    *string `json:"up,omitempty"`
+	Items []Item  `json:"items"`
 }
 
 // TODO: this should be cached and made a map
@@ -39,7 +40,9 @@ func getNamesTxt(original string, filetype string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -137,98 +140,100 @@ func getFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	return name, filetype, version
 }
 
-func listMenuFolder(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pathQuery := vars["path"]
+func ListFolder(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		pathQuery := vars["path"]
 
-	var path string
-	if pathQuery == "" {
-		path = menuRoot
-	} else {
-		parts := filepath.SplitList(pathQuery)
-		cleaned := make([]string, 0)
-		cleaned = append(cleaned, menuRoot)
+		var path string
+		if pathQuery == "" {
+			path = menuRoot
+		} else {
+			parts := filepath.SplitList(pathQuery)
+			cleaned := make([]string, 0)
+			cleaned = append(cleaned, menuRoot)
 
-		for _, part := range parts {
-			if part == "." || part == ".." {
+			for _, part := range parts {
+				if part == "." || part == ".." {
+					continue
+				}
+
+				cleaned = append(cleaned, part)
+			}
+
+			path = filepath.Join(cleaned...)
+		}
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			logger.Error("menu folder (%s) does not exist: %s", path, err)
+			return
+		}
+
+		files, err := os.ReadDir(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't list menu folder (%s): %s", path, err)
+			return
+		}
+
+		items := make([]Item, 0)
+		for _, file := range files {
+			name := file.Name()
+
+			formatted, filetype, version := getFilenameInfo(file)
+
+			info, err := file.Info()
+			if err != nil {
+				logger.Error("couldn't get file info for %s: %s", name, err)
 				continue
 			}
 
-			cleaned = append(cleaned, part)
+			namesTxtResult, err := getNamesTxt(formatted, filetype)
+			if err != nil {
+				logger.Error("couldn't get names.txt for %s: %s", name, err)
+				continue
+			}
+
+			var namesTxt *string
+			if namesTxtResult != "" {
+				namesTxt = &namesTxtResult
+			}
+
+			var next *string
+			if file.IsDir() {
+				nextPath := filepath.Join(pathQuery, name)
+				next = &nextPath
+			}
+
+			if isValidMenuFile(file, false) {
+				items = append(items, Item{
+					Name:     formatted,
+					NamesTxt: namesTxt,
+					Path:     filepath.Join(path, name),
+					Next:     next,
+					Type:     filetype,
+					Modified: info.ModTime(),
+					Version:  version,
+				})
+			}
 		}
 
-		path = filepath.Join(cleaned...)
-	}
+		var up *string
+		if pathQuery != "" {
+			upPath := filepath.Dir(pathQuery)
+			up = &upPath
+		}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		logger.Error("menu folder (%s) does not exist: %s", path, err)
-		return
-	}
-
-	files, err := os.ReadDir(path)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Error("couldn't list menu folder (%s): %s", path, err)
-		return
-	}
-
-	items := make([]MenuItem, 0)
-	for _, file := range files {
-		name := file.Name()
-
-		formatted, filetype, version := getFilenameInfo(file)
-
-		info, err := file.Info()
+		payload := ListMenuPayload{
+			Up:    up,
+			Items: items,
+		}
+		err = json.NewEncoder(w).Encode(payload)
 		if err != nil {
-			logger.Error("couldn't get file info for %s: %s", name, err)
-			continue
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't encode menu payload: %s", err)
+			return
 		}
-
-		namesTxtResult, err := getNamesTxt(formatted, filetype)
-		if err != nil {
-			logger.Error("couldn't get names.txt for %s: %s", name, err)
-			continue
-		}
-
-		var namesTxt *string
-		if namesTxtResult != "" {
-			namesTxt = &namesTxtResult
-		}
-
-		var next *string
-		if file.IsDir() {
-			nextPath := filepath.Join(pathQuery, name)
-			next = &nextPath
-		}
-
-		if isValidMenuFile(file, false) {
-			items = append(items, MenuItem{
-				Name:     formatted,
-				NamesTxt: namesTxt,
-				Path:     filepath.Join(path, name),
-				Next:     next,
-				Type:     filetype,
-				Modified: info.ModTime(),
-				Version:  version,
-			})
-		}
-	}
-
-	var up *string
-	if pathQuery != "" {
-		upPath := filepath.Dir(pathQuery)
-		up = &upPath
-	}
-
-	payload := ListMenuPayload{
-		Up:    up,
-		Items: items,
-	}
-	err = json.NewEncoder(w).Encode(payload)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Error("couldn't encode menu payload: %s", err)
-		return
 	}
 }

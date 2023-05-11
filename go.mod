@@ -8,7 +8,7 @@ require github.com/mattn/go-sqlite3 v1.14.14
 
 require github.com/rthornton128/goncurses v0.0.0-20220628231859-fd57939296e5
 
-require golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+require golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 
 require (
 	github.com/stretchr/testify v1.8.0 // indirect
@@ -19,7 +19,8 @@ require github.com/fsnotify/fsnotify v1.5.4
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
+	github.com/alphadose/haxmap v1.2.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 

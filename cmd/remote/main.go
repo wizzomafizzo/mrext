@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/cmd/remote/control"
+	"github.com/wizzomafizzo/mrext/cmd/remote/games"
+	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
+	"github.com/wizzomafizzo/mrext/cmd/remote/music"
+	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
+	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
+	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"io/fs"
 	"net/http"
@@ -35,26 +42,34 @@ var client embed.FS
 
 type ServerStatus struct {
 	Online        bool          `json:"online"`
-	SearchService SearchService `json:"searchService"`
-	MusicService  MusicService  `json:"musicService"`
+	SearchService games.Service `json:"searchService"`
+	MusicService  music.Service `json:"musicService"`
 }
 
-func getServerStatus(w http.ResponseWriter, r *http.Request) {
-	search := searchService
-	search.checkIndexReady()
+func getServerStatus(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		searchSvc := games.SearchSvcInstance
+		searchSvc.CheckIndexReady()
 
-	music := getMusicServiceStatus()
+		musicSvc, err := music.GetServiceStatus()
+		if err != nil {
+			logger.Error("failed to get music service status: %s", err)
+		}
 
-	status := ServerStatus{
-		Online:        true,
-		SearchService: search,
-		MusicService:  music,
+		status := ServerStatus{
+			Online:        true,
+			SearchService: searchSvc,
+			MusicService:  musicSvc,
+		}
+
+		err = json.NewEncoder(w).Encode(status)
+		if err != nil {
+			logger.Error("failed to encode server status: %s", err)
+		}
 	}
-
-	json.NewEncoder(w).Encode(status)
 }
 
-func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
+func startService(logger *service.Logger, _ *config.UserConfig) (func() error, error) {
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
@@ -62,7 +77,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}
 
 	router := mux.NewRouter()
-	setupApi(router.PathPrefix("/api").Subrouter(), kbd)
+	setupApi(router.PathPrefix("/api").Subrouter(), kbd, logger)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	corsHandler := cors.New(cors.Options{
@@ -86,46 +101,49 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 	return func() error {
 		kbd.Close()
-		srv.Close()
+		err := srv.Close()
+		if err != nil {
+			return err
+		}
 		return nil
 	}, nil
 }
 
-func setupApi(subrouter *mux.Router, kbd input.Keyboard) {
-	subrouter.HandleFunc("/screenshots", allScreenshots).Methods("GET")
-	subrouter.HandleFunc("/screenshots", takeScreenshot).Methods("POST")
-	subrouter.HandleFunc("/screenshots/{core}/{image}", viewScreenshot).Methods("GET")
-	subrouter.HandleFunc("/screenshots/{core}/{image}", deleteScreenshot).Methods("DELETE")
+func setupApi(subrouter *mux.Router, kbd input.Keyboard, logger *service.Logger) {
+	subrouter.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
+	subrouter.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
+	subrouter.HandleFunc("/screenshots/{core}/{image}", screenshots.ViewScreenshot(logger)).Methods("GET")
+	subrouter.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 
-	subrouter.HandleFunc("/systems", allSystems).Methods("GET")
-	subrouter.HandleFunc("/systems/{id}", launchCore).Methods("POST")
+	subrouter.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
+	subrouter.HandleFunc("/systems/{id}", systems.LaunchCore(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/wallpapers", allWallpapers).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename:.*}", viewWallpaper).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename:.*}", setWallpaper).Methods("POST")
-	subrouter.HandleFunc("/wallpapers/{filename:.*}", deleteWallpaper).Methods("DELETE")
+	subrouter.HandleFunc("/wallpapers", wallpapers.AllWallpapers(logger)).Methods("GET")
+	subrouter.HandleFunc("/wallpapers/{filename:.*}", wallpapers.ViewWallpaper(logger)).Methods("GET")
+	subrouter.HandleFunc("/wallpapers/{filename:.*}", wallpapers.SetWallpaper(logger)).Methods("POST")
+	// subrouter.HandleFunc("/wallpapers/{filename:.*}", deleteWallpaper).Methods("DELETE")
 
-	subrouter.HandleFunc("/music/play", musicPlay).Methods("POST")
-	subrouter.HandleFunc("/music/stop", musicStop).Methods("POST")
-	subrouter.HandleFunc("/music/next", musicSkip).Methods("POST")
-	subrouter.HandleFunc("/music/playback/{playback}", setMusicPlayback).Methods("POST")
-	subrouter.HandleFunc("/music/playlist", musicPlaylists).Methods("GET")
-	subrouter.HandleFunc("/music/playlist/{playlist}", setMusicPlaylist).Methods("POST")
+	subrouter.HandleFunc("/music/play", music.Play(logger)).Methods("POST")
+	subrouter.HandleFunc("/music/stop", music.Stop(logger)).Methods("POST")
+	subrouter.HandleFunc("/music/next", music.Skip(logger)).Methods("POST")
+	subrouter.HandleFunc("/music/playback/{playback}", music.SetPlayback(logger)).Methods("POST")
+	subrouter.HandleFunc("/music/playlist", music.AllPlaylists(logger)).Methods("GET")
+	subrouter.HandleFunc("/music/playlist/{playlist}", music.SetPlaylist(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/games/search", searchGames).Methods("POST")
-	subrouter.HandleFunc("/games/search/systems", listSystems).Methods("GET")
-	subrouter.HandleFunc("/games/launch", launchGame).Methods("POST")
-	subrouter.HandleFunc("/games/index", generateSearchIndex).Methods("POST")
+	subrouter.HandleFunc("/games/search", games.Search(logger)).Methods("POST")
+	subrouter.HandleFunc("/games/search/systems", games.ListSystems(logger)).Methods("GET")
+	subrouter.HandleFunc("/games/launch", games.LaunchGame(logger)).Methods("POST")
+	subrouter.HandleFunc("/games/index", games.GenerateSearchIndex).Methods("POST")
 
-	subrouter.HandleFunc("/launch", launchFile).Methods("POST")
+	subrouter.HandleFunc("/launch", games.LaunchFile(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/server", getServerStatus).Methods("GET")
+	subrouter.HandleFunc("/server", getServerStatus(logger)).Methods("GET")
 
-	subrouter.HandleFunc("/controls/keyboard/{key}", handleKeyboard(kbd)).Methods("POST")
-	subrouter.HandleFunc("/controls/keyboard_raw/{key}", handleRawKeyboard(kbd)).Methods("POST")
+	subrouter.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
+	subrouter.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
 
-	subrouter.HandleFunc("/menu/view/", listMenuFolder).Methods("GET")
-	subrouter.HandleFunc("/menu/view/{path:.*}", listMenuFolder).Methods("GET")
+	subrouter.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
+	subrouter.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
@@ -160,7 +178,12 @@ func tryAddStartup(stdscr *gc.Window) error {
 		if err != nil {
 			return err
 		}
-		defer win.Delete()
+		defer func(win *gc.Window) {
+			err := win.Delete()
+			if err != nil {
+				logger.Error("failed to delete window: %s", err)
+			}
+		}(win)
 
 		var ch gc.Key
 		selected := 0
@@ -171,7 +194,10 @@ func tryAddStartup(stdscr *gc.Window) error {
 			curses.DrawActionButtons(win, []string{"Yes", "No"}, selected, 10)
 
 			win.NoutRefresh()
-			gc.Update()
+			err := gc.Update()
+			if err != nil {
+				return err
+			}
 
 			ch = win.GetChar()
 
@@ -219,7 +245,12 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 	if err != nil {
 		return err
 	}
-	defer win.Delete()
+	defer func(win *gc.Window) {
+		err := win.Delete()
+		if err != nil {
+			logger.Error("failed to delete window: %s", err)
+		}
+	}(win)
 
 	printCenter := func(y int, text string) {
 		x := (width - len(text)) / 2
@@ -269,7 +300,10 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Exit"}, selected, 5)
 
 		win.NoutRefresh()
-		gc.Update()
+		err := gc.Update()
+		if err != nil {
+			return err
+		}
 
 		ch = win.GetChar()
 

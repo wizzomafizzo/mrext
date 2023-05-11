@@ -44,3 +44,4 @@
 - API documentation
 - Offer API-only binary
 - Launch random game
+- Add context to all logging functions

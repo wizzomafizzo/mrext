@@ -1,14 +1,15 @@
-package main
+package control
 
 import (
 	"github.com/bendahl/uinput"
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"strconv"
 )
 
-func handleRawKeyboard(kbd input.Keyboard) http.HandlerFunc {
+func HandleRawKeyboard(kbd input.Keyboard, logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		keyQ := vars["key"]
@@ -28,7 +29,7 @@ func handleRawKeyboard(kbd input.Keyboard) http.HandlerFunc {
 	}
 }
 
-func handleKeyboard(kbd input.Keyboard) http.HandlerFunc {
+func HandleKeyboard(kbd input.Keyboard) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		key := vars["key"]
