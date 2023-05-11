@@ -101,6 +101,10 @@ func LaunchGame(system games.System, path string) error {
 		if err != nil {
 			return err
 		}
+
+		if ActiveGameEnabled() {
+			SetActiveGame(path)
+		}
 	default:
 		rbfs := games.SystemsWithRbf()
 		if _, ok := rbfs[system.Id]; ok {
@@ -111,10 +115,10 @@ func LaunchGame(system games.System, path string) error {
 		if err != nil {
 			return err
 		}
-	}
 
-	if ActiveGameEnabled() {
-		SetActiveGame(path)
+		if ActiveGameEnabled() {
+			SetActiveGame(path)
+		}
 	}
 
 	return nil
@@ -249,14 +253,16 @@ func LaunchGenericFile(path string) error {
 		return fmt.Errorf("path is a directory")
 	}
 
+	isGame := false
 	ext := s.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".mra":
-		return launchFile(path)
+		err = launchFile(path)
 	case ".mgl":
-		return launchFile(path)
+		err = launchFile(path)
+		isGame = true
 	case ".rbf":
-		return launchFile(path)
+		err = launchFile(path)
 	default:
 		systems := games.FolderToSystems(path)
 		if len(systems) == 0 {
@@ -264,6 +270,20 @@ func LaunchGenericFile(path string) error {
 		}
 
 		system := systems[0]
-		return launchTempMgl(&system, path)
+		err = launchTempMgl(&system, path)
+		isGame = true
 	}
+
+	if err != nil {
+		return err
+	}
+
+	if ActiveGameEnabled() && isGame {
+		err := SetActiveGame(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
