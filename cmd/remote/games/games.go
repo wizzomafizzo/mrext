@@ -2,9 +2,12 @@ package games
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
+	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
+	"sync"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -27,29 +30,51 @@ type SearchResults struct {
 	Page     int                `json:"page"`
 }
 
-// TODO: being naughty and using a global
-type Service struct {
-	Ready       bool            `json:"ready"`
-	Indexing    bool            `json:"indexing"`
-	TotalSteps  int             `json:"totalSteps"`
-	CurrentStep int             `json:"currentStep"`
-	CurrentDesc string          `json:"currentDesc"`
-	Logger      *service.Logger `json:"-"`
+type Index struct {
+	mu          sync.Mutex
+	Indexing    bool   `json:"indexing"`
+	TotalSteps  int    `json:"totalSteps"`
+	CurrentStep int    `json:"currentStep"`
+	CurrentDesc string `json:"currentDesc"`
 }
 
-func (s *Service) CheckIndexReady() {
-	s.Ready = txtindex.Exists()
+func GetIndexingStatus() string {
+	status := "indexStatus:"
+
+	if txtindex.Exists() {
+		status += "y,"
+	} else {
+		status += "n,"
+	}
+
+	if IndexInstance.Indexing {
+		status += "y,"
+	} else {
+		status += "n,"
+	}
+
+	status += fmt.Sprintf(
+		"%d,%d,%s",
+		IndexInstance.TotalSteps,
+		IndexInstance.CurrentStep,
+		IndexInstance.CurrentDesc,
+	)
+
+	return status
 }
 
-func (s *Service) GenerateIndex() {
+func (s *Index) GenerateIndex() {
+	// TODO: this probably does need some sort of logging
 	if s.Indexing {
 		return
 	}
 
+	s.mu.Lock()
 	s.Indexing = true
 
+	_ = websocket.Broadcast(GetIndexingStatus())
+
 	go func() {
-		s.Logger.Info("generating search index")
 		systemPaths := make(map[string][]string)
 
 		for _, path := range games.GetSystemPaths(games.AllSystems()) {
@@ -58,40 +83,44 @@ func (s *Service) GenerateIndex() {
 
 		s.TotalSteps = 0
 		s.CurrentStep = 1
+		_ = websocket.Broadcast(GetIndexingStatus())
 		for _, syss := range systemPaths {
 			s.TotalSteps += len(syss)
 		}
 
-		s.Logger.Info("generating search index: found %d paths", len(systemPaths))
-
 		s.TotalSteps += 3
 		s.CurrentStep = 2
+		_ = websocket.Broadcast(GetIndexingStatus())
 
 		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
-			s.Logger.Info("generating search index: scanning %s", path)
 			system, _ := games.GetSystem(systemId)
 			s.CurrentDesc = system.Name
 			s.CurrentStep++
+			_ = websocket.Broadcast(GetIndexingStatus())
 		})
 
 		s.CurrentDesc = "Writing to database"
-		if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
-			s.Logger.Error("generating search index: %s", err)
-		}
-		s.CurrentStep++
+		_ = websocket.Broadcast(GetIndexingStatus())
+		_ = txtindex.Generate(files, config.SearchDbFile)
 
+		s.CurrentStep++
 		s.Indexing = false
 		s.TotalSteps = 0
 		s.CurrentStep = 0
-		s.Logger.Info("search index complete")
+		s.CurrentDesc = ""
+		_ = websocket.Broadcast(GetIndexingStatus())
+		s.mu.Unlock()
 	}()
 }
 
-// TODO: seriously, get rid of this soon
-var SearchSvcInstance = Service{}
+func NewIndex() *Index {
+	return &Index{}
+}
+
+var IndexInstance = NewIndex()
 
 func GenerateSearchIndex(_ http.ResponseWriter, _ *http.Request) {
-	SearchSvcInstance.GenerateIndex()
+	IndexInstance.GenerateIndex()
 }
 
 type listSystemsPayloadSystem struct {

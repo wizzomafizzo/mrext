@@ -56,7 +56,6 @@ var CoreGroups = map[string][]System{
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?
-// TODO: setname attribute
 // TODO: alternate cores
 // TODO: alternate arcade folders
 // TODO: custom scan function

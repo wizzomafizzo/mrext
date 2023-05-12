@@ -54,36 +54,49 @@ func sendCmd(cmd string) (string, error) {
 	return string(bytes.Trim(buf, "\x00")), nil
 }
 
-func GetServiceStatus() (Service, error) {
-	var status Service
+func Status(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var status Service
 
-	_, err := os.Stat(musicSocket)
-	if err != nil {
-		status.Running = false
-	} else {
-		status.Running = true
+		_, err := os.Stat(musicSocket)
+		if err != nil {
+			status.Running = false
+		} else {
+			status.Running = true
+		}
+
+		if !status.Running {
+			err = json.NewEncoder(w).Encode(status)
+			if err != nil {
+				logger.Error("failed to encode server status: %s", err)
+			}
+			return
+		}
+
+		resp, err := sendCmd("status")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("bgm status: %s", err)
+			return
+		}
+
+		states := strings.Split(resp, "\t")
+		if len(states) < 4 {
+			http.Error(w, fmt.Sprintf("invalid response from bgm: %s", resp), http.StatusInternalServerError)
+			logger.Error("invalid response from bgm: %s", resp)
+			return
+		}
+
+		status.Playing = states[0] == "yes"
+		status.Playback = states[1]
+		status.Playlist = states[2]
+		status.Track = states[3]
+
+		err = json.NewEncoder(w).Encode(status)
+		if err != nil {
+			logger.Error("failed to encode server status: %s", err)
+		}
 	}
-
-	if !status.Running {
-		return status, nil
-	}
-
-	resp, err := sendCmd("status")
-	if err != nil {
-		return status, err
-	}
-
-	states := strings.Split(resp, "\t")
-	if len(states) < 4 {
-		return status, fmt.Errorf("invalid response from bgm: %s", resp)
-	}
-
-	status.Playing = states[0] == "yes"
-	status.Playback = states[1]
-	status.Playlist = states[2]
-	status.Track = states[3]
-
-	return status, nil
 }
 
 func Play(logger *service.Logger) http.HandlerFunc {

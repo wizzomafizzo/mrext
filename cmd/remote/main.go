@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
@@ -12,11 +11,14 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
+	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"io/fs"
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,44 +42,77 @@ var logger = service.NewLogger(appName)
 //go:embed _client
 var client embed.FS
 
-type ServerStatus struct {
-	Online        bool          `json:"online"`
-	SearchService games.Service `json:"searchService"`
-	MusicService  music.Service `json:"musicService"`
+func wsConnectPayload(trk *tracker.Tracker) func() []string {
+	return func() []string {
+		response := []string{
+			games.GetIndexingStatus(),
+		}
+
+		if trk != nil {
+			if trk.ActiveCore != "" {
+				response = append(response, "coreStart:"+trk.ActiveCore)
+			}
+
+			if trk.ActiveGame != "" {
+				response = append(response, "gameStart:"+trk.ActiveGame)
+			}
+		}
+
+		return response
+	}
 }
 
-func getServerStatus(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		searchSvc := games.SearchSvcInstance
-		searchSvc.CheckIndexReady()
-
-		musicSvc, err := music.GetServiceStatus()
-		if err != nil {
-			logger.Error("failed to get music service status: %s", err)
+func wsMsgHandler(kbd input.Keyboard) func(string) string {
+	return func(msg string) string {
+		parts := strings.SplitN(msg, ":", 2)
+		cmd := parts[0]
+		args := ""
+		if len(parts) > 1 {
+			args = parts[1]
 		}
 
-		status := ServerStatus{
-			Online:        true,
-			SearchService: searchSvc,
-			MusicService:  musicSvc,
-		}
+		switch cmd {
+		case "getIndexStatus":
+			return games.GetIndexingStatus()
+		case "kbd":
+			err := control.SendKeyboard(kbd, args)
+			if err != nil {
+				return "invalid"
+			}
+			return ""
+		case "kbdRaw":
+			code, err := strconv.Atoi(args)
+			if err != nil {
+				return "invalid"
+			}
 
-		err = json.NewEncoder(w).Encode(status)
-		if err != nil {
-			logger.Error("failed to encode server status: %s", err)
+			err = control.SendRawKeyboard(kbd, code)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
+		default:
+			return "invalid"
 		}
 	}
 }
 
-func startService(logger *service.Logger, _ *config.UserConfig) (func() error, error) {
+func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
 		return nil, err
 	}
 
+	trk, stopTracker, err := games.StartTracker(logger, cfg)
+	if err != nil {
+		logger.Error("failed to start tracker: %s", err)
+		return nil, err
+	}
+
 	router := mux.NewRouter()
-	setupApi(router.PathPrefix("/api").Subrouter(), kbd, logger)
+	setupApi(router.PathPrefix("/api").Subrouter(), kbd, trk, logger)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	corsHandler := cors.New(cors.Options{
@@ -86,8 +121,9 @@ func startService(logger *service.Logger, _ *config.UserConfig) (func() error, e
 	})
 
 	srv := &http.Server{
-		Handler:      corsHandler.Handler(router),
-		Addr:         ":" + fmt.Sprint(appPort),
+		Handler: corsHandler.Handler(router),
+		Addr:    ":" + fmt.Sprint(appPort),
+		// TODO: this will not work for large file uploads
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -101,49 +137,57 @@ func startService(logger *service.Logger, _ *config.UserConfig) (func() error, e
 
 	return func() error {
 		kbd.Close()
-		err := srv.Close()
+
+		err := stopTracker()
 		if err != nil {
 			return err
 		}
+
+		err = srv.Close()
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}, nil
 }
 
-func setupApi(subrouter *mux.Router, kbd input.Keyboard, logger *service.Logger) {
-	subrouter.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
-	subrouter.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
-	subrouter.HandleFunc("/screenshots/{core}/{image}", screenshots.ViewScreenshot(logger)).Methods("GET")
-	subrouter.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
+func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger *service.Logger) {
+	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd)))
 
-	subrouter.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
-	subrouter.HandleFunc("/systems/{id}", systems.LaunchCore(logger)).Methods("POST")
+	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
+	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
+	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.ViewScreenshot(logger)).Methods("GET")
+	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 
-	subrouter.HandleFunc("/wallpapers", wallpapers.AllWallpapers(logger)).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename:.*}", wallpapers.ViewWallpaper(logger)).Methods("GET")
-	subrouter.HandleFunc("/wallpapers/{filename:.*}", wallpapers.SetWallpaper(logger)).Methods("POST")
-	// subrouter.HandleFunc("/wallpapers/{filename:.*}", deleteWallpaper).Methods("DELETE")
+	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
+	sub.HandleFunc("/systems/{id}", systems.LaunchCore(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/music/play", music.Play(logger)).Methods("POST")
-	subrouter.HandleFunc("/music/stop", music.Stop(logger)).Methods("POST")
-	subrouter.HandleFunc("/music/next", music.Skip(logger)).Methods("POST")
-	subrouter.HandleFunc("/music/playback/{playback}", music.SetPlayback(logger)).Methods("POST")
-	subrouter.HandleFunc("/music/playlist", music.AllPlaylists(logger)).Methods("GET")
-	subrouter.HandleFunc("/music/playlist/{playlist}", music.SetPlaylist(logger)).Methods("POST")
+	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapers(logger)).Methods("GET")
+	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.ViewWallpaper(logger)).Methods("GET")
+	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.SetWallpaper(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/games/search", games.Search(logger)).Methods("POST")
-	subrouter.HandleFunc("/games/search/systems", games.ListSystems(logger)).Methods("GET")
-	subrouter.HandleFunc("/games/launch", games.LaunchGame(logger)).Methods("POST")
-	subrouter.HandleFunc("/games/index", games.GenerateSearchIndex).Methods("POST")
+	sub.HandleFunc("/music/status", music.Status(logger)).Methods("GET")
+	sub.HandleFunc("/music/play", music.Play(logger)).Methods("POST")
+	sub.HandleFunc("/music/stop", music.Stop(logger)).Methods("POST")
+	sub.HandleFunc("/music/next", music.Skip(logger)).Methods("POST")
+	sub.HandleFunc("/music/playback/{playback}", music.SetPlayback(logger)).Methods("POST")
+	sub.HandleFunc("/music/playlist", music.AllPlaylists(logger)).Methods("GET")
+	sub.HandleFunc("/music/playlist/{playlist}", music.SetPlaylist(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/launch", games.LaunchFile(logger)).Methods("POST")
+	sub.HandleFunc("/games/search", games.Search(logger)).Methods("POST")
+	sub.HandleFunc("/games/search/systems", games.ListSystems(logger)).Methods("GET")
+	sub.HandleFunc("/games/launch", games.LaunchGame(logger)).Methods("POST")
+	sub.HandleFunc("/games/index", games.GenerateSearchIndex).Methods("POST")
+	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 
-	subrouter.HandleFunc("/server", getServerStatus(logger)).Methods("GET")
+	sub.HandleFunc("/launch", games.LaunchFile(logger)).Methods("POST")
 
-	subrouter.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
-	subrouter.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
+	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
+	sub.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
 
-	subrouter.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
-	subrouter.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
+	sub.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
+	sub.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

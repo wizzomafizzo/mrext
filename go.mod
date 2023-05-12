@@ -20,6 +20,7 @@ require github.com/fsnotify/fsnotify v1.5.4
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/alphadose/haxmap v1.2.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
