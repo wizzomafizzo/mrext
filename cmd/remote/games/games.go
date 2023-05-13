@@ -283,3 +283,11 @@ func LaunchFile(logger *service.Logger) http.HandlerFunc {
 		}
 	}
 }
+
+func LaunchMenu(w http.ResponseWriter, _ *http.Request) {
+	err := mister.LaunchMenu()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

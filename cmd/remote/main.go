@@ -182,6 +182,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 
 	sub.HandleFunc("/launch", games.LaunchFile(logger)).Methods("POST")
+	sub.HandleFunc("/launch/menu", games.LaunchMenu).Methods("POST")
 
 	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
 	sub.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
