@@ -4,9 +4,11 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
-**MiSTer Extensions is now available through [Update All](https://github.com/theypsilon/Update_All_MiSTer)! Enable it in the *Unofficial Scripts* menu to install all scripts at once.**
+[Remote](#remote) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
 
 [Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md) • [Todo List](docs/todo.md)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A4G98MU)
 
 ## Install
 
@@ -29,6 +31,13 @@ Each script also provides its own individual update file if you only want certai
 
 All scripts listed can be installed by downloading the linked file below, placing it in the `Scripts` folder on your SD card, and running it from the `Scripts` menu on your MiSTer.
 
+## Remote
+
+Control the MiSTer from any device on your network. Remote is a web-based interface with a stack of modern features to manage all aspects of your MiSTer.
+
+[![Download Remote](docs/images/download.png "Download Remote")](https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh)
+[![Readme Remote](docs/images/readme.png "Readme Remote")](https://github.com/wizzomafizzo/mrext/tree/main/docs/remote.md)
+
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
 
@@ -48,7 +57,7 @@ Browse your entire collection from the main MiSTer menu. GamesMenu indexes all y
 [![Readme GamesMenu](docs/images/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
 
 ## LaunchSync
-Create shareable and subscriptable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
+Create shareable and subscript-able game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
 [![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 [![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
@@ -77,7 +86,11 @@ Other great projects that add heaps of functionality to your MiSTer.
 
 Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'd like to suggest something for this list. Anything is welcome, though the focus is on software projects that work without custom hardware.
 
-### Core
+### Cores & Games
+
+- [AMMiSTer](https://github.com/city41/AMMiSTer)
+
+  A slick PC application for managing your arcade game collection. Includes updates, bulk management, favorites and game metadata.
 
 - [MGL Core Setnames](https://github.com/RGarciaLago/MGL_Core_Setnames)
 
@@ -132,6 +145,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
   A build of the [ScummVM](https://www.scummvm.org/) project for MiSTer. Runs well and even works for games out of reach of the AO486 core.
 
 ### System
+
+- [Migrate SD](https://github.com/Natrox/MiSTer_Utils_Natrox)
+
+  A utility to migrate your entire MiSTer SD card to a new one, straight from the MiSTer itself.
 
 - [MiSTer Batch Control](https://github.com/pocomane/MiSTer_Batch_Control)
 

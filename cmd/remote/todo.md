@@ -1,4 +1,3 @@
-- Setname support for systems (game gear)
 - Ini settings screen
 - Ini switcher support
 - Work on aria tags and general accessibility concerns
