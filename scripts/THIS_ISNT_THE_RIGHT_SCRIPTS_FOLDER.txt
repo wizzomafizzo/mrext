@@ -1,0 +1,3 @@
+Want to download the MiSTer Extensions scripts? Go back to the front page of the project and scroll down.
+
+This folder is just for scripts used internally by the project. They're boring, and you don't need anything from here.
