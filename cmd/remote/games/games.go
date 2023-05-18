@@ -11,7 +11,6 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 )
 
@@ -83,7 +82,6 @@ func (s *Index) GenerateIndex() {
 
 		s.TotalSteps = 0
 		s.CurrentStep = 1
-		_ = websocket.Broadcast(GetIndexingStatus())
 		for _, syss := range systemPaths {
 			s.TotalSteps += len(syss)
 		}
@@ -230,64 +228,5 @@ func Search(logger *service.Logger) http.HandlerFunc {
 			logger.Error("search games: encoding response: %s", err)
 			return
 		}
-	}
-}
-
-func LaunchGame(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var args struct {
-			Path string `json:"path"`
-		}
-
-		err := json.NewDecoder(r.Body).Decode(&args)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("launch game: decoding request: %s", err)
-			return
-		}
-
-		syss := games.FolderToSystems(args.Path)
-		if len(syss) == 0 {
-			http.Error(w, "no system found for game", http.StatusBadRequest)
-			logger.Error("launch game: no system found for game: %s (%s)", args.Path, syss[0].Id)
-			return
-		}
-
-		err = mister.LaunchGame(syss[0], args.Path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("launch game: during launch: %s", err)
-			return
-		}
-	}
-}
-
-func LaunchFile(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var args struct {
-			Path string `json:"path"`
-		}
-
-		err := json.NewDecoder(r.Body).Decode(&args)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("launch file: decoding request: %s", err)
-			return
-		}
-
-		err = mister.LaunchGenericFile(args.Path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("launch file: during launch: %s", err)
-			return
-		}
-	}
-}
-
-func LaunchMenu(w http.ResponseWriter, _ *http.Request) {
-	err := mister.LaunchMenu()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
