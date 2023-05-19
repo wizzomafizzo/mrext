@@ -216,7 +216,7 @@ func tryAddStartup(stdscr *gc.Window) error {
 
 	err := startup.Load()
 	if err != nil {
-		return err
+		logger.Error("failed to load startup file: %s", err)
 	}
 
 	if !startup.Exists("mrext/" + appName) {
