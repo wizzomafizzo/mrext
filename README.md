@@ -57,7 +57,7 @@ Browse your entire collection from the main MiSTer menu. GamesMenu indexes all y
 [![Readme GamesMenu](docs/images/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
 
 ## LaunchSync
-Create shareable and subscript-able game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
+Create shareable and subscribable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
 [![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 [![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)

@@ -44,3 +44,5 @@
 - Offer API-only binary
 - Launch random game
 - Add context to all logging functions
+- Startup service manager
+- View log files (all logs?)
