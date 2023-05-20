@@ -34,6 +34,8 @@ High level features, ideas and changes.
 - [ ] Example .ini files?
 - [ ] Apps should detect stuff like scummvm and doom as a "core running"
 - [ ] Allow custom system definitions in an external file
+- [ ] Auto-generate a last played game mgl for use with bootcore setting
+- [ ] ACTIVEGAME support for SAM
 - [X] Documentation for random and search
 - [X] Allow defining multiple folders on a system
 - [X] Split any remaining cores supporting multiple systems

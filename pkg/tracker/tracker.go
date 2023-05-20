@@ -23,10 +23,11 @@ const (
 )
 
 type EventAction struct {
-	Timestamp time.Time
-	Action    int
-	Target    string
-	TotalTime int // for recovery from power loss
+	Timestamp  time.Time
+	Action     int
+	Target     string
+	TargetPath string
+	TotalTime  int // for recovery from power loss
 }
 
 type CoreTime struct {
@@ -121,6 +122,11 @@ func (tr *Tracker) addEvent(action int, target string) {
 		Action:    action,
 		Target:    target,
 		TotalTime: totalTime,
+	}
+
+	targetTime, ok := tr.GameTimes[target]
+	if ok {
+		ev.TargetPath = targetTime.Path
 	}
 
 	tr.Events = append(tr.Events, ev)

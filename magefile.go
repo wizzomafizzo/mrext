@@ -74,6 +74,12 @@ var apps = []app{
 		// releaseId: "mrext/favorites",
 	},
 	{
+		name:      "lastplayed",
+		path:      filepath.Join(cwd, "cmd", "lastplayed"),
+		bin:       "lastplayed.sh",
+		releaseId: "mrext/lastplayed",
+	},
+	{
 		name:      "random",
 		path:      filepath.Join(cwd, "cmd", "random"),
 		bin:       "random.sh",

@@ -1,6 +1,7 @@
 package mister
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/ini.v1"
@@ -8,12 +9,28 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-func loadMisterIni() (*ini.File, error) {
+func LoadMisterIni() (*ini.File, error) {
 	if _, err := os.Stat(config.MisterIniFile); os.IsNotExist(err) {
 		return nil, err
 	}
 
-	return ini.Load(config.MisterIniFile)
+	iniFile, err := ini.Load(config.MisterIniFile)
+	if err != nil {
+		return nil, err
+	}
+
+	if !iniFile.HasSection("MiSTer") {
+		return nil, fmt.Errorf("mister.ini does not have a [MiSTer] section")
+	}
+
+	ini.PrettyFormat = false
+	ini.PrettyEqual = false
+
+	return iniFile, nil
+}
+
+func SaveMisterIni(iniFile *ini.File) error {
+	return iniFile.SaveTo(config.MisterIniFile)
 }
 
 func GetMisterIniOption(file *ini.File, name string) string {
@@ -35,7 +52,7 @@ func GetMisterIniOption(file *ini.File, name string) string {
 }
 
 func RecentsOptionEnabled() bool {
-	file, err := loadMisterIni()
+	file, err := LoadMisterIni()
 	if err != nil {
 		return false
 	}

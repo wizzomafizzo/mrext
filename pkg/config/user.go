@@ -32,12 +32,17 @@ type SearchConfig struct {
 	Sort   string   `ini:"sort,omitempty"`
 }
 
+type LastPlayedConfig struct {
+	Name string `ini:"name,omitempty"`
+}
+
 type UserConfig struct {
 	AltCores   AltCoresConfig   `ini:"altcores,omitempty"`
 	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
 	PlayLog    PlayLogConfig    `ini:"playlog,omitempty"`
 	Random     RandomConfig     `ini:"random,omitempty"`
 	Search     SearchConfig     `ini:"search,omitempty"`
+	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
 }
 
 func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {
