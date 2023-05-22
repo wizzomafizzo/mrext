@@ -1,10 +1,10 @@
 {
   "db_id": "mrext/lastplayed",
-  "timestamp": 1684592890,
+  "timestamp": 1684727151,
   "files": {
     "Scripts/lastplayed.sh": {
-      "hash": "5b997196b3af2f74073e2d72275e2f2f",
-      "size": 2182532,
+      "hash": "e245c3a59bd9c13c839e437e3b048e81",
+      "size": 2182440,
       "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh"
     }
   },
