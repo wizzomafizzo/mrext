@@ -10,7 +10,6 @@ import (
 
 // TODO: delete entry from startup
 // TODO: enable/disable entry in startup
-// TODO: check if service is running
 
 type Startup struct {
 	Entries []StartupEntry
@@ -25,12 +24,10 @@ type StartupEntry struct {
 func (s *Startup) Load() error {
 	var entries []StartupEntry
 
-	if _, err := os.Stat(config.StartupFile); err != nil {
-		return err
-	}
-
 	contents, err := os.ReadFile(config.StartupFile)
-	if err != nil {
+	if os.IsNotExist(err) {
+		contents = []byte{}
+	} else if err != nil {
 		return err
 	}
 
@@ -79,11 +76,7 @@ func (s *Startup) Load() error {
 		}
 	}
 
-	if len(entries) > 0 {
-		s.Entries = entries
-	} else {
-		return fmt.Errorf("no startup entries found")
-	}
+	s.Entries = entries
 
 	return nil
 }
