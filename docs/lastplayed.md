@@ -2,6 +2,8 @@
 
 LastPlayed is a simple service for automatically generating a shortcut in the MiSTer menu pointing to your most recently played game.
 
+*Just want to see your recently played games in the menu? MiSTer has a great feature for that already. Enable the `recents` option in your `MiSTer.ini` file, and press the Select button on your controller while in the menu.*
+
 [![Download LastPlayed](images/download.png "Download LastPlayed")](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh)
 
 ## Install
@@ -14,7 +16,7 @@ Optionally, add the following to the `downloader.ini` file on your MiSTer, to re
 db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.json
 ```
 
-Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.
+Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service. You may also be asked to manually enable the `recents` option in your `MiSTer.ini` file.
 
 From now on, a shortcut named "Last Played" will be available in the menu, launching your most recently played game.
 

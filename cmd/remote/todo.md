@@ -46,3 +46,6 @@
 - Add context to all logging functions
 - Startup service manager
 - View log files (all logs?)
+- Save/config/full backups (scheduled)
+- Add favorite for currently playing game
+- XML read error on mgl files where game has "&" in path

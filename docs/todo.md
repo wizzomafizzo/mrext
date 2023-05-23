@@ -2,8 +2,6 @@
 
 High level features, ideas and changes.
 
-- [X] Add dotenv vars to magefile
-- [X] Pack all binaries with upx
 - [ ] Add category core groups like console/computer/handheld/sega/etc.
 - [ ] Set a sane default systems filter on random
 - [ ] Make up some example random launchers and link them
@@ -21,8 +19,6 @@ High level features, ideas and changes.
 - [ ] Investigate arcade high scores display
 - [ ] Auto generate favorites list of most played games
 - [ ] Dynamic menu background changer
-- [ ] Joystick custom mapping daemon
-- [ ] Launch game on mister boot
 - [ ] Monitor menu selections to add custom actions
 - [ ] Rclone frontend for syncing saves/configs
 - [ ] Screenshot manager/viewer
@@ -34,12 +30,6 @@ High level features, ideas and changes.
 - [ ] Example .ini files?
 - [ ] Apps should detect stuff like scummvm and doom as a "core running"
 - [ ] Allow custom system definitions in an external file
-- [ ] Auto-generate a last played game mgl for use with bootcore setting
 - [ ] ACTIVEGAME support for SAM
-- [X] Documentation for random and search
-- [X] Allow defining multiple folders on a system
-- [X] Split any remaining cores supporting multiple systems
-- [X] Check for cores that can be launched by MGL but aren't currently listed
-- [X] Read main mister ini
-- [X] Time tracking stats (how long you've played a system/game)
-- [X] Favorite cmd line utility
+- [ ] Arcade core support for tracking games
+- [ ] Current setname support can prioritise original system over setnamed one during scan

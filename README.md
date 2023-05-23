@@ -4,9 +4,9 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
-[Remote](#remote) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
+[Remote](#remote) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
 
-[Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md) • [Todo List](docs/todo.md)
+[Supported Systems](docs/systems.md) • [Dev Guide](docs/dev.md) • [Todo List](docs/todo.md)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A4G98MU)
 
@@ -62,6 +62,13 @@ Create shareable and subscribable game playlists. LaunchSync automatically gener
 [![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 [![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
 
+## LastPlayed
+Auto-generate a menu entry pointing to the last game you played.
+
+[![Download LastPlayed](docs/images/download.png "Download LastPlayed")](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh)
+[![Readme LastPlayed](docs/images/readme.png "Readme LastPlayed")](https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md)
+
+
 ## PlayLog
 Track and report on what games you've been playing on your MiSTer.
 
@@ -82,7 +89,7 @@ Search for and launch games from your collection. Searching is *fast* and great 
 
 ## Other Projects
 
-Other great projects that add heaps of functionality to your MiSTer.
+Great projects by other people that add heaps of functionality to your MiSTer.
 
 Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'd like to suggest something for this list. Anything is welcome, though the focus is on software projects that work without custom hardware.
 
