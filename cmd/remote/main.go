@@ -9,6 +9,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/music"
 	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
+	"github.com/wizzomafizzo/mrext/cmd/remote/settings"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
@@ -190,6 +191,8 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 
 	sub.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
 	sub.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
+
+	sub.HandleFunc("/settings/ini", settings.HandleSaveIni(logger)).Methods("POST")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
