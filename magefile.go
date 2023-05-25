@@ -61,6 +61,11 @@ var apps = []app{
 		bin:  "background",
 	},
 	{
+		name: "contool",
+		path: filepath.Join(cwd, "cmd", "contool"),
+		bin:  "contool",
+	},
+	{
 		name:      "remote",
 		path:      filepath.Join(cwd, "cmd", "remote"),
 		bin:       "remote.sh",
