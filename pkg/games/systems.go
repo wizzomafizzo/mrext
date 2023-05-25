@@ -176,15 +176,15 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
-			{
-				Label: "BIOS",
-				Exts:  []string{".rom", ".bin"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
-				},
-			},
+			//{
+			//	Label: "BIOS",
+			//	Exts:  []string{".rom", ".bin"},
+			//	Mgl: &MglParams{
+			//		Delay:  1,
+			//		Method: "f",
+			//		Index:  2,
+			//	},
+			//},
 		},
 	},
 	"AtariLynx": {
@@ -277,15 +277,15 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
-			{
-				Label: "Bios",
-				Exts:  []string{".rom", ".bin"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
-				},
-			},
+			//{
+			//	Label: "Bios",
+			//	Exts:  []string{".rom", ".bin"},
+			//	Mgl: &MglParams{
+			//		Delay:  1,
+			//		Method: "f",
+			//		Index:  2,
+			//	},
+			//},
 			{
 				Label: "BASIC",
 				Exts:  []string{".bas"},
@@ -318,15 +318,15 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
-			{
-				Label: "FDS BIOS",
-				Exts:  []string{".bin"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
-				},
-			},
+			//{
+			//	Label: "FDS BIOS",
+			//	Exts:  []string{".bin"},
+			//	Mgl: &MglParams{
+			//		Delay:  1,
+			//		Method: "f",
+			//		Index:  2,
+			//	},
+			//},
 		},
 	},
 	"Gamate": {
@@ -511,7 +511,8 @@ var Systems = map[string]System{
 		Rbf:    "_Console/Intellivision",
 		Slots: []Slot{
 			{
-				Exts: []string{".rom", ".int", ".bin"},
+				//Exts: []string{".rom", ".int", ".bin"},
+				Exts: []string{".int", ".bin"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
@@ -671,15 +672,15 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
-			{
-				Label: "XROM",
-				Exts:  []string{".rom"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
-				},
-			},
+			//{
+			//	Label: "XROM",
+			//	Exts:  []string{".rom"},
+			//	Mgl: &MglParams{
+			//		Delay:  1,
+			//		Method: "f",
+			//		Index:  2,
+			//	},
+			//},
 		},
 	},
 	"PocketChallengeV2": {
@@ -984,15 +985,15 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
-			{
-				Label: "Overlay",
-				Exts:  []string{".ovr"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "f",
-					Index:  2,
-				},
-			},
+			//{
+			//	Label: "Overlay",
+			//	Exts:  []string{".ovr"},
+			//	Mgl: &MglParams{
+			//		Delay:  1,
+			//		Method: "f",
+			//		Index:  2,
+			//	},
+			//},
 		},
 	},
 	"WonderSwan": {
