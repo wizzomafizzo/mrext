@@ -4,7 +4,7 @@ PlayLog is an application to track and store stats of what games and cores you p
 
 *NOTE: Still a work in progress. Core functionality works well but reporting is very basic. If you're into this idea, you can start using it right now to track stats until more interesting reports are created. You won't lose any of your stats with future updates.*
 
-[![Download PlayLog](images/download.png "Download PlayLog")](https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh)
+[![Download PlayLog](images/download.svg "Download PlayLog")](https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh)
 
 ## Install
 

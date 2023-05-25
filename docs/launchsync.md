@@ -4,7 +4,7 @@ LaunchSync allows people to create, share and maintain live-updating game playli
 
 You create a [sync file](#sync-files) with a list of games, someone copies the file to their MiSTer, and LaunchSync will use it to generate a working list of game shortcuts in the MiSTer main menu. Sync files are subscriptable, so you can publish changes to your playlist and people will see your updates on their own system.
 
-[![Download LaunchSync](images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
+[![Download LaunchSync](images/download.svg "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
 
 ## Install
 

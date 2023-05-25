@@ -4,7 +4,7 @@ LastPlayed is a simple service for automatically generating a shortcut in the Mi
 
 *Just want to see your recently played games in the menu? MiSTer has a great feature for that already. Enable the `recents` option in your `MiSTer.ini` file, and press the Select button on your controller while in the menu.*
 
-[![Download LastPlayed](images/download.png "Download LastPlayed")](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh)
+[![Download LastPlayed](images/download.svg "Download LastPlayed")](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh)
 
 ## Install
 

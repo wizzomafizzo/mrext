@@ -49,3 +49,7 @@
 - Save/config/full backups (scheduled)
 - Add favorite for currently playing game
 - XML read error on mgl files where game has "&" in path
+- Open manual for currently running game
+- To handle setname index, an improved "get single system" for foldertosystem which prefers systems with just the exact folder?
+- OpenVGDB support
+- HTTPS on local: https://words.filippo.io/how-plex-is-doing-https-for-all-its-users/

@@ -35,57 +35,92 @@ All scripts listed can be installed by downloading the linked file below, placin
 
 Control the MiSTer from any device on your network. Remote is a web-based interface with a stack of modern features to manage all aspects of your MiSTer.
 
-[![Download Remote](docs/images/download.png "Download Remote")](https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh)
-[![Readme Remote](docs/images/readme.png "Readme Remote")](https://github.com/wizzomafizzo/mrext/tree/main/docs/remote.md)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh">
+  <img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh">
+  <img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140">
+</a>
 
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
 
-[![Download BGM](docs/images/download.png "Download BGM")](https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh)
-[![Readme BGM](docs/images/readme.png "Readme BGM")](https://github.com/wizzomafizzo/MiSTer_BGM)
+<a href="https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh">
+  <img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/MiSTer_BGM">
+  <img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140">
+</a>
 
 ## Favorites
 Create and manage shortcuts for your favorite games. Favorites allows you to pick any game or core from your system and automatically generate a shortcut to it in the MiSTer menu.
 
-[![Download Favorites](docs/images/download.png "Download Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh)
-[![Readme Favorites](docs/images/readme.png "Readme Favorites")](https://github.com/wizzomafizzo/MiSTer_Favorites)
+<a href="https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh">
+  <img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/MiSTer_Favorites">
+  <img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140">
+</a>
 
 ## GamesMenu
 Browse your entire collection from the main MiSTer menu. GamesMenu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
 
-[![Download GamesMenu](docs/images/download.png "Download GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh)
-[![Readme GamesMenu](docs/images/readme.png "Readme GamesMenu")](https://github.com/wizzomafizzo/MiSTer_GamesMenu)
+<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh">
+  <img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu">
+  <img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140">
+</a>
 
 ## LaunchSync
 Create shareable and subscribable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
-[![Download LaunchSync](docs/images/download.png "Download LaunchSync")](https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh)
-[![Readme LaunchSync](docs/images/readme.png "Readme LaunchSync")](https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh">
+  <img src="docs/images/download.svg" alt="Download LaunchSync" title="Download LaunchSync" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md">
+  <img src="docs/images/readme.svg" alt="Readme LaunchSync" title="Readme LaunchSync" width="140">
+</a>
 
 ## LastPlayed
 Auto-generate a menu entry pointing to the last game you played.
 
-[![Download LastPlayed](docs/images/download.png "Download LastPlayed")](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh)
-[![Readme LastPlayed](docs/images/readme.png "Readme LastPlayed")](https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md)
-
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh">
+  <img src="docs/images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md">
+  <img src="docs/images/readme.svg" alt="Readme LastPlayed" title="Readme LastPlayed" width="140">
+</a>
 
 ## PlayLog
 Track and report on what games you've been playing on your MiSTer.
 
-[![Download PlayLog](docs/images/download.png "Download PlayLog")](https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh)
-[![Readme PlayLog](docs/images/readme.png "Readme PlayLog")](https://github.com/wizzomafizzo/mrext/tree/main/docs/playlog.md)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh">
+  <img src="docs/images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/playlog.md">
+  <img src="docs/images/readme.svg" alt="Readme PlayLog" title="Readme PlayLog" width="140">
+</a>
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
 
-[![Download Random](docs/images/download.png "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
-[![Readme Random](docs/images/readme.png "Readme Random")](https://github.com/wizzomafizzo/mrext/tree/main/docs/random.md)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh">
+  <img src="docs/images/download.svg" alt="Download Random" title="Download Random" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/random.md">
+  <img src="docs/images/readme.svg" alt="Readme Random" title="Readme Random" width="140">
+</a>
 
 ## Search
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
 
-[![Download Search](docs/images/download.png "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
-[![Readme Search](docs/images/readme.png "Readme Search")](https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh">
+  <img src="docs/images/download.svg" alt="Download Search" title="Download Search" width="140">
+</a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md">
+  <img src="docs/images/readme.svg" alt="Readme Search" title="Readme Search" width="140">
+</a>
 
 ## Other Projects
 

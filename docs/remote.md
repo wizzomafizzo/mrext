@@ -4,7 +4,7 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 *NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may be marked as not working or only have basic functionality. Features are also designed for mobile first, with responsive design for tablet and computer added later.*
 
-[![Download Remote](images/download.png "Download Remote")](https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh)
+[![Download Remote](images/download.svg "Download Remote")](https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh)
 
 ## Install
 
