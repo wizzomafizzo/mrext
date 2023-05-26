@@ -4,7 +4,7 @@ Search is an application to *search* for games on your MiSTer. It indexes all yo
 
 *NOTE: Search is still a work in progress. Core functionality of indexing and searching works great, but the GUI is missing a lot of features like filtering, sorting, re-indexing etc. which will come later. Feel free to use it now though.*
 
-[![Download Search](images/download.svg "Download Search")](https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh"><img src="images/download.svg" alt="Download Search" title="Download Search" width="140"></a>
 
 ## Install
 

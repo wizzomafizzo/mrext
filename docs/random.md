@@ -2,7 +2,7 @@
 
 Random is a simple application for launching a game at random from your MiSTer's collection.
 
-[![Download Random](images/download.svg "Download Random")](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh)
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh"><img src="images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
 
 ## Install
 
