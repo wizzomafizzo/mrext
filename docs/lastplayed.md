@@ -10,6 +10,8 @@ It supports:
 
 ## Install
 
+Enable the `recents` option in your `MiSTer.ini` file.
+
 Download [LastPlayed](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
@@ -18,7 +20,7 @@ Optionally, add the following to the `downloader.ini` file on your MiSTer, to re
 db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.json
 ```
 
-Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service. You may also be asked to manually enable the `recents` option in your `MiSTer.ini` file.
+Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.
 
 ## Configuration
 
