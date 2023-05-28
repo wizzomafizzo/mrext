@@ -71,6 +71,7 @@ var apps = []app{
 		bin:       "remote.sh",
 		ldFlags:   "-lcurses",
 		releaseId: "mrext/remote",
+		inAll:     true,
 	},
 	{
 		name: "favorites",
@@ -83,6 +84,7 @@ var apps = []app{
 		path:      filepath.Join(cwd, "cmd", "lastplayed"),
 		bin:       "lastplayed.sh",
 		releaseId: "mrext/lastplayed",
+		inAll:     true,
 	},
 	{
 		name:      "random",
