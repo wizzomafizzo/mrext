@@ -1,8 +1,10 @@
 # LastPlayed
 
-LastPlayed is a simple service for automatically generating a shortcut in the MiSTer menu pointing to your most recently played game.
+LastPlayed is a service for automatically generating dynamic shortcuts in the MiSTer menu.
 
-*Just want to see your recently played games in the menu? MiSTer has a great feature for that already. Enable the `recents` option in your `MiSTer.ini` file, and press the Select button on your controller while in the menu.*
+It supports:
+- Creating and auto-updating a menu folder of recently played games
+- A single shortcut that always launches the last played game
 
 <a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh"><img src="images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
 
@@ -18,21 +20,57 @@ db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/last
 
 Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service. You may also be asked to manually enable the `recents` option in your `MiSTer.ini` file.
 
-From now on, a shortcut named "Last Played" will be available in the menu, launching your most recently played game.
-
 ## Configuration
 
 LastPlayed can be configured by creating a `lastplayed.ini` file in the `/media/fat/Scripts` folder where you put `lastplayed.sh`. For example:
 
-
 ```
 [lastplayed]
-name = Some other name
+last_played_name = Last Played
+disable_last_played = no
+recent_folder_name = Recently Played
+disable_recent_folder = no
 ```
 
-The name of the shortcut defaults to "Last Played", but can be changed with the `name` setting. Keep in mind these characters are not allowed in a filename: `\/:*?"<>|`
+These are the default settings, and you can omit any lines you don't want to change.
 
-## Launching Games on MiSTer Startup
+### Last Played Name
+
+| Key                | Default     | 
+|--------------------|-------------|
+| `last_played_name` | Last Played |
+
+The name of the shortcut which launches the last played game.
+
+Keep in mind these characters are not allowed in a filename: `\/:*?"<>|`
+
+### Disable Last Played
+
+| Key                   | Default |
+|-----------------------|---------|
+| `disable_last_played` | no      |
+
+If set to `yes`, the last played shortcut will not be created.
+
+### Recent Folder Name
+
+| Key                    | Default           |
+|------------------------|-------------------|
+| `recent_folder_name`   | Recently Played   |
+
+The name of the folder which contains the recently played games.
+
+Keep in mind these characters are not allowed in a filename: `\/:*?"<>|`
+
+### Disable Recent Folder
+
+| Key                      | Default |
+|--------------------------|---------|
+| `disable_recent_folder`  | no      |
+
+If set to `yes`, the recent folder will not be created.
+
+## Launching Last Played Game on MiSTer Startup
 
 By using the `bootcore` feature in MiSTer, you can make the last played game launch automatically on MiSTer startup.
 

@@ -40,7 +40,7 @@ save_every = 5
 ### Save Interval
 
 | Key          | Default | 
-| ------------ | ------- |
+|--------------|---------|
 | `save_every` | 5       |
 
 This setting changes how often PlayLog will save time data to disk while in a core.

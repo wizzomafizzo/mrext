@@ -33,3 +33,4 @@ High level features, ideas and changes.
 - [ ] ACTIVEGAME support for SAM
 - [ ] Arcade core support for tracking games
 - [ ] Current setname support can prioritise original system over setnamed one during scan
+- [ ] In lastplayed, have an option to output a random game mgl (launchable on startup? recreate it after launch?)

@@ -63,7 +63,7 @@ Create shareable and subscribable game playlists. LaunchSync automatically gener
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md"><img src="docs/images/readme.svg" alt="Readme LaunchSync" title="Readme LaunchSync" width="140"></a>
 
 ## LastPlayed
-Auto-generate a menu entry pointing to the last game you played.
+Automatically generate dynamic shortcuts in the MiSTer menu.
 
 <a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh"><img src="docs/images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md"><img src="docs/images/readme.svg" alt="Readme LastPlayed" title="Readme LastPlayed" width="140"></a>
