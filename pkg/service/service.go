@@ -175,6 +175,11 @@ func (s *Service) startService() {
 		os.Exit(1)
 	}
 
+	err = SetNice()
+	if err != nil {
+		s.Logger.Error("error setting nice level: %s", err)
+	}
+
 	stop, err := s.start()
 	if err != nil {
 		s.Logger.Error("error starting service: %s", err)

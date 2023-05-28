@@ -10,21 +10,36 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
-const appName = "lastplayed"
-const defaultName = "Last Played"
+const (
+	appName                 = "lastplayed"
+	defaultLastPlayedName   = "Last Played"
+	defaultRecentFolderName = "Recently Played"
+	maxRecentEntries        = 99
+)
 
 func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 	var mglName string
 
-	if cfg.LastPlayed.Name == "" {
-		mglName = defaultName
+	if cfg.LastPlayed.Name == "" && cfg.LastPlayed.LastPlayedName == "" {
+		mglName = defaultLastPlayedName
+	} else if cfg.LastPlayed.LastPlayedName != "" {
+		mglName = cfg.LastPlayed.LastPlayedName
 	} else {
 		mglName = cfg.LastPlayed.Name
 	}
 
 	mglName = utils.StripBadFileChars(mglName)
+
+	if mglName == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
 
 	systems := games.FolderToSystems(path)
 	if len(systems) == 0 {
@@ -41,6 +56,119 @@ func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 	return nil
 }
 
+type recentFile struct {
+	Path        string
+	Filename    string
+	NewFilename string
+	Modified    time.Time
+}
+
+func addToRecentFolder(cfg *config.UserConfig, path string) error {
+	var recentFolderName string
+
+	if cfg.LastPlayed.RecentFolderName == "" {
+		recentFolderName = defaultRecentFolderName
+	} else {
+		recentFolderName = cfg.LastPlayed.RecentFolderName
+	}
+
+	recentFolderName = utils.StripBadFileChars(recentFolderName)
+
+	if recentFolderName == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
+
+	recentPath := filepath.Join(config.SdFolder, "_"+recentFolderName)
+
+	if _, err := os.Stat(recentPath); os.IsNotExist(err) {
+		err = os.Mkdir(recentPath, 0755)
+		if err != nil {
+			return fmt.Errorf("error creating recent folder: %s", err)
+		}
+	}
+
+	systems := games.FolderToSystems(path)
+	if len(systems) == 0 {
+		return fmt.Errorf("no system match found: %s", path)
+	}
+	system := systems[0]
+
+	mglName := filepath.Base(path)
+	mglName = strings.TrimSuffix(mglName, filepath.Ext(mglName))
+	mglName = utils.StripBadFileChars(mglName)
+	mglName = fmt.Sprintf("00 %s [%s]", mglName, system.Name)
+
+	_, err := mister.CreateLauncher(&system, path, recentPath, mglName)
+	if err != nil {
+		return fmt.Errorf("error creating mgl: %s", err)
+	}
+
+	recentFolder, err := os.ReadDir(recentPath)
+	if err != nil {
+		return fmt.Errorf("error reading recent folder: %s", err)
+	}
+
+	var recentFiles []recentFile
+	for _, file := range recentFolder {
+		if file.IsDir() || filepath.Ext(strings.ToLower(file.Name())) != ".mgl" {
+			continue
+		}
+
+		info, err := file.Info()
+		if err != nil {
+			continue
+		}
+
+		recentFiles = append(recentFiles, recentFile{
+			Path:     filepath.Join(recentPath, file.Name()),
+			Filename: file.Name(),
+			Modified: info.ModTime(),
+		})
+	}
+
+	prefixLength := len(strconv.Itoa(maxRecentEntries))
+
+	sort.Slice(recentFiles, func(i, j int) bool {
+		return recentFiles[i].Modified.After(recentFiles[j].Modified)
+	})
+
+	knownFiles := make(map[string]bool)
+
+	i := 0
+	for _, file := range recentFiles {
+		if i >= maxRecentEntries {
+			err := os.Remove(file.Path)
+			if err != nil {
+				return fmt.Errorf("error removing recent file: %s", err)
+			}
+			continue
+		}
+
+		filename := file.Filename[prefixLength+1:]
+
+		if knownFiles[filename] {
+			err := os.Remove(file.Path)
+			if err != nil {
+				return fmt.Errorf("error removing recent file: %s", err)
+			}
+			continue
+		} else {
+			knownFiles[filename] = true
+		}
+
+		newFilename := fmt.Sprintf("%0*d %s", prefixLength, i+1, filename)
+		newPath := filepath.Join(recentPath, newFilename)
+		err := os.Rename(file.Path, newPath)
+		if err != nil {
+			return fmt.Errorf("error renaming recent file: %s", err)
+		}
+
+		i++
+	}
+
+	return nil
+}
+
 type fakeDb struct {
 	config *config.UserConfig
 }
@@ -50,8 +178,22 @@ func (f *fakeDb) FixPowerLoss() (bool, error) {
 }
 
 func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
-	if ev.Action == tracker.EventActionGameStart {
-		return createLastPlayedMgl(f.config, ev.TargetPath)
+	if ev.Action != tracker.EventActionGameStart {
+		return nil
+	}
+
+	if !f.config.LastPlayed.DisableLastPlayed {
+		err := createLastPlayedMgl(f.config, ev.TargetPath)
+		if err != nil {
+			return fmt.Errorf("error creating last played mgl: %s", err)
+		}
+	}
+
+	if !f.config.LastPlayed.DisableRecentFolder {
+		err := addToRecentFolder(f.config, ev.TargetPath)
+		if err != nil {
+			return fmt.Errorf("error adding to recent folder: %s", err)
+		}
 	}
 
 	return nil
@@ -143,7 +285,10 @@ func main() {
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		LastPlayed: config.LastPlayedConfig{
-			Name: defaultName,
+			LastPlayedName:      defaultLastPlayedName,
+			DisableLastPlayed:   false,
+			RecentFolderName:    defaultRecentFolderName,
+			DisableRecentFolder: false,
 		},
 	})
 	if err != nil {
@@ -167,7 +312,8 @@ func main() {
 
 	if !mister.RecentsOptionEnabled() {
 		logger.Error("recents option not enabled, exiting...")
-		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
+		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
+		fmt.Println("Configure it in the MiSTer.ini file, reboot and run lastplayed again.")
 		os.Exit(1)
 	}
 
@@ -190,7 +336,7 @@ func main() {
 			os.Exit(0)
 		}
 	} else {
-		fmt.Println("Service is already running.")
+		fmt.Println("Service is running.")
 		os.Exit(0)
 	}
 }

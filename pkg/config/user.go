@@ -33,7 +33,11 @@ type SearchConfig struct {
 }
 
 type LastPlayedConfig struct {
-	Name string `ini:"name,omitempty"`
+	Name                string `ini:"name,omitempty"`
+	LastPlayedName      string `ini:"last_played_name,omitempty"`
+	DisableLastPlayed   bool   `ini:"disable_last_played,omitempty"`
+	RecentFolderName    string `ini:"recent_folder_name,omitempty"`
+	DisableRecentFolder bool   `ini:"disable_recent_folder,omitempty"`
 }
 
 type UserConfig struct {
