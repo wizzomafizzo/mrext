@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1685270217,
+  "timestamp": 1685270776,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
@@ -38,8 +38,8 @@
       "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh"
     },
     "Scripts/remote.sh": {
-      "hash": "5ef70a0e66107ff9875e8140fba2b380",
-      "size": 6761240,
+      "hash": "d37dc447d2b11ba592415532e3da57ff",
+      "size": 6761812,
       "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh"
     },
     "Scripts/search.sh": {
