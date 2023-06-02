@@ -25,14 +25,14 @@ func LaunchGame(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		syss := games.FolderToSystems(args.Path)
-		if len(syss) == 0 {
+		system, err := games.PathBestMatch(args.Path)
+		if err != nil {
 			http.Error(w, "no system found for game", http.StatusBadRequest)
-			logger.Error("launch game: no system found for game: %s (%s)", args.Path, syss[0].Id)
+			logger.Error("launch game: no system found for game: %s", args.Path)
 			return
 		}
 
-		err = mister.LaunchGame(syss[0], args.Path)
+		err = mister.LaunchGame(system, args.Path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch game: during launch: %s", err)
@@ -105,8 +105,8 @@ func CreateLauncher(logger *service.Logger) http.HandlerFunc {
 		//	return
 		//}
 
-		systems := games.FolderToSystems(args.GamePath)
-		if len(systems) == 0 {
+		system, err := games.PathBestMatch(args.GamePath)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("create launcher: unknown file type or folder")
 			return
@@ -117,8 +117,6 @@ func CreateLauncher(logger *service.Logger) http.HandlerFunc {
 		}
 
 		args.Name = utils.StripBadFileChars(args.Name)
-
-		system := systems[0]
 
 		mglPath, err := mister.CreateLauncher(
 			&system,

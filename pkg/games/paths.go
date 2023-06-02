@@ -94,6 +94,28 @@ func FolderToSystems(path string) []System {
 	return matchedExtensions
 }
 
+func PathBestMatch(path string) (System, error) {
+	systems := FolderToSystems(path)
+
+	if len(systems) == 0 {
+		return System{}, fmt.Errorf("no systems found for %s", path)
+	}
+
+	if len(systems) == 1 {
+		return systems[0], nil
+	}
+
+	// prefer the system with a setname
+	for _, system := range systems {
+		if system.SetName != "" {
+			return system, nil
+		}
+	}
+
+	// otherwise just return the first one
+	return systems[0], nil
+}
+
 type PathResult struct {
 	System System
 	Path   string

@@ -41,14 +41,12 @@ func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 		return fmt.Errorf("name cannot be empty")
 	}
 
-	systems := games.FolderToSystems(path)
-	if len(systems) == 0 {
+	system, err := games.PathBestMatch(path)
+	if err != nil {
 		return fmt.Errorf("no system match found: %s", path)
 	}
 
-	system := systems[0]
-
-	_, err := mister.CreateLauncher(&system, path, config.SdFolder, mglName)
+	_, err = mister.CreateLauncher(&system, path, config.SdFolder, mglName)
 	if err != nil {
 		return fmt.Errorf("error creating mgl: %s", err)
 	}
@@ -87,18 +85,17 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		}
 	}
 
-	systems := games.FolderToSystems(path)
-	if len(systems) == 0 {
+	system, err := games.PathBestMatch(path)
+	if err != nil {
 		return fmt.Errorf("no system match found: %s", path)
 	}
-	system := systems[0]
 
 	mglName := filepath.Base(path)
 	mglName = strings.TrimSuffix(mglName, filepath.Ext(mglName))
 	mglName = utils.StripBadFileChars(mglName)
 	mglName = fmt.Sprintf("00 %s [%s]", mglName, system.Name)
 
-	_, err := mister.CreateLauncher(&system, path, recentPath, mglName)
+	_, err = mister.CreateLauncher(&system, path, recentPath, mglName)
 	if err != nil {
 		return fmt.Errorf("error creating mgl: %s", err)
 	}

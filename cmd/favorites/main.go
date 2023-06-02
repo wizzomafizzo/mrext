@@ -43,13 +43,12 @@ func main() {
 	var system games.System
 
 	if *systemId == "auto" {
-		systems := games.FolderToSystems(*gameFile)
-		if len(systems) == 0 {
+		match, err := games.PathBestMatch(*gameFile)
+		if err != nil {
 			fmt.Printf("Could not determine system for game: %s\n", *gameFile)
 			os.Exit(1)
 		}
-
-		system = systems[0]
+		system = match
 	} else {
 		lookup, err := games.LookupSystem(*systemId)
 		if err != nil {

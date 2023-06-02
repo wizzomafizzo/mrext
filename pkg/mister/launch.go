@@ -264,12 +264,11 @@ func LaunchGenericFile(path string) error {
 	case ".rbf":
 		err = launchFile(path)
 	default:
-		systems := games.FolderToSystems(path)
-		if len(systems) == 0 {
+		system, err := games.PathBestMatch(path)
+		if err != nil {
 			return fmt.Errorf("unknown file type: %s", ext)
 		}
 
-		system := systems[0]
 		err = launchTempMgl(&system, path)
 		isGame = true
 	}

@@ -261,10 +261,14 @@ func (tr *Tracker) loadGame() {
 	filename := filepath.Base(path)
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-	systems := games.FolderToSystems(path)
+	system, err := games.PathBestMatch(path)
+	if err != nil {
+		tr.Logger.Error("error finding system for game: %s", err)
+	}
+
 	var folder string
-	if len(systems) > 0 && len(systems[0].Folder) > 0 {
-		folder = systems[0].Folder[0]
+	if err != nil && len(system.Folder) > 0 {
+		folder = system.Folder[0]
 	}
 
 	id := fmt.Sprintf("%s/%s", folder, filename)
