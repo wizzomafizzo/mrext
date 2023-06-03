@@ -55,3 +55,8 @@
 - HTTPS on local: https://words.filippo.io/how-plex-is-doing-https-for-all-its-users/
 - Launching from menu page isn't properly setting the active game
 - ini file switcher (and read current ini)
+- User custom control keys map to keyboard key
+- Core context sensitive control buttons
+- Add 1, space and 5 buttons to control page
+- Dynamic changing background based on theme
+- Dynamic theme based on active core

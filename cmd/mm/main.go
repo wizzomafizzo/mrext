@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"os"
 	"strconv"
 	"strings"
@@ -65,6 +66,9 @@ func main() {
 	sendKb := flag.String("send-keyboard", "", "send keyboard command")
 	filterSystems := flag.String("s", "all", "restrict operation to systems (comma separated)")
 	timed := flag.Bool("t", false, "show how long operation took")
+	getIni := flag.Bool("get-ini", false, "get active ini file")
+	setIni := flag.Int("set-ini", -1, "set active ini file (1-4)")
+	listInis := flag.Bool("list-inis", false, "list available ini files")
 	flag.Parse()
 
 	start := time.Now()
@@ -96,6 +100,36 @@ func main() {
 		}
 	} else if *sendKb != "" {
 		sendKeyboard(*sendKb)
+	} else if *getIni {
+		n, err := mister.GetCurrentIni()
+		if err != nil {
+			fmt.Printf("error getting ini: %s\n", err)
+			os.Exit(1)
+		}
+		if n == 0 {
+			fmt.Printf("no active ini\n")
+			os.Exit(0)
+		}
+		fmt.Printf("active ini: %d\n", n)
+	} else if *setIni != -1 {
+		err := mister.SetCurrentIni(*setIni)
+		if err != nil {
+			fmt.Printf("error setting ini: %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("set active ini to %d\n", *setIni)
+	} else if *listInis {
+		inis, err := mister.ListMisterInis()
+		if err != nil {
+			fmt.Printf("error listing inis: %s\n", err)
+			os.Exit(1)
+		}
+
+		for i, ini := range inis {
+			fmt.Printf("%d: %s (%s)\n", i+1, ini.DisplayName, ini.Filename)
+		}
+	} else {
+		flag.Usage()
 	}
 
 	if *timed {

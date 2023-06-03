@@ -18,6 +18,8 @@ const CurrentPathFile = TempFolder + "/CURRENTPATH"
 const StartPathFile = TempFolder + "/STARTPATH"
 const FullPathFile = TempFolder + "/FULLPATH"
 
+const CoresRecentFile = CoreConfigFolder + "/cores_recent.cfg"
+
 const MenuCore = "MENU"
 
 const CmdInterface = "/dev/MiSTer_cmd"

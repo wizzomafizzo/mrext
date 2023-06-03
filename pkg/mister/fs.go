@@ -10,6 +10,15 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
+func GetActiveCoreName() (string, error) {
+	data, err := os.ReadFile(config.CoreNameFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func ActiveGameEnabled() bool {
 	_, err := os.Stat(config.ActiveGameFile)
 	return err == nil
