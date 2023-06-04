@@ -106,6 +106,7 @@ func SetCurrentIni(ini int) error {
 		}
 	}
 
+	// TODO: can we check if this file has been modified recently?
 	recent, err := ReadRecent(config.CoresRecentFile)
 	if err != nil || len(recent) == 0 {
 		err = LaunchMenu()

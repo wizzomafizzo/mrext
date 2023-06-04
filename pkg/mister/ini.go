@@ -69,9 +69,9 @@ func RecentsOptionEnabled() bool {
 }
 
 type IniFile struct {
-	DisplayName string
-	Filename    string
-	Path        string
+	DisplayName string `json:"displayName"`
+	Filename    string `json:"filename"`
+	Path        string `json:"path"`
 }
 
 func ListMisterInis() ([]IniFile, error) {
@@ -127,7 +127,9 @@ func ListMisterInis() ([]IniFile, error) {
 				iniFile.DisplayName = iniFile.DisplayName[0:4]
 			}
 
-			inis = append(inis, iniFile)
+			if len(inis) < 4 {
+				inis = append(inis, iniFile)
+			}
 		}
 	}
 
