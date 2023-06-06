@@ -32,6 +32,7 @@ var extMap = map[string][]string{
 	"C64":          {".crt", ".prg"},
 	"Genesis":      {".gen", ".md"},
 	"NeoGeo":       {".neo"},
+	"SNES":		{".sfc", ".smc"},
 	"TurboGrafx16": {".pce", ".sgx"},
 }
 
