@@ -10,9 +10,12 @@ RUN apt-get install -y ca-certificates openssl && \
     update-ca-certificates
 
 # install go and app dependencies
-RUN apt-get install build-essential git -y && \
+RUN apt-get install build-essential git curl -y && \
     apt-get install golang-doc/bullseye-backports golang-go/bullseye-backports golang-src/bullseye-backports golang/bullseye-backports -y && \
     apt-get install libsqlite3-dev libncurses-dev linux-source -y
+
+# install mplayer dependencies
+RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 
 # drop permissions on output files
 RUN useradd -m -u 1000 build

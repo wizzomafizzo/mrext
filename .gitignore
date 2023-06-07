@@ -10,7 +10,10 @@ go.work
 .idea/
 *.db
 *.tar
+.env
 /bin
 /out
-/cmd/remote/_client/build
-.env
+cmd/remote/_client/build
+scripts/armbuild/_build
+cmd/vplay/_player/*
+!cmd/vplay/_player/README
