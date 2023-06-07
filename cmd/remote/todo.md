@@ -60,3 +60,7 @@
 - Add 1, space and 5 buttons to control page
 - Dynamic changing background based on theme
 - Dynamic theme based on active core
+- Restart remote service button
+- Reset button on control page doesn't work
+- Show numpad (and #, *) on control page for atari 5200, coleco, intellivision etc.
+- Remember last folder used during add shortcut (and need home button?)
