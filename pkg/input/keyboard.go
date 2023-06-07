@@ -131,7 +131,7 @@ func (k *Keyboard) ToggleCoreDates() {
 }
 
 func (k *Keyboard) Console() {
-	k.Press(uinput.KeyF3)
+	k.Press(uinput.KeyF9)
 }
 
 func (k *Keyboard) ComputerOsd() {
