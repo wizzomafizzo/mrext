@@ -127,6 +127,11 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name: "vplay",
+		path: filepath.Join(cwd, "cmd", "vplay"),
+		bin:  "vplay.sh",
+	},
+	{
 		name: "mm",
 		path: filepath.Join(cwd, "cmd", "mm"),
 		bin:  "mm",
@@ -466,6 +471,29 @@ func Kernel() {
 
 	io.Copy(kernel, zImage)
 	io.Copy(kernel, dtb)
+}
+
+func MakeArmApp(name string) {
+	buildScript := name + ".sh"
+	if _, err := os.Stat(filepath.Join(armBuild, buildScript)); os.IsNotExist(err) {
+		fmt.Println("No build script for", name)
+		os.Exit(1)
+	}
+
+	buildDir := filepath.Join(armBuild, "_build")
+	os.MkdirAll(buildDir, 0755)
+
+	err := sh.Copy(filepath.Join(buildDir, buildScript), filepath.Join(armBuild, buildScript))
+	if err != nil {
+		fmt.Println("Error copying build script", err)
+		os.Exit(1)
+	}
+
+	if runtime.GOOS != "linux" {
+		sh.RunV("docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildDir+":/build", "--user", "1000:1000", armBuildImageName, "bash", "./"+buildScript)
+	} else {
+		sh.RunV("sudo", "docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildDir+":/build", "--user", "1000:1000", armBuildImageName, "bash", "./"+buildScript)
+	}
 }
 
 func Test() {
