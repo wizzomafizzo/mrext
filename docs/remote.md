@@ -24,3 +24,18 @@ This service must be running for remote to work, but it has no impact on your Mi
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Uninstall
+
+To completely uninstall Remote from your MiSTer, delete these files from the SD card:
+
+* `Scripts/remote.sh`
+* `Scripts/remote.ini` (if present)
+* `search.db` (this file is also used by Search if you have it installed)
+
+If you have an active wallpaper set by Remote, you will also need to remove `menu.png` or `menu.jpg`. These are just links to the actual file in the `wallpapers` folder.
+
+Finally, remove the following lines from `linux/user-startup.sh`:
+```
+# mrext/remote
+[[ -e /media/fat/Scripts/remote.sh ]] && /media/fat/Scripts/remote.sh -service $1
+```
