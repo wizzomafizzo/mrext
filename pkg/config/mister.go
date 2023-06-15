@@ -6,6 +6,8 @@ const CoreConfigFolder = SdFolder + "/config"
 const FontFolder = SdFolder + "/font"
 const TempFolder = "/tmp"
 
+const ScriptsFolder = SdFolder + "/Scripts"
+
 const MenuConfigFile = CoreConfigFolder + "/MENU.CFG"
 
 const MisterIniFile = SdFolder + "/MiSTer.ini"
