@@ -6,6 +6,8 @@ const CoreConfigFolder = SdFolder + "/config"
 const FontFolder = SdFolder + "/font"
 const TempFolder = "/tmp"
 
+const MenuConfigFile = CoreConfigFolder + "/MENU.CFG"
+
 const MisterIniFile = SdFolder + "/MiSTer.ini"
 const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
 const MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
@@ -28,7 +30,8 @@ const CmdInterface = "/dev/MiSTer_cmd"
 const ArcadeCoresFolder = "/media/fat/_Arcade/cores"
 
 // TODO: this is technically not the order mister checks, it does games folders
-//       second, but right now this is simpler for checking for a prefix
+//
+//	second, but right now this is simpler for checking for a prefix
 var GamesFolders = []string{
 	"/media/usb0/games",
 	"/media/usb0",

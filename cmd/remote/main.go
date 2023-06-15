@@ -165,9 +165,10 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
 	sub.HandleFunc("/systems/{id}", systems.LaunchCore(logger)).Methods("POST")
 
-	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapers(logger)).Methods("GET")
-	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.ViewWallpaper(logger)).Methods("GET")
-	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.SetWallpaper(logger)).Methods("POST")
+	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapersHandler(logger)).Methods("GET")
+	sub.HandleFunc("/wallpapers", wallpapers.UnsetWallpaperHandler(logger)).Methods("DELETE")
+	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.ViewWallpaperHandler(logger)).Methods("GET")
+	sub.HandleFunc("/wallpapers/{filename:.*}", wallpapers.SetWallpaperHandler(logger)).Methods("POST")
 
 	sub.HandleFunc("/music/status", music.Status(logger)).Methods("GET")
 	sub.HandleFunc("/music/play", music.Play(logger)).Methods("POST")
@@ -198,6 +199,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/ini", settings.HandleSaveIni(logger)).Methods("POST")
 	sub.HandleFunc("/settings/inis", settings.HandleListInis(logger)).Methods("GET")
 	sub.HandleFunc("/settings/inis", settings.HandleSetActiveIni(logger)).Methods("PUT")
+	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

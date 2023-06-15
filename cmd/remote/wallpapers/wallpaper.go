@@ -58,7 +58,13 @@ func listWallpapers() ([]Wallpaper, error) {
 	return wps, nil
 }
 
-func AllWallpapers(logger *service.Logger) http.HandlerFunc {
+type AllWallpapersPayload struct {
+	Active         string      `json:"active"`
+	BackgroundMode int         `json:"backgroundMode"`
+	Wallpapers     []Wallpaper `json:"wallpapers"`
+}
+
+func AllWallpapersHandler(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		var wps []Wallpaper
 
@@ -67,6 +73,10 @@ func AllWallpapers(logger *service.Logger) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("couldn't list wallpapers: %s", err)
 			return
+		}
+
+		payload := AllWallpapersPayload{
+			Wallpapers: wps,
 		}
 
 		// TODO: check for file not found
@@ -78,15 +88,25 @@ func AllWallpapers(logger *service.Logger) http.HandlerFunc {
 		if err == nil {
 			active, err := os.Readlink(filepath.Join(config.SdFolder, activeFile.Name()))
 			if err == nil {
-				for i, wallpaper := range wps {
+				for i, wallpaper := range payload.Wallpapers {
 					if wallpaper.Filename == filepath.Base(active) {
 						wps[i].Active = true
+						payload.Active = wallpaper.Filename
 					}
 				}
 			}
 		}
 
-		err = json.NewEncoder(w).Encode(wps)
+		cfg, err := mister.ReadMenuConfig()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't read menu config: %s", err)
+			return
+		}
+
+		payload.BackgroundMode = cfg.BackgroundMode
+
+		err = json.NewEncoder(w).Encode(payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("couldn't encode wallpapers: %s", err)
@@ -95,7 +115,7 @@ func AllWallpapers(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
-func ViewWallpaper(logger *service.Logger) http.HandlerFunc {
+func ViewWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		filename := vars["filename"]
@@ -118,7 +138,7 @@ func ViewWallpaper(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
-func SetWallpaper(logger *service.Logger) http.HandlerFunc {
+func SetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -171,23 +191,101 @@ func SetWallpaper(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		if _, err := os.Stat(config.CoreNameFile); err == nil {
-			name, err := os.ReadFile(config.CoreNameFile)
+		err = mister.SetMenuBackgroundMode(mister.BackgroundModeWallpaper)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("set menu background mode: %s", err)
+			return
+		}
+
+		err = mister.RelaunchIfInMenu()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't relaunch menu: %s", err)
+			return
+		}
+	}
+}
+
+func UnsetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		activeFile, err := os.Stat(filepath.Join(config.SdFolder, "menu.png"))
+		if err != nil {
+			activeFile, err = os.Stat(filepath.Join(config.SdFolder, "menu.jpg"))
+		}
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("no active wallpaper set: %s", err)
+			return
+		}
+
+		lFile, err := os.Lstat(filepath.Join(config.SdFolder, activeFile.Name()))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("invalid path: %s", err)
+			return
+		}
+
+		if lFile.Mode()&os.ModeSymlink != os.ModeSymlink {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("not a symlink: %s", err)
+			return
+		}
+
+		err = os.Remove(filepath.Join(config.SdFolder, activeFile.Name()))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't remove symlink: %s", err)
+			return
+		}
+
+		err = mister.RelaunchIfInMenu()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't relaunch menu: %s", err)
+			return
+		}
+	}
+}
+
+func ActiveWallpaperHandler(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		activeFile, err := os.Stat(filepath.Join(config.SdFolder, "menu.png"))
+		if err != nil {
+			activeFile, err = os.Stat(filepath.Join(config.SdFolder, "menu.jpg"))
+		}
+
+		var wallpaper Wallpaper
+
+		if err == nil {
+			lFile, err := os.Lstat(filepath.Join(config.SdFolder, activeFile.Name()))
 			if err != nil {
-				err := mister.LaunchMenu()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.Error("invalid path: %s", err)
+				return
+			}
+
+			if lFile.Mode()&os.ModeSymlink == os.ModeSymlink {
+				filename, err := os.Readlink(filepath.Join(config.SdFolder, activeFile.Name()))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
-					logger.Error("couldn't launch menu: %s", err)
+					logger.Error("couldn't read symlink: %s", err)
 					return
 				}
-			} else if string(name) == config.MenuCore {
-				err := mister.LaunchMenu()
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					logger.Error("couldn't launch menu: %s", err)
-					return
+
+				wallpaper = Wallpaper{
+					Filename: filepath.Base(filename),
+					Active:   true,
 				}
 			}
+		}
+
+		err = json.NewEncoder(w).Encode(wallpaper)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("couldn't encode wallpaper: %s", err)
+			return
 		}
 	}
 }

@@ -102,3 +102,34 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 		}
 	}
 }
+
+type SetMenuBackgroundModeRequest struct {
+	Mode int `json:"mode"`
+}
+
+func HandleSetMenuBackgroundMode(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args SetMenuBackgroundModeRequest
+
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("decode set menu background mode request: %s", err)
+			return
+		}
+
+		err = mister.SetMenuBackgroundMode(args.Mode)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("set menu background mode: %s", err)
+			return
+		}
+
+		err = mister.RelaunchIfInMenu()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("relaunch if in menu: %s", err)
+			return
+		}
+	}
+}

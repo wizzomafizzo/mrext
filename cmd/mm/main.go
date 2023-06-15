@@ -69,6 +69,8 @@ func main() {
 	getIni := flag.Bool("get-ini", false, "get active ini file")
 	setIni := flag.Int("set-ini", -1, "set active ini file (1-4)")
 	listInis := flag.Bool("list-inis", false, "list available ini files")
+	getConfig := flag.String("get-config", "", "print config file for core")
+	setBgMode := flag.String("set-bg-mode", "", "set menu background mode")
 	flag.Parse()
 
 	start := time.Now()
@@ -127,6 +129,34 @@ func main() {
 
 		for i, ini := range inis {
 			fmt.Printf("%d: %s (%s)\n", i+1, ini.DisplayName, ini.Filename)
+		}
+	} else if *getConfig != "" {
+		if *getConfig == "menu" {
+			cfg, err := mister.ReadMenuConfig()
+			if err != nil {
+				fmt.Printf("error reading menu config: %s\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("Background mode: %d\n", cfg.BackgroundMode)
+		}
+	} else if *setBgMode != "" {
+		mode, err := strconv.Atoi(*setBgMode)
+		if err != nil {
+			fmt.Printf("error parsing background mode: %s\n", err)
+			os.Exit(1)
+		}
+
+		err = mister.SetMenuBackgroundMode(mode)
+		if err != nil {
+			fmt.Printf("error setting background mode: %s\n", err)
+			os.Exit(1)
+		}
+
+		err = mister.RelaunchIfInMenu()
+		if err != nil {
+			fmt.Printf("error relaunching menu: %s\n", err)
+			os.Exit(1)
 		}
 	} else {
 		flag.Usage()

@@ -2,6 +2,8 @@ package mister
 
 import (
 	"encoding/xml"
+	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -224,4 +226,83 @@ func ReadMgl(path string) (MGL, error) {
 	}
 
 	return mgl, nil
+}
+
+type MenuConfig struct {
+	BackgroundMode int
+}
+
+const (
+	BackgroundModeNone      = 0
+	BackgroundModeWallpaper = 2
+	BackgroundModeHBars1    = 4
+	BackgroundModeHBars2    = 6
+	BackgroundModeVBars1    = 8
+	BackgroundModeVBars2    = 10
+	BackgroundModeSpectrum  = 12
+	BackgroundModeBlack     = 14
+)
+
+func ReadMenuConfig() (MenuConfig, error) {
+	var cfg MenuConfig
+
+	if _, err := os.Stat(config.MenuConfigFile); err != nil {
+		return cfg, err
+	}
+
+	file, err := os.ReadFile(config.MenuConfigFile)
+	if err != nil {
+		return cfg, err
+	}
+
+	cfg.BackgroundMode = int(file[0])
+
+	return cfg, nil
+}
+
+func SetMenuBackgroundMode(mode int) error {
+	if !utils.Contains([]int{
+		BackgroundModeNone,
+		BackgroundModeWallpaper,
+		BackgroundModeHBars1,
+		BackgroundModeHBars2,
+		BackgroundModeVBars1,
+		BackgroundModeVBars2,
+		BackgroundModeSpectrum,
+		BackgroundModeBlack,
+	}, mode) {
+		return fmt.Errorf("invalid background mode")
+	}
+
+	if _, err := os.Stat(config.MenuConfigFile); err != nil {
+		return err
+	}
+
+	file, err := os.ReadFile(config.MenuConfigFile)
+	if err != nil {
+		return err
+	}
+
+	file[0] = byte(mode)
+
+	return os.WriteFile(config.MenuConfigFile, file, 0644)
+}
+
+func RelaunchIfInMenu() error {
+	if _, err := os.Stat(config.CoreNameFile); err == nil {
+		name, err := os.ReadFile(config.CoreNameFile)
+		if err != nil {
+			err := LaunchMenu()
+			if err != nil {
+				return err
+			}
+		} else if string(name) == config.MenuCore {
+			err := LaunchMenu()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
