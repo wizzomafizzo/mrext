@@ -261,6 +261,16 @@ func (tr *Tracker) loadGame() {
 	filename := filepath.Base(path)
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 
+	if filepath.Ext(strings.ToLower(filename)) == ".mgl" {
+		mgl, err := mister.ReadMgl(path)
+		if err != nil {
+			tr.Logger.Error("error reading mgl: %s", err)
+		} else {
+			path = mister.ResolvePath(mgl.File.Path)
+			tr.Logger.Info("mgl path: %s", path)
+		}
+	}
+
 	system, err := games.PathBestMatch(path)
 	if err != nil {
 		tr.Logger.Error("error finding system for game: %s", err)
@@ -271,7 +281,7 @@ func (tr *Tracker) loadGame() {
 		folder = system.Folder[0]
 	}
 
-	id := fmt.Sprintf("%s/%s", folder, filename)
+	id := fmt.Sprintf("%s/%s", system.Id, filename)
 
 	if id != tr.ActiveGame {
 		tr.stopGame()
