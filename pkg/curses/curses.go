@@ -11,6 +11,15 @@ type Coords struct {
 	X int
 }
 
+type SetupWindowError struct {
+	error
+	Ctx error
+}
+
+func (e *SetupWindowError) Error() string {
+	return e.Ctx.Error()
+}
+
 func Setup() (*gc.Window, error) {
 	stdscr, err := gc.Init()
 	if err != nil {
@@ -34,7 +43,7 @@ func NewWindow(stdscr *gc.Window, height int, width int, title string, timeout i
 	var win *gc.Window
 	win, err := gc.NewWindow(height, width, y, x)
 	if err != nil {
-		return nil, err
+		return nil, &SetupWindowError{Ctx: err}
 	}
 	win.Keypad(true)
 	win.Timeout(timeout)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
@@ -290,6 +291,35 @@ func tryAddStartup(stdscr *gc.Window) error {
 	return nil
 }
 
+func tryNonInteractiveAddToStartup() {
+	var startup mister.Startup
+
+	err := startup.Load()
+	if err != nil {
+		logger.Error("failed to load startup file: %s", err)
+		fmt.Printf("Failed to load startup file: %s\n", err)
+		return
+	}
+
+	if !startup.Exists("mrext/" + appName) {
+		err = startup.AddService("mrext/" + appName)
+		if err != nil {
+			logger.Error("failed to add to startup: %s", err)
+			fmt.Printf("Failed to add to startup: %s\n", err)
+			return
+		}
+
+		err = startup.Save()
+		if err != nil {
+			logger.Error("failed to save startup: %s", err)
+			fmt.Printf("Failed to save startup: %s\n", err)
+			return
+		}
+
+		fmt.Println("Added Remote to MiSTer startup.")
+	}
+}
+
 func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 	width := 57
 	height := 10
@@ -403,6 +433,30 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 	return nil
 }
 
+func displayNonInteractiveServiceInfo(service *service.Service) {
+	ip, err := utils.GetLocalIp()
+	appUrl := ""
+	if err != nil {
+		logger.Error("could not get local ip: %s", err)
+		appUrl = fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
+	} else {
+		appUrl = fmt.Sprintf("http://%s:%d", ip, appPort)
+	}
+
+	var statusText string
+	running := service.Running()
+	if running {
+		statusText = "Service is RUNNING."
+	} else {
+		statusText = "Service is NOT RUNNING."
+	}
+
+	fmt.Println(statusText)
+	fmt.Println("Access Remote with this URL:")
+	fmt.Println(appUrl)
+	fmt.Println("It's safe to exit, the service will continue running.")
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	flag.Parse()
@@ -438,23 +492,45 @@ func main() {
 		}
 	}
 
+	interactive := true
+
 	stdscr, err := curses.Setup()
 	if err != nil {
 		logger.Error("starting curses: %s", err)
+		interactive = false
 	}
 	defer gc.End()
 
-	err = tryAddStartup(stdscr)
-	if err != nil {
-		gc.End()
-		logger.Error("adding startup: %s", err)
-		fmt.Println("Error adding to startup:", err)
+	if interactive {
+		err = tryAddStartup(stdscr)
+		if err != nil {
+			gc.End()
+			logger.Error("adding startup: %s", err)
+
+			if errors.As(err, &curses.SetupWindowError{}) {
+				interactive = false
+			} else {
+				fmt.Println("Error adding to startup:", err)
+			}
+		}
 	}
 
-	err = displayServiceInfo(stdscr, svc)
-	if err != nil {
-		gc.End()
-		logger.Error("displaying service info: %s", err)
-		fmt.Println("Error displaying service info:", err)
+	if interactive {
+		err = displayServiceInfo(stdscr, svc)
+		if err != nil {
+			gc.End()
+			logger.Error("displaying service info: %s", err)
+
+			if errors.As(err, &curses.SetupWindowError{}) {
+				interactive = false
+			} else {
+				fmt.Println("Error displaying service info:", err)
+			}
+		}
+	}
+
+	if !interactive {
+		tryNonInteractiveAddToStartup()
+		displayNonInteractiveServiceInfo(svc)
 	}
 }
