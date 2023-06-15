@@ -276,6 +276,7 @@ func (tr *Tracker) loadGame() {
 		tr.Logger.Error("error finding system for game: %s", err)
 	}
 
+	// TODO: i don't think this is working
 	var folder string
 	if err != nil && len(system.Folder) > 0 {
 		folder = system.Folder[0]

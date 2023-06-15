@@ -1,12 +1,10 @@
 - Ini settings screen
-- Ini switcher support
 - Work on aria tags and general accessibility concerns
 - Look into localisation support
 - Match screenshots to save states
 - Save (state) manager
 - Presets manager/creator
 - Patch for SAM to use BGM shutdown commands
-- Show current playing game
 - Show recently played games list
 - Manage favourites
 - File manager
@@ -34,9 +32,7 @@
 - Tag/favourite wallpapers
 - Smaller view for wallpapers
 - Delete/upload wallpaper
-- Revert back to random wallpaper
 - Launch other scripts (updates)
-- Report if connection is lost
 - Control what systems are indexed (?)
 - Search pagination
 - Use ArcadeDatabase for reference? https://github.com/Toryalai1/MiSTer_ArcadeDatabase/blob/main/ArcadeDatabase_CSV/ArcadeDatabase230429_1.csv
@@ -50,17 +46,13 @@
 - Add favorite for currently playing game
 - XML read error on mgl files where game has "&" in path
 - Open manual for currently running game
-- To handle setname index, an improved "get single system" for foldertosystem which prefers systems with just the exact folder?
 - OpenVGDB support
 - HTTPS on local: https://words.filippo.io/how-plex-is-doing-https-for-all-its-users/
-- Launching from menu page isn't properly setting the active game
-- ini file switcher (and read current ini)
+- Read current loaded ini
 - User custom control keys map to keyboard key
 - Core context sensitive control buttons
-- Add 1, space and 5 buttons to control page
 - Dynamic changing background based on theme
 - Dynamic theme based on active core
-- Restart remote service button
-- Reset button on control page doesn't work
-- Show numpad (and #, *) on control page for atari 5200, coleco, intellivision etc.
 - Remember last folder used during add shortcut (and need home button?)
+- "Are you sure?" for exit to menu and reset buttons
+- News: https://misterfpga.org/feed/topic/147
