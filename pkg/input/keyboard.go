@@ -115,7 +115,7 @@ func (k *Keyboard) User() {
 }
 
 func (k *Keyboard) Reset() {
-	k.Combo(uinput.KeyLeftshift, uinput.KeyLeftctrl, uinput.KeyLeftalt)
+	k.Combo(uinput.KeyLeftshift, uinput.KeyLeftctrl, uinput.KeyLeftalt, uinput.KeyRightalt)
 }
 
 func (k *Keyboard) PairBluetooth() {
