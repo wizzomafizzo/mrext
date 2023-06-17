@@ -274,8 +274,13 @@ func SetMenuBackgroundMode(mode int) error {
 		return fmt.Errorf("invalid background mode")
 	}
 
-	if _, err := os.Stat(config.MenuConfigFile); err != nil {
+	cfg, err := ReadMenuConfig()
+	if err != nil {
 		return err
+	}
+
+	if cfg.BackgroundMode == mode {
+		return nil
 	}
 
 	file, err := os.ReadFile(config.MenuConfigFile)
