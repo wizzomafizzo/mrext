@@ -189,18 +189,26 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/launch/new", games.CreateLauncher(logger)).Methods("POST")
 
 	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
-	// TODO: change to keyboard-raw?
+	// TODO: change to keyboard-raw
 	sub.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
 
 	sub.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
 	sub.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
 
-	// TODO: change this so url points to specific ini file
-	sub.HandleFunc("/settings/ini", settings.HandleSaveIni(logger)).Methods("POST")
 	sub.HandleFunc("/settings/inis", settings.HandleListInis(logger)).Methods("GET")
 	sub.HandleFunc("/settings/inis", settings.HandleSetActiveIni(logger)).Methods("PUT")
+	sub.HandleFunc("/settings/inis/1", settings.HandleLoadIni(logger, 1)).Methods("GET")
+	sub.HandleFunc("/settings/inis/1", settings.HandleSaveIni(logger, 1)).Methods("PUT")
+	sub.HandleFunc("/settings/inis/2", settings.HandleLoadIni(logger, 2)).Methods("GET")
+	sub.HandleFunc("/settings/inis/2", settings.HandleSaveIni(logger, 2)).Methods("PUT")
+	sub.HandleFunc("/settings/inis/3", settings.HandleLoadIni(logger, 3)).Methods("GET")
+	sub.HandleFunc("/settings/inis/3", settings.HandleSaveIni(logger, 3)).Methods("PUT")
+	sub.HandleFunc("/settings/inis/4", settings.HandleLoadIni(logger, 4)).Methods("GET")
+	sub.HandleFunc("/settings/inis/4", settings.HandleSaveIni(logger, 4)).Methods("PUT")
+
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote()).Methods("POST")
+
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {

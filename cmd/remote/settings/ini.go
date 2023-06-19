@@ -7,21 +7,81 @@ import (
 	"net/http"
 )
 
-func HandleSaveIni(logger *service.Logger) http.HandlerFunc {
+type SaveIniRequest = map[string]string
+
+func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//iniFile, err := mister.LoadMisterIni()
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	logger.Error("load mister.ini: %s", err)
-		//	return
-		//}
-		//
-		//err = mister.SaveMisterIni(iniFile)
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	logger.Error("save mister.ini: %s", err)
-		//	return
-		//}
+		logger.Info("save ini request: %d", reqId)
+
+		var args SaveIniRequest
+
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("decode save ini request: %s", err)
+			return
+		}
+
+		id, iniFile, err := mister.LoadMisterIni(reqId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("load mister.ini: %s", err)
+			return
+		}
+
+		for key, value := range args {
+			err := mister.UpdateMisterIni(iniFile, key, value)
+			if err != nil {
+				logger.Error("update mister.ini: %s", err)
+			}
+			logger.Info("update mister.ini: %s=%s", key, value)
+		}
+
+		err = mister.SaveMisterIni(id, iniFile)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("save mister.ini: %s", err)
+			return
+		}
+
+		err = mister.RelaunchIfInMenu()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("relaunch mister: %s", err)
+			return
+		}
+	}
+}
+
+func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("load ini request: %d", reqId)
+
+		_, iniFile, err := mister.LoadMisterIni(reqId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("load mister.ini: %s", err)
+			return
+		}
+
+		section, err := iniFile.GetSection("MiSTer")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("get mister.ini section: %s", err)
+			return
+		}
+
+		payload := make(map[string]string)
+		for _, key := range section.Keys() {
+			payload[key.Name()] = key.Value()
+		}
+
+		err = json.NewEncoder(w).Encode(payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("encode mister.ini: %s", err)
+			return
+		}
 	}
 }
 
@@ -39,7 +99,7 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		activeIni, err := mister.GetCurrentIni()
+		activeIni, err := mister.GetActiveIni()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get current mister.ini: %s", err)
@@ -94,7 +154,7 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		err = mister.SetCurrentIni(args.Ini)
+		err = mister.SetActiveIni(args.Ini)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("set active mister.ini: %s", err)

@@ -50,7 +50,7 @@ func unmapSharedMem(mem *[]byte, file *os.File) error {
 	return nil
 }
 
-func GetCurrentIni() (int, error) {
+func GetActiveIni() (int, error) {
 	mem, file, err := mapSharedMem(0x1FFFF000)
 	if err != nil {
 		return 0, err
@@ -71,7 +71,7 @@ func GetCurrentIni() (int, error) {
 	}
 }
 
-func SetCurrentIni(ini int) error {
+func SetActiveIni(ini int) error {
 	if ini < 1 || ini > 4 {
 		return fmt.Errorf("ini number out of range: %d", ini)
 	}

@@ -103,7 +103,7 @@ func main() {
 	} else if *sendKb != "" {
 		sendKeyboard(*sendKb)
 	} else if *getIni {
-		n, err := mister.GetCurrentIni()
+		n, err := mister.GetActiveIni()
 		if err != nil {
 			fmt.Printf("error getting ini: %s\n", err)
 			os.Exit(1)
@@ -114,7 +114,7 @@ func main() {
 		}
 		fmt.Printf("active ini: %d\n", n)
 	} else if *setIni != -1 {
-		err := mister.SetCurrentIni(*setIni)
+		err := mister.SetActiveIni(*setIni)
 		if err != nil {
 			fmt.Printf("error setting ini: %s\n", err)
 			os.Exit(1)
