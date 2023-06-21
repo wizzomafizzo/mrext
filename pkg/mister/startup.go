@@ -154,3 +154,14 @@ func (s *Startup) AddService(name string) error {
 
 	return s.Add(name, cmd)
 }
+
+func (s *Startup) Remove(name string) error {
+	for i, entry := range s.Entries {
+		if entry.Name == name {
+			s.Entries = append(s.Entries[:i], s.Entries[i+1:]...)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("startup entry not found: %s", name)
+}

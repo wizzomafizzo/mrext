@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -302,13 +303,15 @@ func tryAddStartup(stdscr *gc.Window) error {
 	return nil
 }
 
-func tryNonInteractiveAddToStartup() {
+func tryNonInteractiveAddToStartup(print bool) {
 	var startup mister.Startup
 
 	err := startup.Load()
 	if err != nil {
 		logger.Error("failed to load startup file: %s", err)
-		fmt.Printf("Failed to load startup file: %s\n", err)
+		if print {
+			fmt.Printf("Failed to load startup file: %s\n", err)
+		}
 		return
 	}
 
@@ -316,18 +319,24 @@ func tryNonInteractiveAddToStartup() {
 		err = startup.AddService("mrext/" + appName)
 		if err != nil {
 			logger.Error("failed to add to startup: %s", err)
-			fmt.Printf("Failed to add to startup: %s\n", err)
+			if print {
+				fmt.Printf("Failed to add to startup: %s\n", err)
+			}
 			return
 		}
 
 		err = startup.Save()
 		if err != nil {
 			logger.Error("failed to save startup: %s", err)
-			fmt.Printf("Failed to save startup: %s\n", err)
+			if print {
+				fmt.Printf("Failed to save startup: %s\n", err)
+			}
 			return
 		}
 
-		fmt.Println("Added Remote to MiSTer startup.")
+		if print {
+			fmt.Println("Added Remote to MiSTer startup.")
+		}
 	}
 }
 
@@ -468,8 +477,118 @@ func displayNonInteractiveServiceInfo(service *service.Service) {
 	fmt.Println("It's safe to exit, the service will continue running.")
 }
 
+func removeFromStartup() error {
+	startup := mister.Startup{}
+
+	err := startup.Load()
+	if err != nil {
+		logger.Error("failed to load startup: %s", err)
+		return err
+	}
+
+	startupName := "mrext/" + appName
+
+	if startup.Exists(startupName) {
+		err := startup.Remove(startupName)
+		if err != nil {
+			logger.Error("failed to remove startup: %s", err)
+			return err
+		}
+
+		err = startup.Save()
+		if err != nil {
+			logger.Error("failed to save startup: %s", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func uninstallService(svc *service.Service) {
+	fmt.Println("Uninstalling MiSTer Remote...")
+
+	if svc.Running() {
+		err := svc.Stop()
+		if err != nil {
+			logger.Error("failed to stop service: %s", err)
+		} else {
+			fmt.Println("Stopped service.")
+		}
+	}
+
+	err := removeFromStartup()
+	if err != nil {
+		logger.Error("failed to remove from startup: %s", err)
+		fmt.Println("Error removing from startup:", err)
+		os.Exit(1)
+	} else {
+		fmt.Println("Removed from MiSTer startup.")
+	}
+
+	exePath, err := os.Executable()
+	if err != nil {
+		logger.Error("failed to get executable path: %s", err)
+		fmt.Println("Error getting executable path:", err)
+		os.Exit(1)
+	}
+
+	iniPath := filepath.Join(filepath.Dir(exePath), appName+".ini")
+	if _, err := os.Stat(iniPath); err == nil {
+		err = os.Remove(iniPath)
+		if err != nil {
+			logger.Error("failed to remove ini file: %s", err)
+			fmt.Println("Error removing ini file:", err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Removed remote.ini file.")
+		}
+	}
+
+	searchDbPath := filepath.Join(config.SdFolder, "search.db")
+	if _, err := os.Stat(searchDbPath); err == nil {
+		err = os.Remove(searchDbPath)
+		if err != nil {
+			logger.Error("failed to remove search db file: %s", err)
+			fmt.Println("Error removing search db file:", err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Removed search.db file.")
+		}
+	}
+
+	menuJpgPath := filepath.Join(config.SdFolder, "menu.jpg")
+	menuJpg, err := os.Lstat(menuJpgPath)
+	if err == nil && menuJpg.Mode()&os.ModeSymlink != 0 {
+		err = os.Remove(menuJpgPath)
+		if err != nil {
+			logger.Error("failed to remove menu.jpg symlink: %s", err)
+			fmt.Println("Error removing menu.jpg symlink:", err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Removed menu.jpg symlink.")
+		}
+	}
+
+	menuPngPath := filepath.Join(config.SdFolder, "menu.png")
+	menuPng, err := os.Lstat(menuPngPath)
+	if err == nil && menuPng.Mode()&os.ModeSymlink != 0 {
+		err = os.Remove(menuPngPath)
+		if err != nil {
+			logger.Error("failed to remove menu.png symlink: %s", err)
+			fmt.Println("Error removing menu.png symlink:", err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Removed menu.png symlink.")
+		}
+	}
+
+	fmt.Println("Uninstall complete.")
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
+	uninstallOpt := flag.Bool("uninstall", false, "uninstall MiSTer Remote")
 	flag.Parse()
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
@@ -490,6 +609,11 @@ func main() {
 		logger.Error("creating service: %s", err)
 		fmt.Println("Error creating service:", err)
 		os.Exit(1)
+	}
+
+	if *uninstallOpt {
+		uninstallService(svc)
+		os.Exit(0)
 	}
 
 	svc.ServiceHandler(svcOpt)
@@ -541,7 +665,7 @@ func main() {
 	}
 
 	if !interactive {
-		tryNonInteractiveAddToStartup()
+		tryNonInteractiveAddToStartup(true)
 		displayNonInteractiveServiceInfo(svc)
 	}
 }
