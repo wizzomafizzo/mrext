@@ -340,13 +340,18 @@ func tryNonInteractiveAddToStartup(print bool) {
 	}
 }
 
-func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
+const (
+	displayNothing = iota
+	displayUninstall
+)
+
+func displayServiceInfo(stdscr *gc.Window, service *service.Service) (int, error) {
 	width := 57
 	height := 10
 
 	win, err := curses.NewWindow(stdscr, height, width, "", -1)
 	if err != nil {
-		return err
+		return displayNothing, err
 	}
 	defer func(win *gc.Window) {
 		err := win.Delete()
@@ -374,7 +379,7 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 	}
 
 	var ch gc.Key
-	selected := 2
+	selected := 3
 
 	for {
 		var statusText string
@@ -400,24 +405,24 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 		}
 
 		clearLine(8)
-		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Exit"}, selected, 5)
+		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Uninstall", "Exit"}, selected, 1)
 
 		win.NoutRefresh()
 		err := gc.Update()
 		if err != nil {
-			return err
+			return displayNothing, err
 		}
 
 		ch = win.GetChar()
 
 		if ch == gc.KEY_LEFT {
 			if selected == 0 {
-				selected = 2
+				selected = 3
 			} else {
 				selected--
 			}
 		} else if ch == gc.KEY_RIGHT {
-			if selected == 2 {
+			if selected == 3 {
 				selected = 0
 			} else {
 				selected++
@@ -442,6 +447,8 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 					logger.Error("could not restart service: %s", err)
 				}
 				time.Sleep(1 * time.Second)
+			} else if selected == 2 {
+				return displayUninstall, nil
 			} else {
 				break
 			}
@@ -450,7 +457,7 @@ func displayServiceInfo(stdscr *gc.Window, service *service.Service) error {
 		}
 	}
 
-	return nil
+	return displayNothing, nil
 }
 
 func displayNonInteractiveServiceInfo(service *service.Service) {
@@ -524,25 +531,6 @@ func uninstallService(svc *service.Service) {
 		os.Exit(1)
 	} else {
 		fmt.Println("Removed from MiSTer startup.")
-	}
-
-	exePath, err := os.Executable()
-	if err != nil {
-		logger.Error("failed to get executable path: %s", err)
-		fmt.Println("Error getting executable path:", err)
-		os.Exit(1)
-	}
-
-	iniPath := filepath.Join(filepath.Dir(exePath), appName+".ini")
-	if _, err := os.Stat(iniPath); err == nil {
-		err = os.Remove(iniPath)
-		if err != nil {
-			logger.Error("failed to remove ini file: %s", err)
-			fmt.Println("Error removing ini file:", err)
-			os.Exit(1)
-		} else {
-			fmt.Println("Removed remote.ini file.")
-		}
 	}
 
 	searchDbPath := filepath.Join(config.SdFolder, "search.db")
@@ -651,7 +639,7 @@ func main() {
 	}
 
 	if interactive {
-		err = displayServiceInfo(stdscr, svc)
+		action, err := displayServiceInfo(stdscr, svc)
 		if err != nil {
 			gc.End()
 			logger.Error("displaying service info: %s", err)
@@ -661,6 +649,10 @@ func main() {
 			} else {
 				fmt.Println("Error displaying service info:", err)
 			}
+		} else if action == displayUninstall {
+			gc.End()
+			uninstallService(svc)
+			os.Exit(0)
 		}
 	}
 
