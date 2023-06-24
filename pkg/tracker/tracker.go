@@ -138,16 +138,16 @@ func (tr *Tracker) addEvent(action int, target string) {
 	actionLabel := ""
 	switch action {
 	case EventActionCoreStart:
-		tr.execHook(tr.Config.PlayLog.OnCoreStart, target)
+		tr.execHook(tr.Config.PlayLog.OnCoreStart, ev.TargetPath)
 		actionLabel = "core started"
 	case EventActionCoreStop:
-		tr.execHook(tr.Config.PlayLog.OnCoreStop, target)
+		tr.execHook(tr.Config.PlayLog.OnCoreStop, ev.TargetPath)
 		actionLabel = "core stopped"
 	case EventActionGameStart:
-		tr.execHook(tr.Config.PlayLog.OnGameStart, target)
+		tr.execHook(tr.Config.PlayLog.OnGameStart, ev.TargetPath)
 		actionLabel = "game started"
 	case EventActionGameStop:
-		tr.execHook(tr.Config.PlayLog.OnGameStop, target)
+		tr.execHook(tr.Config.PlayLog.OnGameStop, ev.TargetPath)
 		actionLabel = "game stopped"
 	}
 
@@ -219,9 +219,9 @@ func (tr *Tracker) LoadCore() {
 
 		tr.addEvent(EventActionCoreStart, coreName)
 
-		if !strings.HasPrefix(tr.ActiveGame, tr.ActiveCore) {
-			tr.stopGame()
-		}
+		//if !strings.HasPrefix(tr.ActiveGame, tr.ActiveCore) {
+		//	tr.stopGame()
+		//}
 	}
 }
 
