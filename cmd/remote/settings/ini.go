@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"io"
 	"net/http"
+	"os"
 )
 
 type SaveIniRequest = map[string]string
@@ -189,6 +191,30 @@ func HandleSetMenuBackgroundMode(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("relaunch if in menu: %s", err)
+			return
+		}
+	}
+}
+
+func HandleDownloadRemoteLog(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("download remote log")
+
+		// TODO: don't hardcode this path
+		file, err := os.Open("/tmp/remote.log")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("open remote log: %s", err)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename=remote.log")
+		w.Header().Set("Content-Type", "text/plain")
+
+		_, err = io.Copy(w, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("download remote log: %s", err)
 			return
 		}
 	}

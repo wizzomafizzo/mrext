@@ -209,7 +209,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote()).Methods("POST")
-
+	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
