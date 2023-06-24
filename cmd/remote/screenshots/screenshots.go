@@ -96,33 +96,33 @@ func ViewScreenshot(_ *service.Logger) http.HandlerFunc {
 
 func TakeScreenshot(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var screenshot ScreenshotPayload
+		screenshot := ScreenshotPayload{}
 
 		cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 		if err != nil {
-			logger.Error("take screenshot: %s", err)
+			logger.Error("take screenshot: open dev: %s", err)
 			return
 		}
 		defer func(cmd *os.File) {
 			err := cmd.Close()
 			if err != nil {
-				logger.Error("take screenshot: %s", err)
+				logger.Error("take screenshot: close dev: %s", err)
 			}
 		}(cmd)
 
 		_, err = cmd.WriteString("screenshot\n")
 		if err != nil {
-			logger.Error("take screenshot: %s", err)
+			logger.Error("take screenshot: write dev: %s", err)
 			return
 		}
 
-		// TODO: pretend to wait
+		// TODO: don't pretend to wait
 		time.Sleep(1 * time.Second)
 
-		err = json.NewDecoder(r.Body).Decode(&screenshot)
+		err = json.NewEncoder(w).Encode(screenshot)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("take screenshot: %s", err)
+			logger.Error("take screenshot: encode: %s", err)
 			return
 		}
 	}
