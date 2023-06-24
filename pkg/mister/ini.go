@@ -170,7 +170,9 @@ func UpdateMisterIni(iniFile *ini.File, key string, value string) error {
 		return fmt.Errorf("invalid ini key: %s", key)
 	}
 
-	if section.HasKey(key) {
+	if section.HasKey(key) && value == "" {
+		section.DeleteKey(key)
+	} else if section.HasKey(key) {
 		section.Key(key).SetValue(value)
 	} else {
 		_, err := section.NewKey(key, value)
@@ -196,6 +198,7 @@ func SaveMisterIni(id int, iniFile *ini.File) error {
 	iniPath := iniFileInfo.Path
 
 	backupPath := fmt.Sprintf("%s.backup", iniPath)
+	originalPath := fmt.Sprintf("%s.original", iniPath)
 
 	backupData, err := os.ReadFile(iniPath)
 	if err != nil {
@@ -205,6 +208,13 @@ func SaveMisterIni(id int, iniFile *ini.File) error {
 	err = os.WriteFile(backupPath, backupData, 0644)
 	if err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(originalPath); os.IsNotExist(err) {
+		err = os.WriteFile(originalPath, backupData, 0644)
+		if err != nil {
+			return err
+		}
 	}
 
 	return iniFile.SaveTo(iniPath)
