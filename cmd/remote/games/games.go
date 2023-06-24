@@ -62,7 +62,7 @@ func GetIndexingStatus() string {
 	return status
 }
 
-func (s *Index) GenerateIndex() {
+func (s *Index) GenerateIndex(logger *service.Logger) {
 	// TODO: this probably does need some sort of logging
 	if s.Indexing {
 		return
@@ -71,13 +71,17 @@ func (s *Index) GenerateIndex() {
 	s.mu.Lock()
 	s.Indexing = true
 
-	_ = websocket.Broadcast(GetIndexingStatus())
+	err := websocket.Broadcast(GetIndexingStatus())
+	if err != nil {
+		logger.Error("index: broadcasting status: %s", err)
+	}
 
 	go func() {
 		systemPaths := make(map[string][]string)
 
 		for _, path := range games.GetSystemPaths(games.AllSystems()) {
 			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
+			logger.Info("index: found path %s: %s", path.System.Name, path.Path)
 		}
 
 		s.TotalSteps = 0
@@ -88,25 +92,42 @@ func (s *Index) GenerateIndex() {
 
 		s.TotalSteps += 3
 		s.CurrentStep = 2
-		_ = websocket.Broadcast(GetIndexingStatus())
+		err = websocket.Broadcast(GetIndexingStatus())
+		if err != nil {
+			logger.Error("index: broadcasting status: %s", err)
+		}
 
 		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
-			system, _ := games.GetSystem(systemId)
+			system, err := games.GetSystem(systemId)
+			if err != nil {
+				logger.Error("index: getting system: %s", err)
+				return
+			}
+
 			s.CurrentDesc = system.Name
 			s.CurrentStep++
 			_ = websocket.Broadcast(GetIndexingStatus())
 		})
 
 		s.CurrentDesc = "Writing to database"
-		_ = websocket.Broadcast(GetIndexingStatus())
-		_ = txtindex.Generate(files, config.SearchDbFile)
+		err = websocket.Broadcast(GetIndexingStatus())
+		if err != nil {
+			logger.Error("index: broadcasting status: %s", err)
+		}
+		err = txtindex.Generate(files, config.SearchDbFile)
+		if err != nil {
+			logger.Error("index: generating index: %s", err)
+		}
 
 		s.CurrentStep++
 		s.Indexing = false
 		s.TotalSteps = 0
 		s.CurrentStep = 0
 		s.CurrentDesc = ""
-		_ = websocket.Broadcast(GetIndexingStatus())
+		err = websocket.Broadcast(GetIndexingStatus())
+		if err != nil {
+			logger.Error("index: broadcasting status: %s", err)
+		}
 		s.mu.Unlock()
 	}()
 }
@@ -117,8 +138,10 @@ func NewIndex() *Index {
 
 var IndexInstance = NewIndex()
 
-func GenerateSearchIndex(_ http.ResponseWriter, _ *http.Request) {
-	IndexInstance.GenerateIndex()
+func GenerateSearchIndex(logger *service.Logger) http.HandlerFunc {
+	return func(_ http.ResponseWriter, _ *http.Request) {
+		IndexInstance.GenerateIndex(logger)
+	}
 }
 
 type listSystemsPayloadSystem struct {
