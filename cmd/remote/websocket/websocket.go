@@ -63,17 +63,16 @@ func (cg *connGroup) Clean() {
 	cg.conns = fresh
 }
 
-func (cg *connGroup) Broadcast(msg string) error {
+func (cg *connGroup) Broadcast(logger *service.Logger, msg string) {
 	cg.Clean()
 	cg.mu.Lock()
 	defer cg.mu.Unlock()
 	for _, c := range cg.conns {
 		err := send(c, msg)
 		if err != nil {
-			return err
+			logger.Error("failed to write to websocket: %s", err)
 		}
 	}
-	return nil
 }
 
 var conns = &connGroup{}
@@ -131,6 +130,6 @@ func Handle(
 	}
 }
 
-func Broadcast(msg string) error {
-	return conns.Broadcast(msg)
+func Broadcast(logger *service.Logger, msg string) {
+	conns.Broadcast(logger, msg)
 }

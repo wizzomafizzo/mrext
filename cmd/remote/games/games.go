@@ -71,10 +71,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 	s.mu.Lock()
 	s.Indexing = true
 
-	err := websocket.Broadcast(GetIndexingStatus())
-	if err != nil {
-		logger.Error("index: broadcasting status: %s", err)
-	}
+	websocket.Broadcast(logger, GetIndexingStatus())
 
 	go func() {
 		systemPaths := make(map[string][]string)
@@ -92,10 +89,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 
 		s.TotalSteps += 3
 		s.CurrentStep = 2
-		err = websocket.Broadcast(GetIndexingStatus())
-		if err != nil {
-			logger.Error("index: broadcasting status: %s", err)
-		}
+		websocket.Broadcast(logger, GetIndexingStatus())
 
 		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
 			system, err := games.GetSystem(systemId)
@@ -106,15 +100,12 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 
 			s.CurrentDesc = system.Name
 			s.CurrentStep++
-			_ = websocket.Broadcast(GetIndexingStatus())
+			websocket.Broadcast(logger, GetIndexingStatus())
 		})
 
 		s.CurrentDesc = "Writing to database"
-		err = websocket.Broadcast(GetIndexingStatus())
-		if err != nil {
-			logger.Error("index: broadcasting status: %s", err)
-		}
-		err = txtindex.Generate(files, config.SearchDbFile)
+		websocket.Broadcast(logger, GetIndexingStatus())
+		err := txtindex.Generate(files, config.SearchDbFile)
 		if err != nil {
 			logger.Error("index: generating index: %s", err)
 		}
@@ -124,10 +115,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 		s.TotalSteps = 0
 		s.CurrentStep = 0
 		s.CurrentDesc = ""
-		err = websocket.Broadcast(GetIndexingStatus())
-		if err != nil {
-			logger.Error("index: broadcasting status: %s", err)
-		}
+		websocket.Broadcast(logger, GetIndexingStatus())
 		s.mu.Unlock()
 	}()
 }

@@ -10,7 +10,9 @@ import (
 	"net/http"
 )
 
-type fakeDb struct{}
+type fakeDb struct {
+	logger *service.Logger
+}
 
 func (f *fakeDb) FixPowerLoss() (bool, error) {
 	return false, nil
@@ -19,13 +21,13 @@ func (f *fakeDb) FixPowerLoss() (bool, error) {
 func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
 	switch ev.Action {
 	case tracker.EventActionCoreStart:
-		_ = websocket.Broadcast("coreStart:" + ev.Target)
+		websocket.Broadcast(f.logger, "coreStart:"+ev.Target)
 	case tracker.EventActionCoreStop:
-		_ = websocket.Broadcast("coreStop:" + ev.Target)
+		websocket.Broadcast(f.logger, "coreStop:"+ev.Target)
 	case tracker.EventActionGameStart:
-		_ = websocket.Broadcast("gameStart:" + ev.Target)
+		websocket.Broadcast(f.logger, "gameStart:"+ev.Target)
 	case tracker.EventActionGameStop:
-		_ = websocket.Broadcast("gameStop:" + ev.Target)
+		websocket.Broadcast(f.logger, "gameStop:"+ev.Target)
 	}
 
 	return nil
@@ -52,7 +54,9 @@ func (f *fakeDb) NoResults(err error) bool {
 }
 
 func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Tracker, func() error, error) {
-	tr, err := tracker.NewTracker(logger, cfg, &fakeDb{})
+	tr, err := tracker.NewTracker(logger, cfg, &fakeDb{
+		logger: logger,
+	})
 	if err != nil {
 		logger.Error("failed to start tracker", err)
 		return nil, nil, err
