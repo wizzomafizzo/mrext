@@ -51,6 +51,7 @@ type app struct {
 	bin       string
 	ldFlags   string
 	releaseId string
+	reboot    bool
 	inAll     bool
 }
 
@@ -71,6 +72,7 @@ var apps = []app{
 		bin:       "remote.sh",
 		ldFlags:   "-lcurses",
 		releaseId: "mrext/remote",
+		reboot:    true,
 		inAll:     true,
 	},
 	{
@@ -259,9 +261,10 @@ func UpdateExternalApps() {
 }
 
 type updateDbFile struct {
-	Hash string `json:"hash"`
-	Size int64  `json:"size"`
-	Url  string `json:"url"`
+	Hash   string `json:"hash"`
+	Size   int64  `json:"size"`
+	Url    string `json:"url"`
+	Reboot bool   `json:"reboot,omitempty"`
 }
 
 type updateDbFolder struct {
@@ -329,9 +332,10 @@ func UpdateAllDb() {
 		}
 
 		dbFile.Files["Scripts/"+app.bin] = updateDbFile{
-			Hash: hash,
-			Size: size,
-			Url:  fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, app.name, app.bin),
+			Hash:   hash,
+			Size:   size,
+			Url:    fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, app.name, app.bin),
+			Reboot: app.reboot,
 		}
 	}
 
@@ -418,9 +422,10 @@ func Release(name string) {
 			Timestamp: time.Now().Unix(),
 			Files: map[string]updateDbFile{
 				"Scripts/" + a.bin: {
-					Hash: hash,
-					Size: size,
-					Url:  fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, a.name, a.bin),
+					Hash:   hash,
+					Size:   size,
+					Url:    fmt.Sprintf("%s/%s/%s", releaseUrlPrefix, a.name, a.bin),
+					Reboot: a.reboot,
 				},
 			},
 			Folders: map[string]updateDbFolder{
