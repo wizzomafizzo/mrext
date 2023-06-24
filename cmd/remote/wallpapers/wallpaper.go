@@ -26,7 +26,7 @@ type Wallpaper struct {
 const wallpaperFolder = config.SdFolder + "/wallpapers"
 
 func listWallpapers() ([]Wallpaper, error) {
-	var wps []Wallpaper
+	wps := make([]Wallpaper, 0)
 
 	if _, err := os.Stat(wallpaperFolder); os.IsNotExist(err) {
 		err := os.Mkdir(wallpaperFolder, 0755)
@@ -66,8 +66,6 @@ type AllWallpapersPayload struct {
 
 func AllWallpapersHandler(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		var wps []Wallpaper
-
 		wps, err := listWallpapers()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
