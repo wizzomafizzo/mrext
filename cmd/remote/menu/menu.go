@@ -192,7 +192,6 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 			namesTxtResult, err := getNamesTxt(formatted, filetype)
 			if err != nil {
 				logger.Error("couldn't get names.txt for %s: %s", name, err)
-				continue
 			}
 
 			var namesTxt *string
