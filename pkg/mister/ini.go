@@ -136,7 +136,7 @@ func LoadMisterIni(id int) (int, *ini.File, error) {
 		return id, nil, err
 	}
 
-	iniFile, err := ini.Load(iniPath)
+	iniFile, err := ini.ShadowLoad(iniPath)
 	if err != nil {
 		return id, nil, err
 	}
