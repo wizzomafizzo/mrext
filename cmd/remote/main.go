@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/grandcat/zeroconf"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -33,8 +34,13 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
-const appName = "remote"
-const appPort = 8182
+const (
+	appName         = "remote"
+	appPort         = 8182
+	zeroconfName    = "mrext-remote"
+	zeroconfPort    = 8183
+	defaultHostname = "MiSTer"
+)
 
 var logger = service.NewLogger(appName)
 
@@ -97,6 +103,15 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 	}
 }
 
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Error("failed to get hostname: %s", err)
+		hostname = defaultHostname
+	}
+	return hostname
+}
+
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	kbd, err := input.NewKeyboard()
 	if err != nil {
@@ -127,6 +142,26 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		ReadTimeout:  15 * time.Second,
 	}
 
+	var zeroconfServer *zeroconf.Server
+
+	go func() {
+		logger.Info("starting zeroconf service")
+
+		server, err := zeroconf.Register(
+			getHostname(),
+			"_"+zeroconfName+"._tcp",
+			"local.",
+			zeroconfPort,
+			[]string{},
+			nil,
+		)
+		if err != nil {
+			logger.Error("failed to register zeroconf service: %s", err)
+		} else {
+			zeroconfServer = server
+		}
+	}()
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("critical server error: %s", err)
@@ -137,14 +172,18 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	return func() error {
 		kbd.Close()
 
+		if zeroconfServer != nil {
+			zeroconfServer.Shutdown()
+		}
+
 		err := stopTracker()
 		if err != nil {
-			return err
+			logger.Error("failed to stop tracker: %s", err)
 		}
 
 		err = srv.Close()
 		if err != nil {
-			return err
+			logger.Error("failed to shutdown server: %s", err)
 		}
 
 		return nil
