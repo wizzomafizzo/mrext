@@ -16,6 +16,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"io/fs"
 	"net/http"
@@ -35,11 +36,10 @@ import (
 )
 
 const (
-	appName         = "remote"
-	appPort         = 8182
-	zeroconfName    = "mrext-remote"
-	zeroconfPort    = 8183
-	defaultHostname = "MiSTer"
+	appName      = "remote"
+	appPort      = 8182
+	zeroconfName = "mister-remote"
+	zeroconfPort = 8183
 )
 
 var logger = service.NewLogger(appName)
@@ -107,9 +107,20 @@ func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
 		logger.Error("failed to get hostname: %s", err)
-		hostname = defaultHostname
+		hostname = mister.DefaultHostname
 	}
 	return hostname
+}
+
+func registerZeroconf() (*zeroconf.Server, error) {
+	return zeroconf.Register(
+		"MiSTer Remote ("+getHostname()+")",
+		"_"+zeroconfName+"._tcp",
+		"local.",
+		zeroconfPort,
+		[]string{},
+		nil,
+	)
 }
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
@@ -145,19 +156,30 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	var zeroconfServer *zeroconf.Server
 
 	go func() {
-		logger.Info("starting zeroconf service")
+		logger.Info("starting zeroconf service with hostname: %s", getHostname())
 
-		server, err := zeroconf.Register(
-			getHostname(),
-			"_"+zeroconfName+"._tcp",
-			"local.",
-			zeroconfPort,
-			[]string{},
-			nil,
-		)
+		server, err := registerZeroconf()
 		if err != nil {
-			logger.Error("failed to register zeroconf service: %s", err)
+			logger.Error("failed to register zeroconf service: %s, retrying...", err)
+			tries := 0
+			for {
+				server, err = registerZeroconf()
+				if err == nil {
+					logger.Info("zeroconf service registered")
+					zeroconfServer = server
+					break
+				}
+
+				tries++
+				if tries >= 30 {
+					logger.Error("failed to register zeroconf service: %s", err)
+					break
+				}
+
+				time.Sleep(1 * time.Second)
+			}
 		} else {
+			logger.Info("zeroconf service registered")
 			zeroconfServer = server
 		}
 	}()

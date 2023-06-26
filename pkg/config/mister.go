@@ -5,7 +5,7 @@ const SdFolder = "/media/fat"
 const CoreConfigFolder = SdFolder + "/config"
 const FontFolder = SdFolder + "/font"
 const TempFolder = "/tmp"
-
+const LinuxFolder = SdFolder + "/linux"
 const ScriptsFolder = SdFolder + "/Scripts"
 
 const MenuConfigFile = CoreConfigFolder + "/MENU.CFG"
@@ -15,7 +15,7 @@ const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
 const MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
 const MisterIniFileAlt3 = SdFolder + "/MiSTer_alt_3.ini"
 
-const StartupFile = SdFolder + "/linux/user-startup.sh"
+const StartupFile = LinuxFolder + "/user-startup.sh"
 
 const CoreNameFile = TempFolder + "/CORENAME"
 const CurrentPathFile = TempFolder + "/CURRENTPATH"
@@ -31,9 +31,7 @@ const CmdInterface = "/dev/MiSTer_cmd"
 // TODO: this can't be hardcoded if we want dynamic arcade folders
 const ArcadeCoresFolder = "/media/fat/_Arcade/cores"
 
-// TODO: this is technically not the order mister checks, it does games folders
-//
-//	second, but right now this is simpler for checking for a prefix
+// TODO: not the order mister actually checks, it does games folders second, but this is simpler for checking prefix
 var GamesFolders = []string{
 	"/media/usb0/games",
 	"/media/usb0",
