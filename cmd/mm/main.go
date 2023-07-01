@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/libp2p/zeroconf/v2"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"os"
 	"strconv"
@@ -60,6 +61,23 @@ func sendKeyboard(arg string) {
 	}
 }
 
+const (
+	zeroconfName = "mister-remote"
+	zeroconfPort = 5353
+)
+
+func registerZeroconf() (*zeroconf.Server, error) {
+	hostname, _ := os.Hostname()
+	return zeroconf.Register(
+		"MiSTer Remote ("+hostname+")",
+		"_"+zeroconfName+"._tcp",
+		"local.",
+		zeroconfPort,
+		[]string{"version=0.1"},
+		nil,
+	)
+}
+
 func main() {
 	activePaths := flag.Bool("active-paths", false, "print active system paths")
 	allPaths := flag.Bool("all-paths", false, "print all detected system paths")
@@ -71,6 +89,7 @@ func main() {
 	listInis := flag.Bool("list-inis", false, "list available ini files")
 	getConfig := flag.String("get-config", "", "print config file for core")
 	setBgMode := flag.String("set-bg-mode", "", "set menu background mode")
+	testMdns := flag.Bool("test-mdns", false, "test mDNS service")
 	flag.Parse()
 
 	start := time.Now()
@@ -157,6 +176,18 @@ func main() {
 		if err != nil {
 			fmt.Printf("error relaunching menu: %s\n", err)
 			os.Exit(1)
+		}
+	} else if *testMdns {
+		server, err := registerZeroconf()
+		if err != nil {
+			fmt.Printf("error registering zeroconf: %s\n", err)
+			os.Exit(1)
+		} else {
+			fmt.Printf("registered zeroconf service\n")
+		}
+		defer server.Shutdown()
+		for {
+			time.Sleep(time.Second)
 		}
 	} else {
 		flag.Usage()

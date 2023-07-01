@@ -110,6 +110,11 @@ func Handle(
 		for {
 			_, msg, err := c.ReadMessage()
 			if err != nil {
+				if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+					return
+				} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+					return
+				}
 				logger.Error("failed to read from websocket: %s", err)
 				return
 			}

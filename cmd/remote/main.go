@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/grandcat/zeroconf"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -36,10 +35,9 @@ import (
 )
 
 const (
-	appName      = "remote"
-	appPort      = 8182
-	zeroconfName = "mister-remote"
-	zeroconfPort = 8183
+	appVersion = "0.1.0"
+	appName    = "remote"
+	appPort    = 8182
 )
 
 var logger = service.NewLogger(appName)
@@ -103,26 +101,6 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 	}
 }
 
-func getHostname() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		logger.Error("failed to get hostname: %s", err)
-		hostname = mister.DefaultHostname
-	}
-	return hostname
-}
-
-func registerZeroconf() (*zeroconf.Server, error) {
-	return zeroconf.Register(
-		"MiSTer Remote ("+getHostname()+")",
-		"_"+zeroconfName+"._tcp",
-		"local.",
-		zeroconfPort,
-		[]string{},
-		nil,
-	)
-}
-
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	kbd, err := input.NewKeyboard()
 	if err != nil {
@@ -153,35 +131,10 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	var zeroconfServer *zeroconf.Server
-
+	var stopMdns func() error
 	go func() {
-		logger.Info("starting zeroconf service with hostname: %s", getHostname())
-
-		server, err := registerZeroconf()
-		if err != nil {
-			logger.Error("failed to register zeroconf service: %s, retrying...", err)
-			tries := 0
-			for {
-				server, err = registerZeroconf()
-				if err == nil {
-					logger.Info("zeroconf service registered")
-					zeroconfServer = server
-					break
-				}
-
-				tries++
-				if tries >= 30 {
-					logger.Error("failed to register zeroconf service: %s", err)
-					break
-				}
-
-				time.Sleep(1 * time.Second)
-			}
-		} else {
-			logger.Info("zeroconf service registered")
-			zeroconfServer = server
-		}
+		// TODO: this should be configurable from ini file
+		stopMdns = mister.TryStartMdns(logger, appVersion)
 	}()
 
 	go func() {
@@ -194,8 +147,11 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	return func() error {
 		kbd.Close()
 
-		if zeroconfServer != nil {
-			zeroconfServer.Shutdown()
+		if stopMdns != nil {
+			err := stopMdns()
+			if err != nil {
+				logger.Error("failed to stop mdns: %s", err)
+			}
 		}
 
 		err := stopTracker()
@@ -267,6 +223,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote()).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
+	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
