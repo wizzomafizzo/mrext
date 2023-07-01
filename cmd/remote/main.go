@@ -133,8 +133,9 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 	var stopMdns func() error
 	go func() {
-		// TODO: this should be configurable from ini file
-		stopMdns = mister.TryStartMdns(logger, appVersion)
+		if cfg.Remote.MdnsService {
+			stopMdns = mister.TryStartMdns(logger, appVersion)
+		}
 	}()
 
 	go func() {
@@ -250,7 +251,11 @@ func main() {
 	uninstallOpt := flag.Bool("uninstall", false, "uninstall MiSTer Remote")
 	flag.Parse()
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
+		Remote: config.RemoteConfig{
+			MdnsService: true,
+		},
+	})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		fmt.Println("Error loading config file:", err)

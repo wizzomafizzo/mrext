@@ -40,6 +40,10 @@ type LastPlayedConfig struct {
 	DisableRecentFolder bool   `ini:"disable_recent_folder,omitempty"`
 }
 
+type RemoteConfig struct {
+	MdnsService bool `ini:"mdns_service,omitempty"`
+}
+
 type UserConfig struct {
 	AltCores   AltCoresConfig   `ini:"altcores,omitempty"`
 	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
@@ -47,6 +51,7 @@ type UserConfig struct {
 	Random     RandomConfig     `ini:"random,omitempty"`
 	Search     SearchConfig     `ini:"search,omitempty"`
 	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
+	Remote     RemoteConfig     `ini:"remote,omitempty"`
 }
 
 func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {
