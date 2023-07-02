@@ -5,6 +5,7 @@ import (
 	"github.com/libp2p/zeroconf/v2"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -74,7 +75,7 @@ func browseMdns(logger *service.Logger) {
 		for entry := range results {
 			version := ""
 			if len(entry.Text) > 0 {
-				version = entry.Text[0]
+				version = strings.Split(entry.Text[0], "=")[1]
 			}
 
 			ip := ""
@@ -83,7 +84,7 @@ func browseMdns(logger *service.Logger) {
 			}
 
 			Mdns.AddClient(MdnsClient{
-				Hostname: entry.HostName,
+				Hostname: strings.TrimSuffix(entry.HostName, "."),
 				Version:  version,
 				IP:       ip,
 			})
@@ -152,6 +153,7 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 }
 
 func TryStartMdns(logger *service.Logger, appVersion string) func() error {
+	// TODO: allow a hook function on successful browse
 	retries := 0
 	for {
 		stop, err := startMdns(logger, appVersion)
