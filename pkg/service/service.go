@@ -242,10 +242,12 @@ func (s *Service) Start() error {
 
 	// point new binary to existing config file
 	configPath := filepath.Join(filepath.Dir(binPath), s.Name+".ini")
+	appPath, _ := os.Executable()
 	if _, err := os.Stat(configPath); err == nil {
 		env := os.Environ()
 		cmd.Env = env
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserConfigEnv, configPath))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserAppPathEnv, appPath))
 	}
 
 	err = cmd.Start()

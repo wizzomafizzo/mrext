@@ -45,6 +45,8 @@ type RemoteConfig struct {
 }
 
 type UserConfig struct {
+	AppPath    string
+	IniPath    string
 	AltCores   AltCoresConfig   `ini:"altcores,omitempty"`
 	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
 	PlayLog    PlayLogConfig    `ini:"playlog,omitempty"`
@@ -59,14 +61,22 @@ func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error)
 
 	iniPath := os.Getenv(UserConfigEnv)
 
-	if iniPath == "" {
-		absPath, err := os.Executable()
-		if err != nil {
-			return defaultConfig, err
-		}
-
-		iniPath = filepath.Join(filepath.Dir(absPath), name+".ini")
+	exePath, err := os.Executable()
+	if err != nil {
+		return defaultConfig, err
 	}
+
+	appPath := os.Getenv(UserAppPathEnv)
+	if appPath != "" {
+		exePath = appPath
+	}
+
+	if iniPath == "" {
+		iniPath = filepath.Join(filepath.Dir(exePath), name+".ini")
+	}
+
+	defaultConfig.AppPath = exePath
+	defaultConfig.IniPath = iniPath
 
 	if _, err := os.Stat(iniPath); os.IsNotExist(err) {
 		return defaultConfig, nil

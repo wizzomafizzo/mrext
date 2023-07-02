@@ -122,7 +122,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}
 
 	router := mux.NewRouter()
-	setupApi(router.PathPrefix("/api").Subrouter(), kbd, trk, logger)
+	setupApi(router.PathPrefix("/api").Subrouter(), kbd, trk, logger, cfg)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	corsHandler := cors.New(cors.Options{
@@ -169,7 +169,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}, nil
 }
 
-func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger *service.Logger) {
+func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger *service.Logger, cfg *config.UserConfig) {
 	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd)))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
@@ -222,7 +222,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/inis/4", settings.HandleSaveIni(logger, 4)).Methods("PUT")
 
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
-	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote()).Methods("POST")
+	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(cfg)).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
 }

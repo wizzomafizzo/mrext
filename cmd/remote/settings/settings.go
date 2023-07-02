@@ -7,7 +7,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"os/exec"
-	"path/filepath"
 	"sync"
 )
 
@@ -30,13 +29,9 @@ func (p *UpdateProgress) GetProcess() *exec.Cmd {
 
 var updateProgressInstance = &UpdateProgress{}
 
-func HandleRestartRemote() http.HandlerFunc {
+func HandleRestartRemote(cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: this will break if the remote.sh script is launched from somewhere else
-		//       it probably will rarely ever happen, but the path should be found dynamically
-		//       it can't be found from memory because service is launched from tmp
-		path := filepath.Join(config.ScriptsFolder, "remote.sh")
-		cmd := exec.Command(path, "-service", "restart")
+		cmd := exec.Command(cfg.AppPath, "-service", "restart")
 		err := cmd.Start()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
