@@ -3,14 +3,19 @@ package mister
 import (
 	"context"
 	"github.com/libp2p/zeroconf/v2"
+	"github.com/txn2/txeh"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"net"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 )
 
 const (
+	DefaultHostname = "MiSTer"
 	MdnsServiceName = "_mister-remote._tcp"
 	mdnsPort        = 5353
 	mdnsTTL         = 120
@@ -152,6 +157,8 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 	}, nil
 }
 
+// TryStartMdns will attempt to start the mDNS service, retrying multiple times if it fails. This is because a script
+// may be run at boot time before the network is available.
 func TryStartMdns(logger *service.Logger, appVersion string) func() error {
 	// TODO: allow a hook function on successful browse
 	retries := 0
@@ -170,4 +177,105 @@ func TryStartMdns(logger *service.Logger, appVersion string) func() error {
 			}
 		}
 	}
+}
+
+// UpdateHostname updates all hostname related files with the new hostname and refreshes it in kernel memory.
+func UpdateHostname(newHostname string, writeProc bool) error {
+	procHostnameFile := "/proc/sys/kernel/hostname"
+	hostnameFile := "/etc/hostname"
+	localIp := "127.0.1.1"
+
+	if newHostname == "" {
+		newHostname = DefaultHostname
+	}
+
+	currentHostnameData, err := os.ReadFile(hostnameFile)
+	if err != nil {
+		return err
+	}
+
+	currentHostname := string(currentHostnameData)
+
+	if currentHostname == newHostname {
+		// no change required
+		return nil
+	}
+
+	// update hostname file
+	err = os.WriteFile(hostnameFile, []byte(newHostname), 0644)
+	if err != nil {
+		return err
+	}
+
+	// update hosts file
+	hosts, err := txeh.NewHostsDefault()
+	if err != nil {
+		return err
+	}
+
+	hosts.RemoveHost(strings.ToLower(currentHostname))
+	hosts.AddHost(localIp, strings.ToLower(newHostname))
+
+	err = hosts.Save()
+	if err != nil {
+		return err
+	}
+
+	// write new hostname to proc
+	if writeProc {
+		return os.WriteFile(procHostnameFile, []byte(newHostname), 0644)
+	} else {
+		return nil
+	}
+}
+
+var ethAddrArg = regexp.MustCompile(`ethaddr=([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})`)
+
+func readUBootConfig() (string, error) {
+	uBootConfigData, err := os.ReadFile(config.UBootConfigFile)
+	if os.IsNotExist(err) {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+
+	return string(uBootConfigData), nil
+}
+
+// GetConfiguredMacAddress returns the ethernet MAC address configured in the u-boot.txt file, if available.
+func GetConfiguredMacAddress() (string, error) {
+	uBootConfig, err := readUBootConfig()
+	if err != nil {
+		return "", err
+	}
+
+	for _, line := range strings.Split(uBootConfig, "\n") {
+		if ethAddrArg.MatchString(line) {
+			return ethAddrArg.FindStringSubmatch(line)[1], nil
+		}
+	}
+
+	return "", nil
+}
+
+// UpdateConfiguredMacAddress updates the ethernet MAC address configured in the u-boot.txt file. Setting a new one if
+// it doesn't exist, or updating the existing one. Any existing u-boot.txt arguments are preserved.
+func UpdateConfiguredMacAddress(newMacAddress string) error {
+	uBootConfig, err := readUBootConfig()
+	if err != nil {
+		return err
+	}
+
+	uBootConfig = ethAddrArg.ReplaceAllString(uBootConfig, "")
+
+	if newMacAddress != "" {
+		_, err = net.ParseMAC(newMacAddress)
+		if err != nil {
+			return err
+		}
+
+		uBootConfig += " ethaddr=" + newMacAddress
+	}
+
+	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
 }

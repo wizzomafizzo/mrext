@@ -114,6 +114,13 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		return nil, err
 	}
 
+	var stopMdns func() error
+	if cfg.Remote.MdnsService {
+		go func() {
+			stopMdns = mister.TryStartMdns(logger, appVersion)
+		}()
+	}
+
 	router := mux.NewRouter()
 	setupApi(router.PathPrefix("/api").Subrouter(), kbd, trk, logger)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
@@ -130,13 +137,6 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-
-	var stopMdns func() error
-	go func() {
-		if cfg.Remote.MdnsService {
-			stopMdns = mister.TryStartMdns(logger, appVersion)
-		}
-	}()
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

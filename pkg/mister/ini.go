@@ -104,7 +104,7 @@ var ValidIniKeys = []string{
 	"controller_unique_mapping",
 }
 
-const MisterIniSection = "MiSTer"
+const MainIniSection = "MiSTer"
 
 func LoadMisterIni(id int) (int, *ini.File, error) {
 	inis, err := ListMisterInis()
@@ -141,7 +141,7 @@ func LoadMisterIni(id int) (int, *ini.File, error) {
 		return id, nil, err
 	}
 
-	if !iniFile.HasSection(MisterIniSection) {
+	if !iniFile.HasSection(MainIniSection) {
 		return id, nil, fmt.Errorf("mister.ini does not have a [MiSTer] section")
 	}
 
@@ -161,9 +161,14 @@ func UpdateMisterIni(iniFile *ini.File, key string, value string) error {
 		return fmt.Errorf("iniFile is nil")
 	}
 
-	section := iniFile.Section(MisterIniSection)
+	section := iniFile.Section(MainIniSection)
 	if section == nil {
 		return fmt.Errorf("mister.ini does not have a [MiSTer] section")
+	}
+
+	// custom internal setting, always ignore
+	if strings.HasPrefix(key, "__") {
+		return nil
 	}
 
 	if !utils.Contains(ValidIniKeys, key) {
@@ -225,7 +230,7 @@ func GetMisterIniOption(file *ini.File, name string) string {
 		return ""
 	}
 
-	section := file.Section(MisterIniSection)
+	section := file.Section(MainIniSection)
 	if section == nil {
 		return ""
 	}

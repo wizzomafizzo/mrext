@@ -7,6 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
+)
+
+const (
+	hostnameKey   = "__hostname"
+	macAddressKey = "__ethernetMacAddress"
 )
 
 type SaveIniRequest = map[string]string
@@ -32,6 +38,21 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 		}
 
 		for key, value := range args {
+			// custom internal setting
+			if strings.HasPrefix(key, "__") {
+				if key == hostnameKey {
+					err = mister.UpdateHostname(value, false)
+					if err != nil {
+						logger.Error("set hostname: %s", err)
+					}
+				} else if key == macAddressKey {
+					err = mister.UpdateConfiguredMacAddress(value)
+					if err != nil {
+						logger.Error("set mac address: %s", err)
+					}
+				}
+			}
+
 			err := mister.UpdateMisterIni(iniFile, key, value)
 			if err != nil {
 				logger.Error("update mister.ini: %s", err)
@@ -77,6 +98,20 @@ func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
 		for _, key := range section.Keys() {
 			payload[key.Name()] = key.Value()
 		}
+
+		hostname, err := os.Hostname()
+		if err != nil {
+			hostname = ""
+		}
+
+		payload[hostnameKey] = hostname
+
+		macAddress, err := mister.GetConfiguredMacAddress()
+		if err != nil {
+			macAddress = ""
+		}
+
+		payload[macAddressKey] = macAddress
 
 		err = json.NewEncoder(w).Encode(payload)
 		if err != nil {
