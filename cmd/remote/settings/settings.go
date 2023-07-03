@@ -5,9 +5,12 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 type UpdateProgress struct {
@@ -70,6 +73,93 @@ func HandleListPeers(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("encode list peers response: %s", err)
+			return
+		}
+	}
+}
+
+type HandleSystemInfoPayloadDisk struct {
+	Path  string `json:"path"`
+	Total uint64 `json:"total"`
+	Used  uint64 `json:"used"`
+}
+
+type HandleSystemInfoPayload struct {
+	IPs      []string `json:"ips"`
+	Hostname string   `json:"hostname"`
+	DNS      string   `json:"dns"`
+	Version  string   `json:"version"`
+	Updated  string   `json:"updated"`
+}
+
+func getNetworkIps() []string {
+	ips := make([]string, 0)
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ips
+	}
+
+	for _, addr := range addrs {
+		ip, ok := addr.(*net.IPNet)
+		if !ok {
+			continue
+		}
+
+		if ip.IP.To4() == nil || ip.IP.IsLoopback() || ip.IP.IsMulticast() {
+			continue
+		}
+
+		ips = append(ips, ip.IP.String())
+	}
+
+	return ips
+}
+
+func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hostname, err := os.Hostname()
+		if err != nil {
+			hostname = ""
+		}
+
+		dns := ""
+		if cfg.Remote.MdnsService {
+			dns = hostname + ".local"
+		}
+
+		ips := getNetworkIps()
+
+		updatedTime, err := mister.GetLastUpdateTime()
+		updated := ""
+		if err == nil {
+			updated = updatedTime.Format(time.RFC3339)
+		}
+
+		payload := HandleSystemInfoPayload{
+			IPs:      ips,
+			Hostname: hostname,
+			DNS:      dns,
+			Version:  appVer,
+			Updated:  updated,
+		}
+
+		err = json.NewEncoder(w).Encode(payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("encode system info response: %s", err)
+			return
+		}
+	}
+}
+
+func HandleReboot(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cmd := exec.Command("reboot")
+		err := cmd.Start()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("reboot: %s", err)
 			return
 		}
 	}

@@ -204,8 +204,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/launch/new", games.CreateLauncher(logger)).Methods("POST")
 
 	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
-	// TODO: change to keyboard-raw
-	sub.HandleFunc("/controls/keyboard_raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
+	sub.HandleFunc("/controls/keyboard-raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
 
 	sub.HandleFunc("/menu/view/", menu.ListFolder(logger)).Methods("GET")
 	sub.HandleFunc("/menu/view/{path:.*}", menu.ListFolder(logger)).Methods("GET")
@@ -225,6 +224,9 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(cfg)).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
+	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")
+
+	sub.HandleFunc("/sysinfo", settings.HandleSystemInfo(logger, cfg, appVersion)).Methods("GET")
 }
 
 func appHandler(rw http.ResponseWriter, req *http.Request) {
@@ -315,7 +317,7 @@ func main() {
 	}
 
 	if interactive {
-		action, err := displayServiceInfo(stdscr, svc)
+		action, err := displayServiceInfo(stdscr, svc, cfg)
 		if err != nil {
 			gc.End()
 			logger.Error("displaying service info: %s", err)

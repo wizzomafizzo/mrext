@@ -128,9 +128,9 @@ const (
 	displayUninstall
 )
 
-func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) (int, error) {
+func displayServiceInfo(stdscr *goncurses.Window, service *service.Service, cfg *config.UserConfig) (int, error) {
 	width := 57
-	height := 10
+	height := 11
 
 	win, err := curses.NewWindow(stdscr, height, width, "", -1)
 	if err != nil {
@@ -161,6 +161,12 @@ func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) (int
 		appUrl = fmt.Sprintf("http://%s:%d", ip, appPort)
 	}
 
+	altUrl := ""
+	if cfg.Remote.MdnsService {
+		hostname, _ := os.Hostname()
+		altUrl = "OR " + fmt.Sprintf("http://%s.local:%d", hostname, appPort)
+	}
+
 	var ch goncurses.Key
 	selected := 3
 
@@ -184,7 +190,8 @@ func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) (int
 		if running {
 			printCenter(3, "Access Remote with this URL:")
 			printCenter(4, appUrl)
-			printCenter(6, "It's safe to exit, the service will continue running.")
+			printCenter(5, altUrl)
+			printCenter(7, "It's safe to exit, the service will continue running.")
 		}
 
 		clearLine(8)

@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -201,6 +202,17 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 		return nil
 	}
 
+	// remount root as read/write
+	err = syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// revert root to read-only
+		_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
+	}()
+
 	// update hostname file
 	err = os.WriteFile(hostnameFile, []byte(newHostname), 0644)
 	if err != nil {
@@ -223,10 +235,13 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 
 	// write new hostname to proc
 	if writeProc {
-		return os.WriteFile(procHostnameFile, []byte(newHostname), 0644)
-	} else {
-		return nil
+		err = os.WriteFile(procHostnameFile, []byte(newHostname), 0644)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 var ethAddrArg = regexp.MustCompile(`ethaddr=([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})`)
