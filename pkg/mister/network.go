@@ -175,7 +175,9 @@ func TryStartMdns(logger *service.Logger, appVersion string) func() error {
 				return nil
 			} else {
 				retries++
-				logger.Error("failed to start mdns service, retrying: %s", err)
+				if retries == 1 {
+					logger.Error("failed to start mdns service, retrying: %s", err)
+				}
 				time.Sleep(time.Second)
 			}
 		}
