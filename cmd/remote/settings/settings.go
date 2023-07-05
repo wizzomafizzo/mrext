@@ -2,9 +2,12 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
+	gm "github.com/c-seeger/mac-gen-go"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net"
 	"net/http"
 	"os"
@@ -160,6 +163,41 @@ func HandleReboot(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("reboot: %s", err)
+			return
+		}
+	}
+}
+
+type GenerateMacPayload struct {
+	Mac string `json:"mac"`
+}
+
+func HandleGenerateMac(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		payload := GenerateMacPayload{}
+
+		ip, err := utils.GetLocalIp()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("get local ip: %s", err)
+			return
+		}
+
+		prefix := gm.GenerateRandomLocalMacPrefix(true)
+
+		suffix, err := gm.CalculateNICSufix(ip)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("generate mac: %s", err)
+			return
+		}
+
+		payload.Mac = fmt.Sprintf("%s:%s", prefix, suffix)
+
+		err = json.NewEncoder(w).Encode(payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("encode generate mac response: %s", err)
 			return
 		}
 	}
