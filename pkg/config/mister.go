@@ -28,7 +28,9 @@ const CoresRecentFile = CoreConfigFolder + "/cores_recent.cfg"
 const MenuCore = "MENU"
 
 const CmdInterface = "/dev/MiSTer_cmd"
-
+const SSHConfigFolder = "/root/.ssh"
+const SSHKeysFile = SSHConfigFolder + "/authorized_keys"
+const UserSSHKeysFile = LinuxFolder + "/authorized_keys"
 const DownloaderLastRun = ScriptsFolder + "/.config/downloader/downloader.last_successful_run"
 
 // TODO: this can't be hardcoded if we want dynamic arcade folders

@@ -6,8 +6,10 @@ import (
 	"github.com/txn2/txeh"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -182,6 +184,7 @@ func TryStartMdns(logger *service.Logger, appVersion string) func() error {
 
 // UpdateHostname updates all hostname related files with the new hostname and refreshes it in kernel memory.
 func UpdateHostname(newHostname string, writeProc bool) error {
+	// TODO: also update the linux/hostname file and linux/hosts file
 	procHostnameFile := "/proc/sys/kernel/hostname"
 	hostnameFile := "/etc/hostname"
 	localIp := "127.0.1.1"
@@ -293,4 +296,46 @@ func UpdateConfiguredMacAddress(newMacAddress string) error {
 	}
 
 	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
+}
+
+// CopyAndFixSSHKeys copies the authorized_keys file from the linux folder to root home and fixes all permissions.
+func CopyAndFixSSHKeys() error {
+	const (
+		rootSshFolder = "/root/.ssh"
+		keysFilename  = "authorized_keys"
+	)
+
+	err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
+	}()
+
+	err = os.MkdirAll(rootSshFolder, 0600)
+	if err != nil {
+		return err
+	}
+
+	err = utils.CopyFile(
+		filepath.Join(config.LinuxFolder, keysFilename),
+		filepath.Join(rootSshFolder, keysFilename),
+	)
+	if err != nil {
+		return err
+	}
+
+	err = filepath.Walk(rootSshFolder, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		return os.Chmod(path, 0600)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -101,7 +101,28 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 	}
 }
 
+func setupSSHKeys(logger *service.Logger, cfg *config.UserConfig) {
+	if !cfg.Remote.CopySSHKeys {
+		return
+	}
+
+	if _, err := os.Stat(config.UserSSHKeysFile); os.IsNotExist(err) {
+		return
+	}
+
+	if _, err := os.Stat(config.SSHKeysFile); os.IsNotExist(err) {
+		err := mister.CopyAndFixSSHKeys()
+		if err != nil {
+			logger.Error("failed to copy ssh keys: %s", err)
+		} else {
+			logger.Info("copied ssh keys successfully")
+		}
+	}
+}
+
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
+	//setupSSHKeys(logger, cfg)
+
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
@@ -256,6 +277,7 @@ func main() {
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		Remote: config.RemoteConfig{
 			MdnsService: true,
+			CopySSHKeys: true,
 		},
 	})
 	if err != nil {

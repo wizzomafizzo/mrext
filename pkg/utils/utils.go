@@ -40,8 +40,7 @@ func ListZip(path string) ([]string, error) {
 	return files, nil
 }
 
-// Move a file. Supports moving between filesystems.
-func MoveFile(sourcePath, destPath string) error {
+func CopyFile(sourcePath, destPath string) error {
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {
 		return err
@@ -60,6 +59,16 @@ func MoveFile(sourcePath, destPath string) error {
 	}
 	outputFile.Sync()
 	inputFile.Close()
+
+	return nil
+}
+
+// Move a file. Supports moving between filesystems.
+func MoveFile(sourcePath, destPath string) error {
+	err := CopyFile(sourcePath, destPath)
+	if err != nil {
+		return err
+	}
 
 	err = os.Remove(sourcePath)
 	if err != nil {
