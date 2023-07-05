@@ -24,7 +24,7 @@ func IsZip(path string) bool {
 	return filepath.Ext(strings.ToLower(path)) == ".zip"
 }
 
-// Return a slice of all filenames in a zip file.
+// ListZip returns a slice of all filenames in a zip file.
 func ListZip(path string) ([]string, error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
@@ -63,7 +63,7 @@ func CopyFile(sourcePath, destPath string) error {
 	return nil
 }
 
-// Move a file. Supports moving between filesystems.
+// MoveFile moves a file. Supports moving between filesystems.
 func MoveFile(sourcePath, destPath string) error {
 	err := CopyFile(sourcePath, destPath)
 	if err != nil {
@@ -78,7 +78,7 @@ func MoveFile(sourcePath, destPath string) error {
 	return nil
 }
 
-// Return the highest value in a slice.
+// Max returns the highest value in a slice.
 func Max[T constraints.Ordered](xs []T) T {
 	if len(xs) == 0 {
 		var zv T
@@ -93,7 +93,7 @@ func Max[T constraints.Ordered](xs []T) T {
 	return max
 }
 
-// Return the lowest value in a slice.
+// Min returns the lowest value in a slice.
 func Min[T constraints.Ordered](xs []T) T {
 	if len(xs) == 0 {
 		var zv T
@@ -108,7 +108,7 @@ func Min[T constraints.Ordered](xs []T) T {
 	return min
 }
 
-// Return true if slice contains value.
+// Contains returns true if slice contains value.
 func Contains[T comparable](xs []T, x T) bool {
 	for _, v := range xs {
 		if v == x {
@@ -118,7 +118,7 @@ func Contains[T comparable](xs []T, x T) bool {
 	return false
 }
 
-// Pick and return a random element from a slice.
+// RandomElem picks and returns a random element from a slice.
 func RandomElem[T any](xs []T) (T, error) {
 	var item T
 	if len(xs) == 0 {
@@ -129,7 +129,7 @@ func RandomElem[T any](xs []T) (T, error) {
 	}
 }
 
-// Return a list of all keys in a map.
+// MapKeys returns a list of all keys in a map.
 func MapKeys[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, len(m))
 	i := 0
@@ -140,7 +140,7 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
-// Return a sorted list of all keys in a map.
+// SortedMapKeys return a sorted list of all keys in a map.
 func SortedMapKeys[V any](m map[string]V) []string {
 	keys := MapKeys(m)
 	sort.Strings(keys)
@@ -154,12 +154,12 @@ func StripChars(s string, chars string) string {
 	return s
 }
 
-// Remove all characters from a string that are not allowed in filenames.
+// StripBadFileChars removes all characters from a string that are not allowed in filenames.
 func StripBadFileChars(s string) string {
 	return StripChars(s, "/\\:*?\"<>|")
 }
 
-// Return the MD5 hash of a file on disk.
+// Md5Sum returns the MD5 hash of a file on disk.
 func Md5Sum(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -171,7 +171,7 @@ func Md5Sum(path string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-// Display a yes/no prompt for use with a controller.
+// YesOrNoPrompt displays a simple yes/no prompt for use with a controller.
 func YesOrNoPrompt(prompt string) bool {
 	fmt.Printf(prompt + " [DOWN=Yes/UP=No] ")
 
@@ -200,7 +200,7 @@ func YesOrNoPrompt(prompt string) bool {
 	}
 }
 
-// Display an information prompt for use with a controller.
+// InfoPrompt displays an information prompt for use with a controller.
 func InfoPrompt(prompt string) {
 	fmt.Println(prompt)
 	fmt.Println("Press any key to continue...")
@@ -220,15 +220,15 @@ func InfoPrompt(prompt string) {
 }
 
 func IsEmptyDir(path string) (bool, error) {
-	fs, err := os.ReadDir(path)
+	dir, err := os.ReadDir(path)
 	if err != nil {
 		return false, err
 	}
 
-	return len(fs) == 0, nil
+	return len(dir) == 0, nil
 }
 
-// Remove all empty folders in a path, including folders containing only empty
+// RemoveEmptyDirs removes all empty folders in a path, including folders containing only empty
 // folders and the path itself.
 func RemoveEmptyDirs(path string) error {
 	var dirs []string
