@@ -126,7 +126,6 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 		return nil, err
 	}
 
-	logger.Info("registering mdns service with hostname: %s", hostname)
 	server, err := zeroconf.Register(
 		"MiSTer Remote ("+hostname+")",
 		MdnsServiceName,
@@ -141,8 +140,8 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 	} else {
 		Mdns.SetActive(true)
 	}
+	logger.Info("registered mdns service with hostname: %s", hostname)
 
-	logger.Info("starting network discovery service")
 	browseMdns(logger)
 	ticker := time.NewTicker(browseInterval)
 	go func() {
@@ -150,6 +149,7 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 			browseMdns(logger)
 		}
 	}()
+	logger.Info("started network discovery service")
 
 	return func() error {
 		ticker.Stop()
@@ -339,6 +339,16 @@ func CopyAndFixSSHKeys(reverse bool) error {
 	} else {
 		err = utils.CopyFile(config.UserSSHKeysFile, config.SSHKeysFile)
 	}
+	if err != nil {
+		return err
+	}
+
+	modTime := time.Now()
+	err = os.Chtimes(config.SSHKeysFile, modTime, modTime)
+	if err != nil {
+		return err
+	}
+	err = os.Chtimes(config.UserSSHKeysFile, modTime, modTime)
 	if err != nil {
 		return err
 	}
