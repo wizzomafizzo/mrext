@@ -102,26 +102,69 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 }
 
 func setupSSHKeys(logger *service.Logger, cfg *config.UserConfig) {
-	if !cfg.Remote.CopySSHKeys {
+	if !cfg.Remote.SyncSSHKeys {
 		return
 	}
 
-	if _, err := os.Stat(config.UserSSHKeysFile); os.IsNotExist(err) {
-		return
+	userFile, err := os.Stat(config.UserSSHKeysFile)
+	userFileExists := false
+	if err == nil {
+		userFileExists = true
 	}
 
-	if _, err := os.Stat(config.SSHKeysFile); os.IsNotExist(err) {
-		err := mister.CopyAndFixSSHKeys()
+	authFile, err := os.Stat(config.SSHKeysFile)
+	authFileExists := false
+	if err == nil {
+		authFileExists = true
+	}
+
+	if !authFileExists && !userFileExists {
+		sshFolder, err := os.Stat(config.SSHConfigFolder)
 		if err != nil {
-			logger.Error("failed to copy ssh keys: %s", err)
+			return
+		}
+
+		if sshFolder.Mode().Perm() != 0700 {
+			err := mister.FixRootSSHPerms()
+			if err != nil {
+				logger.Error("failed to fix root ssh perms: %s", err)
+			} else {
+				logger.Info("fixed root ssh perms")
+			}
+		}
+	} else if authFileExists && !userFileExists {
+		err := mister.CopyAndFixSSHKeys(true)
+		if err != nil {
+			logger.Error("failed to copy system ssh keys to user: %s", err)
 		} else {
-			logger.Info("copied ssh keys successfully")
+			logger.Info("backed up system ssh keys to linux folder")
+		}
+	} else if !authFileExists && userFileExists {
+		err := mister.CopyAndFixSSHKeys(false)
+		if err != nil {
+			logger.Error("failed to copy user ssh keys to system: %s", err)
+		} else {
+			logger.Info("installed user ssh keys to system folder")
+		}
+	} else if userFile.ModTime().After(authFile.ModTime()) {
+		err := mister.CopyAndFixSSHKeys(false)
+		if err != nil {
+			logger.Error("failed to copy user ssh keys to system: %s", err)
+		} else {
+			logger.Info("installed updated user ssh keys to system folder")
+		}
+	} else if authFile.ModTime().After(userFile.ModTime()) {
+		err := mister.CopyAndFixSSHKeys(true)
+		if err != nil {
+			logger.Error("failed to copy system ssh keys to user: %s", err)
+		} else {
+			logger.Info("backed up updated system ssh keys to linux folder")
 		}
 	}
 }
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
-	//setupSSHKeys(logger, cfg)
+	setupSSHKeys(logger, cfg)
 
 	kbd, err := input.NewKeyboard()
 	if err != nil {
@@ -278,7 +321,7 @@ func main() {
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		Remote: config.RemoteConfig{
 			MdnsService: true,
-			CopySSHKeys: true,
+			SyncSSHKeys: true,
 		},
 	})
 	if err != nil {

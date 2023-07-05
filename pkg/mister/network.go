@@ -298,13 +298,26 @@ func UpdateConfiguredMacAddress(newMacAddress string) error {
 	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
 }
 
-// CopyAndFixSSHKeys copies the authorized_keys file from the linux folder to root home and fixes all permissions.
-func CopyAndFixSSHKeys() error {
-	const (
-		rootSshFolder = "/root/.ssh"
-		keysFilename  = "authorized_keys"
-	)
+func FixRootSSHPerms() error {
+	err := os.Chmod(config.SSHConfigFolder, 0700)
+	if err != nil {
+		return err
+	}
 
+	return filepath.Walk(config.SSHConfigFolder, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return os.Chmod(path, 0700)
+		} else {
+			return os.Chmod(path, 0600)
+		}
+	})
+}
+
+// CopyAndFixSSHKeys copies the authorized_keys file from the linux folder to root home and fixes all permissions.
+func CopyAndFixSSHKeys(reverse bool) error {
 	err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
 	if err != nil {
 		return err
@@ -314,28 +327,19 @@ func CopyAndFixSSHKeys() error {
 		_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
 	}()
 
-	err = os.MkdirAll(rootSshFolder, 0600)
+	err = os.MkdirAll(config.SSHConfigFolder, 0700)
 	if err != nil {
 		return err
 	}
 
-	err = utils.CopyFile(
-		filepath.Join(config.LinuxFolder, keysFilename),
-		filepath.Join(rootSshFolder, keysFilename),
-	)
+	if reverse {
+		err = utils.CopyFile(config.SSHKeysFile, config.UserSSHKeysFile)
+	} else {
+		err = utils.CopyFile(config.UserSSHKeysFile, config.SSHKeysFile)
+	}
 	if err != nil {
 		return err
 	}
 
-	err = filepath.Walk(rootSshFolder, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		return os.Chmod(path, 0600)
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return FixRootSSHPerms()
 }

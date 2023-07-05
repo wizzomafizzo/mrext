@@ -42,7 +42,7 @@ type LastPlayedConfig struct {
 
 type RemoteConfig struct {
 	MdnsService bool `ini:"mdns_service,omitempty"`
-	CopySSHKeys bool `ini:"copy_ssh_keys,omitempty"`
+	SyncSSHKeys bool `ini:"sync_ssh_keys,omitempty"`
 }
 
 type UserConfig struct {
