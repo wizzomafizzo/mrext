@@ -2,9 +2,26 @@
 
 Remote is a web-based interface with a stack of modern features to manage all aspects of your MiSTer. Can be used from your phone, tablet or computer.
 
-*NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may be marked as not working or only have basic functionality. Features are also designed for mobile first, with responsive design for tablet and computer added later.*
+*NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may have only basic functionality. Features are also designed for mobile first, with responsive design for tablet and computer added later.*
 
 <a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
+
+## Features
+
+* Control MiSTer directly with a virtual remote control interface
+  * Includes all common media keys and hotkeys
+  * Full on-screen keyboard and keypad
+* Launch cores and game shortcuts with an in-app version of the MiSTer menu
+* Search and launch your entire game collection
+  * Create MGL shortcuts in the menu from results
+* Browse and launch all cores installed on your MiSTer
+* View, browse and take new screenshots
+* Control [BGM](https://github.com/wizzomafizzo/MiSTer_BGM) music playback
+* Browse and activate wallpapers
+* Change all MiSTer.ini file settings
+  * Set the current active .ini file
+  * Set hostname and MAC address settings
+* Auto-discover and connect to other MiSTers on your network running Remote
 
 ## Install
 
@@ -26,7 +43,11 @@ From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The 
 
 ## Uninstall
 
-To completely uninstall Remote from your MiSTer, delete these files from the SD card:
+
+
+### Manual
+
+To manually uninstall Remote from your MiSTer, delete these files from the SD card:
 
 * `Scripts/remote.sh`
 * `Scripts/remote.ini` (if present)
