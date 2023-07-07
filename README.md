@@ -6,7 +6,7 @@ Make sure to check the linked documentation for each script you use. Most are si
 
 [Remote](#remote) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
 
-[Supported Systems](docs/systems.md) • [Dev Guide](docs/dev.md) • [Todo List](docs/todo.md)
+[Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A4G98MU)
 
@@ -166,7 +166,7 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
 - [MiSTer FPGA Overclock Scripts](https://github.com/coolbho3k/MiSTer-Overclock-Scripts)
 
-  A kernel patch that allows overclocking the MiSTer. An overclocked system can run Munt (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
+  An overclocked system can run Munt (MT32 emulator) at full speed and get extra performance out of software like ScummVM.
 
 - [MiSTerArch](https://github.com/MiSTerArch/PKGBUILDs)
 
@@ -187,6 +187,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 - [reMiSTer](https://github.com/sigboe/reMiSTer)
 
   A tool for using your keyboard on MiSTer over the network.
+
+- [Remote Input Server Daemon](https://github.com/sofakng/risd)
+
+  Server daemon that monitors commands over TCP and emulates keystrokes using TCP.
 
 ### Updaters
 

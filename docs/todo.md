@@ -3,7 +3,6 @@
 High level features, ideas and changes.
 
 - [ ] Add category core groups like console/computer/handheld/sega/etc.
-- [ ] Set a sane default systems filter on random
 - [ ] Make up some example random launchers and link them
 - [ ] Support alternate core sets like LLAPI, YC and dual RAM
 - [ ] Write all temp mgls to a directory in tmp instead of root
@@ -18,7 +17,6 @@ High level features, ideas and changes.
 - [ ] Rewrite BGM in mrext (volume control, flac support, improved UI and audio control)
 - [ ] Investigate arcade high scores display
 - [ ] Auto generate favorites list of most played games
-- [ ] Dynamic menu background changer
 - [ ] Monitor menu selections to add custom actions
 - [ ] Rclone frontend for syncing saves/configs
 - [ ] Screenshot manager/viewer
@@ -34,3 +32,4 @@ High level features, ideas and changes.
 - [ ] Arcade core support for tracking games
 - [ ] Current setname support can prioritise original system over setnamed one during scan
 - [ ] In lastplayed, have an option to output a random game mgl (launchable on startup? recreate it after launch?)
+- [ ] Maintain folder of newly updated/added cores in lastplayed
