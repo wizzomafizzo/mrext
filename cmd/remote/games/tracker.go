@@ -21,13 +21,13 @@ func (f *fakeDb) FixPowerLoss() (bool, error) {
 func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
 	switch ev.Action {
 	case tracker.EventActionCoreStart:
-		websocket.Broadcast(f.logger, "coreStart:"+ev.Target)
+		websocket.Broadcast(f.logger, "coreRunning:"+ev.Target)
 	case tracker.EventActionCoreStop:
-		websocket.Broadcast(f.logger, "coreStop:"+ev.Target)
+		websocket.Broadcast(f.logger, "coreRunning:")
 	case tracker.EventActionGameStart:
-		websocket.Broadcast(f.logger, "gameStart:"+ev.Target)
+		websocket.Broadcast(f.logger, "gameRunning:"+ev.Target)
 	case tracker.EventActionGameStop:
-		websocket.Broadcast(f.logger, "gameStop:"+ev.Target)
+		websocket.Broadcast(f.logger, "gameRunning:")
 	}
 
 	return nil

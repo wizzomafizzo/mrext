@@ -52,13 +52,8 @@ func wsConnectPayload(trk *tracker.Tracker) func() []string {
 		}
 
 		if trk != nil {
-			if trk.ActiveCore != "" {
-				response = append(response, "coreStart:"+trk.ActiveCore)
-			}
-
-			if trk.ActiveGame != "" {
-				response = append(response, "gameStart:"+trk.ActiveGame)
-			}
+			response = append(response, "coreRunning:"+trk.ActiveCore)
+			response = append(response, "gameRunning:"+trk.ActiveGame)
 		}
 
 		return response
