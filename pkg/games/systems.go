@@ -771,10 +771,11 @@ var Systems = map[string]System{
 		},
 	},
 	"SG1000": {
-		Id:     "SG1000",
-		Name:   "SG-1000",
-		Folder: []string{"SG1000", "Coleco", "SMS"},
-		Rbf:    "_Console/ColecoVision",
+		Id:      "SG1000",
+		Name:    "SG-1000",
+		SetName: "SG1000",
+		Folder:  []string{"SG1000", "Coleco", "SMS"},
+		Rbf:     "_Console/ColecoVision",
 		AltRbf: AltRbfOpts{
 			AltRbfYC: []string{"ColecoVisionYC"},
 		},

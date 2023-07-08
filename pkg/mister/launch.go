@@ -12,6 +12,20 @@ import (
 )
 
 func GenerateMgl(system *games.System, path string) (string, error) {
+	if path == "" {
+		if system.SetName == "" {
+			return fmt.Sprintf(
+				"<mistergamedescription>\n\t<rbf>%s</rbf>\n</mistergamedescription>\n",
+				system.Rbf,
+			), nil
+		} else {
+			return fmt.Sprintf(
+				"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<setname>%s</setname>\n</mistergamedescription>\n",
+				system.Rbf, system.SetName,
+			), nil
+		}
+	}
+
 	var mglDef *games.MglParams
 
 	for _, ft := range system.Slots {
@@ -24,7 +38,9 @@ func GenerateMgl(system *games.System, path string) (string, error) {
 
 	if mglDef == nil {
 		return "", fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
-	} else if system.SetName == "" {
+	}
+
+	if system.SetName == "" {
 		// TODO: generate this from xml
 		return fmt.Sprintf(
 			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n</mistergamedescription>\n",
@@ -204,6 +220,10 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 func LaunchCore(system games.System) error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
+	}
+
+	if system.SetName != "" {
+		return LaunchGame(system, "")
 	}
 
 	var path string
