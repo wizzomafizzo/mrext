@@ -7,6 +7,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"golang.org/x/sys/unix"
 	"net"
 	"os"
 	"path/filepath"
@@ -207,16 +208,16 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 		return nil
 	}
 
-	// remount root as read/write
-	err = syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
-	if err != nil {
-		return err
-	}
+	if unix.Access("/", unix.W_OK) != nil {
+		err = syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
+		if err != nil {
+			return err
+		}
 
-	defer func() {
-		// revert root to read-only
-		_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
-	}()
+		defer func() {
+			_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
+		}()
+	}
 
 	// update hostname file
 	err = os.WriteFile(hostnameFile, []byte(newHostname), 0644)
@@ -322,16 +323,18 @@ func FixRootSSHPerms() error {
 
 // CopyAndFixSSHKeys copies the authorized_keys file from the linux folder to root home and fixes all permissions.
 func CopyAndFixSSHKeys(reverse bool) error {
-	err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
-	if err != nil {
-		return err
+	if unix.Access("/", unix.W_OK) != nil {
+		err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
+		}()
 	}
 
-	defer func() {
-		_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
-	}()
-
-	err = os.MkdirAll(config.SSHConfigFolder, 0700)
+	err := os.MkdirAll(config.SSHConfigFolder, 0700)
 	if err != nil {
 		return err
 	}
