@@ -285,7 +285,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/inis/4", settings.HandleSaveIni(logger, 4)).Methods("PUT")
 
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
-	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(cfg)).Methods("POST")
+	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
 	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")

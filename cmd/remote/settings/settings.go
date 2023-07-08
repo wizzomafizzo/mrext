@@ -35,12 +35,14 @@ func (p *UpdateProgress) GetProcess() *exec.Cmd {
 
 var updateProgressInstance = &UpdateProgress{}
 
-func HandleRestartRemote(cfg *config.UserConfig) http.HandlerFunc {
+func HandleRestartRemote(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("restart remote request")
 		cmd := exec.Command(cfg.AppPath, "-service", "restart")
 		err := cmd.Start()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error restarting: %s", err)
 			return
 		}
 	}

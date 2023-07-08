@@ -214,9 +214,16 @@ func (s *Service) Start() error {
 	}
 
 	// create a copy in binary in tmp so the original can be updated
-	binPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("error getting absolute binary path: %w", err)
+	binPath := ""
+	appPath := os.Getenv(config.UserAppPathEnv)
+	if appPath != "" {
+		binPath = appPath
+	} else {
+		exePath, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("error getting absolute binary path: %w", err)
+		}
+		binPath = exePath
 	}
 
 	binFile, err := os.Open(binPath)
@@ -239,16 +246,16 @@ func (s *Service) Start() error {
 	binFile.Close()
 
 	cmd := exec.Command(tempPath, "-service", "exec", "&")
+	env := os.Environ()
+	cmd.Env = env
 
 	// point new binary to existing config file
 	configPath := filepath.Join(filepath.Dir(binPath), s.Name+".ini")
-	appPath, _ := os.Executable()
+
 	if _, err := os.Stat(configPath); err == nil {
-		env := os.Environ()
-		cmd.Env = env
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserConfigEnv, configPath))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserAppPathEnv, appPath))
 	}
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserAppPathEnv, binPath))
 
 	err = cmd.Start()
 	if err != nil {
@@ -283,16 +290,18 @@ func (s *Service) Stop() error {
 }
 
 func (s *Service) Restart() error {
-	err := s.Stop()
-	if err != nil {
-		return err
+	if s.Running() {
+		err := s.Stop()
+		if err != nil {
+			return err
+		}
 	}
 
 	for s.Running() {
 		time.Sleep(1 * time.Second)
 	}
 
-	err = s.Start()
+	err := s.Start()
 	if err != nil {
 		return err
 	}
