@@ -1,6 +1,7 @@
 package mister
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -220,7 +221,10 @@ func ReadMgl(path string) (MGL, error) {
 		return mgl, err
 	}
 
-	err = xml.Unmarshal(file, &mgl)
+	decoder := xml.NewDecoder(bytes.NewReader(file))
+	decoder.Strict = false
+
+	err = decoder.Decode(&mgl)
 	if err != nil {
 		return mgl, err
 	}
