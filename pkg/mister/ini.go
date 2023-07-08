@@ -106,14 +106,28 @@ var ValidIniKeys = []string{
 
 const MainIniSection = "MiSTer"
 
+func blankMisterIni() *ini.File {
+	iniFile := ini.Empty()
+	_, _ = iniFile.NewSection(MainIniSection)
+	return iniFile
+}
+
 func LoadMisterIni(id int) (int, *ini.File, error) {
+	ini.PrettyFormat = false
+	ini.PrettyEqual = false
+
 	inis, err := ListMisterInis()
 	if err != nil {
 		return id, nil, err
 	}
 
+	if len(inis) == 0 && (id == 0 || id == 1) {
+		iniFile := blankMisterIni()
+		return 1, iniFile, nil
+	}
+
 	if id < 0 || id > len(inis) {
-		return id, nil, fmt.Errorf("ini id is out of range")
+		return id, nil, fmt.Errorf("ini id is out of range: %d (%d)", id, len(inis))
 	}
 
 	if id == 0 {
@@ -142,11 +156,11 @@ func LoadMisterIni(id int) (int, *ini.File, error) {
 	}
 
 	if !iniFile.HasSection(MainIniSection) {
-		return id, nil, fmt.Errorf("mister.ini does not have a [MiSTer] section")
+		_, err = iniFile.NewSection(MainIniSection)
+		if err != nil {
+			return id, nil, err
+		}
 	}
-
-	ini.PrettyFormat = false
-	ini.PrettyEqual = false
 
 	return id, iniFile, nil
 }
@@ -190,13 +204,20 @@ func UpdateMisterIni(iniFile *ini.File, key string, value string) error {
 }
 
 func SaveMisterIni(id int, iniFile *ini.File) error {
+	if id == 1 {
+		err := iniFile.SaveTo(config.MisterIniFile)
+		if err != nil {
+			return err
+		}
+	}
+
 	inis, err := ListMisterInis()
 	if err != nil {
 		return err
 	}
 
 	if id < 1 || id > len(inis) {
-		return fmt.Errorf("ini id is out of range")
+		return fmt.Errorf("ini id is out of range: %d (%d)", id, len(inis))
 	}
 
 	iniFileInfo := inis[id-1]

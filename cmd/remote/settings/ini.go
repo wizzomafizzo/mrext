@@ -143,9 +143,14 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
+		inisList := make([]mister.IniFile, 0)
+		for _, ini := range inis {
+			inisList = append(inisList, ini)
+		}
+
 		iniResponse := IniResponse{
 			Active: activeIni,
-			Inis:   inis,
+			Inis:   inisList,
 		}
 
 		err = json.NewEncoder(w).Encode(iniResponse)
