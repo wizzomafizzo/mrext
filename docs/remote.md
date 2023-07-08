@@ -43,7 +43,7 @@ From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The 
 
 ## Uninstall
 
-
+After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.
 
 ### Manual
 
