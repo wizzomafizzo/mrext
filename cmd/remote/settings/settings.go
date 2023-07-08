@@ -111,7 +111,11 @@ func getNetworkIps() []string {
 			continue
 		}
 
-		if ip.IP.To4() == nil || ip.IP.IsLoopback() || ip.IP.IsMulticast() {
+		if ip.IP.To4() == nil {
+			continue
+		}
+
+		if ip.IP.IsLoopback() || ip.IP.IsMulticast() || ip.IP.IsLinkLocalUnicast() || ip.IP.IsLinkLocalMulticast() {
 			continue
 		}
 
