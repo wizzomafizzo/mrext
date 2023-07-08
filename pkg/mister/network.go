@@ -297,6 +297,8 @@ func UpdateConfiguredMacAddress(newMacAddress string) error {
 		uBootConfig += " ethaddr=" + newMacAddress
 	}
 
+	uBootConfig = strings.TrimSpace(uBootConfig)
+
 	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
 }
 
