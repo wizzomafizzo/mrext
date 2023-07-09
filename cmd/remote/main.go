@@ -266,10 +266,10 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/controls/keyboard-raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
 
 	sub.HandleFunc("/menu/view", menu.ListFolder(logger)).Methods("POST")
-	//sub.HandleFunc("/menu/file/create", menu.ListFolder(logger)).Methods("POST")
-	//sub.HandleFunc("/menu/file/rename", menu.ListFolder(logger)).Methods("POST")
-	//sub.HandleFunc("/menu/file/move", menu.ListFolder(logger)).Methods("POST")
-	//sub.HandleFunc("/menu/file/delete", menu.ListFolder(logger)).Methods("POST")
+	sub.HandleFunc("/menu/files/create", menu.HandleCreateFile(logger)).Methods("POST")
+	//sub.HandleFunc("/menu/files/rename", menu.ListFolder(logger)).Methods("POST")
+	//sub.HandleFunc("/menu/files/move", menu.ListFolder(logger)).Methods("POST")
+	//sub.HandleFunc("/menu/files/delete", menu.ListFolder(logger)).Methods("POST")
 
 	sub.HandleFunc("/settings/inis", settings.HandleListInis(logger)).Methods("GET")
 	sub.HandleFunc("/settings/inis", settings.HandleSetActiveIni(logger)).Methods("PUT")
