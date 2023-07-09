@@ -3,15 +3,16 @@ package menu
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
+// TODO: should be in config
 const menuRoot = "/media/fat"
 const namesTxtPath = "/media/fat/names.txt"
 
@@ -19,6 +20,7 @@ type Item struct {
 	Name     string     `json:"name"`
 	NamesTxt *string    `json:"namesTxt,omitempty"`
 	Path     string     `json:"path"`
+	Parent   string     `json:"parent"`
 	Next     *string    `json:"next,omitempty"`
 	Type     string     `json:"type"`
 	Modified time.Time  `json:"modified"`
@@ -140,16 +142,30 @@ func getFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	return name, filetype, version
 }
 
+var removeRoot = regexp.MustCompile(`(?i)^` + menuRoot + `\/?`)
+
 func ListFolder(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		pathQuery := vars["path"]
+		logger.Info("list menu folder")
+
+		var args struct {
+			Path string `json:"path"`
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("error decoding request: %s", err)
+			return
+		}
+
+		args.Path = removeRoot.ReplaceAllString(args.Path, "")
 
 		var path string
-		if pathQuery == "" {
+		if args.Path == "" {
 			path = menuRoot
 		} else {
-			parts := filepath.SplitList(pathQuery)
+			parts := filepath.SplitList(args.Path)
 			cleaned := make([]string, 0)
 			cleaned = append(cleaned, menuRoot)
 
@@ -201,7 +217,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 
 			var next *string
 			if file.IsDir() {
-				nextPath := filepath.Join(pathQuery, name)
+				nextPath := filepath.Join(args.Path, name)
 				next = &nextPath
 			}
 
@@ -210,6 +226,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 					Name:     formatted,
 					NamesTxt: namesTxt,
 					Path:     filepath.Join(path, name),
+					Parent:   args.Path,
 					Next:     next,
 					Type:     filetype,
 					Modified: info.ModTime(),
@@ -219,8 +236,8 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 		}
 
 		var up *string
-		if pathQuery != "" {
-			upPath := filepath.Dir(pathQuery)
+		if args.Path != "" && args.Path != "." {
+			upPath := filepath.Dir(args.Path)
 			up = &upPath
 		}
 
@@ -231,7 +248,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 		err = json.NewEncoder(w).Encode(payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("couldn't encode menu payload: %s", err)
+			logger.Error("error encoding payload: %s", err)
 			return
 		}
 	}
