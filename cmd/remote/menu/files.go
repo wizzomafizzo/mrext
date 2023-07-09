@@ -49,3 +49,53 @@ func HandleCreateFile(logger *service.Logger) http.HandlerFunc {
 		}
 	}
 }
+
+func HandleRenameFile(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("rename menu file request")
+
+		var args struct {
+			Folder  string `json:"folder"`
+			OldName string `json:"oldName"`
+			NewName string `json:"newName"`
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error decoding request: %s", err)
+			return
+		}
+
+		folder := cleanPath(args.Folder)
+		oldName := utils.StripBadFileChars(args.OldName)
+		newName := utils.StripBadFileChars(args.NewName)
+		oldPath := filepath.Join(folder, oldName)
+		newPath := filepath.Join(folder, newName)
+
+		if oldPath == newPath {
+			return
+		}
+
+		if _, err := os.Stat(oldPath); os.IsNotExist(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			logger.Error("menu file (%s) does not exist: %s", oldPath, err)
+			return
+		}
+
+		if _, err := os.Stat(newPath); err == nil {
+			http.Error(w, "file already exists", http.StatusInternalServerError)
+			logger.Error("error renaming file: file already exists")
+			return
+		}
+
+		logger.Info("renaming file: %s -> %s", oldPath, newPath)
+
+		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error renaming file: %s", err)
+			return
+		}
+	}
+}

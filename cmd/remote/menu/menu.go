@@ -17,14 +17,16 @@ const menuRoot = "/media/fat"
 const namesTxtPath = "/media/fat/names.txt"
 
 type Item struct {
-	Name     string     `json:"name"`
-	NamesTxt *string    `json:"namesTxt,omitempty"`
-	Path     string     `json:"path"`
-	Parent   string     `json:"parent"`
-	Next     *string    `json:"next,omitempty"`
-	Type     string     `json:"type"`
-	Modified time.Time  `json:"modified"`
-	Version  *time.Time `json:"version,omitempty"`
+	Name      string     `json:"name"`
+	NamesTxt  *string    `json:"namesTxt,omitempty"`
+	Path      string     `json:"path"`
+	Parent    string     `json:"parent"`
+	Filename  string     `json:"filename"`
+	Extension string     `json:"extension"`
+	Next      *string    `json:"next,omitempty"`
+	Type      string     `json:"type"`
+	Modified  time.Time  `json:"modified"`
+	Version   *time.Time `json:"version,omitempty"`
 }
 
 type ListMenuPayload struct {
@@ -223,14 +225,16 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 
 			if isValidMenuFile(file, false) {
 				items = append(items, Item{
-					Name:     formatted,
-					NamesTxt: namesTxt,
-					Path:     filepath.Join(path, name),
-					Parent:   args.Path,
-					Next:     next,
-					Type:     filetype,
-					Modified: info.ModTime(),
-					Version:  version,
+					Name:      formatted,
+					NamesTxt:  namesTxt,
+					Path:      filepath.Join(path, name),
+					Parent:    args.Path,
+					Filename:  filepath.Base(name),
+					Extension: filepath.Ext(name),
+					Next:      next,
+					Type:      filetype,
+					Modified:  info.ModTime(),
+					Version:   version,
 				})
 			}
 		}

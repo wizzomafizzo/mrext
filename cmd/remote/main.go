@@ -267,7 +267,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 
 	sub.HandleFunc("/menu/view", menu.ListFolder(logger)).Methods("POST")
 	sub.HandleFunc("/menu/files/create", menu.HandleCreateFile(logger)).Methods("POST")
-	//sub.HandleFunc("/menu/files/rename", menu.ListFolder(logger)).Methods("POST")
+	sub.HandleFunc("/menu/files/rename", menu.HandleRenameFile(logger)).Methods("POST")
 	//sub.HandleFunc("/menu/files/move", menu.ListFolder(logger)).Methods("POST")
 	//sub.HandleFunc("/menu/files/delete", menu.ListFolder(logger)).Methods("POST")
 
