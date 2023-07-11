@@ -606,9 +606,21 @@ var Systems = map[string]System{
 					Index:  1,
 				},
 			},
+		},
+	},
+	"NeoGeoCD": {
+		Id:     "NeoGeo",
+		Name:   "Neo Geo CD",
+		Folder: []string{"NeoGeo-CD", "NEOGEO"},
+		Rbf:    "_Console/NeoGeo",
+		AltRbf: AltRbfOpts{
+			AltRbfLLAPI: []string{"NeoGeo_LLAPI"},
+			AltRbfYC:    []string{"NeoGeoYC"},
+		},
+		Slots: []Slot{
 			{
 				Label: "CD Image",
-				Exts:  []string{".iso", ".bin"},
+				Exts:  []string{".cue", ".chd"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "s",
