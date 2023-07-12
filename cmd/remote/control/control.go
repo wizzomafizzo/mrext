@@ -20,6 +20,16 @@ func SendRawKeyboard(kbd input.Keyboard, code int) error {
 	return nil
 }
 
+func SendRawKeyboardDown(kbd input.Keyboard, code int) error {
+	kbd.KeyDown(code)
+	return nil
+}
+
+func SendRawKeyboardUp(kbd input.Keyboard, code int) error {
+	kbd.KeyUp(code)
+	return nil
+}
+
 func HandleRawKeyboard(kbd input.Keyboard, logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)

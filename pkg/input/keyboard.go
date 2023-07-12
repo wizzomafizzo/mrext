@@ -46,6 +46,14 @@ func (k *Keyboard) Combo(keys ...int) {
 	}
 }
 
+func (k *Keyboard) KeyDown(key int) {
+	k.Device.KeyDown(key)
+}
+
+func (k *Keyboard) KeyUp(key int) {
+	k.Device.KeyUp(key)
+}
+
 func (k *Keyboard) VolumeUp() {
 	k.Press(uinput.KeyVolumeup)
 }

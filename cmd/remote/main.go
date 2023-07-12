@@ -91,6 +91,30 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 			}
 
 			return ""
+		case "kbdRawDown":
+			code, err := strconv.Atoi(args)
+			if err != nil {
+				return "invalid"
+			}
+
+			err = control.SendRawKeyboardDown(kbd, code)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
+		case "kbdRawUp":
+			code, err := strconv.Atoi(args)
+			if err != nil {
+				return "invalid"
+			}
+
+			err = control.SendRawKeyboardUp(kbd, code)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
 		default:
 			return "invalid"
 		}
