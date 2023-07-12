@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	appVersion = "0.1.1"
+	appVersion = "0.2.0"
 	appName    = "remote"
 	appPort    = 8182
 )
