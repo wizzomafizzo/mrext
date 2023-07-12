@@ -10,6 +10,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/music"
 	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
+	"github.com/wizzomafizzo/mrext/cmd/remote/scripts"
 	"github.com/wizzomafizzo/mrext/cmd/remote/settings"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
@@ -269,6 +270,11 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/menu/files/create", menu.HandleCreateFile(logger)).Methods("POST")
 	sub.HandleFunc("/menu/files/rename", menu.HandleRenameFile(logger)).Methods("POST")
 	sub.HandleFunc("/menu/files/delete", menu.HandleDeleteFile(logger)).Methods("POST")
+
+	sub.HandleFunc("/scripts/launch/{filename}", scripts.HandleLaunchScript(logger, kbd)).Methods("POST")
+	sub.HandleFunc("/scripts/list", scripts.HandleListScripts(logger)).Methods("GET")
+	sub.HandleFunc("/scripts/console", scripts.HandleOpenScriptsConsole(logger, kbd)).Methods("POST")
+	sub.HandleFunc("/scripts/kill", scripts.HandleKillActiveScript(logger)).Methods("POST")
 
 	sub.HandleFunc("/settings/inis", settings.HandleListInis(logger)).Methods("GET")
 	sub.HandleFunc("/settings/inis", settings.HandleSetActiveIni(logger)).Methods("PUT")

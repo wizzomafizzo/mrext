@@ -80,6 +80,8 @@ func SendKeyboard(kbd input.Keyboard, key string) error {
 		kbd.ToggleCoreDates()
 	case "console":
 		kbd.Console()
+	case "exit_console":
+		kbd.ExitConsole()
 	case "computer_osd":
 		kbd.ComputerOsd()
 	default:

@@ -134,6 +134,10 @@ func (k *Keyboard) Console() {
 	k.Press(uinput.KeyF9)
 }
 
+func (k *Keyboard) ExitConsole() {
+	k.Press(uinput.KeyF12)
+}
+
 func (k *Keyboard) ComputerOsd() {
 	k.Combo(uinput.KeyLeftmeta, uinput.KeyF12)
 }
