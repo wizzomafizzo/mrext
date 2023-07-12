@@ -27,6 +27,7 @@ type Item struct {
 	Type      string     `json:"type"`
 	Modified  time.Time  `json:"modified"`
 	Version   *time.Time `json:"version,omitempty"`
+	Size      int64      `json:"size"`
 }
 
 type ListMenuPayload struct {
@@ -235,6 +236,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 					Type:      filetype,
 					Modified:  info.ModTime(),
 					Version:   version,
+					Size:      info.Size(),
 				})
 			}
 		}
