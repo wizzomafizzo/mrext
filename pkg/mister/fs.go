@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
@@ -314,4 +315,53 @@ func RelaunchIfInMenu() error {
 	}
 
 	return nil
+}
+
+func GetMounts() ([]string, error) {
+	file, err := os.ReadFile("/proc/mounts")
+	if err != nil {
+		return nil, err
+	}
+
+	var mounts []string
+
+	for _, line := range strings.Split(string(file), "\n") {
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, " ")
+
+		if len(parts) < 2 {
+			continue
+		}
+
+		if utils.Contains(config.GamesFolders, parts[1]) {
+			mounts = append(mounts, parts[1])
+		}
+	}
+
+	return mounts, nil
+}
+
+type DiskUsage struct {
+	Total uint64
+	Free  uint64
+	Used  uint64
+}
+
+func GetDiskUsage(path string) (DiskUsage, error) {
+	var usage DiskUsage
+
+	stat := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &stat)
+	if err != nil {
+		return usage, err
+	}
+
+	usage.Total = stat.Blocks * uint64(stat.Bsize)
+	usage.Free = stat.Bfree * uint64(stat.Bsize)
+	usage.Used = usage.Total - usage.Free
+
+	return usage, nil
 }

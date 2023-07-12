@@ -7,6 +7,7 @@ const FontFolder = SdFolder + "/font"
 const TempFolder = "/tmp"
 const LinuxFolder = SdFolder + "/linux"
 const ScriptsFolder = SdFolder + "/Scripts"
+const CifsFolder = SdFolder + "/cifs"
 
 const MenuConfigFile = CoreConfigFolder + "/MENU.CFG"
 

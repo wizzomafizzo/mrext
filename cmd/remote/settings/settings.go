@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -84,17 +86,20 @@ func HandleListPeers(logger *service.Logger) http.HandlerFunc {
 }
 
 type HandleSystemInfoPayloadDisk struct {
-	Path  string `json:"path"`
-	Total uint64 `json:"total"`
-	Used  uint64 `json:"used"`
+	Path        string `json:"path"`
+	Total       uint64 `json:"total"`
+	Used        uint64 `json:"used"`
+	Free        uint64 `json:"free"`
+	DisplayName string `json:"displayName"`
 }
 
 type HandleSystemInfoPayload struct {
-	IPs      []string `json:"ips"`
-	Hostname string   `json:"hostname"`
-	DNS      string   `json:"dns"`
-	Version  string   `json:"version"`
-	Updated  string   `json:"updated"`
+	IPs      []string                      `json:"ips"`
+	Hostname string                        `json:"hostname"`
+	DNS      string                        `json:"dns"`
+	Version  string                        `json:"version"`
+	Updated  string                        `json:"updated"`
+	Disks    []HandleSystemInfoPayloadDisk `json:"disks"`
 }
 
 func getNetworkIps() []string {
@@ -125,6 +130,42 @@ func getNetworkIps() []string {
 	return ips
 }
 
+func getDiskInfo() ([]HandleSystemInfoPayloadDisk, error) {
+	diskInfo := make([]HandleSystemInfoPayloadDisk, 0)
+
+	mounts, err := mister.GetMounts()
+	if err != nil {
+		return diskInfo, err
+	}
+
+	for _, mount := range mounts {
+		info, err := mister.GetDiskUsage(mount)
+		if err != nil {
+			return diskInfo, err
+		}
+
+		displayName := ""
+
+		if mount == config.SdFolder {
+			displayName = "SD card"
+		} else if mount == config.CifsFolder {
+			displayName = "Network share"
+		} else {
+			displayName = strings.ToUpper(filepath.Base(mount))
+		}
+
+		diskInfo = append(diskInfo, HandleSystemInfoPayloadDisk{
+			Path:        mount,
+			Total:       info.Total,
+			Used:        info.Used,
+			Free:        info.Free,
+			DisplayName: displayName,
+		})
+	}
+
+	return diskInfo, nil
+}
+
 func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hostname, err := os.Hostname()
@@ -145,12 +186,18 @@ func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer str
 			updated = updatedTime.Format(time.RFC3339)
 		}
 
+		diskInfo, err := getDiskInfo()
+		if err != nil {
+			logger.Error("error getting disk info: %s", err)
+		}
+
 		payload := HandleSystemInfoPayload{
 			IPs:      ips,
 			Hostname: hostname,
 			DNS:      dns,
 			Version:  appVer,
 			Updated:  updated,
+			Disks:    diskInfo,
 		}
 
 		err = json.NewEncoder(w).Encode(payload)
