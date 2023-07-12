@@ -669,6 +669,22 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	"Nintendo64": {
+		Id:     "Nintendo64",
+		Name:   "Nintendo 64",
+		Folder: []string{"N64"},
+		Rbf:    "_Console/N64",
+		Slots: []Slot{
+			{
+				Exts: []string{".n64", ".z64"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
 	"Odyssey2": {
 		Id:     "Odyssey2",
 		Name:   "Magnavox Odyssey2",
