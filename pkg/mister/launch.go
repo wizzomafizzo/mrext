@@ -148,6 +148,66 @@ func GetLauncherFilename(system *games.System, folder string, name string) strin
 	}
 }
 
+func TrySetupArcadeCoresLink(path string) error {
+	if path == filepath.Dir(config.ArcadeCoresFolder) {
+		return nil
+	}
+
+	folder, err := os.Stat(path)
+	if err != nil {
+		return err
+	} else if !folder.IsDir() {
+		return fmt.Errorf("parent is not a directory: %s", path)
+	}
+
+	coresLinkPath := filepath.Join(path, filepath.Base(config.ArcadeCoresFolder))
+	coresLink, err := os.Lstat(coresLinkPath)
+
+	coresLinkExists := false
+	if err == nil {
+		if coresLink.Mode()&os.ModeSymlink != 0 {
+			coresLinkExists = true
+		} else {
+			// cores exists but it's not a symlink. not touching this!
+			return nil
+		}
+	} else if os.IsNotExist(err) {
+		coresLinkExists = false
+	} else {
+		return err
+	}
+
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	mraCount := 0
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		if s.HasSuffix(s.ToLower(file.Name()), ".mra") {
+			mraCount++
+		}
+	}
+
+	if mraCount > 0 && !coresLinkExists {
+		err = os.Symlink(config.ArcadeCoresFolder, coresLinkPath)
+		if err != nil {
+			return err
+		}
+	} else if mraCount == 0 && coresLinkExists {
+		err = os.Remove(coresLinkPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func DeleteLauncher(path string) error {
 	if _, err := os.Stat(path); err == nil {
 		err := os.Remove(path)
@@ -156,19 +216,7 @@ func DeleteLauncher(path string) error {
 		}
 	}
 
-	// FIXME: best effort for now but this should be case insensitive
-	mras, _ := filepath.Glob(filepath.Join(filepath.Dir(path), "*.mra"))
-	if len(mras) == 0 {
-		coresLink := filepath.Join(filepath.Dir(path), filepath.Base(config.ArcadeCoresFolder))
-		if _, err := os.Lstat(coresLink); err == nil {
-			err := os.Remove(coresLink)
-			if err != nil {
-				return fmt.Errorf("failed to remove cores link: %s", err)
-			}
-		}
-	}
-
-	return nil
+	return TrySetupArcadeCoresLink(filepath.Dir(path))
 }
 
 func CreateLauncher(system *games.System, gameFile string, folder string, name string) (string, error) {
@@ -190,12 +238,9 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 			return "", fmt.Errorf("failed to create game link: %s", err)
 		}
 
-		coresLink := filepath.Join(folder, filepath.Base(config.ArcadeCoresFolder))
-		if _, err := os.Lstat(coresLink); err != nil {
-			err := os.Symlink(config.ArcadeCoresFolder, coresLink)
-			if err != nil {
-				return "", fmt.Errorf("failed to create cores link: %s", err)
-			}
+		err = TrySetupArcadeCoresLink(filepath.Dir(mraPath))
+		if err != nil {
+			return "", err
 		}
 
 		return mraPath, nil

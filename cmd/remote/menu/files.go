@@ -2,6 +2,8 @@ package menu
 
 import (
 	"encoding/json"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net/http"
@@ -15,7 +17,7 @@ const CreateTypeFolder = "folder"
 func cleanPath(path string) string {
 	path = filepath.Clean(path)
 	path = removeRoot.ReplaceAllLiteralString(path, "")
-	path = filepath.Join(menuRoot, path)
+	path = filepath.Join(config.SdFolder, path)
 	return path
 }
 
@@ -100,6 +102,18 @@ func HandleRenameFile(logger *service.Logger) http.HandlerFunc {
 			logger.Error("error renaming file: %s", err)
 			return
 		}
+
+		err = mister.TrySetupArcadeCoresLink(filepath.Dir(fromPath))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error creating arcade cores link: %s", err)
+		}
+
+		err = mister.TrySetupArcadeCoresLink(filepath.Dir(toPath))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error creating arcade cores link: %s", err)
+		}
 	}
 }
 
@@ -131,13 +145,13 @@ func HandleDeleteFile(logger *service.Logger) http.HandlerFunc {
 
 		if path == "" {
 			invalidPath = true
-		} else if path == menuRoot {
+		} else if path == config.SdFolder {
 			invalidPath = true
-		} else if path == menuRoot+"/" {
+		} else if path == config.SdFolder+"/" {
 			invalidPath = true
-		} else if strings.HasPrefix(path, menuRoot+"/MiSTer") {
+		} else if strings.HasPrefix(path, config.SdFolder+"/MiSTer") {
 			invalidPath = true
-		} else if path == menuRoot+"/menu.rbf" {
+		} else if path == config.SdFolder+"/menu.rbf" {
 			invalidPath = true
 		} else if file.IsDir() && len(file.Name()) > 0 && file.Name()[0] != '_' {
 			invalidPath = true
@@ -156,6 +170,12 @@ func HandleDeleteFile(logger *service.Logger) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("error deleting file: %s", err)
 			return
+		}
+
+		err = mister.TrySetupArcadeCoresLink(filepath.Dir(path))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("error creating arcade cores link: %s", err)
 		}
 	}
 }

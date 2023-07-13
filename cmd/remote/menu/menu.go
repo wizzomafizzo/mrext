@@ -3,6 +3,7 @@ package menu
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 )
 
 // TODO: should be in config
-const menuRoot = "/media/fat"
 const namesTxtPath = "/media/fat/names.txt"
 
 type Item struct {
@@ -35,7 +35,7 @@ type ListMenuPayload struct {
 	Items []Item  `json:"items"`
 }
 
-// TODO: this should be cached and made a map
+// TODO: this should be cached and made a map (or maybe not, it's quite fast lol)
 func getNamesTxt(original string, filetype string) (string, error) {
 	if filetype == "folder" {
 		return "", nil
@@ -145,7 +145,7 @@ func getFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	return name, filetype, version
 }
 
-var removeRoot = regexp.MustCompile(`(?i)^` + menuRoot + `\/?`)
+var removeRoot = regexp.MustCompile(`(?i)^` + config.SdFolder + `\/?`)
 
 func ListFolder(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -166,11 +166,11 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 
 		var path string
 		if args.Path == "" {
-			path = menuRoot
+			path = config.SdFolder
 		} else {
 			parts := filepath.SplitList(args.Path)
 			cleaned := make([]string, 0)
-			cleaned = append(cleaned, menuRoot)
+			cleaned = append(cleaned, config.SdFolder)
 
 			for _, part := range parts {
 				if part == "." || part == ".." {
