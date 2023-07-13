@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	gm "github.com/c-seeger/mac-gen-go"
@@ -8,6 +9,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -251,6 +253,44 @@ func HandleGenerateMac(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("encode generate mac response: %s", err)
+			return
+		}
+	}
+}
+
+func HandleLogoFile(logger *service.Logger, client embed.FS, cfg *config.UserConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var path string
+		var data []byte
+		var err error
+
+		if cfg.Remote.CustomLogo != "" {
+			path = cfg.Remote.CustomLogo
+			data, err = os.ReadFile(path)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.Error("read custom logo file: %s", err)
+				return
+			}
+		}
+
+		if len(data) == 0 {
+			path = "_client/build/misterlogo.svg"
+			data, err = client.ReadFile(path)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.Error("read logo file: %s", err)
+				return
+			}
+		}
+
+		contentType := mime.TypeByExtension(filepath.Ext(path))
+		w.Header().Set("Content-Type", contentType)
+
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("server logo file: %s", err)
 			return
 		}
 	}

@@ -315,6 +315,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
+	sub.HandleFunc("/settings/remote/logo", settings.HandleLogoFile(logger, client, cfg)).Methods("GET")
 	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")
 	sub.HandleFunc("/settings/system/generate-mac", settings.HandleGenerateMac(logger)).Methods("GET")
 
@@ -349,6 +350,7 @@ func main() {
 		Remote: config.RemoteConfig{
 			MdnsService: true,
 			SyncSSHKeys: true,
+			CustomLogo:  "",
 		},
 	})
 	if err != nil {
