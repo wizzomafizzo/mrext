@@ -2,7 +2,7 @@
 
 Remote is a web-based interface with a stack of modern features to manage all aspects of your MiSTer. Can be used from your phone, tablet or computer.
 
-*NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may have only basic functionality. Features are also designed for mobile first, with responsive design for tablet and computer added later.*
+*NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may have only basic functionality. Features are also designed for mobile first, with responsive design for tablet and desktop added later.*
 
 <a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
@@ -12,16 +12,19 @@ Remote is a web-based interface with a stack of modern features to manage all as
   * Includes all common media keys and hotkeys
   * Full on-screen keyboard and keypad
 * Launch cores and game shortcuts with an in-app version of the MiSTer menu
+  * Move, rename and delete anything in the menu
 * Search and launch your entire game collection
-  * Create MGL shortcuts in the menu from results
+  * Create shortcuts in the menu from results
 * Browse and launch all cores installed on your MiSTer
-* View, browse and take new screenshots
+* View, browse, download and take new screenshots
 * Control [BGM](https://github.com/wizzomafizzo/MiSTer_BGM) music playback
 * Browse and activate wallpapers
+* Launch scripts from the Scripts menu
 * Change all MiSTer.ini file settings
   * Set the current active .ini file
   * Set hostname and MAC address settings
 * Auto-discover and connect to other MiSTers on your network running Remote
+* Quickly view system information (disk usage, network settings, last update, etc.)
 
 ## Install
 
