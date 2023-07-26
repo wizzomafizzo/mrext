@@ -22,7 +22,7 @@ func ReadUBootParams() (map[string]string, error) {
 	input = strings.ReplaceAll(input, "\n", " ")
 	input = strings.ReplaceAll(input, "\r", " ")
 
-	re := regexp.MustCompile(`(\w+)="(.*?)"|(\w+)=(\S+)`)
+	re := regexp.MustCompile(`([\w_\-.]+)="(.*?)"|([\w_\-.]+)=(\S+)`)
 	matches := re.FindAllStringSubmatch(input, -1)
 
 	for _, match := range matches {
