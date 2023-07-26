@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/libp2p/zeroconf/v2"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/misterini"
 	"os"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func main() {
 		}
 		fmt.Printf("set active ini to %d\n", *setIni)
 	} else if *listInis {
-		inis, err := mister.ListMisterInis()
+		inis, err := misterini.GetAll()
 		if err != nil {
 			fmt.Printf("error listing inis: %s\n", err)
 			os.Exit(1)
