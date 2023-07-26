@@ -4,7 +4,7 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 *NOTE: Remote is in active development. It's totally safe to try out and use, but some sections of the app may have only basic functionality. Features are also designed for mobile first, with responsive design for tablet and desktop added later.*
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
 ## Features
 
@@ -28,7 +28,7 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 ## Install
 
-Download [Remote](https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+Download [Remote](https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```

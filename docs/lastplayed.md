@@ -6,13 +6,13 @@ It supports:
 - Creating and auto-updating a menu folder of recently played games
 - A single shortcut that always launches the last played game
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh"><img src="images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh"><img src="images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
 
 ## Install
 
 Enable the `recents` option in your `MiSTer.ini` file.
 
-Download [LastPlayed](https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+Download [LastPlayed](https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```

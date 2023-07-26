@@ -4,13 +4,13 @@ PlayLog is an application to track and store stats of what games and cores you p
 
 *NOTE: Still a work in progress. Core functionality works well but reporting is very basic. If you're into this idea, you can start using it right now to track stats until more interesting reports are created. You won't lose any of your stats with future updates.*
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh"><img src="images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"><img src="images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
 
 ## Install
 
 Enable the `recents` option in your `MiSTer.ini` file and reboot your MiSTer.
 
-Download [PlayLog](https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+Download [PlayLog](https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```

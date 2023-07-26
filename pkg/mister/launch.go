@@ -149,10 +149,6 @@ func GetLauncherFilename(system *games.System, folder string, name string) strin
 }
 
 func TrySetupArcadeCoresLink(path string) error {
-	if path == filepath.Dir(config.ArcadeCoresFolder) {
-		return nil
-	}
-
 	folder, err := os.Stat(path)
 	if err != nil {
 		return err

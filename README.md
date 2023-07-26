@@ -35,7 +35,7 @@ All scripts listed can be installed by downloading the linked file below, placin
 
 Control the MiSTer from any device on your network. Remote is a web-based interface with a stack of modern features to manage all aspects of your MiSTer.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.sh"><img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/remote.md"><img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140"></a>
 
 ## BGM
@@ -59,31 +59,31 @@ Browse your entire collection from the main MiSTer menu. GamesMenu indexes all y
 ## LaunchSync
 Create shareable and subscribable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.sh"><img src="docs/images/download.svg" alt="Download LaunchSync" title="Download LaunchSync" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh"><img src="docs/images/download.svg" alt="Download LaunchSync" title="Download LaunchSync" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md"><img src="docs/images/readme.svg" alt="Readme LaunchSync" title="Readme LaunchSync" width="140"></a>
 
 ## LastPlayed
 Automatically generate dynamic shortcuts in the MiSTer menu.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.sh"><img src="docs/images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh"><img src="docs/images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md"><img src="docs/images/readme.svg" alt="Readme LastPlayed" title="Readme LastPlayed" width="140"></a>
 
 ## PlayLog
 Track and report on what games you've been playing on your MiSTer.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.sh"><img src="docs/images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"><img src="docs/images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/playlog.md"><img src="docs/images/readme.svg" alt="Readme PlayLog" title="Readme PlayLog" width="140"></a>
 
 ## Random
 Instantly launch a random game in your collection from the Scripts menu.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh"><img src="docs/images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"><img src="docs/images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/random.md"><img src="docs/images/readme.svg" alt="Readme Random" title="Readme Random" width="140"></a>
 
 ## Search
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.sh"><img src="docs/images/download.svg" alt="Download Search" title="Download Search" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh"><img src="docs/images/download.svg" alt="Download Search" title="Download Search" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md"><img src="docs/images/readme.svg" alt="Readme Search" title="Readme Search" width="140"></a>
 
 ## Other Projects

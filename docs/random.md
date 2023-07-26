@@ -2,11 +2,11 @@
 
 Random is a simple application for launching a game at random from your MiSTer's collection.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh"><img src="images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"><img src="images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
 
 ## Install
 
-Download [Random](https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+Download [Random](https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
 ```
