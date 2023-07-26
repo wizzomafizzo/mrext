@@ -186,9 +186,13 @@ func Clean() {
 
 func buildApp(a app, out string) {
 	if a.ldFlags == "" {
-		sh.RunV("go", "build", "-o", out, a.path)
+		env := map[string]string{
+			"GOPROXY": "https://goproxy.io,direct",
+		}
+		sh.RunWithV(env, "go", "build", "-o", out, a.path)
 	} else {
 		staticEnv := map[string]string{
+			"GOPROXY":     "https://goproxy.io,direct",
 			"CGO_ENABLED": "1",
 			"CGO_LDFLAGS": a.ldFlags,
 		}
