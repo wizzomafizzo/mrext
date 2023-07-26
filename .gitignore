@@ -12,6 +12,7 @@ go.work
 *.tar
 .env
 /bin
+/_bin
 /out
 cmd/remote/_client/build
 scripts/armbuild/_build
