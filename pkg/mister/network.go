@@ -8,10 +8,8 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"golang.org/x/sys/unix"
-	"net"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -250,60 +248,18 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 	return nil
 }
 
-var ethAddrArg = regexp.MustCompile(`ethaddr=([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})`)
-
-func readUBootConfig() (string, error) {
-	uBootConfigData, err := os.ReadFile(config.UBootConfigFile)
-	if os.IsNotExist(err) {
-		return "", nil
-	} else if err != nil {
-		return "", err
-	}
-
-	return string(uBootConfigData), nil
-}
-
-// GetConfiguredMacAddress returns the ethernet MAC address configured in the u-boot.txt file, if available.
-func GetConfiguredMacAddress() (string, error) {
-	uBootConfig, err := readUBootConfig()
-	if err != nil {
-		return "", err
-	}
-
-	for _, line := range strings.Split(uBootConfig, "\n") {
-		if ethAddrArg.MatchString(line) {
-			return ethAddrArg.FindStringSubmatch(line)[1], nil
-		}
-	}
-
-	return "", nil
-}
-
-// UpdateConfiguredMacAddress updates the ethernet MAC address configured in the u-boot.txt file. Setting a new one if
-// it doesn't exist, or updating the existing one. Any existing u-boot.txt arguments are preserved.
-func UpdateConfiguredMacAddress(newMacAddress string) error {
-	uBootConfig, err := readUBootConfig()
-	if err != nil {
-		return err
-	}
-
-	uBootConfig = ethAddrArg.ReplaceAllString(uBootConfig, "")
-
-	if newMacAddress != "" {
-		_, err = net.ParseMAC(newMacAddress)
+func FixRootSSHPerms() error {
+	if unix.Access("/", unix.W_OK) != nil {
+		err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
 		if err != nil {
 			return err
 		}
 
-		uBootConfig += " ethaddr=" + newMacAddress
+		defer func() {
+			_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
+		}()
 	}
 
-	uBootConfig = strings.TrimSpace(uBootConfig)
-
-	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
-}
-
-func FixRootSSHPerms() error {
 	err := os.Chmod(config.SSHConfigFolder, 0700)
 	if err != nil {
 		return err
