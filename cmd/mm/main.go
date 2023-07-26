@@ -91,6 +91,7 @@ func main() {
 	getConfig := flag.String("get-config", "", "print config file for core")
 	setBgMode := flag.String("set-bg-mode", "", "set menu background mode")
 	testMdns := flag.Bool("test-mdns", false, "test mDNS service")
+	getUboot := flag.Bool("get-uboot", false, "get uboot params")
 	flag.Parse()
 
 	start := time.Now()
@@ -189,6 +190,15 @@ func main() {
 		defer server.Shutdown()
 		for {
 			time.Sleep(time.Second)
+		}
+	} else if *getUboot {
+		params, err := mister.ReadUBootParams()
+		if err != nil {
+			fmt.Printf("error reading uboot params: %s\n", err)
+			os.Exit(1)
+		}
+		for key, value := range params {
+			fmt.Printf("%s=%s\n", key, value)
 		}
 	} else {
 		flag.Usage()
