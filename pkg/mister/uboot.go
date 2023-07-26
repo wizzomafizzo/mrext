@@ -1,41 +1,75 @@
 package mister
 
 import (
+	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/config"
-	"net"
 	"os"
 	"regexp"
 	"strings"
 )
 
-func readUBootConfig() (string, error) {
-	uBootConfigData, err := os.ReadFile(config.UBootConfigFile)
+func ReadUBootParams() (map[string]string, error) {
+	params := make(map[string]string)
+
+	data, err := os.ReadFile(config.UBootConfigFile)
 	if os.IsNotExist(err) {
-		return "", nil
+		return params, nil
 	} else if err != nil {
-		return "", err
+		return params, err
 	}
 
-	data := string(uBootConfigData)
-	data = strings.ReplaceAll(data, "\n", " ")
-	data = strings.ReplaceAll(data, "\r", " ")
+	input := string(data)
+	input = strings.ReplaceAll(input, "\n", " ")
+	input = strings.ReplaceAll(input, "\r", " ")
 
-	return data, nil
+	re := regexp.MustCompile(`(\w+)="(.*?)"|(\w+)=(\S+)`)
+	matches := re.FindAllStringSubmatch(input, -1)
+
+	for _, match := range matches {
+		param := match[1] + match[3]
+		value := match[2] + match[4]
+
+		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
+			value = strings.Trim(value, "\"")
+		}
+
+		params[param] = value
+	}
+
+	return params, nil
 }
 
-var ethAddrArg = regexp.MustCompile(`ethaddr=([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})`)
+func WriteUBootParams(params map[string]string) error {
+	var pairs []string
+
+	for key, value := range params {
+		// if the value contains spaces, quote it
+		if strings.Contains(value, " ") {
+			value = fmt.Sprintf("\"%s\"", value)
+		}
+
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	content := strings.Join(pairs, " ")
+
+	err := os.WriteFile(config.UBootConfigFile, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // GetConfiguredMacAddress returns the ethernet MAC address configured in the u-boot.txt file, if available.
 func GetConfiguredMacAddress() (string, error) {
-	uBootConfig, err := readUBootConfig()
+	params, err := ReadUBootParams()
 	if err != nil {
 		return "", err
 	}
 
-	for _, line := range strings.Split(uBootConfig, "\n") {
-		if ethAddrArg.MatchString(line) {
-			return ethAddrArg.FindStringSubmatch(line)[1], nil
-		}
+	if ethAddr, ok := params["ethaddr"]; ok {
+		return ethAddr, nil
 	}
 
 	return "", nil
@@ -44,65 +78,36 @@ func GetConfiguredMacAddress() (string, error) {
 // UpdateConfiguredMacAddress updates the ethernet MAC address configured in the u-boot.txt file. Setting a new one if
 // it doesn't exist, or updating the existing one. Any existing u-boot.txt arguments are preserved.
 func UpdateConfiguredMacAddress(newMacAddress string) error {
-	uBootConfig, err := readUBootConfig()
+	params, err := ReadUBootParams()
 	if err != nil {
 		return err
 	}
 
-	uBootConfig = ethAddrArg.ReplaceAllString(uBootConfig, "")
+	params["ethaddr"] = newMacAddress
 
-	if newMacAddress != "" {
-		_, err = net.ParseMAC(newMacAddress)
-		if err != nil {
-			return err
-		}
-
-		uBootConfig += " ethaddr=" + newMacAddress
-	}
-
-	uBootConfig = strings.TrimSpace(uBootConfig)
-
-	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
+	return WriteUBootParams(params)
 }
 
-var usbhidQuirksArg = regexp.MustCompile(`usbhid\.quirks=([0-9a-fA-F:,xXuU]+) *`)
-
 func GetUsbHidQuirks() ([]string, error) {
-	var quirks []string
-
-	uBootConfig, err := readUBootConfig()
+	params, err := ReadUBootParams()
 	if err != nil {
-		return quirks, err
+		return nil, err
 	}
 
-	if uBootConfig == "" {
-		return quirks, nil
+	if quirks, ok := params["usbhid.quirks"]; ok {
+		return strings.Split(quirks, ","), nil
 	}
 
-	for _, line := range strings.Split(uBootConfig, "\n") {
-		if usbhidQuirksArg.MatchString(line) {
-			match := usbhidQuirksArg.FindStringSubmatch(line)[1]
-			quirks = strings.Split(match, ",")
-			break
-		}
-	}
-
-	return quirks, nil
+	return nil, nil
 }
 
 func UpdateUsbHidQuirks(quirks []string) error {
-	uBootConfig, err := readUBootConfig()
+	params, err := ReadUBootParams()
 	if err != nil {
 		return err
 	}
 
-	uBootConfig = usbhidQuirksArg.ReplaceAllString(uBootConfig, "")
+	params["usbhid.quirks"] = strings.Join(quirks, ",")
 
-	if len(quirks) > 0 {
-		uBootConfig += " usbhid.quirks=" + strings.Join(quirks, ",")
-	}
-
-	uBootConfig = strings.TrimSpace(uBootConfig)
-
-	return os.WriteFile(config.UBootConfigFile, []byte(uBootConfig), 0644)
+	return WriteUBootParams(params)
 }
