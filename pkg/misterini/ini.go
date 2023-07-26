@@ -347,6 +347,11 @@ func RecentsOptionEnabled() bool {
 		return false
 	}
 
+	err = iniFile.Load()
+	if err != nil {
+		return false
+	}
+
 	val, err := iniFile.GetKey(KeyRecents)
 	if err != nil {
 		return false
