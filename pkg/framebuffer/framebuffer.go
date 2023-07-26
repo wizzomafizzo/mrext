@@ -51,31 +51,31 @@ func (fb *Framebuffer) Open() error {
 		return err
 	}
 
-	dev_file := C.CString("/dev/fb0")
-	fd, err := C.openFrameBuffer(dev_file)
-	C.free(unsafe.Pointer(dev_file))
+	devFile := C.CString("/dev/fb0")
+	fd, err := C.openFrameBuffer(devFile)
+	C.free(unsafe.Pointer(devFile))
 
 	if err != nil {
 		return err
 	}
 
-	var finfo C.struct_fb_fix_screeninfo
-	if _, err := C.getFixedScreenInfo(fd, &finfo); err != nil {
+	var fixInfo C.struct_fb_fix_screeninfo
+	if _, err := C.getFixedScreenInfo(fd, &fixInfo); err != nil {
 		return err
 	}
 
-	var vinfo C.struct_fb_var_screeninfo
-	if _, err := C.getVarScreenInfo(fd, &vinfo); err != nil {
+	var varInfo C.struct_fb_var_screeninfo
+	if _, err := C.getVarScreenInfo(fd, &varInfo); err != nil {
 		return err
 	}
 
-	fb.bitsPerPixel = int(vinfo.bits_per_pixel)
-	fb.xRes = int(vinfo.xres)
-	fb.yRes = int(vinfo.yres)
-	fb.xOffset = int(vinfo.xoffset)
-	fb.yOffset = int(vinfo.yoffset)
-	fb.lineLength = int(finfo.line_length)
-	fb.screenSize = int(finfo.smem_len)
+	fb.bitsPerPixel = int(varInfo.bits_per_pixel)
+	fb.xRes = int(varInfo.xres)
+	fb.yRes = int(varInfo.yres)
+	fb.xOffset = int(varInfo.xoffset)
+	fb.yOffset = int(varInfo.yoffset)
+	fb.lineLength = int(fixInfo.line_length)
+	fb.screenSize = int(fixInfo.smem_len)
 
 	addr := uintptr(C.mmap(nil, C.size_t(fb.screenSize), C.PROT_READ|C.PROT_WRITE, C.MAP_SHARED, fd, 0))
 
@@ -119,7 +119,7 @@ func (fb *Framebuffer) At(x, y int) color.Color {
 	r := fb.data[addr+2]
 	a := fb.data[addr+3]
 
-	return color.RGBA{r, g, b, a}
+	return color.RGBA{R: r, G: g, B: b, A: a}
 }
 
 func (fb *Framebuffer) Set(x, y int, c color.Color) {
@@ -136,11 +136,11 @@ func (fb *Framebuffer) Set(x, y int, c color.Color) {
 }
 
 func (fb *Framebuffer) Fill(c color.Color) {
-	draw.Draw(fb, fb.Bounds(), &image.Uniform{c}, image.Point{}, draw.Src)
+	draw.Draw(fb, fb.Bounds(), &image.Uniform{C: c}, image.Point{}, draw.Src)
 }
 
-func (fb *Framebuffer) ReadKey() (byte, error) {
-	var b [1]byte
+func (fb *Framebuffer) ReadKey() ([3]byte, error) {
+	var b [3]byte
 	_, err := os.Stdin.Read(b[:])
-	return b[0], err
+	return b, err
 }
