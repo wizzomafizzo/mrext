@@ -160,6 +160,7 @@ func UpdateUsbHidQuirks(quirks []string) error {
 	}
 
 	args["usbhid.quirks"] = strings.Join(quirks, ",")
+	params[UBootKernelParam] = makeKernelArgs(args)
 
 	return WriteUBootParams(params)
 }
