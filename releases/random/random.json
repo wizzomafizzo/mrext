@@ -1,10 +1,10 @@
 {
   "db_id": "mrext/random",
-  "timestamp": 1690358499,
+  "timestamp": 1690436758,
   "files": {
     "Scripts/random.sh": {
-      "hash": "daa465510a9f3d33bf9a12b686f9457d",
-      "size": 2279712,
+      "hash": "bb0a6777b4feeee38c0351deb497ba53",
+      "size": 2279220,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"
     }
   },
