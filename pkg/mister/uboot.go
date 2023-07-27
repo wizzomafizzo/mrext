@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const UBootKernelParam = "v"
+
 func ReadUBootParams() (map[string]string, error) {
 	params := make(map[string]string)
 
@@ -18,9 +20,54 @@ func ReadUBootParams() (map[string]string, error) {
 		return params, err
 	}
 
-	input := string(data)
-	input = strings.ReplaceAll(input, "\n", " ")
-	input = strings.ReplaceAll(input, "\r", " ")
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimRight(line, "\r")
+		line = strings.TrimSpace(line)
+
+		if line == "" || !strings.Contains(line, "=") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+
+		key := parts[0]
+		key = strings.TrimSpace(key)
+
+		value := parts[1]
+		value = strings.TrimSpace(value)
+
+		params[parts[0]] = parts[1]
+	}
+
+	return params, nil
+}
+
+func WriteUBootParams(params map[string]string) error {
+	var pairs []string
+
+	for key, value := range params {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	content := strings.Join(pairs, "\n") + "\n"
+
+	if _, err := os.Stat(config.UBootConfigFile); err == nil {
+		err = os.Rename(config.UBootConfigFile, config.UBootConfigFile+".backup")
+		if err != nil {
+			return err
+		}
+	}
+
+	err := os.WriteFile(config.UBootConfigFile, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func parseKernelArgs(input string) map[string]string {
+	args := make(map[string]string)
 
 	re := regexp.MustCompile(`([\w_\-.]+)="(.*?)"|([\w_\-.]+)=(\S+)`)
 	matches := re.FindAllStringSubmatch(input, -1)
@@ -33,13 +80,13 @@ func ReadUBootParams() (map[string]string, error) {
 			value = strings.Trim(value, "\"")
 		}
 
-		params[param] = value
+		args[param] = value
 	}
 
-	return params, nil
+	return args
 }
 
-func WriteUBootParams(params map[string]string) error {
+func makeKernelArgs(params map[string]string) string {
 	var pairs []string
 
 	for key, value := range params {
@@ -53,12 +100,7 @@ func WriteUBootParams(params map[string]string) error {
 
 	content := strings.Join(pairs, " ")
 
-	err := os.WriteFile(config.UBootConfigFile, []byte(content), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return content
 }
 
 // GetConfiguredMacAddress returns the ethernet MAC address configured in the u-boot.txt file, if available.
@@ -94,8 +136,13 @@ func GetUsbHidQuirks() ([]string, error) {
 		return nil, err
 	}
 
-	if quirks, ok := params["usbhid.quirks"]; ok {
-		return strings.Split(quirks, ","), nil
+	args := make(map[string]string)
+	if v, ok := params[UBootKernelParam]; ok {
+		args = parseKernelArgs(v)
+	}
+
+	if v, ok := args["usbhid.quirks"]; ok {
+		return strings.Split(v, ","), nil
 	}
 
 	return nil, nil
@@ -107,7 +154,12 @@ func UpdateUsbHidQuirks(quirks []string) error {
 		return err
 	}
 
-	params["usbhid.quirks"] = strings.Join(quirks, ",")
+	args := make(map[string]string)
+	if v, ok := params[UBootKernelParam]; ok {
+		args = parseKernelArgs(v)
+	}
+
+	args["usbhid.quirks"] = strings.Join(quirks, ",")
 
 	return WriteUBootParams(params)
 }
