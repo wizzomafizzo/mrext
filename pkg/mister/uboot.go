@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-const UBootKernelParam = "v"
+const (
+	UBootMACParam    = "ethaddr"
+	UBootKernelParam = "v"
+)
 
 func ReadUBootParams() (map[string]string, error) {
 	params := make(map[string]string)
@@ -110,7 +113,7 @@ func GetConfiguredMacAddress() (string, error) {
 		return "", err
 	}
 
-	if ethAddr, ok := params["ethaddr"]; ok {
+	if ethAddr, ok := params[UBootMACParam]; ok {
 		return ethAddr, nil
 	}
 
@@ -125,7 +128,7 @@ func UpdateConfiguredMacAddress(newMacAddress string) error {
 		return err
 	}
 
-	params["ethaddr"] = newMacAddress
+	params[UBootMACParam] = newMacAddress
 
 	return WriteUBootParams(params)
 }
