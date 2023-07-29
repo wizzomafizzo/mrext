@@ -15,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
@@ -153,7 +152,7 @@ func getDiskInfo() ([]HandleSystemInfoPayloadDisk, error) {
 		} else if mount == config.CifsFolder {
 			displayName = "Network share"
 		} else {
-			displayName = strings.ToUpper(filepath.Base(mount))
+			displayName = filepath.Base(mount)
 		}
 
 		diskInfo = append(diskInfo, HandleSystemInfoPayloadDisk{
