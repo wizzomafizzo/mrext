@@ -6,6 +6,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net/http"
 	"sync"
 
@@ -74,6 +75,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 
 	go func() {
 		systemPaths := make(map[string][]string)
+		var keys []string
 		allFiles := make([][2]string, 0)
 		var err error
 
@@ -97,8 +99,9 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 		s.CurrentStep = 2
 		websocket.Broadcast(logger, GetIndexingStatus())
 
-		for systemId, paths := range systemPaths {
-			for i := range paths {
+		keys = utils.AlphaMapKeys(systemPaths)
+		for _, systemId := range keys {
+			for _, path := range systemPaths[systemId] {
 				system, err := games.GetSystem(systemId)
 				if err != nil {
 					logger.Error("index: invalid system: %s (%s)", err, systemId)
@@ -110,16 +113,16 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 				s.CurrentStep++
 				websocket.Broadcast(logger, GetIndexingStatus())
 
-				files, err := games.GetFiles(systemId, paths[i])
+				files, err := games.GetFiles(systemId, path)
 				if err != nil {
-					logger.Error("index: getting files: %s", err)
+					logger.Error("index: getting files for %s (%s): %s", systemId, path, err)
 					continue
 				}
 
-				logger.Info("index: found %d files for %s", len(files), systemId)
+				logger.Info("index: found %d files for %s: %s", len(files), systemId, path)
 
-				for i := range files {
-					allFiles = append(allFiles, [2]string{systemId, files[i]})
+				for j := range files {
+					allFiles = append(allFiles, [2]string{systemId, files[j]})
 				}
 			}
 		}

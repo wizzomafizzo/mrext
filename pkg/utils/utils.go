@@ -289,3 +289,9 @@ func GetLocalIp() (net.IP, error) {
 
 	return localAddr.IP, nil
 }
+
+func AlphaMapKeys[V any](m map[string]V) []string {
+	keys := MapKeys(m)
+	sort.Strings(keys)
+	return keys
+}

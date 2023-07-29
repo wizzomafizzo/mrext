@@ -84,8 +84,9 @@ func MatchSystemFile(system System, path string) bool {
 func AllSystems() []System {
 	var systems []System
 
-	for _, system := range Systems {
-		systems = append(systems, system)
+	keys := utils.AlphaMapKeys(Systems)
+	for _, k := range keys {
+		systems = append(systems, Systems[k])
 	}
 
 	return systems
