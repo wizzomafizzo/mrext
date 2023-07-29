@@ -58,7 +58,7 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 		logger: logger,
 	})
 	if err != nil {
-		logger.Error("failed to start tracker", err)
+		logger.Error("failed to start tracker: %s", err)
 		return nil, nil, err
 	}
 

@@ -24,7 +24,6 @@ func Generate(files [][2]string, indexPath string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
 
 	tmpFilesDir := filepath.Join(tmpDir, "files")
 	if err := os.Mkdir(tmpFilesDir, 0755); err != nil {
@@ -57,13 +56,20 @@ func Generate(files [][2]string, indexPath string) error {
 		basename := filepath.Base(files[i][1])
 		name := strings.TrimSuffix(basename, filepath.Ext(basename))
 
-		pathsFile.WriteString(files[i][1] + "\n")
-		namesFile.WriteString(name + "\n")
+		_, err = pathsFile.WriteString(files[i][1] + "\n")
+		if err != nil {
+			return err
+		}
+
+		_, err = namesFile.WriteString(name + "\n")
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, f := range indexFiles {
-		f.Sync()
-		f.Close()
+		_ = f.Sync()
+		_ = f.Close()
 	}
 
 	tmpIndexPath := filepath.Join(tmpDir, filepath.Base(config.SearchDbFile))
@@ -74,7 +80,9 @@ func Generate(files [][2]string, indexPath string) error {
 	}
 
 	tarw := tar.NewWriter(indexTar)
-	defer tarw.Close()
+	defer func(tarw *tar.Writer) {
+		_ = tarw.Close()
+	}(tarw)
 
 	tmpFiles, err := os.ReadDir(tmpFilesDir)
 	if err != nil {
@@ -86,10 +94,10 @@ func Generate(files [][2]string, indexPath string) error {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
 
 		fileInfo, err := indexFile.Info()
 		if err != nil {
+			_ = file.Close()
 			return err
 		}
 
@@ -102,15 +110,25 @@ func Generate(files [][2]string, indexPath string) error {
 
 		err = tarw.WriteHeader(header)
 		if err != nil {
+			_ = file.Close()
 			return err
 		}
 
 		if _, err := io.Copy(tarw, file); err != nil {
+			_ = file.Close()
 			return err
 		}
 	}
 
-	utils.MoveFile(tmpIndexPath, indexPath)
+	err = utils.MoveFile(tmpIndexPath, indexPath)
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(tmpDir)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -134,7 +152,9 @@ func Open(indexPath string) (Index, error) {
 	if err != nil {
 		return index, err
 	}
-	defer indexTar.Close()
+	defer func(indexTar *os.File) {
+		_ = indexTar.Close()
+	}(indexTar)
 
 	index.Path = indexPath
 	index.files = make(map[string]map[string][]string)

@@ -63,7 +63,6 @@ func GetIndexingStatus() string {
 }
 
 func (s *Index) GenerateIndex(logger *service.Logger) {
-	// TODO: this probably does need some sort of logging
 	if s.Indexing {
 		return
 	}
@@ -102,6 +101,8 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 			s.CurrentStep++
 			websocket.Broadcast(logger, GetIndexingStatus())
 		})
+
+		logger.Info("index: found %d files for all systems", len(files))
 
 		s.CurrentDesc = "Writing to database"
 		websocket.Broadcast(logger, GetIndexingStatus())
