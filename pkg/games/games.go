@@ -12,7 +12,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-// Lookup up exact system id definition.
+// GetSystem looks up an exact system definition by ID.
 func GetSystem(id string) (*System, error) {
 	if system, ok := Systems[id]; ok {
 		return &system, nil
@@ -22,7 +22,6 @@ func GetSystem(id string) (*System, error) {
 }
 
 func GetGroup(groupId string) (System, error) {
-	// TODO: does this need to support multiple folders?
 	var merged System
 	if _, ok := CoreGroups[groupId]; !ok {
 		return merged, fmt.Errorf("no system group found for %s", groupId)
@@ -43,7 +42,7 @@ func GetGroup(groupId string) (System, error) {
 	return merged, nil
 }
 
-// Lookup case insensitive system id definition including aliases.
+// LookupSystem case-insensitively looks up system ID definition including aliases.
 func LookupSystem(id string) (*System, error) {
 	if system, err := GetGroup(id); err == nil {
 		return &system, nil
@@ -64,7 +63,7 @@ func LookupSystem(id string) (*System, error) {
 	return nil, fmt.Errorf("unknown system: %s", id)
 }
 
-// Return true if a given files extension is valid for a system.
+// MatchSystemFile returns true if a given file's extension is valid for a system.
 func MatchSystemFile(system System, path string) bool {
 	// ignore dot files
 	if strings.HasPrefix(filepath.Base(path), ".") {
@@ -82,7 +81,6 @@ func MatchSystemFile(system System, path string) bool {
 	return false
 }
 
-// Return a slice of all systems.
 func AllSystems() []System {
 	var systems []System
 
@@ -113,8 +111,9 @@ func (r *resultsStack) get() (*[]string, error) {
 	return &(*r)[len(*r)-1], nil
 }
 
-// Search for all valid games in a given path and return a list of files.
-// This function deep searches .zip files and handles symlinks at all levels.
+// GetFiles searches for all valid games in a given path and return a list of
+// files. This function deep searches .zip files and handles symlinks at all
+// levels.
 func GetFiles(systemId string, path string) ([]string, error) {
 	var allResults []string
 	var stack resultsStack
@@ -165,8 +164,12 @@ func GetFiles(systemId string, path string) ([]string, error) {
 				}
 
 				stack.new()
+				defer stack.pop()
 
-				filepath.WalkDir(realPath, scanner)
+				err = filepath.WalkDir(realPath, scanner)
+				if err != nil {
+					return err
+				}
 
 				results, err := stack.get()
 				if err != nil {
@@ -177,7 +180,6 @@ func GetFiles(systemId string, path string) ([]string, error) {
 					allResults = append(allResults, strings.Replace((*results)[i], realPath, path, 1))
 				}
 
-				stack.pop()
 				return nil
 			}
 		}
@@ -197,7 +199,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			for i := range zipFiles {
 				if MatchSystemFile(*system, zipFiles[i]) {
 					abs := filepath.Join(path, zipFiles[i])
-					*results = append(*results, string(abs))
+					*results = append(*results, abs)
 
 				}
 			}
@@ -212,6 +214,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	}
 
 	stack.new()
+	defer stack.pop()
 
 	root, err := os.Lstat(path)
 	if err != nil {
@@ -243,7 +246,10 @@ func GetFiles(systemId string, path string) ([]string, error) {
 		return nil, fmt.Errorf("root is not a directory")
 	}
 
-	filepath.WalkDir(realPath, scanner)
+	err = filepath.WalkDir(realPath, scanner)
+	if err != nil {
+		return nil, err
+	}
 
 	results, err := stack.get()
 	if err != nil {
@@ -251,7 +257,6 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	}
 
 	allResults = append(allResults, *results...)
-	stack.pop()
 
 	// change root back to symlink
 	if realPath != path {
@@ -336,7 +341,7 @@ type RbfInfo struct {
 	Path      string // full path to RBF file
 	Filename  string // base filename of RBF file
 	ShortName string // base filename without date or extension
-	MglName   string // relative path launchable from MGL file
+	MglName   string // relative path launch-able from MGL file
 }
 
 func ParseRbf(path string) RbfInfo {
@@ -422,7 +427,7 @@ func shallowScanRbf() ([]RbfInfo, error) {
 	return results, nil
 }
 
-// Return a map of all system IDs which have an existing rbf file.
+// SystemsWithRbf returns a map of all system IDs which have an existing rbf file.
 func SystemsWithRbf() map[string]RbfInfo {
 	// TODO: include alt rbfs somehow?
 	results := make(map[string]RbfInfo)

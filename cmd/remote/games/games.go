@@ -74,10 +74,17 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 
 	go func() {
 		systemPaths := make(map[string][]string)
+		allFiles := make([][2]string, 0)
+		var err error
 
 		for _, path := range games.GetSystemPaths(games.AllSystems()) {
 			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
 			logger.Info("index: found path %s: %s", path.System.Name, path.Path)
+		}
+
+		if len(systemPaths) == 0 {
+			logger.Error("index: no paths found")
+			goto finish
 		}
 
 		s.TotalSteps = 0
@@ -90,28 +97,47 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 		s.CurrentStep = 2
 		websocket.Broadcast(logger, GetIndexingStatus())
 
-		files, _ := games.GetAllFiles(systemPaths, func(systemId string, path string) {
-			system, err := games.GetSystem(systemId)
-			if err != nil {
-				logger.Error("index: getting system: %s", err)
-				return
+		for systemId, paths := range systemPaths {
+			for i := range paths {
+				system, err := games.GetSystem(systemId)
+				if err != nil {
+					logger.Error("index: invalid system: %s (%s)", err, systemId)
+					s.CurrentStep++
+					continue
+				}
+
+				s.CurrentDesc = system.Name
+				s.CurrentStep++
+				websocket.Broadcast(logger, GetIndexingStatus())
+
+				files, err := games.GetFiles(systemId, paths[i])
+				if err != nil {
+					logger.Error("index: getting files: %s", err)
+					continue
+				}
+				logger.Info("index: found %d files for %s", len(files), systemId)
+
+				for i := range files {
+					allFiles = append(allFiles, [2]string{systemId, files[i]})
+				}
 			}
+		}
 
-			s.CurrentDesc = system.Name
-			s.CurrentStep++
-			websocket.Broadcast(logger, GetIndexingStatus())
-		})
-
-		logger.Info("index: found %d files for all systems", len(files))
+		if len(allFiles) == 0 {
+			logger.Error("index: no files found")
+			goto finish
+		}
+		logger.Info("index: found %d files for all systems", len(allFiles))
 
 		s.CurrentDesc = "Writing to database"
 		websocket.Broadcast(logger, GetIndexingStatus())
-		err := txtindex.Generate(files, config.SearchDbFile)
+		err = txtindex.Generate(allFiles, config.SearchDbFile)
 		if err != nil {
 			logger.Error("index: generating index: %s", err)
+			goto finish
 		}
 
-		s.CurrentStep++
+	finish:
 		s.Indexing = false
 		s.TotalSteps = 0
 		s.CurrentStep = 0
