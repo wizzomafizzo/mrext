@@ -325,7 +325,7 @@ func LaunchGenericFile(path string) error {
 	case ".rbf":
 		err = launchFile(path)
 	default:
-		system, err := games.PathBestMatch(path)
+		system, err := games.BestSystemMatch(path)
 		if err != nil {
 			return fmt.Errorf("unknown file type: %s", ext)
 		}

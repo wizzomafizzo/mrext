@@ -77,7 +77,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 		allFiles := make([][2]string, 0)
 		var err error
 
-		for _, path := range games.GetSystemPaths(games.AllSystems()) {
+		for _, path := range games.GetAllSystemPaths() {
 			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
 			logger.Info("index: found path %s: %s", path.System.Name, path.Path)
 		}
@@ -115,6 +115,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 					logger.Error("index: getting files: %s", err)
 					continue
 				}
+
 				logger.Info("index: found %d files for %s", len(files), systemId)
 
 				for i := range files {

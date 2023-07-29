@@ -2,60 +2,39 @@ package games
 
 import (
 	"fmt"
-	"io/fs"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-type listDirFn func(string) ([]fs.DirEntry, error)
-
-func memoListDir() listDirFn {
-	cache := make(map[string][]fs.DirEntry)
-
-	return func(path string) ([]fs.DirEntry, error) {
-		if files, ok := cache[path]; ok {
-			return files, nil
-		}
-
-		files, err := os.ReadDir(path)
-		if err != nil {
-			return nil, err
-		}
-
-		cache[path] = files
-		return files, nil
-	}
-}
-
-func getCaseInsensitiveDir(fn listDirFn, path string) (string, error) {
-	if f, err := os.Stat(path); err == nil {
-		if f.IsDir() {
-			return path, nil
-		} else {
-			return "", fmt.Errorf("not a directory: %s", path)
-		}
+func FindFile(path string) (string, error) {
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
 	}
 
 	parent := filepath.Dir(path)
-	files, err := fn(parent)
+	name := filepath.Base(path)
+
+	files, err := os.ReadDir(parent)
 	if err != nil {
 		return "", err
 	}
 
-	name := filepath.Base(path)
 	for _, file := range files {
-		if strings.EqualFold(file.Name(), name) {
-			return filepath.Join(parent, file.Name()), nil
+		target := file.Name()
+
+		if len(target) != len(name) {
+			continue
+		} else if strings.EqualFold(target, name) {
+			return filepath.Join(parent, target), nil
 		}
 	}
 
-	return "", fmt.Errorf("directory not found: %s", path)
+	return "", fmt.Errorf("file match not found: %s", path)
 }
 
-// Given any path, return what systems it could be for.
+// FolderToSystems returns what systems a path could be for.
 func FolderToSystems(path string) []System {
 	path = strings.ToLower(path)
 	validGamesFolder := false
@@ -94,7 +73,7 @@ func FolderToSystems(path string) []System {
 	return matchedExtensions
 }
 
-func PathBestMatch(path string) (System, error) {
+func BestSystemMatch(path string) (System, error) {
 	systems := FolderToSystems(path)
 
 	if len(systems) == 0 {
@@ -121,21 +100,20 @@ type PathResult struct {
 	Path   string
 }
 
-// Return all possible paths for each system.
+// GetSystemPaths returns all possible paths for each system.
 func GetSystemPaths(systems []System) []PathResult {
 	var matches []PathResult
-	listFolder := memoListDir()
 
 	for _, system := range systems {
 		for _, gamesFolder := range config.GamesFolders {
-			gf, err := getCaseInsensitiveDir(listFolder, gamesFolder)
+			gf, err := FindFile(gamesFolder)
 			if err != nil {
 				continue
 			}
 
 			for _, folder := range system.Folder {
 				systemFolder := filepath.Join(gf, folder)
-				path, err := getCaseInsensitiveDir(listFolder, systemFolder)
+				path, err := FindFile(systemFolder)
 				if err != nil {
 					continue
 				}
@@ -152,14 +130,13 @@ func GetAllSystemPaths() []PathResult {
 	return GetSystemPaths(AllSystems())
 }
 
-// Return the active path for each system.
+// GetActiveSystemPaths returns the active path for each system.
 func GetActiveSystemPaths(systems []System) []PathResult {
 	var matches []PathResult
-	listFolder := memoListDir()
 
 	for _, system := range systems {
 		for _, gamesFolder := range config.GamesFolders {
-			gf, err := getCaseInsensitiveDir(listFolder, gamesFolder)
+			gf, err := FindFile(gamesFolder)
 			if err != nil {
 				continue
 			}
@@ -168,7 +145,7 @@ func GetActiveSystemPaths(systems []System) []PathResult {
 
 			for _, folder := range system.Folder {
 				systemFolder := filepath.Join(gf, folder)
-				path, err := getCaseInsensitiveDir(listFolder, systemFolder)
+				path, err := FindFile(systemFolder)
 				if err != nil {
 					continue
 				}

@@ -25,7 +25,7 @@ func LaunchGame(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		system, err := games.PathBestMatch(args.Path)
+		system, err := games.BestSystemMatch(args.Path)
 		if err != nil {
 			http.Error(w, "no system found for game", http.StatusBadRequest)
 			logger.Error("launch game: no system found for game: %s", args.Path)
@@ -105,7 +105,7 @@ func CreateLauncher(logger *service.Logger) http.HandlerFunc {
 		//	return
 		//}
 
-		system, err := games.PathBestMatch(args.GamePath)
+		system, err := games.BestSystemMatch(args.GamePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("create launcher: unknown file type or folder")

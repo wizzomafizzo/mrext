@@ -161,7 +161,7 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 }
 
 func tryLaunchGame(launchPath string) error {
-	system, err := games.PathBestMatch(launchPath)
+	system, err := games.BestSystemMatch(launchPath)
 	if err != nil {
 		return fmt.Errorf("error during launch: %s", err)
 	}
