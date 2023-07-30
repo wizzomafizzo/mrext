@@ -1,7 +1,9 @@
 package games
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -36,6 +38,34 @@ func LaunchGame(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch game: during launch: %s", err)
+			return
+		}
+	}
+}
+
+func LaunchQRGame(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		data := vars["data"]
+
+		path, err := base64.URLEncoding.DecodeString(data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("launch qr game: decoding data: %s", err)
+			return
+		}
+
+		system, err := games.BestSystemMatch(string(path))
+		if err != nil {
+			http.Error(w, "no system found for game", http.StatusBadRequest)
+			logger.Error("launch qr game: no system found for game: %s", path)
+			return
+		}
+
+		err = mister.LaunchGame(system, string(path))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("launch qr game: during launch: %s", err)
 			return
 		}
 	}
