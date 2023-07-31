@@ -1121,7 +1121,17 @@ var Systems = map[string]System{
 		Folder: []string{"Amiga"},
 		Alias:  []string{"Minimig"},
 		Rbf:    "_Computer/Minimig",
-		Slots:  nil,
+		Slots: []Slot{
+			{
+				Label: "df0",
+				Exts:  []string{".adf"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  0,
+				},
+			},
+		},
 	},
 	"Amstrad": {
 		Id:     "Amstrad",
