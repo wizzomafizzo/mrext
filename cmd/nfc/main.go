@@ -75,7 +75,7 @@ func loadDatabase() {
 		value := row[1]
 		database[uid] = value
 	}
-	log.Println("Loaded " + fmt.Sprint(len(database)) + "NFC mappings from the CSV")
+	log.Println("Loaded " + fmt.Sprint(len(database)) + " NFC mappings from the CSV")
 }
 
 func readCsvFile(filePath string) [][]string {
