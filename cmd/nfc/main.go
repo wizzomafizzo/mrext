@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/hex"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	nfc "github.com/clausecker/nfc/v2"
@@ -10,8 +13,7 @@ import (
 )
 
 var (
-	nfcConnectionString = ""             // Use the first NFC reader available. Be sure to configure /etc/nfc/libnfc.conf
-	nfcIPCFile          = "/tmp/nfc-uid" // Where the card UID is written to
+	nfcConnectionString = "" // Use the first NFC reader available. Be sure to configure /etc/nfc/libnfc.conf
 	supportedCardTypes  = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 		{Type: nfc.ISO14443b, BaudRate: nfc.Nbr106},
@@ -23,10 +25,14 @@ var (
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
+	database           = make(map[string]string)
+	databaseFile       = "/media/fat/nfc-mapping.csv"
 )
 
 func main() {
 	log.Println("MiSTer NFC Reader (libnfc version" + nfc.Version() + ")")
+
+	loadDatabase()
 
 	pnd, err := nfc.Open(nfcConnectionString)
 	if err != nil {
@@ -62,11 +68,33 @@ func main() {
 	}
 }
 
+func loadDatabase() {
+	data := readCsvFile(databaseFile)
+	for _, row := range data {
+		uid := row[0]
+		value := row[1]
+		database[uid] = value
+	}
+	log.Println("Loaded " + fmt.Sprint(len(database)) + "NFC mappings from the CSV")
+}
+
+func readCsvFile(filePath string) [][]string {
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal("Unable to read input file "+filePath, err)
+	}
+	defer f.Close()
+
+	csvReader := csv.NewReader(f)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal("Unable to parse file as CSV for "+filePath, err)
+	}
+
+	return records
+}
+
 func loadCore(cardId string) {
-	database := make(map[string]string)
-	// TODO: load from CSV
-	database["040fa2e2356281"] = "/media/fat/_Arcade/1942 (Revision B).mra"
-	database["0427d3e2356280"] = "/media/fat/_Arcade/Arkanoid (Japan).mra"
 	filename, ok := database[cardId]
 	if !ok {
 		log.Println("No core configured")
