@@ -97,6 +97,14 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name:      "nfc",
+		path:      filepath.Join(cwd, "cmd", "nfc"),
+		bin:       "nfc.sh",
+		releaseId: "mrext/nfc",
+		ldFlags:   "-lnfc -lusb",
+		inAll:     true,
+	},
+	{
 		name: "samindex",
 		path: filepath.Join(cwd, "cmd", "samindex"),
 		bin:  "samindex",

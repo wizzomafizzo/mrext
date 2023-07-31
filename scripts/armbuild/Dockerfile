@@ -17,6 +17,9 @@ RUN apt-get install build-essential git curl -y && \
 # install mplayer dependencies
 RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 
+# install lib nfc headers
+RUN apt-get install -y libnfc-dev
+
 # drop permissions on output files
 RUN useradd -m -u 1000 build
 USER build
