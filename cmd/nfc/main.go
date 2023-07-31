@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/hex"
 	"log"
-	"os"
 	"time"
 
 	nfc "github.com/clausecker/nfc/v2"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 var (
@@ -53,16 +53,28 @@ func main() {
 			var currentCardID = getCardUID(target)
 			if currentCardID != lastSeenCardUID {
 				log.Println("New card UID: " + currentCardID)
-				err := os.WriteFile(nfcIPCFile, []byte(currentCardID), 0644)
-				if err != nil {
-					log.Fatalln("Unable to write card UID to filesystem: ", err)
-				}
 				lastSeenCardUID = currentCardID
+				loadCore(currentCardID)
 			}
 		}
 
 		time.Sleep(periodBetweenLoop)
 	}
+}
+
+func loadCore(cardId string) {
+	database := make(map[string]string)
+	// TODO: load from CSV
+	database["040fa2e2356281"] = "/media/fat/_Arcade/1942 (Revision B).mra"
+	database["0427d3e2356280"] = "/media/fat/_Arcade/Arkanoid (Japan).mra"
+	filename, ok := database[cardId]
+	if !ok {
+		log.Println("No core configured")
+		return
+	}
+
+	log.Println("Loading core: " + filename)
+	mister.LaunchGenericFile(filename)
 }
 
 func getCardUID(target nfc.Target) string {
