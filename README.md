@@ -8,8 +8,6 @@ Make sure to check the linked documentation for each script you use. Most are si
 
 [Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md)
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A0A4G98MU)
-
 ## Install
 
 ### Update All
