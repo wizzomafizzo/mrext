@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -123,6 +124,11 @@ func readCsvFile(filePath string) [][]string {
 
 func loadCoreFromFilename(filename string) {
 	var fullpath = "/media/fat/" + filename // TODO: saves a few chars on the tag but is it worth it?
+	if _, err := os.Stat(fullpath); errors.Is(err, os.ErrNotExist) {
+		log.Println("Core does not exist: " + fullpath)
+		return
+	}
+
 	log.Println("Loading core: " + fullpath)
 	mister.LaunchGenericFile(fullpath)
 }
