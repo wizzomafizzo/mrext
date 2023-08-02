@@ -6,9 +6,11 @@ NFC is a service for loading your favourite cores using NFC tags or cards.
 
 ## Hardware required
 
-Any reader compatible with [libnfc](https://nfc-tools.github.io/projects/libnfc/) can be plugged straight into the MiSTer. 
+Any reader compatible with [libnfc](https://nfc-tools.github.io/projects/libnfc/) can be plugged straight into the MiSTer.
 
 This was developed and tested with a PN532 NFC module v3 connected to a FTDI USB to TTL cable.
+
+Supported tags types: NTAG 213, NTAG 215, NTAG 216
 
 ## Setup
 
@@ -18,9 +20,21 @@ On your MiSTer, create a `/etc/nfc/libnfc.conf` with the following content match
 device.name = "microBuilder.eu"
 device.connstring = "pn532_uart:/dev/ttyUSB0"
 ```
+## Method 1: Writing games to a card (Recommended)
+Write a single text record to the NFC tag using your favourite writing software e.g. [NFC Tools](https://play.google.com/store/apps/details?id=com.wakdev.wdnfc) on Android. The content should be the name of a mgl or mra relative to `/media/fat/` e.g.
 
-Now tell MiSTer which tags belong to which games by
-creating a csv file: `/media/fat/nfc-mapping.csv` in the format:
+```
+_Arcade/1942 (Revision B).mra
+```
+
+or
+
+```
+_Favourites/Castlevania - Aria of Sorrow.mgl
+```
+
+## Method 2: Mapping Card UID to a game (Fallback)
+Create a csv file: `/media/fat/nfc-mapping.csv` in the format:
 
 ```csv
 040fa2e2356281,_Arcade/1942 (Revision B).mra
