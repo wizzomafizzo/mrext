@@ -87,8 +87,8 @@ Search for and launch games from your collection. Searching is *fast* and great 
 ## NFC
 Load your favourite cores using NFC tags or cards. No additional hardware needed, just plug a [compatible NFC reader](https://nfc-tools.github.io/projects/libnfc/) directly into your MiSTer.
 
-<a href="https://github.com/symm/mrext/releases/latest/download/nfc.sh"><img src="docs/images/download.svg" alt="Download NFC" title="Download NFC" width="140"></a>
-<a href="https://github.com/symm/mrext/tree/nfc-reader/docs/nfc.md"><img src="docs/images/readme.svg" alt="Readme NFC" title="Readme NFC" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"><img src="docs/images/download.svg" alt="Download NFC" title="Download NFC" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/nfc-reader/docs/nfc.md"><img src="docs/images/readme.svg" alt="Readme NFC" title="Readme NFC" width="140"></a>
 
 ## Other Projects
 
