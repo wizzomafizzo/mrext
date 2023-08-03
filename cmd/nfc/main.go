@@ -81,6 +81,16 @@ func main() {
 			if currentCardID != lastSeenCardUID {
 				logger.Info("new card UID: %s", currentCardID)
 				lastSeenCardUID = currentCardID
+
+				logger.Info("card capacity is: %i", getCardCapacity(pnd))
+				// TODO: check this capacity is being read correctly.
+				// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
+				// if the card supports it.
+
+				// NTAG 213 = 144 <- Tested and looks okay
+				// NTAG 215 = 504
+				// NTAG 216 = 888
+
 				tagText := readTextRecord(pnd)
 
 				if tagText != "" {
@@ -212,4 +222,19 @@ func readFourBlocks(pnd nfc.Device, blockNumber byte) []byte {
 	}
 
 	return rx
+}
+
+func getCardCapacity(pnd nfc.Device) byte {
+	// Find tag capacity by looking in block 3 (capability container)
+	tx := []byte{0x30, 0x03}
+	rx := make([]byte, 16)
+
+	timeout := 0
+	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
+	if err != nil {
+		logger.Info("Error reading capactiy: ", err)
+		return 0
+	}
+
+	return rx[2] * 8
 }
