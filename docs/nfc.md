@@ -8,18 +8,18 @@ NFC is a service for loading your favourite cores using NFC tags or cards.
 
 Any reader compatible with [libnfc](https://nfc-tools.github.io/projects/libnfc/) can be plugged straight into the MiSTer.
 
-This was developed and tested with a PN532 NFC module v3 connected to a FTDI USB to TTL cable.
-
 Supported tags types: NTAG 213, NTAG 215, NTAG 216
 
 ## Setup
 
-On your MiSTer, create a `/etc/nfc/libnfc.conf` with the following content matching your hardware:
+It should work out of the box with a `ACR122U USB NFC reader`
+If you are using a PN532 connected to a USB -> TTL cable then the following config may be needed in `/media/fat/Scripts/nfc.ini`:
 
 ```
-device.name = "microBuilder.eu"
-device.connstring = "pn532_uart:/dev/ttyUSB0"
+[nfc]
+connection_string="pn532_uart:/dev/ttyUSB0"
 ```
+
 ## Method 1: Writing games to a card (Recommended)
 Write a single text record to the NFC tag using your favourite writing software e.g. [NFC Tools](https://play.google.com/store/apps/details?id=com.wakdev.wdnfc) on Android. The content should be the name of a mgl or mra relative to `/media/fat/` e.g.
 

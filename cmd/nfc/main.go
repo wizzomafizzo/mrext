@@ -6,22 +6,20 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/service"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 
 	"github.com/clausecker/nfc/v2"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 var (
-	appName = "nfc"
-	// Use the first NFC reader available. Be sure to configure /etc/nfc/libnfc.conf
-	// TODO: can we auto-configure this file or at least automate it in some way?
-	nfcConnectionString = ""
-	supportedCardTypes  = []nfc.Modulation{
+	appName            = "nfc"
+	supportedCardTypes = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
 	timesToPoll        = 20
@@ -39,7 +37,14 @@ func main() {
 
 	loadDatabase()
 
-	pnd, err := nfc.Open(nfcConnectionString)
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	if err != nil {
+		logger.Error("error loading user config: %s", err)
+		fmt.Println("Error loading config:", err)
+		os.Exit(1)
+	}
+
+	pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
 	if err != nil {
 		logger.Error("could not open device: %s", err)
 		fmt.Println("Could not connect to NFC device:", err)
