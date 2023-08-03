@@ -67,7 +67,7 @@ func main() {
 		if err != nil {
 			logger.Error("error polling: %s", err)
 			fmt.Println("Lost connection to NFC device:", err)
-			os.Exit(1)
+			//os.Exit(1)
 		}
 
 		if count > 0 {

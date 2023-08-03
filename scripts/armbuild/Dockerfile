@@ -10,15 +10,23 @@ RUN apt-get install -y ca-certificates openssl && \
     update-ca-certificates
 
 # install go and app dependencies
-RUN apt-get install build-essential git curl -y && \
+RUN apt-get install build-essential git curl wget -y && \
     apt-get install golang-doc/bullseye-backports golang-go/bullseye-backports golang-src/bullseye-backports golang/bullseye-backports -y && \
     apt-get install libsqlite3-dev libncurses-dev linux-source -y
 
 # install mplayer dependencies
 RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 
-# install lib nfc headers
-RUN apt-get install -y libnfc-dev
+# install libnfc dependencies
+RUN apt-get install -y libusb-dev libtool autoconf automake
+# install custom version of libnfc
+RUN mkdir /internal && cd /internal && \
+    git clone --depth 1 https://github.com/sam1902/libnfc && \
+    cd libnfc && \
+    autoreconf -vis && \
+    ./configure --sysconfdir=/media/fat/Scripts/.config/nfc && \
+    make -j "$(nproc)" && \
+    make install
 
 # drop permissions on output files
 RUN useradd -m -u 1000 build
