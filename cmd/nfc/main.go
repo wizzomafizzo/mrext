@@ -6,65 +6,87 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 	"os"
+	"path/filepath"
 	"time"
 
-	nfc "github.com/clausecker/nfc/v2"
+	"github.com/clausecker/nfc/v2"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 var (
-	nfcConnectionString = "" // Use the first NFC reader available. Be sure to configure /etc/nfc/libnfc.conf
+	appName = "nfc"
+	// Use the first NFC reader available. Be sure to configure /etc/nfc/libnfc.conf
+	// TODO: can we auto-configure this file or at least automate it in some way?
+	nfcConnectionString = ""
 	supportedCardTypes  = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
-	database           = make(map[string]string)
-	databaseFile       = "/media/fat/nfc-mapping.csv"
+	// TODO: i think this can be moved to main instead of being a global
+	database     = make(map[string]string)
+	databaseFile = "/media/fat/nfc-mapping.csv"
 )
 
+var logger = service.NewLogger(appName)
+
 func main() {
-	log.Println("MiSTer NFC Reader (libnfc version" + nfc.Version() + ")")
+	logger.Info("MiSTer NFC Reader (libnfc version %s)", nfc.Version())
 
 	loadDatabase()
 
 	pnd, err := nfc.Open(nfcConnectionString)
 	if err != nil {
-		log.Fatalln("Could not open device: ", err)
+		logger.Error("could not open device: %s", err)
+		fmt.Println("Could not connect to NFC device:", err)
+		os.Exit(1)
 	}
-	defer pnd.Close()
+	defer func(pnd nfc.Device) {
+		err := pnd.Close()
+		if err != nil {
+			logger.Warn("error closing device: %s", err)
+		}
+	}(pnd)
 
 	if err := pnd.InitiatorInit(); err != nil {
-		log.Fatalln("Could not init initiator: ", err)
+		logger.Error("could not init initiator: %s", err)
+		fmt.Println("Could not initialize NFC device:", err)
+		os.Exit(1)
 	}
 
-	log.Println("Opened: ", pnd, pnd.Connection())
+	logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 
-	var lastSeenCardUID = ""
+	var lastSeenCardUID string
 
 	for {
-		var count, target, error = pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
-
-		if error != nil {
-			log.Fatalln("Error polling: ", error)
+		count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+		if err != nil {
+			logger.Error("error polling: %s", err)
+			fmt.Println("Lost connection to NFC device:", err)
+			os.Exit(1)
 		}
 
 		if count > 0 {
-			var currentCardID = getCardUID(target)
+			currentCardID := getCardUID(target)
+
 			if currentCardID != lastSeenCardUID {
-				log.Println("New card UID: " + currentCardID)
+				logger.Info("new card UID: %s", currentCardID)
 				lastSeenCardUID = currentCardID
-				var tagText = readTextRecord(pnd)
+				tagText := readTextRecord(pnd)
+
 				if tagText != "" {
-					log.Printf("Decoded text NDEF is: %s\n", tagText)
+					logger.Info("decoded text NDEF: %s", tagText)
 					loadCoreFromFilename(tagText)
-					// TODO: if string is in special format e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
+					// TODO: if string is in special format
+					//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
 				} else {
-					log.Printf("No text NDEF found, falling back to UID mapping in CSV file")
+					logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
 					loadCoreFromCardUID(currentCardID)
+					// TODO: check if this failed too and log
 				}
 			}
 		}
@@ -82,7 +104,7 @@ func readTextRecord(pnd nfc.Device) string {
 		allBlocks = append(allBlocks, blocks...)
 		offset = offset + 4
 	}
-	log.Printf("Card hex: " + hex.EncodeToString(allBlocks))
+	logger.Info("card hex: %s", hex.EncodeToString(allBlocks))
 
 	// Find the text NDEF record
 	startIndex := bytes.Index(allBlocks, []byte{0x54, 0x02, 0x65, 0x6E})
@@ -97,64 +119,78 @@ func readTextRecord(pnd nfc.Device) string {
 }
 
 func loadDatabase() {
+	// TODO: need to return an error
 	data := readCsvFile(databaseFile)
 	for _, row := range data {
 		uid := row[0]
 		value := row[1]
 		database[uid] = value
 	}
-	log.Println("Loaded " + fmt.Sprint(len(database)) + " NFC mappings from the CSV")
+	// TODO: return number of rows loaded and give friendly output in main
+	logger.Info("loaded %d NFC mappings from the CSV", len(database))
 }
 
 func readCsvFile(filePath string) [][]string {
 	f, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("Unable to load fallback database file: "+filePath, err)
+		logger.Error("unable to load fallback database file %s: %s", filePath, err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			logger.Warn("error closing file: %s", err)
+		}
+	}(f)
 
 	csvReader := csv.NewReader(f)
 	records, err := csvReader.ReadAll()
 	if err != nil {
-		log.Fatal("CSV file appears to be badly formatted: "+filePath, err)
+		logger.Error("CSV file %s appears to be badly formatted: %s", filePath, err)
+		// TODO: return an error and exit in main if necessary
+		os.Exit(1)
 	}
 
 	return records
 }
 
 func loadCoreFromFilename(filename string) {
-	var fullpath = "/media/fat/" + filename // TODO: saves a few chars on the tag but is it worth it?
-	if _, err := os.Stat(fullpath); errors.Is(err, os.ErrNotExist) {
-		log.Println("Core does not exist: " + fullpath)
+	fullPath := filepath.Join(config.SdFolder, filename) // TODO: saves a few chars on the tag but is it worth it?
+
+	if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
+		logger.Error("core does not exist: %s", fullPath)
+		// TODO: return error
 		return
 	}
+	logger.Info("loading core: %s", fullPath)
 
-	log.Println("Loading core: " + fullpath)
-	mister.LaunchGenericFile(fullpath)
+	// TODO: handle and return error
+	_ = mister.LaunchGenericFile(fullPath)
 }
 
 func loadCoreFromCardUID(cardId string) {
 	filename, ok := database[cardId]
 	if !ok {
-		log.Println("No core configured")
+		logger.Error("no core mapped for card ID: %s", cardId)
 		return
 	}
 
+	// TODO: return error?
 	loadCoreFromFilename(filename)
 }
 
 func getCardUID(target nfc.Target) string {
-	var UID = ""
+	var uid string
 	switch target.Modulation() {
 	case nfc.Modulation{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106}:
 		var card = target.(*nfc.ISO14443aTarget)
 		var ID = card.UID
-		UID = hex.EncodeToString(ID[:card.UIDLen])
+		uid = hex.EncodeToString(ID[:card.UIDLen])
 		break
 	default:
-		log.Println("Unsupported card type :(")
+		// TODO: does target.String() give us anything useful?
+		logger.Info("unsupported card type: %s", target.String())
 	}
-	return UID
+	return uid
 }
 
 func readFourBlocks(pnd nfc.Device, blockNumber byte) []byte {
