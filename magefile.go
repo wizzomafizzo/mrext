@@ -478,10 +478,6 @@ func MakeKernelImage() {
 func Kernel() {
 	if _, err := os.Stat(kernelRepoPath); os.IsNotExist(err) {
 		_ = sh.RunV("git", "clone", "--depth", "1", kernelRepoUrl, kernelRepoPath)
-	} else {
-		_ = sh.RunV("git", "-C", kernelRepoPath, "reset", "--hard", "HEAD")
-		_ = sh.RunV("git", "-C", kernelRepoPath, "clean", "-df")
-		_ = sh.RunV("git", "-C", kernelRepoPath, "pull")
 	}
 
 	patches, _ := filepath.Glob(filepath.Join(kernelBuild, "*.patch"))
