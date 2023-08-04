@@ -5,7 +5,9 @@ import (
 	"encoding/csv"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"path/filepath"
 	"time"
@@ -32,23 +34,16 @@ var (
 
 var logger = service.NewLogger(appName)
 
-func main() {
+func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	logger.Info("MiSTer NFC Reader (libnfc version %s)", nfc.Version())
 
+	logger.Info("opening database: %s", databaseFile)
 	loadDatabase()
-
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
-	if err != nil {
-		logger.Error("error loading user config: %s", err)
-		fmt.Println("Error loading config:", err)
-		os.Exit(1)
-	}
 
 	pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
 	if err != nil {
 		logger.Error("could not open device: %s", err)
-		fmt.Println("Could not connect to NFC device:", err)
-		os.Exit(1)
+		return nil, err
 	}
 	defer func(pnd nfc.Device) {
 		err := pnd.Close()
@@ -59,54 +54,142 @@ func main() {
 
 	if err := pnd.InitiatorInit(); err != nil {
 		logger.Error("could not init initiator: %s", err)
-		fmt.Println("Could not initialize NFC device:", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 
-	var lastSeenCardUID string
+	lastSeenCardUID := ""
+	// TODO: maybe this could be a channel so we can check for a stop signal during the sleep
+	var stopService bool
 
-	for {
-		count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
-		if err != nil {
-			logger.Error("error polling: %s", err)
-			fmt.Println("Lost connection to NFC device:", err)
-			//os.Exit(1)
-		}
+	go func() {
+		// TODO: would be good to be able to query the scan status/result/whatever of the service
+		for {
+			logger.Info("start poll run")
+			if stopService {
+				break
+			}
+			logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
 
-		if count > 0 {
-			currentCardID := getCardUID(target)
+			count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+			if err != nil {
+				logger.Error("error polling: %s", err)
+			}
+			logger.Info("polling initiator complete")
 
-			if currentCardID != lastSeenCardUID {
-				logger.Info("new card UID: %s", currentCardID)
-				lastSeenCardUID = currentCardID
+			if count > 0 {
+				currentCardID := getCardUID(target)
 
-				logger.Info("card capacity is: %i", getCardCapacity(pnd))
-				// TODO: check this capacity is being read correctly.
-				// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
-				// if the card supports it.
+				if currentCardID != lastSeenCardUID {
+					logger.Info("new card UID: %s", currentCardID)
+					lastSeenCardUID = currentCardID
 
-				// NTAG 213 = 144 <- Tested and looks okay
-				// NTAG 215 = 504
-				// NTAG 216 = 888
+					logger.Info("card capacity is: %i", getCardCapacity(pnd))
+					// TODO: check this capacity is being read correctly.
+					// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
+					// if the card supports it.
 
-				tagText := readTextRecord(pnd)
+					// NTAG 213 = 144 <- Tested and looks okay
+					// NTAG 215 = 504
+					// NTAG 216 = 888
 
-				if tagText != "" {
-					logger.Info("decoded text NDEF: %s", tagText)
-					loadCoreFromFilename(tagText)
-					// TODO: if string is in special format
-					//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
-				} else {
-					logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
-					loadCoreFromCardUID(currentCardID)
-					// TODO: check if this failed too and log
+					tagText := readTextRecord(pnd)
+
+					if tagText != "" {
+						logger.Info("decoded text NDEF: %s", tagText)
+						loadCoreFromFilename(tagText)
+						// TODO: if string is in special format
+						//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
+					} else {
+						logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
+						loadCoreFromCardUID(currentCardID)
+						// TODO: check if this failed too and log
+					}
 				}
 			}
-		}
 
-		time.Sleep(periodBetweenLoop)
+			logger.Info("end poll run, sleeping")
+			time.Sleep(periodBetweenLoop)
+		}
+	}()
+
+	return func() error {
+		stopService = true
+		return nil
+	}, nil
+}
+
+func tryAddStartup() error {
+	var startup mister.Startup
+
+	err := startup.Load()
+	if err != nil {
+		return err
+	}
+
+	if !startup.Exists("mrext/" + appName) {
+		if utils.YesOrNoPrompt("NFC must be set to run on MiSTer startup. Add it now?") {
+			err = startup.AddService("mrext/" + appName)
+			if err != nil {
+				return err
+			}
+
+			err = startup.Save()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func main() {
+	svcOpt := flag.String("service", "", "manage nfc service (start, stop, restart, status)")
+	flag.Parse()
+
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	if err != nil {
+		logger.Error("error loading user config: %s", err)
+		fmt.Println("Error loading config:", err)
+		os.Exit(1)
+	}
+
+	svc, err := service.NewService(service.ServiceArgs{
+		Name:   appName,
+		Logger: logger,
+		Entry: func() (func() error, error) {
+			return startService(logger, cfg)
+		},
+	})
+	if err != nil {
+		logger.Error("error creating service: %s", err)
+		fmt.Println("Error creating service:", err)
+		os.Exit(1)
+	}
+
+	svc.ServiceHandler(svcOpt)
+
+	err = tryAddStartup()
+	if err != nil {
+		logger.Error("error adding startup: %s", err)
+		fmt.Println("Error adding to startup:", err)
+	}
+
+	if !svc.Running() {
+		err := svc.Start()
+		if err != nil {
+			logger.Error("error starting service: %s", err)
+			fmt.Println("Error starting service:", err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Service started successfully.")
+			os.Exit(0)
+		}
+	} else {
+		fmt.Println("Service is running.")
+		os.Exit(0)
 	}
 }
 
@@ -114,6 +197,7 @@ func readTextRecord(pnd nfc.Device) string {
 	blockCount := 35 // TODO: This is hardcoded for NTAG 213. needs to support N215 and N216
 	allBlocks := make([]byte, 0)
 	offset := 4
+
 	for i := 0; i <= (blockCount / 4); i++ {
 		blocks := readFourBlocks(pnd, byte(offset))
 		allBlocks = append(allBlocks, blocks...)
@@ -130,7 +214,7 @@ func readTextRecord(pnd nfc.Device) string {
 		return tagText
 	}
 
-	return "" // TODO: return error,string instead
+	return ""
 }
 
 func loadDatabase() {
