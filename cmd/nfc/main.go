@@ -31,49 +31,50 @@ var (
 )
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
-	logger.Info("MiSTer NFC Reader (libnfc version %s)", nfc.Version())
-
-	logger.Info("opening database: %s", databaseFile)
-	database, err := loadDatabase()
-	logger.Info("loaded %d NFC mappings from the CSV", len(database))
-
-	pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
-	if err != nil {
-		logger.Error("could not open device: %s", err)
-		return nil, err
-	}
-	defer func(pnd nfc.Device) {
-		err := pnd.Close()
-		if err != nil {
-			logger.Warn("error closing device: %s", err)
-		}
-	}(pnd)
-
-	if err := pnd.InitiatorInit(); err != nil {
-		logger.Error("could not init initiator: %s", err)
-		return nil, err
-	}
-
-	logger.Info("opened connection: %s %s", pnd, pnd.Connection())
-
-	lastSeenCardUID := ""
-	// TODO: maybe this could be a channel so we can check for a stop signal during the sleep
 	var stopService bool
-
 	go func() {
+		logger.Info("loading database: %s", databaseFile)
+		database, err := loadDatabase()
+		if err != nil {
+			logger.Error("error loading database: %s", err)
+		} else {
+			logger.Info("loaded %d mappings", len(database))
+		}
+
+		// TODO: sometimes this fails for me. retry?
+		pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
+		if err != nil {
+			logger.Error("could not open device: %s", err)
+			return
+		}
+		defer func(pnd nfc.Device) {
+			err := pnd.Close()
+			if err != nil {
+				logger.Warn("error closing device: %s", err)
+			}
+		}(pnd)
+
+		if err := pnd.InitiatorInit(); err != nil {
+			logger.Error("could not init initiator: %s", err)
+			return
+		}
+
+		logger.Info("opened connection: %s %s", pnd, pnd.Connection())
+		logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
+
+		lastSeenCardUID := ""
+
 		// TODO: would be good to be able to query the scan status/result/whatever of the service
 		for {
-			logger.Info("start poll run")
 			if stopService {
 				break
 			}
-			logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
 
 			count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
 			if err != nil {
+				// TODO: is it ok to silence the "timeout" error?
 				logger.Error("error polling: %s", err)
 			}
-			logger.Info("polling initiator complete")
 
 			if count > 0 {
 				currentCardID := getCardUID(target)
@@ -89,7 +90,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					if err != nil {
 						logger.Error("error getting card capacity: %s", err)
 					}
-					logger.Info("card capacity is: %i", capacity)
+					logger.Info("card capacity is: %d", capacity)
 					// TODO: check this capacity is being read correctly.
 					// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
 					// if the card supports it.
@@ -97,6 +98,11 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					// NTAG 213 = 144 <- Tested and looks okay
 					// NTAG 215 = 504
 					// NTAG 216 = 888
+
+					// My NTAG215s are reported as length 240 from this
+
+					// I also have 2 sets of card that came with the reader labelled "Mifare 1K" and
+					// "UID" which both result in "RF transmission error" when trying to read them
 
 					record, err := readRecord(pnd)
 					if err != nil {
@@ -127,7 +133,6 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 				}
 			}
 
-			logger.Info("end poll run, sleeping")
 			time.Sleep(periodBetweenLoop)
 		}
 	}()
@@ -279,7 +284,7 @@ func readCsvFile(filePath string) ([][]string, error) {
 }
 
 func loadCoreFromFilename(filename string) error {
-	// TODO: this will not work very well long time, full core filename changes each release
+	// TODO: this will not work very well long term, full core filename changes each release
 	//		 but it's ok, no problem using partial matches as mister does
 	fullPath := filepath.Join(config.SdFolder, filename) // TODO: saves a few chars on the tag but is it worth it?
 
@@ -336,7 +341,7 @@ func getCardCapacity(pnd nfc.Device) (byte, error) {
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		return 0, fmt.Errorf("error reading capactiy: %s", err)
+		return 0, fmt.Errorf("error reading capacity: %s", err)
 	}
 
 	return rx[2] * 8, nil

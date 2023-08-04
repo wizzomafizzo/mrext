@@ -24,7 +24,7 @@ RUN mkdir /internal && cd /internal && \
     git clone --depth 1 https://github.com/sam1902/libnfc && \
     cd libnfc && \
     autoreconf -vis && \
-    ./configure --sysconfdir=/media/fat/Scripts/.config/nfc && \
+    ./configure && \
     make -j "$(nproc)" && \
     make install
 
