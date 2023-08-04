@@ -7,10 +7,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -86,25 +87,15 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					logger.Info("new card UID: %s", currentCardID)
 					lastSeenCardUID = currentCardID
 
-					capacity, err := getCardCapacity(pnd)
+					cardType, err := getCardType(pnd)
 					if err != nil {
-						logger.Error("error getting card capacity: %s", err)
+						logger.Error("error getting card type: %s", err)
 					}
-					logger.Info("card capacity is: %d", capacity)
-					// TODO: check this capacity is being read correctly.
-					// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
-					// if the card supports it.
+					logger.Info("card type is: %d", cardType)
 
-					// NTAG 213 = 144 <- Tested and looks okay
-					// NTAG 215 = 504
-					// NTAG 216 = 888
+					blockCount := getDataAreaSize(cardType)
 
-					// My NTAG215s are reported as length 240 from this
-
-					// I also have 2 sets of card that came with the reader labelled "Mifare 1K" and
-					// "UID" which both result in "RF transmission error" when trying to read them
-
-					record, err := readRecord(pnd)
+					record, err := readRecord(pnd, blockCount)
 					if err != nil {
 						logger.Error("error reading record: %s", err)
 						continue
@@ -218,8 +209,22 @@ func main() {
 	}
 }
 
-func readRecord(pnd nfc.Device) ([]byte, error) {
-	blockCount := 35 // TODO: This is hardcoded for NTAG 213. needs to support N215 and N216
+func getDataAreaSize(cardType string) int {
+	switch cardType {
+	case "NTAG213":
+		// Block 0x04 to 0x27 = 0x23 (35)
+		return 35
+	// case "NTAG215":
+	// 	//
+	case "NTAG216":
+		// Block 0x04 to 0xE1 = 0xDD (221)
+		return 221
+	default:
+		return 35 // fallback to NTAG213
+	}
+}
+
+func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
 	allBlocks := make([]byte, 0)
 	offset := 4
 
@@ -333,7 +338,7 @@ func readFourBlocks(pnd nfc.Device, offset byte) ([]byte, error) {
 	return rx, nil
 }
 
-func getCardCapacity(pnd nfc.Device) (byte, error) {
+func getCardType(pnd nfc.Device) (string, error) {
 	// Find tag capacity by looking in block 3 (capability container)
 	tx := []byte{0x30, 0x03}
 	rx := make([]byte, 16)
@@ -341,8 +346,17 @@ func getCardCapacity(pnd nfc.Device) (byte, error) {
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		return 0, fmt.Errorf("error reading capacity: %s", err)
+		return "", fmt.Errorf("error card type: %s", err)
 	}
 
-	return rx[2] * 8, nil
+	switch rx[2] {
+	case 0x12:
+		return "NTAG213", nil
+	case 0x1E:
+		return "NTAG215", nil
+	case 0x6D:
+		return "NTAG216", nil
+	default:
+		return "", fmt.Errorf("unknown card type: %v", rx[2])
+	}
 }
