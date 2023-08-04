@@ -27,18 +27,15 @@ var (
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
-	// TODO: i think this can be moved to main instead of being a global
-	database     = make(map[string]string)
-	databaseFile = "/media/fat/nfc-mapping.csv"
+	databaseFile       = filepath.Join(config.SdFolder, "nfc-mapping.csv")
 )
-
-var logger = service.NewLogger(appName)
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	logger.Info("MiSTer NFC Reader (libnfc version %s)", nfc.Version())
 
 	logger.Info("opening database: %s", databaseFile)
-	loadDatabase()
+	database, err := loadDatabase()
+	logger.Info("loaded %d NFC mappings from the CSV", len(database))
 
 	pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
 	if err != nil {
@@ -80,12 +77,19 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 			if count > 0 {
 				currentCardID := getCardUID(target)
+				if currentCardID == "" {
+					logger.Warn("unsupported card type: %s", target.String())
+				}
 
 				if currentCardID != lastSeenCardUID {
 					logger.Info("new card UID: %s", currentCardID)
 					lastSeenCardUID = currentCardID
 
-					logger.Info("card capacity is: %i", getCardCapacity(pnd))
+					capacity, err := getCardCapacity(pnd)
+					if err != nil {
+						logger.Error("error getting card capacity: %s", err)
+					}
+					logger.Info("card capacity is: %i", capacity)
 					// TODO: check this capacity is being read correctly.
 					// we can then pass in card type to readTextRecord() to extend the hardcoded blockCount
 					// if the card supports it.
@@ -94,17 +98,31 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					// NTAG 215 = 504
 					// NTAG 216 = 888
 
-					tagText := readTextRecord(pnd)
+					record, err := readRecord(pnd)
+					if err != nil {
+						logger.Error("error reading record: %s", err)
+						continue
+					}
+					logger.Info("record bytes: %s", hex.EncodeToString(record))
+
+					tagText := parseRecordText(record)
 
 					if tagText != "" {
 						logger.Info("decoded text NDEF: %s", tagText)
-						loadCoreFromFilename(tagText)
+						err = loadCoreFromFilename(tagText)
+						if err != nil {
+							logger.Error("error loading core: %s", err)
+							continue
+						}
 						// TODO: if string is in special format
 						//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
 					} else {
 						logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
-						loadCoreFromCardUID(currentCardID)
-						// TODO: check if this failed too and log
+						err = loadCoreFromCardUID(database, currentCardID)
+						if err != nil {
+							logger.Error("error loading core: %s", err)
+							continue
+						}
 					}
 				}
 			}
@@ -148,6 +166,8 @@ func tryAddStartup() error {
 func main() {
 	svcOpt := flag.String("service", "", "manage nfc service (start, stop, restart, status)")
 	flag.Parse()
+
+	logger := service.NewLogger(appName)
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
@@ -193,88 +213,90 @@ func main() {
 	}
 }
 
-func readTextRecord(pnd nfc.Device) string {
+func readRecord(pnd nfc.Device) ([]byte, error) {
 	blockCount := 35 // TODO: This is hardcoded for NTAG 213. needs to support N215 and N216
 	allBlocks := make([]byte, 0)
 	offset := 4
 
 	for i := 0; i <= (blockCount / 4); i++ {
-		blocks := readFourBlocks(pnd, byte(offset))
+		blocks, err := readFourBlocks(pnd, byte(offset))
+		if err != nil {
+			return nil, err
+		}
 		allBlocks = append(allBlocks, blocks...)
 		offset = offset + 4
 	}
-	logger.Info("card hex: %s", hex.EncodeToString(allBlocks))
 
+	return allBlocks, nil
+}
+
+func parseRecordText(blocks []byte) string {
 	// Find the text NDEF record
-	startIndex := bytes.Index(allBlocks, []byte{0x54, 0x02, 0x65, 0x6E})
-	endIndex := bytes.Index(allBlocks, []byte{0xFE})
+	startIndex := bytes.Index(blocks, []byte{0x54, 0x02, 0x65, 0x6E})
+	endIndex := bytes.Index(blocks, []byte{0xFE})
 
 	if startIndex != -1 && endIndex != -1 {
-		tagText := string(allBlocks[startIndex+4 : endIndex])
+		tagText := string(blocks[startIndex+4 : endIndex])
 		return tagText
 	}
 
 	return ""
 }
 
-func loadDatabase() {
-	// TODO: need to return an error
-	data := readCsvFile(databaseFile)
+func loadDatabase() (map[string]string, error) {
+	database := make(map[string]string)
+
+	data, err := readCsvFile(databaseFile)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, row := range data {
 		uid := row[0]
 		value := row[1]
 		database[uid] = value
 	}
-	// TODO: return number of rows loaded and give friendly output in main
-	logger.Info("loaded %d NFC mappings from the CSV", len(database))
+
+	return database, nil
 }
 
-func readCsvFile(filePath string) [][]string {
+func readCsvFile(filePath string) ([][]string, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		logger.Error("unable to load fallback database file %s: %s", filePath, err)
+		return nil, fmt.Errorf("unable to load fallback database file %s: %s", filePath, err)
 	}
 	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			logger.Warn("error closing file: %s", err)
-		}
+		_ = f.Close()
 	}(f)
 
 	csvReader := csv.NewReader(f)
 	records, err := csvReader.ReadAll()
 	if err != nil {
-		logger.Error("CSV file %s appears to be badly formatted: %s", filePath, err)
-		// TODO: return an error and exit in main if necessary
-		os.Exit(1)
+		return nil, fmt.Errorf("unable to parse CSV file %s: %s", filePath, err)
 	}
 
-	return records
+	return records, nil
 }
 
-func loadCoreFromFilename(filename string) {
+func loadCoreFromFilename(filename string) error {
+	// TODO: this will not work very well long time, full core filename changes each release
+	//		 but it's ok, no problem using partial matches as mister does
 	fullPath := filepath.Join(config.SdFolder, filename) // TODO: saves a few chars on the tag but is it worth it?
 
 	if _, err := os.Stat(fullPath); errors.Is(err, os.ErrNotExist) {
-		logger.Error("core does not exist: %s", fullPath)
-		// TODO: return error
-		return
+		return fmt.Errorf("core does not exist: %s", fullPath)
 	}
-	logger.Info("loading core: %s", fullPath)
 
-	// TODO: handle and return error
-	_ = mister.LaunchGenericFile(fullPath)
+	return mister.LaunchGenericFile(fullPath)
 }
 
-func loadCoreFromCardUID(cardId string) {
-	filename, ok := database[cardId]
+func loadCoreFromCardUID(db map[string]string, cardId string) error {
+	filename, ok := db[cardId]
 	if !ok {
-		logger.Error("no core mapped for card ID: %s", cardId)
-		return
+		return fmt.Errorf("no core mapped for card ID: %s", cardId)
 	}
 
-	// TODO: return error?
-	loadCoreFromFilename(filename)
+	return loadCoreFromFilename(filename)
 }
 
 func getCardUID(target nfc.Target) string {
@@ -286,29 +308,27 @@ func getCardUID(target nfc.Target) string {
 		uid = hex.EncodeToString(ID[:card.UIDLen])
 		break
 	default:
-		// TODO: does target.String() give us anything useful?
-		logger.Info("unsupported card type: %s", target.String())
+		uid = ""
 	}
 	return uid
 }
 
-func readFourBlocks(pnd nfc.Device, blockNumber byte) []byte {
+func readFourBlocks(pnd nfc.Device, offset byte) ([]byte, error) {
 	// Read 16 bytes at a time from a Type 2 tag
 	// For NTAG this would be 4 blocks or pages.
-	tx := []byte{0x30, blockNumber}
+	tx := []byte{0x30, offset}
 	rx := make([]byte, 16)
 
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		fmt.Println("Error reading blocks: ", err)
-		return nil
+		return nil, fmt.Errorf("error reading blocks: %s", err)
 	}
 
-	return rx
+	return rx, nil
 }
 
-func getCardCapacity(pnd nfc.Device) byte {
+func getCardCapacity(pnd nfc.Device) (byte, error) {
 	// Find tag capacity by looking in block 3 (capability container)
 	tx := []byte{0x30, 0x03}
 	rx := make([]byte, 16)
@@ -316,9 +336,8 @@ func getCardCapacity(pnd nfc.Device) byte {
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		logger.Info("Error reading capactiy: ", err)
-		return 0
+		return 0, fmt.Errorf("error reading capactiy: %s", err)
 	}
 
-	return rx[2] * 8
+	return rx[2] * 8, nil
 }
