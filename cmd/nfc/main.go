@@ -211,13 +211,18 @@ func main() {
 
 func getDataAreaSize(cardType string) int {
 	switch cardType {
+	// https://www.shopnfc.com/en/content/6-nfc-tags-specs
+
 	case "NTAG213":
 		// Block 0x04 to 0x27 = 0x23 (35)
+		// Or capacity (144 - 4) / 4
 		return 35
-	// case "NTAG215":
-	// 	//
+	case "NTAG215":
+		// Guessing this is (504 - 4) / 4 = 125
+		return 125
 	case "NTAG216":
 		// Block 0x04 to 0xE1 = 0xDD (221)
+		// Or capacity (888 - 4) / 4
 		return 221
 	default:
 		return 35 // fallback to NTAG213
