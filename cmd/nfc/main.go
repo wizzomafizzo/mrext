@@ -25,6 +25,7 @@ var (
 	supportedCardTypes = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
+	connectMaxTries    = 10
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
@@ -42,11 +43,20 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 			logger.Info("loaded %d mappings", len(database))
 		}
 
-		// TODO: sometimes this fails for me. retry?
-		pnd, err := nfc.Open(cfg.NfcConfig.ConnectionString)
-		if err != nil {
-			logger.Error("could not open device: %s", err)
-			return
+		var pnd nfc.Device
+		tries := 0
+		for {
+			pnd, err = nfc.Open(cfg.NfcConfig.ConnectionString)
+			if err != nil {
+				logger.Error("could not open device: %s", err)
+				if tries >= connectMaxTries {
+					logger.Error("giving up, exiting")
+					return
+				}
+			} else {
+				break
+			}
+			tries++
 		}
 		defer func(pnd nfc.Device) {
 			err := pnd.Close()
