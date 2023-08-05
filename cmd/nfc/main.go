@@ -82,8 +82,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 			}
 
 			count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
-			if err != nil {
-				// TODO: is it ok to silence the "timeout" error?
+			if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
 				logger.Error("error polling: %s", err)
 			}
 
