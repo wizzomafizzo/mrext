@@ -12,8 +12,6 @@ type Slot struct {
 	Mgl   *MglParams
 }
 
-type AltRbfOpts map[string][]string
-
 type System struct {
 	Id      string
 	Name    string
@@ -21,15 +19,8 @@ type System struct {
 	SetName string
 	Folder  []string
 	Rbf     string
-	AltRbf  AltRbfOpts
 	Slots   []Slot
 }
-
-const (
-	AltRbfLLAPI   = "LLAPI"
-	AltRbfYC      = "YC"
-	AltRbfDualRAM = "DualRAM"
-)
 
 // First in list takes precendence for simple attributes in case there's a
 // conflict in the future.
@@ -121,10 +112,6 @@ var Systems = map[string]System{
 		Folder:  []string{"ATARI7800", "Atari2600"},
 		SetName: "Atari2600",
 		Rbf:     "_Console/Atari7800",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Atari7800_LLAPI"},
-			AltRbfYC:    []string{"Atari7800YC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".a26"},
@@ -141,9 +128,6 @@ var Systems = map[string]System{
 		Name:   "Atari 5200",
 		Folder: []string{"ATARI5200"},
 		Rbf:    "_Console/Atari5200",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"Atari5200YC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "Cart",
@@ -161,10 +145,6 @@ var Systems = map[string]System{
 		Name:   "Atari 7800",
 		Folder: []string{"ATARI7800"},
 		Rbf:    "_Console/Atari7800",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Atari7800_LLAPI"},
-			AltRbfYC:    []string{"Atari7800YC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".a78", ".bin"},
@@ -246,9 +226,6 @@ var Systems = map[string]System{
 		Alias:  []string{"Coleco"},
 		Folder: []string{"Coleco"},
 		Rbf:    "_Console/ColecoVision",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"ColecoVisionYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".col", ".bin", ".rom"},
@@ -304,10 +281,6 @@ var Systems = map[string]System{
 		Alias:   []string{"FamicomDiskSystem"},
 		Folder:  []string{"NES", "FDS"},
 		Rbf:     "_Console/NES",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"NES_LLAPI"},
-			AltRbfYC:    []string{"NESYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".fds"},
@@ -350,10 +323,6 @@ var Systems = map[string]System{
 		Alias:  []string{"GB"},
 		Folder: []string{"GAMEBOY"},
 		Rbf:    "_Console/Gameboy",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Gameboy_LLAPI"},
-			AltRbfYC:    []string{"GameboyYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gb"},
@@ -372,10 +341,6 @@ var Systems = map[string]System{
 		Folder:  []string{"GAMEBOY", "GBC"},
 		SetName: "GBC",
 		Rbf:     "_Console/Gameboy",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Gameboy_LLAPI"},
-			AltRbfYC:    []string{"GameboyYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gbc"},
@@ -411,10 +376,6 @@ var Systems = map[string]System{
 		Folder:  []string{"SMS", "GameGear"},
 		SetName: "GameGear",
 		Rbf:     "_Console/SMS",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SMS_LLAPI"},
-			AltRbfYC:    []string{"SMSYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gg"},
@@ -448,10 +409,6 @@ var Systems = map[string]System{
 		Alias:  []string{"GameboyAdvance"},
 		Folder: []string{"GBA"},
 		Rbf:    "_Console/GBA",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"GBA_LLAPI"},
-			AltRbfYC:    []string{"GBAYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gba"},
@@ -468,9 +425,6 @@ var Systems = map[string]System{
 		Name:   "Gameboy Advance (2 Player)",
 		Folder: []string{"GBA2P"},
 		Rbf:    "_Console/GBA2P",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"GBA2P_LLAPI"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gba"},
@@ -488,10 +442,6 @@ var Systems = map[string]System{
 		Alias:  []string{"MegaDrive"},
 		Folder: []string{"Genesis"},
 		Rbf:    "_Console/Genesis",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Genesis_LLAPI"},
-			AltRbfYC:    []string{"GenesisYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".bin", ".gen", ".md"},
@@ -527,10 +477,6 @@ var Systems = map[string]System{
 		Alias:  []string{"SMS"},
 		Folder: []string{"SMS"},
 		Rbf:    "_Console/SMS",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SMS_LLAPI"},
-			AltRbfYC:    []string{"SMSYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".sms"},
@@ -548,10 +494,6 @@ var Systems = map[string]System{
 		Alias:  []string{"SegaCD"},
 		Folder: []string{"MegaCD"},
 		Rbf:    "_Console/MegaCD",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"MegaCD_LLAPI"},
-			AltRbfYC:    []string{"MegaCDYC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "Disk",
@@ -569,10 +511,6 @@ var Systems = map[string]System{
 		Name:   "Mega Duck",
 		Folder: []string{"GAMEBOY", "MegaDuck"},
 		Rbf:    "_Console/Gameboy",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"Gameboy_LLAPI"},
-			AltRbfYC:    []string{"GameboyYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".bin"},
@@ -589,10 +527,6 @@ var Systems = map[string]System{
 		Name:   "Neo Geo MVS/AES",
 		Folder: []string{"NEOGEO"},
 		Rbf:    "_Console/NeoGeo",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"NeoGeo_LLAPI"},
-			AltRbfYC:    []string{"NeoGeoYC"},
-		},
 		Slots: []Slot{
 			{
 				// TODO: This also has some special handling re: zip files (darksoft pack).
@@ -612,10 +546,6 @@ var Systems = map[string]System{
 		Name:   "Neo Geo CD",
 		Folder: []string{"NeoGeo-CD", "NEOGEO"},
 		Rbf:    "_Console/NeoGeo",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"NeoGeo_LLAPI"},
-			AltRbfYC:    []string{"NeoGeoYC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "CD Image",
@@ -633,10 +563,6 @@ var Systems = map[string]System{
 		Name:   "NES",
 		Folder: []string{"NES"},
 		Rbf:    "_Console/NES",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"NES_LLAPI"},
-			AltRbfYC:    []string{"NESYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".nes"},
@@ -653,10 +579,6 @@ var Systems = map[string]System{
 		Name:   "NES Music",
 		Folder: []string{"NES"},
 		Rbf:    "_Console/NES",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"NES_LLAPI"},
-			AltRbfYC:    []string{"NESYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".nsf"},
@@ -751,10 +673,6 @@ var Systems = map[string]System{
 		Alias:  []string{"Playstation", "PS1"},
 		Folder: []string{"PSX"},
 		Rbf:    "_Console/PSX",
-		AltRbf: AltRbfOpts{
-			AltRbfYC:      []string{"PSXYC"},
-			AltRbfDualRAM: []string{"PSX_DualSDRAM"},
-		},
 		Slots: []Slot{
 			{
 				Label: "CD",
@@ -782,10 +700,6 @@ var Systems = map[string]System{
 		Alias:  []string{"S32X", "32X"},
 		Folder: []string{"S32X"},
 		Rbf:    "_Console/S32X",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"S32X_LLAPI"},
-			AltRbfYC:    []string{"S32XYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".32x"},
@@ -803,9 +717,6 @@ var Systems = map[string]System{
 		SetName: "SG1000",
 		Folder:  []string{"SG1000", "Coleco", "SMS"},
 		Rbf:     "_Console/ColecoVision",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"ColecoVisionYC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "SG-1000",
@@ -824,10 +735,6 @@ var Systems = map[string]System{
 		Alias:  []string{"SGB"},
 		Folder: []string{"SGB"},
 		Rbf:    "_Console/SGB",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SGB_LLAPI"},
-			AltRbfYC:    []string{"SGBYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".gb", ".gbc"},
@@ -861,9 +768,6 @@ var Systems = map[string]System{
 		Name:   "Saturn",
 		Folder: []string{"Saturn"},
 		Rbf:    "_Console/Saturn",
-		AltRbf: AltRbfOpts{
-			AltRbfDualRAM: []string{"Saturn_DS"},
-		},
 		Slots: []Slot{
 			{
 				Label: "Disk",
@@ -882,10 +786,6 @@ var Systems = map[string]System{
 		Alias:  []string{"SuperNintendo"},
 		Folder: []string{"SNES"},
 		Rbf:    "_Console/SNES",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SNES_LLAPI"},
-			AltRbfYC:    []string{"SNESYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".sfc", ".smc", ".bin", ".bs"},
@@ -902,10 +802,6 @@ var Systems = map[string]System{
 		Name:   "SNES Music",
 		Folder: []string{"SNES"},
 		Rbf:    "_Console/SNES",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"SNES_LLAPI"},
-			AltRbfYC:    []string{"SNESYC"},
-		},
 		Slots: []Slot{
 			{
 				Exts: []string{".spc"},
@@ -922,10 +818,6 @@ var Systems = map[string]System{
 		Name:   "SuperGrafx",
 		Folder: []string{"TGFX16"},
 		Rbf:    "_Console/TurboGrafx16",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"TurboGrafx16_LLAPI"},
-			AltRbfYC:    []string{"TurboGrafx16YC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "SuperGrafx",
@@ -944,10 +836,6 @@ var Systems = map[string]System{
 		Alias:  []string{"TGFX16", "PCEngine"},
 		Folder: []string{"TGFX16"},
 		Rbf:    "_Console/TurboGrafx16",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"TurboGrafx16_LLAPI"},
-			AltRbfYC:    []string{"TurboGrafx16YC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "TurboGrafx",
@@ -966,10 +854,6 @@ var Systems = map[string]System{
 		Alias:  []string{"TGFX16-CD", "PCEngineCD"},
 		Folder: []string{"TGFX16-CD"},
 		Rbf:    "_Console/TurboGrafx16",
-		AltRbf: AltRbfOpts{
-			AltRbfLLAPI: []string{"TurboGrafx16_LLAPI"},
-			AltRbfYC:    []string{"TurboGrafx16YC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "CD",
@@ -1504,9 +1388,6 @@ var Systems = map[string]System{
 		Name:   "Commodore 64",
 		Folder: []string{"C64"},
 		Rbf:    "_Computer/C64",
-		AltRbf: AltRbfOpts{
-			AltRbfYC: []string{"C64YC"},
-		},
 		Slots: []Slot{
 			{
 				Label: "#8",

@@ -632,14 +632,6 @@ func GenSystemsDoc() {
 			}
 		}
 
-		if len(s.AltRbf) > 0 {
-			md += "\n### Alternate Cores\n"
-			md += fmt.Sprintf("| Set | RBFs |\n| --- | --- |\n")
-			for k, v := range s.AltRbf {
-				md += fmt.Sprintf("| %s | %s |\n", k, strings.Join(v, ", "))
-			}
-		}
-
 		md += "\n[Back to top](#systems)\n"
 	}
 

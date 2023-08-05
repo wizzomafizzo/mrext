@@ -42,6 +42,10 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 **ID**: Amiga  | **Aliases**: Minimig  | **Folders**: Amiga | **RBF**: _Computer/Minimig
 
 
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| df0 | .adf | 1 | f | 0 |
+
 [Back to top](#systems)
 
 ## Amstrad CPC
@@ -146,12 +150,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .a26 | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | Atari7800_LLAPI |
-| YC | Atari7800YC |
-
 [Back to top](#systems)
 
 ## Atari 5200
@@ -163,11 +161,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | Cart | .car, .a52, .bin, .rom | 1 | s | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | Atari5200YC |
-
 [Back to top](#systems)
 
 ## Atari 7800
@@ -178,12 +171,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .a78, .bin | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | Atari7800YC |
-| LLAPI | Atari7800_LLAPI |
 
 [Back to top](#systems)
 
@@ -313,11 +300,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .col, .bin, .rom | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | ColecoVisionYC |
-
 [Back to top](#systems)
 
 ## Commodore 16
@@ -343,11 +325,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | #8 | .d64, .g64, .t64, .d81 | 1 | s | 0 |
 | #9 | .d64, .g64, .t64, .d81 | 1 | s | 1 |
 | - | .prg, .crt, .reu, .tap | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | C64YC |
 
 [Back to top](#systems)
 
@@ -399,18 +376,12 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Famicom Disk System
 
-**ID**: FDS  | **Aliases**: FamicomDiskSystem  | **Folders**: NES | **RBF**: _Console/NES
+**ID**: FDS  | **Aliases**: FamicomDiskSystem  | **Folders**: NES, FDS | **RBF**: _Console/NES
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .fds | 2 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | NES_LLAPI |
-| YC | NESYC |
 
 [Back to top](#systems)
 
@@ -456,12 +427,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .gg | 1 | f | 2 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | SMS_LLAPI |
-| YC | SMSYC |
-
 [Back to top](#systems)
 
 ## Gameboy
@@ -472,12 +437,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .gb | 2 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | Gameboy_LLAPI |
-| YC | GameboyYC |
 
 [Back to top](#systems)
 
@@ -501,12 +460,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .gba | 2 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | GBA_LLAPI |
-| YC | GBAYC |
-
 [Back to top](#systems)
 
 ## Gameboy Advance (2 Player)
@@ -517,11 +470,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .gba | 2 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | GBA2P_LLAPI |
 
 [Back to top](#systems)
 
@@ -534,12 +482,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .gbc | 2 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | Gameboy_LLAPI |
-| YC | GameboyYC |
-
 [Back to top](#systems)
 
 ## Genesis
@@ -551,12 +493,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .bin, .gen, .md | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | Genesis_LLAPI |
-| YC | GenesisYC |
-
 [Back to top](#systems)
 
 ## Genesis 32X
@@ -567,12 +503,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .32x | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | S32X_LLAPI |
-| YC | S32XYC |
 
 [Back to top](#systems)
 
@@ -688,12 +618,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .sms | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | SMS_LLAPI |
-| YC | SMSYC |
-
 [Back to top](#systems)
 
 ## Mattel Aquarius
@@ -717,12 +641,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .bin | 2 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | Gameboy_LLAPI |
-| YC | GameboyYC |
-
 [Back to top](#systems)
 
 ## MultiComp
@@ -745,12 +663,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .nes | 2 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | NES_LLAPI |
-| YC | NESYC |
-
 [Back to top](#systems)
 
 ## NES Music
@@ -761,12 +673,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .nsf | 2 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | NES_LLAPI |
-| YC | NESYC |
 
 [Back to top](#systems)
 
@@ -779,12 +685,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | CD Image | .cue, .chd | 1 | s | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | NeoGeo_LLAPI |
-| YC | NeoGeoYC |
-
 [Back to top](#systems)
 
 ## Neo Geo MVS/AES
@@ -795,12 +695,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | ROM set | .neo | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | NeoGeoYC |
-| LLAPI | NeoGeo_LLAPI |
 
 [Back to top](#systems)
 
@@ -897,12 +791,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | CD | .cue, .chd | 1 | s | 1 |
 | Exe | .exe | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | PSXYC |
-| DualRAM | PSX_DualSDRAM |
-
 [Back to top](#systems)
 
 ## Pocket Challenge V2
@@ -959,11 +847,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | SG-1000 | .sg | 1 | f | 2 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | ColecoVisionYC |
-
 [Back to top](#systems)
 
 ## SNES
@@ -975,12 +858,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .sfc, .smc, .bin, .bs | 2 | f | 0 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | SNES_LLAPI |
-| YC | SNESYC |
-
 [Back to top](#systems)
 
 ## SNES Music
@@ -991,12 +868,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .spc | 2 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | SNES_LLAPI |
-| YC | SNESYC |
 
 [Back to top](#systems)
 
@@ -1021,11 +892,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | Disk | .cue | 1 | s | 0 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| DualRAM | Saturn_DS |
-
 [Back to top](#systems)
 
 ## Sega CD
@@ -1036,12 +902,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Disk | .cue, .chd | 1 | s | 0 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | MegaCD_LLAPI |
-| YC | MegaCDYC |
 
 [Back to top](#systems)
 
@@ -1078,12 +938,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | - | .gb, .gbc | 1 | f | 1 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | SGB_LLAPI |
-| YC | SGBYC |
-
 [Back to top](#systems)
 
 ## SuperGrafx
@@ -1094,12 +948,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | SuperGrafx | .sgx | 1 | f | 1 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| YC | TurboGrafx16YC |
-| LLAPI | TurboGrafx16_LLAPI |
 
 [Back to top](#systems)
 
@@ -1210,12 +1058,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | --- | --- | --- | --- | --- |
 | TurboGrafx | .bin, .pce | 1 | f | 0 |
 
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | TurboGrafx16_LLAPI |
-| YC | TurboGrafx16YC |
-
 [Back to top](#systems)
 
 ## TurboGrafx-16 CD
@@ -1226,12 +1068,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | CD | .cue, .chd | 1 | s | 0 |
-
-### Alternate Cores
-| Set | RBFs |
-| --- | --- |
-| LLAPI | TurboGrafx16_LLAPI |
-| YC | TurboGrafx16YC |
 
 [Back to top](#systems)
 
