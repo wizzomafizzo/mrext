@@ -30,6 +30,7 @@ var (
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
 	databaseFile       = filepath.Join(config.SdFolder, "nfc-mapping.csv")
+	lastScanFile       = filepath.Join(config.TempFolder, "NFCSCAN")
 )
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
@@ -75,7 +76,6 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 		lastSeenCardUID := ""
 
-		// TODO: would be good to be able to query the scan status/result/whatever of the service
 		for {
 			if stopService {
 				break
@@ -93,10 +93,13 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					logger.Warn("unsupported card type: %s", target.String())
 				}
 
+				// TODO: i'd like to put this check on on a timer so you can still have cards that are
+				//       meant to be scanned multiple times in a row
 				if currentCardID != lastSeenCardUID {
 					logger.Info("new card UID: %s", currentCardID)
 					lastSeenCardUID = currentCardID
 
+					// TODO: this is actually a string?
 					cardType, err := getCardType(pnd)
 					if err != nil {
 						logger.Error("error getting card type: %s", err)
@@ -116,6 +119,12 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 					if tagText != "" {
 						logger.Info("decoded text NDEF: %s", tagText)
+
+						err = writeScanResult(tagText)
+						if err != nil {
+							logger.Warn("error writing tmp scan result: %s", err)
+						}
+
 						err = loadCoreFromFilename(tagText)
 						if err != nil {
 							logger.Error("error loading core: %s", err)
@@ -301,6 +310,23 @@ func readCsvFile(filePath string) ([][]string, error) {
 	}
 
 	return records, nil
+}
+
+func writeScanResult(tagText string) error {
+	f, err := os.Create(lastScanFile)
+	if err != nil {
+		return fmt.Errorf("unable to create scan result file %s: %s", lastScanFile, err)
+	}
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
+
+	_, err = f.WriteString(tagText)
+	if err != nil {
+		return fmt.Errorf("unable to write scan result file %s: %s", lastScanFile, err)
+	}
+
+	return nil
 }
 
 func loadCoreFromFilename(filename string) error {
