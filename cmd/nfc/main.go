@@ -20,6 +20,8 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
+// TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
+
 var (
 	appName            = "nfc"
 	supportedCardTypes = []nfc.Modulation{
@@ -39,7 +41,88 @@ const (
 	TypeNTAG216 = "NTAG216"
 )
 
-// TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
+type lastSeenCard struct {
+	CardType string
+	UID      string
+	ScanTime time.Time
+}
+
+func pollDevice(
+	logger *service.Logger,
+	pnd *nfc.Device,
+	lastSeen lastSeenCard,
+	db *map[string]string,
+) (lastSeenCard, error) {
+	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+	if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
+		return lastSeen, fmt.Errorf("error polling: %s", err)
+	}
+
+	if count <= 0 {
+		return lastSeen, nil
+	}
+
+	currentCardID := getCardUID(target)
+	if currentCardID == "" {
+		logger.Warn("unsupported card type: %s", target.String())
+	}
+
+	// TODO: i'd like to put this check on on a timer so you can still have cards that are
+	//       meant to be scanned multiple times in a row
+	if currentCardID == lastSeen.UID {
+		return lastSeen, nil
+	}
+
+	logger.Info("new card UID: %s", currentCardID)
+
+	cardType, err := getCardType(*pnd)
+	if err != nil {
+		logger.Error("error getting card type: %s", err)
+	}
+
+	if cardType == "" {
+		logger.Warn("unknown card type")
+	} else {
+		logger.Info("card type: %s", cardType)
+	}
+
+	blockCount := getDataAreaSize(cardType)
+	record, err := readRecord(*pnd, blockCount)
+	if err != nil {
+		return lastSeenCard{}, fmt.Errorf("error reading record: %s", err)
+	}
+	logger.Info("record bytes: %s", hex.EncodeToString(record))
+
+	tagText := parseRecordText(record)
+
+	if tagText != "" {
+		logger.Info("decoded text NDEF: %s", tagText)
+
+		err = writeScanResult(tagText)
+		if err != nil {
+			logger.Warn("error writing tmp scan result: %s", err)
+		}
+
+		err = loadCoreFromFilename(tagText)
+		if err != nil {
+			logger.Error("error loading core: %s", err)
+		}
+		// TODO: if string is in special format
+		//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
+	} else {
+		logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
+		err = loadCoreFromCardUID(*db, currentCardID)
+		if err != nil {
+			logger.Error("error loading core: %s", err)
+		}
+	}
+
+	return lastSeenCard{
+		CardType: cardType,
+		UID:      currentCardID,
+		ScanTime: time.Now(),
+	}, nil
+}
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	var stopService bool
@@ -82,74 +165,18 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 		logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
 
-		lastSeenCardUID := ""
+		lastSeen := lastSeenCard{}
 
 		for {
 			if stopService {
 				break
 			}
 
-			count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
-			if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
-				logger.Error("error polling: %s", err)
-			}
-
-			if count > 0 {
-				currentCardID := getCardUID(target)
-				if currentCardID == "" {
-					logger.Warn("unsupported card type: %s", target.String())
-				}
-
-				// TODO: i'd like to put this check on on a timer so you can still have cards that are
-				//       meant to be scanned multiple times in a row
-				if currentCardID != lastSeenCardUID {
-					logger.Info("new card UID: %s", currentCardID)
-					lastSeenCardUID = currentCardID
-
-					cardType, err := getCardType(pnd)
-					if err != nil {
-						logger.Error("error getting card type: %s", err)
-					}
-					if cardType == "" {
-						logger.Warn("unknown card type")
-					} else {
-						logger.Info("card type: %s", cardType)
-					}
-
-					blockCount := getDataAreaSize(cardType)
-					record, err := readRecord(pnd, blockCount)
-					if err != nil {
-						logger.Error("error reading record: %s", err)
-						continue
-					}
-					logger.Info("record bytes: %s", hex.EncodeToString(record))
-
-					tagText := parseRecordText(record)
-
-					if tagText != "" {
-						logger.Info("decoded text NDEF: %s", tagText)
-
-						err = writeScanResult(tagText)
-						if err != nil {
-							logger.Warn("error writing tmp scan result: %s", err)
-						}
-
-						err = loadCoreFromFilename(tagText)
-						if err != nil {
-							logger.Error("error loading core: %s", err)
-							continue
-						}
-						// TODO: if string is in special format
-						//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
-					} else {
-						logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
-						err = loadCoreFromCardUID(database, currentCardID)
-						if err != nil {
-							logger.Error("error loading core: %s", err)
-							continue
-						}
-					}
-				}
+			newSeen, err := pollDevice(logger, &pnd, lastSeen, &database)
+			if err != nil {
+				logger.Error("error during poll: %s", err)
+			} else {
+				lastSeen = newSeen
 			}
 
 			time.Sleep(periodBetweenLoop)
