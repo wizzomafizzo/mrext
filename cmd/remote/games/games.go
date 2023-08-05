@@ -63,7 +63,7 @@ func GetIndexingStatus() string {
 	return status
 }
 
-func (s *Index) GenerateIndex(logger *service.Logger) {
+func (s *Index) GenerateIndex(logger *service.Logger, cfg *config.UserConfig) {
 	if s.Indexing {
 		return
 	}
@@ -79,7 +79,7 @@ func (s *Index) GenerateIndex(logger *service.Logger) {
 		allFiles := make([][2]string, 0)
 		var err error
 
-		for _, path := range games.GetAllSystemPaths() {
+		for _, path := range games.GetAllSystemPaths(cfg) {
 			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
 			logger.Info("index: found path %s: %s", path.System.Name, path.Path)
 		}
@@ -157,9 +157,9 @@ func NewIndex() *Index {
 
 var IndexInstance = NewIndex()
 
-func GenerateSearchIndex(logger *service.Logger) http.HandlerFunc {
+func GenerateSearchIndex(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(_ http.ResponseWriter, _ *http.Request) {
-		IndexInstance.GenerateIndex(logger)
+		IndexInstance.GenerateIndex(logger, cfg)
 	}
 }
 

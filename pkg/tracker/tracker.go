@@ -374,7 +374,7 @@ func (tr *Tracker) loadGame() {
 		}
 	}
 
-	system, err := games.BestSystemMatch(path)
+	system, err := games.BestSystemMatch(tr.Config, path)
 	if err != nil {
 		tr.Logger.Error("error finding system for game: %s", err)
 	}

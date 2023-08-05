@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/libp2p/zeroconf/v2"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/misterini"
 	"os"
@@ -112,12 +113,12 @@ func main() {
 	}
 
 	if *activePaths {
-		paths := games.GetActiveSystemPaths(selectedSystems)
+		paths := games.GetActiveSystemPaths(&config.UserConfig{}, selectedSystems)
 		for _, path := range paths {
 			fmt.Printf("%s:%s\n", path.System.Id, path.Path)
 		}
 	} else if *allPaths {
-		paths := games.GetSystemPaths(selectedSystems)
+		paths := games.GetSystemPaths(&config.UserConfig{}, selectedSystems)
 		for _, path := range paths {
 			fmt.Printf("%s:%s\n", path.System.Id, path.Path)
 		}

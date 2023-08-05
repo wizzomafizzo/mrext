@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"io"
 	"io/fs"
 	"net/http"
@@ -167,7 +168,9 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	defer resp.Body.Close()
+	defer func(b io.ReadCloser) {
+		_ = b.Close()
+	}(resp.Body)
 
 	if resp.StatusCode != 200 {
 		return nil, false, fmt.Errorf("failed to download %s: %s", sync.url, resp.Status)
@@ -177,14 +180,18 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	defer fp.Close()
-	defer os.Remove(fp.Name())
+	defer func(fp *os.File) {
+		_ = fp.Close()
+	}(fp)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(fp.Name())
 
 	_, err = io.Copy(fp, resp.Body)
 	if err != nil {
 		return nil, false, err
 	}
-	fp.Close()
+	_ = fp.Close()
 
 	newSync, err := readSyncFile(fp.Name())
 	if err != nil {
@@ -206,7 +213,7 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 	}
 }
 
-func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
+func makeIndex(cfg *config.UserConfig, syncs []*syncFile) (txtindex.Index, error) {
 	var index txtindex.Index
 	indexFile := filepath.Join(os.TempDir(), "launchsync-index.tar")
 
@@ -218,7 +225,7 @@ func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
 		}
 	}
 
-	systemPaths := games.GetSystemPaths(systems)
+	systemPaths := games.GetSystemPaths(cfg, systems)
 
 	systemFiles := make([][2]string, 0)
 	for _, path := range systemPaths {
@@ -241,7 +248,7 @@ func makeIndex(syncs []*syncFile) (txtindex.Index, error) {
 	if err != nil {
 		return index, err
 	}
-	os.Remove(indexFile)
+	_ = os.Remove(indexFile)
 
 	return index, nil
 }
@@ -362,7 +369,7 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 			return "", false, err
 		}
 
-		os.Remove(notFoundFn)
+		_ = os.Remove(notFoundFn)
 
 		return filepath.Base(match.Path), true, nil
 	} else {
@@ -371,9 +378,11 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 		if err != nil {
 			return "", false, err
 		}
-		defer fp.Close()
+		defer func(fp *os.File) {
+			_ = fp.Close()
+		}(fp)
 
-		os.Remove(launcherFn)
+		_ = os.Remove(launcherFn)
 
 		return "", false, nil
 	}

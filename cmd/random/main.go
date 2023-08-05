@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -14,7 +15,10 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-const MAX_ATTEMPTS = 100
+const (
+	appName         = "random"
+	maxPickAttempts = 100
+)
 
 // Recursively search through given folder for a valid game file for that system.
 func tryPickRandomGame(system *games.System, folder string) (string, error) {
@@ -87,6 +91,12 @@ func main() {
 	noscan := flag.Bool("noscan", false, "don't index entire system (faster, but less random)")
 	flag.Parse()
 
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	if err != nil {
+		fmt.Println("Error loading config file:", err)
+		os.Exit(1)
+	}
+
 	filteredIds := strings.Split(*filter, ",")
 	var filteredSystems []games.System
 	for _, id := range filteredIds {
@@ -130,7 +140,7 @@ func main() {
 		systems = filtered
 	}
 
-	results := games.GetSystemPaths(systems)
+	results := games.GetSystemPaths(cfg, systems)
 	if len(results) == 0 {
 		fmt.Println("No games folders found.")
 		os.Exit(1)
@@ -154,7 +164,7 @@ func main() {
 	}
 
 	if *noscan {
-		for i := 0; i < MAX_ATTEMPTS; i++ {
+		for i := 0; i < maxPickAttempts; i++ {
 			// random system
 			systemId, err := utils.RandomElem(utils.MapKeys(populated))
 			if err != nil {
@@ -179,12 +189,15 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				mister.LaunchGame(*system, game)
+				err := mister.LaunchGame(*system, game)
+				if err != nil {
+					fmt.Println(err)
+				}
 				return
 			}
 		}
 	} else {
-		for i := 0; i < MAX_ATTEMPTS; i++ {
+		for i := 0; i < maxPickAttempts; i++ {
 			// random system
 			systemId, err := utils.RandomElem(utils.MapKeys(populated))
 			if err != nil {
@@ -217,7 +230,10 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				mister.LaunchGame(*system, game)
+				err := mister.LaunchGame(*system, game)
+				if err != nil {
+					fmt.Println(err)
+				}
 				return
 			}
 		}

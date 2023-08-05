@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"log"
 	"os"
@@ -161,7 +162,7 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 }
 
 func tryLaunchGame(launchPath string) error {
-	system, err := games.BestSystemMatch(launchPath)
+	system, err := games.BestSystemMatch(&config.UserConfig{}, launchPath)
 	if err != nil {
 		return fmt.Errorf("error during launch: %s", err)
 	}
@@ -218,14 +219,14 @@ func main() {
 
 	// find active system paths
 	if *detect {
-		results := games.GetActiveSystemPaths(systems)
+		results := games.GetActiveSystemPaths(&config.UserConfig{}, systems)
 		for _, r := range results {
 			fmt.Printf("%s:%s\n", strings.ToLower(conId(r.System.Id)), r.Path)
 		}
 		os.Exit(0)
 	}
 
-	systemPaths := games.GetSystemPaths(systems)
+	systemPaths := games.GetSystemPaths(&config.UserConfig{}, systems)
 	systemPathsMap := make(map[string][]string)
 
 	for _, p := range systemPaths {

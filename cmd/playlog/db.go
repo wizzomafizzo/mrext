@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -29,7 +30,7 @@ func openPlayLogDb() (*playLogDb, error) {
 }
 
 func (p *playLogDb) NoResults(err error) bool {
-	return err == sql.ErrNoRows
+	return errors.Is(err, sql.ErrNoRows)
 }
 
 func (p *playLogDb) setupDb() error {

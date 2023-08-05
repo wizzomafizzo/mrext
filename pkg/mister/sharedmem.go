@@ -117,7 +117,8 @@ func SetActiveIni(ini int) error {
 		}
 	} else {
 		corePath := filepath.Join(config.SdFolder, recent[0].Directory, recent[0].Name)
-		err = LaunchGenericFile(corePath)
+		// TODO: use real config later
+		err = LaunchGenericFile(&config.UserConfig{}, corePath)
 		if err != nil {
 			return err
 		}

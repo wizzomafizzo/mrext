@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	gc "github.com/rthornton128/goncurses"
@@ -18,6 +19,8 @@ import (
 // TODO: list display window showing 2 values per row (left and right aligned)
 // TODO: list display window with selected/deselected status per item
 // TODO: small popup selection menu dialog
+
+const appName = "search"
 
 // Create a channel that will be used to pass the index around. This is so
 // the index file can be loaded in the background on startup.
@@ -39,12 +42,14 @@ func getIndex(ic chan txtindex.Index) (txtindex.Index, chan txtindex.Index) {
 	return index, ic
 }
 
-func generateIndexWindow(stdscr *gc.Window) error {
+func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	win, err := curses.NewWindow(stdscr, 4, 75, "", -1)
 	if err != nil {
 		return err
 	}
-	defer win.Delete()
+	defer func(win *gc.Window) {
+		_ = win.Delete()
+	}(win)
 
 	_, width := win.MaxYX()
 
@@ -68,11 +73,11 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	win.MovePrint(1, 2, "Finding games folders...")
 	drawProgressBar(1, 100)
 	win.NoutRefresh()
-	gc.Update()
+	_ = gc.Update()
 
 	systemPaths := make(map[string][]string)
 
-	for _, path := range games.GetSystemPaths(games.AllSystems()) {
+	for _, path := range games.GetSystemPaths(cfg, games.AllSystems()) {
 		systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
 	}
 
@@ -89,14 +94,14 @@ func generateIndexWindow(stdscr *gc.Window) error {
 		drawProgressBar(currentStep, totalSteps)
 		currentStep++
 		win.NoutRefresh()
-		gc.Update()
+		_ = gc.Update()
 	})
 
 	clearText()
 	win.MovePrint(1, 2, "Generating index files...")
 	drawProgressBar(currentStep, totalSteps)
 	win.NoutRefresh()
-	gc.Update()
+	_ = gc.Update()
 
 	if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
 		log.Fatal(err)
@@ -105,7 +110,7 @@ func generateIndexWindow(stdscr *gc.Window) error {
 	return nil
 }
 
-func mainOptionsWindow(stdscr *gc.Window) error {
+func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	options := [][2]string{
 		{"Rescan games...", ""},
 	}
@@ -126,7 +131,7 @@ func mainOptionsWindow(stdscr *gc.Window) error {
 	if button == 0 {
 		switch selected {
 		case 0:
-			generateIndexWindow(stdscr)
+			err := generateIndexWindow(cfg, stdscr)
 			if err != nil {
 				return err
 			}
@@ -136,10 +141,10 @@ func mainOptionsWindow(stdscr *gc.Window) error {
 	return nil
 }
 
-func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err error) {
+func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.Index, query string) (err error) {
 	stdscr.Erase()
 	stdscr.NoutRefresh()
-	gc.Update()
+	_ = gc.Update()
 
 	searchTitle := "Search"
 	searchButtons := []string{"Options", "Search", "Exit"}
@@ -149,15 +154,15 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 	}
 
 	if button == 0 {
-		err = mainOptionsWindow(stdscr)
+		err = mainOptionsWindow(cfg, stdscr)
 		if err != nil {
 			return err
 		}
 
-		return searchWindow(stdscr, ic, text)
+		return searchWindow(cfg, stdscr, ic, text)
 	} else if button == 1 {
 		if len(text) == 0 {
-			return searchWindow(stdscr, ic, "")
+			return searchWindow(cfg, stdscr, ic, "")
 		}
 
 		index, ic := getIndex(ic)
@@ -171,7 +176,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 			if err := curses.InfoBox(stdscr, "", "No results found.", false, true); err != nil {
 				log.Fatal(err)
 			}
-			return searchWindow(stdscr, ic, text)
+			return searchWindow(cfg, stdscr, ic, text)
 		}
 
 		var names []string
@@ -186,7 +191,7 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 
 		stdscr.Erase()
 		stdscr.NoutRefresh()
-		gc.Update()
+		_ = gc.Update()
 
 		button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
 			Title:         "Launch Game",
@@ -216,13 +221,19 @@ func searchWindow(stdscr *gc.Window, ic chan txtindex.Index, query string) (err 
 			}
 		}
 
-		return searchWindow(stdscr, ic, text)
+		return searchWindow(cfg, stdscr, ic, text)
 	} else {
 		return nil
 	}
 }
 
 func main() {
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	if err != nil {
+		fmt.Println("Error loading config file:", err)
+		os.Exit(1)
+	}
+
 	stdscr, err := curses.Setup()
 	if err != nil {
 		log.Fatal(err)
@@ -230,14 +241,14 @@ func main() {
 	defer gc.End()
 
 	if !txtindex.Exists() {
-		generateIndexWindow(stdscr)
+		err := generateIndexWindow(cfg, stdscr)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	ic := newIndexChannel()
-	err = searchWindow(stdscr, ic, "")
+	err = searchWindow(cfg, stdscr, ic, "")
 	if err != nil {
 		log.Fatal(err)
 	}

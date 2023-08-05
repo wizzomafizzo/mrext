@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ var extMap = map[string][]string{
 	"C64":          {".crt", ".prg"},
 	"Genesis":      {".gen", ".md"},
 	"NeoGeo":       {".neo"},
-	"SNES":		{".sfc", ".smc"},
+	"SNES":         {".sfc", ".smc"},
 	"TurboGrafx16": {".pce", ".sgx"},
 }
 
@@ -77,10 +78,10 @@ func writeGamelist(gamelistDir string, systemId string, files []string) {
 	}
 
 	for _, file := range files {
-		tmpPath.WriteString(file + "\n")
+		_, _ = tmpPath.WriteString(file + "\n")
 	}
-	tmpPath.Sync()
-	tmpPath.Close()
+	_ = tmpPath.Sync()
+	_ = tmpPath.Close()
 
 	err = utils.MoveFile(tmpPath.Name(), gamelistPath)
 	if err != nil {
@@ -204,14 +205,14 @@ func main() {
 
 	// find active system paths
 	if *detect {
-		results := games.GetActiveSystemPaths(systems)
+		results := games.GetActiveSystemPaths(&config.UserConfig{}, systems)
 		for _, r := range results {
 			fmt.Printf("%s:%s\n", strings.ToLower(samId(r.System.Id)), r.Path)
 		}
 		os.Exit(0)
 	}
 
-	systemPaths := games.GetSystemPaths(systems)
+	systemPaths := games.GetSystemPaths(&config.UserConfig{}, systems)
 	systemPathsMap := make(map[string][]string)
 
 	for _, p := range systemPaths {

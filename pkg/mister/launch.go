@@ -304,7 +304,7 @@ func LaunchMenu() error {
 }
 
 // LaunchGenericFile Given a generic file path, launch it using the correct method, if possible.
-func LaunchGenericFile(path string) error {
+func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 	file, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("path is not accessible: %s", err)
@@ -325,7 +325,7 @@ func LaunchGenericFile(path string) error {
 	case ".rbf":
 		err = launchFile(path)
 	default:
-		system, err := games.BestSystemMatch(path)
+		system, err := games.BestSystemMatch(cfg, path)
 		if err != nil {
 			return fmt.Errorf("unknown file type: %s", ext)
 		}

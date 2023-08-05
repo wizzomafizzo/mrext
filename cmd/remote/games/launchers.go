@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-func LaunchGame(logger *service.Logger) http.HandlerFunc {
+func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args struct {
 			Path string `json:"path"`
@@ -27,7 +27,7 @@ func LaunchGame(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		system, err := games.BestSystemMatch(args.Path)
+		system, err := games.BestSystemMatch(cfg, args.Path)
 		if err != nil {
 			http.Error(w, "no system found for game", http.StatusBadRequest)
 			logger.Error("launch game: no system found for game: %s", args.Path)
@@ -43,7 +43,7 @@ func LaunchGame(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
-func LaunchQRGame(logger *service.Logger) http.HandlerFunc {
+func LaunchQRGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		data := vars["data"]
@@ -55,7 +55,7 @@ func LaunchQRGame(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		system, err := games.BestSystemMatch(string(path))
+		system, err := games.BestSystemMatch(cfg, string(path))
 		if err != nil {
 			http.Error(w, "no system found for game", http.StatusBadRequest)
 			logger.Error("launch qr game: no system found for game: %s", path)
@@ -71,7 +71,7 @@ func LaunchQRGame(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
-func LaunchFile(logger *service.Logger) http.HandlerFunc {
+func LaunchFile(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args struct {
 			Path string `json:"path"`
@@ -84,7 +84,7 @@ func LaunchFile(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		err = mister.LaunchGenericFile(args.Path)
+		err = mister.LaunchGenericFile(cfg, args.Path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch file: during launch: %s", err)
@@ -111,7 +111,7 @@ type CreateLauncherResponse struct {
 	Path string `json:"path"`
 }
 
-func CreateLauncher(logger *service.Logger) http.HandlerFunc {
+func CreateLauncher(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args CreateLauncherRequest
 
@@ -135,7 +135,7 @@ func CreateLauncher(logger *service.Logger) http.HandlerFunc {
 		//	return
 		//}
 
-		system, err := games.BestSystemMatch(args.GamePath)
+		system, err := games.BestSystemMatch(cfg, args.GamePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("create launcher: unknown file type or folder")

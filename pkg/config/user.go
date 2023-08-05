@@ -7,14 +7,6 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// TODO: default values?
-
-type AltCoresConfig struct {
-	LLAPI   []string `ini:"llapi,omitempty" delim:","`
-	YC      []string `ini:"yc,omitempty" delim:","`
-	DualRAM []string `ini:"dualram,omitempty" delim:","`
-}
-
 type LaunchSyncConfig struct{}
 
 type PlayLogConfig struct {
@@ -46,26 +38,29 @@ type RemoteConfig struct {
 	CustomLogo  string `ini:"custom_logo,omitempty"`
 }
 
+type NfcConfig struct {
+	ConnectionString string `ini:"connection_string,omitempty"`
+}
+
+type SystemsConfig struct {
+	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
+	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
+}
+
 type UserConfig struct {
 	AppPath    string
 	IniPath    string
-	AltCores   AltCoresConfig   `ini:"altcores,omitempty"`
 	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
 	PlayLog    PlayLogConfig    `ini:"playlog,omitempty"`
 	Random     RandomConfig     `ini:"random,omitempty"`
 	Search     SearchConfig     `ini:"search,omitempty"`
 	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
 	Remote     RemoteConfig     `ini:"remote,omitempty"`
-	NfcConfig  NfcConfig        `ini:"nfc,omitempty"`
-}
-
-type NfcConfig struct {
-	ConnectionString string `ini:"connection_string,omitempty"`
+	NfcConfig  NfcConfig        `ini:"nfc,omitempty"` // TODO: rename to Nfc
+	Systems    SystemsConfig    `ini:"systems,omitempty"`
 }
 
 func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {
-	// TODO: central default ini first
-
 	iniPath := os.Getenv(UserConfigEnv)
 
 	exePath, err := os.Executable()
@@ -89,7 +84,7 @@ func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error)
 		return defaultConfig, nil
 	}
 
-	cfg, err := ini.Load(iniPath)
+	cfg, err := ini.ShadowLoad(iniPath)
 	if err != nil {
 		return defaultConfig, err
 	}

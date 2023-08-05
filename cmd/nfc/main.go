@@ -49,6 +49,7 @@ type lastSeenCard struct {
 
 func pollDevice(
 	logger *service.Logger,
+	cfg *config.UserConfig,
 	pnd *nfc.Device,
 	lastSeen lastSeenCard,
 	db *map[string]string,
@@ -103,7 +104,7 @@ func pollDevice(
 			logger.Warn("error writing tmp scan result: %s", err)
 		}
 
-		err = loadCoreFromFilename(tagText)
+		err = loadCoreFromFilename(cfg, tagText)
 		if err != nil {
 			logger.Error("error loading core: %s", err)
 		}
@@ -111,7 +112,7 @@ func pollDevice(
 		//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
 	} else {
 		logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
-		err = loadCoreFromCardUID(*db, currentCardID)
+		err = loadCoreFromCardUID(cfg, *db, currentCardID)
 		if err != nil {
 			logger.Error("error loading core: %s", err)
 		}
@@ -172,7 +173,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 				break
 			}
 
-			newSeen, err := pollDevice(logger, &pnd, lastSeen, &database)
+			newSeen, err := pollDevice(logger, cfg, &pnd, lastSeen, &database)
 			if err != nil {
 				logger.Error("error during poll: %s", err)
 			} else {
@@ -365,7 +366,7 @@ func writeScanResult(tagText string) error {
 	return nil
 }
 
-func loadCoreFromFilename(filename string) error {
+func loadCoreFromFilename(cfg *config.UserConfig, filename string) error {
 	// TODO: this will not work very well long term, full core filename changes each release
 	//		 but it's ok, no problem using partial matches as mister does
 	fullPath := filepath.Join(config.SdFolder, filename) // TODO: saves a few chars on the tag but is it worth it?
@@ -374,16 +375,16 @@ func loadCoreFromFilename(filename string) error {
 		return fmt.Errorf("core does not exist: %s", fullPath)
 	}
 
-	return mister.LaunchGenericFile(fullPath)
+	return mister.LaunchGenericFile(cfg, fullPath)
 }
 
-func loadCoreFromCardUID(db map[string]string, cardId string) error {
+func loadCoreFromCardUID(cfg *config.UserConfig, db map[string]string, cardId string) error {
 	filename, ok := db[cardId]
 	if !ok {
 		return fmt.Errorf("no core mapped for card ID: %s", cardId)
 	}
 
-	return loadCoreFromFilename(filename)
+	return loadCoreFromFilename(cfg, filename)
 }
 
 func getCardUID(target nfc.Target) string {

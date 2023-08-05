@@ -8,6 +8,21 @@ import (
 	"strings"
 )
 
+func GetGamesFolders(cfg *config.UserConfig) []string {
+	var folders []string
+	for _, folder := range cfg.Systems.GamesFolder {
+		folder = filepath.Clean(folder)
+		if !strings.HasSuffix(folder, "/games") {
+			folders = append(folders, filepath.Join(folder, "games"))
+		}
+		folders = append(folders, folder)
+	}
+	for _, folder := range config.GamesFolders {
+		folders = append(folders, folder)
+	}
+	return folders
+}
+
 func FindFile(path string) (string, error) {
 	if _, err := os.Stat(path); err == nil {
 		return path, nil
@@ -35,12 +50,12 @@ func FindFile(path string) (string, error) {
 }
 
 // FolderToSystems returns what systems a path could be for.
-func FolderToSystems(path string) []System {
+func FolderToSystems(cfg *config.UserConfig, path string) []System {
 	path = strings.ToLower(path)
 	validGamesFolder := false
 	gamesFolder := ""
 
-	for _, folder := range config.GamesFolders {
+	for _, folder := range GetGamesFolders(cfg) {
 		if strings.HasPrefix(path, strings.ToLower(folder)) {
 			validGamesFolder = true
 			gamesFolder = folder
@@ -73,8 +88,8 @@ func FolderToSystems(path string) []System {
 	return matchedExtensions
 }
 
-func BestSystemMatch(path string) (System, error) {
-	systems := FolderToSystems(path)
+func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
+	systems := FolderToSystems(cfg, path)
 
 	if len(systems) == 0 {
 		return System{}, fmt.Errorf("no systems found for %s", path)
@@ -101,11 +116,12 @@ type PathResult struct {
 }
 
 // GetSystemPaths returns all possible paths for each system.
-func GetSystemPaths(systems []System) []PathResult {
+func GetSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 	var matches []PathResult
 
+	gamesFolders := GetGamesFolders(cfg)
 	for _, system := range systems {
-		for _, gamesFolder := range config.GamesFolders {
+		for _, gamesFolder := range gamesFolders {
 			gf, err := FindFile(gamesFolder)
 			if err != nil {
 				continue
@@ -126,16 +142,17 @@ func GetSystemPaths(systems []System) []PathResult {
 	return matches
 }
 
-func GetAllSystemPaths() []PathResult {
-	return GetSystemPaths(AllSystems())
+func GetAllSystemPaths(cfg *config.UserConfig) []PathResult {
+	return GetSystemPaths(cfg, AllSystems())
 }
 
 // GetActiveSystemPaths returns the active path for each system.
-func GetActiveSystemPaths(systems []System) []PathResult {
+func GetActiveSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 	var matches []PathResult
 
+	gamesFolders := GetGamesFolders(cfg)
 	for _, system := range systems {
-		for _, gamesFolder := range config.GamesFolders {
+		for _, gamesFolder := range gamesFolders {
 			gf, err := FindFile(gamesFolder)
 			if err != nil {
 				continue

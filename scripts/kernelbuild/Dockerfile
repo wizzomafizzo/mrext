@@ -2,7 +2,7 @@ FROM ubuntu:kinetic
 
 RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get install build-essential git libncurses-dev flex bison openssl libssl-dev dkms libelf-dev \
-     libudev-dev libpci-dev libiberty-dev autoconf liblz4-tool bc curl gcc git libssl-dev libncurses5-dev \ 
+     libudev-dev libpci-dev libiberty-dev autoconf liblz4-tool bc curl gcc git libssl-dev libncurses5-dev \ \
      lzop make u-boot-tools libgmp3-dev libmpc-dev -y
 RUN sed -Ei "s/^# deb-src /deb-src /" /etc/apt/sources.list && \
     apt-get update -y && \

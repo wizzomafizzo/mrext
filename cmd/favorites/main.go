@@ -43,7 +43,7 @@ func main() {
 	var system games.System
 
 	if *systemId == "auto" {
-		match, err := games.BestSystemMatch(*gameFile)
+		match, err := games.BestSystemMatch(&config.UserConfig{}, *gameFile)
 		if err != nil {
 			fmt.Printf("Could not determine system for game: %s\n", *gameFile)
 			os.Exit(1)

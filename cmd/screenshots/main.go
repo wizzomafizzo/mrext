@@ -19,9 +19,11 @@ func getImageFromFilePath(filePath string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	image, err := png.Decode(f)
-	return image, err
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
+	img, err := png.Decode(f)
+	return img, err
 }
 
 func addLabel(img *image.RGBA, x, y int, label string) {

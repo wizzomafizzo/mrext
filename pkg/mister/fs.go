@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io"
 	"os"
@@ -317,13 +318,14 @@ func RelaunchIfInMenu() error {
 	return nil
 }
 
-func GetMounts() ([]string, error) {
+func GetMounts(cfg *config.UserConfig) ([]string, error) {
 	file, err := os.ReadFile("/proc/mounts")
 	if err != nil {
 		return nil, err
 	}
 
 	var mounts []string
+	gamesFolders := games.GetGamesFolders(cfg)
 
 	for _, line := range strings.Split(string(file), "\n") {
 		if line == "" {
@@ -336,7 +338,7 @@ func GetMounts() ([]string, error) {
 			continue
 		}
 
-		if utils.Contains(config.GamesFolders, parts[1]) {
+		if utils.Contains(gamesFolders, parts[1]) {
 			mounts = append(mounts, parts[1])
 		}
 	}

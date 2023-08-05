@@ -42,7 +42,7 @@ func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 		return fmt.Errorf("name cannot be empty")
 	}
 
-	system, err := games.BestSystemMatch(path)
+	system, err := games.BestSystemMatch(cfg, path)
 	if err != nil {
 		return fmt.Errorf("no system match found: %s", path)
 	}
@@ -86,7 +86,7 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		}
 	}
 
-	system, err := games.BestSystemMatch(path)
+	system, err := games.BestSystemMatch(cfg, path)
 	if err != nil {
 		return fmt.Errorf("no system match found: %s", path)
 	}

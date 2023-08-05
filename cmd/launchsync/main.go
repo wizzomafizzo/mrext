@@ -15,7 +15,9 @@ import (
 // TODO: add system id to mgl name if many systems, and config option
 // TODO: mention about shortcuts ordering in mister menu
 
-func testSyncFile(path string) {
+const appName = "launchsync"
+
+func testSyncFile(cfg *config.UserConfig, path string) {
 	sf, err := readSyncFile(path)
 	if err != nil {
 		fmt.Printf("Error reading %s: %s\n", path, err)
@@ -50,7 +52,7 @@ func testSyncFile(path string) {
 	}
 
 	fmt.Print("Building games index... ")
-	index, err := makeIndex([]*syncFile{sf})
+	index, err := makeIndex(cfg, []*syncFile{sf})
 	if err != nil {
 		fmt.Printf("error generating index: %s\n", err)
 		os.Exit(1)
@@ -92,8 +94,14 @@ func main() {
 	test := flag.String("test", "", "report if specified sync file is valid and display match results")
 	flag.Parse()
 
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	if err != nil {
+		fmt.Println("Error loading config file:", err)
+		os.Exit(1)
+	}
+
 	if *test != "" {
-		testSyncFile(*test)
+		testSyncFile(cfg, *test)
 		return
 	}
 
@@ -153,7 +161,7 @@ func main() {
 	if *verbose || !*update {
 		fmt.Print("Building games index... ")
 	}
-	index, err := makeIndex(syncs)
+	index, err := makeIndex(cfg, syncs)
 	if err != nil {
 		if *verbose || !*update {
 			fmt.Printf("error generating index: %s\n", err)

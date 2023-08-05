@@ -131,10 +131,10 @@ func getNetworkIps() []string {
 	return ips
 }
 
-func getDiskInfo() ([]HandleSystemInfoPayloadDisk, error) {
+func getDiskInfo(cfg *config.UserConfig) ([]HandleSystemInfoPayloadDisk, error) {
 	diskInfo := make([]HandleSystemInfoPayloadDisk, 0)
 
-	mounts, err := mister.GetMounts()
+	mounts, err := mister.GetMounts(cfg)
 	if err != nil {
 		return diskInfo, err
 	}
@@ -187,7 +187,7 @@ func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer str
 			updated = updatedTime.Format(time.RFC3339)
 		}
 
-		diskInfo, err := getDiskInfo()
+		diskInfo, err := getDiskInfo(cfg)
 		if err != nil {
 			logger.Error("error getting disk info: %s", err)
 		}
