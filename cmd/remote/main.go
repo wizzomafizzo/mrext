@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	appVersion = "0.2.3alpha2"
+	appVersion = "0.2.3alpha4"
 	appName    = "remote"
 	appPort    = 8182
 )
@@ -121,71 +121,7 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 	}
 }
 
-func setupSSHKeys(logger *service.Logger, cfg *config.UserConfig) {
-	if !cfg.Remote.SyncSSHKeys {
-		return
-	}
-
-	userFile, err := os.Stat(config.UserSSHKeysFile)
-	userFileExists := false
-	if err == nil {
-		userFileExists = true
-	}
-
-	authFile, err := os.Stat(config.SSHKeysFile)
-	authFileExists := false
-	if err == nil {
-		authFileExists = true
-	}
-
-	if !authFileExists && !userFileExists {
-		sshFolder, err := os.Stat(config.SSHConfigFolder)
-		if err != nil {
-			return
-		}
-
-		if sshFolder.Mode().Perm() != 0700 {
-			err := mister.FixRootSSHPerms()
-			if err != nil {
-				logger.Error("failed to fix root ssh perms: %s", err)
-			} else {
-				logger.Info("fixed root ssh perms")
-			}
-		}
-	} else if authFileExists && !userFileExists {
-		err := mister.CopyAndFixSSHKeys(true)
-		if err != nil {
-			logger.Error("failed to copy system ssh keys to user: %s", err)
-		} else {
-			logger.Info("backed up system ssh keys to linux folder")
-		}
-	} else if !authFileExists && userFileExists {
-		err := mister.CopyAndFixSSHKeys(false)
-		if err != nil {
-			logger.Error("failed to copy user ssh keys to system: %s", err)
-		} else {
-			logger.Info("installed user ssh keys to system folder")
-		}
-	} else if userFile.ModTime().After(authFile.ModTime()) {
-		err := mister.CopyAndFixSSHKeys(false)
-		if err != nil {
-			logger.Error("failed to copy user ssh keys to system: %s", err)
-		} else {
-			logger.Info("installed updated user ssh keys to system folder")
-		}
-	} else if authFile.ModTime().After(userFile.ModTime()) {
-		err := mister.CopyAndFixSSHKeys(true)
-		if err != nil {
-			logger.Error("failed to copy system ssh keys to user: %s", err)
-		} else {
-			logger.Info("backed up updated system ssh keys to linux folder")
-		}
-	}
-}
-
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
-	setupSSHKeys(logger, cfg)
-
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
@@ -197,6 +133,8 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		logger.Error("failed to start tracker: %s", err)
 		return nil, err
 	}
+
+	runStartupTasks(logger, cfg, trk)
 
 	var stopMdns func() error
 	if cfg.Remote.MdnsService {
@@ -223,7 +161,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("critical server error: %s", err)
 			os.Exit(1)
 		}
@@ -357,6 +295,13 @@ func main() {
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		fmt.Println("Error loading config file:", err)
+		os.Exit(1)
+	}
+
+	err = os.MkdirAll(config.MrextConfigFolder, 0755)
+	if err != nil {
+		logger.Error("error creating config folder: %s", err)
+		fmt.Println("Error creating config folder:", err)
 		os.Exit(1)
 	}
 

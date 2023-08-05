@@ -33,23 +33,23 @@ func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
 	return nil
 }
 
-func (f *fakeDb) UpdateCore(ct tracker.CoreTime) error {
+func (f *fakeDb) UpdateCore(_ tracker.CoreTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetCore(name string) (tracker.CoreTime, error) {
+func (f *fakeDb) GetCore(_ string) (tracker.CoreTime, error) {
 	return tracker.CoreTime{}, nil
 }
 
-func (f *fakeDb) UpdateGame(gt tracker.GameTime) error {
+func (f *fakeDb) UpdateGame(_ tracker.GameTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetGame(id string) (tracker.GameTime, error) {
+func (f *fakeDb) GetGame(_ string) (tracker.GameTime, error) {
 	return tracker.GameTime{}, nil
 }
 
-func (f *fakeDb) NoResults(err error) bool {
+func (f *fakeDb) NoResults(_ error) bool {
 	return true
 }
 
@@ -89,15 +89,21 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 }
 
 type PlayingPayload struct {
-	Core string `json:"core"`
-	Game string `json:"game"`
+	Core       string `json:"core"`
+	System     string `json:"system"`
+	SystemName string `json:"systemName"`
+	Game       string `json:"game"`
+	GameName   string `json:"gameName"`
 }
 
 func HandlePlaying(tr *tracker.Tracker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		playing := PlayingPayload{
-			Core: tr.ActiveCore,
-			Game: tr.ActiveGame,
+			Core:       tr.ActiveCore,
+			System:     tr.ActiveSystem,
+			SystemName: tr.ActiveSystemName,
+			Game:       tr.ActiveGame,
+			GameName:   tr.ActiveGameName,
 		}
 
 		err := json.NewEncoder(w).Encode(playing)

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -288,6 +289,17 @@ func GetLocalIp() (net.IP, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP, nil
+}
+
+func WaitForInternet(maxTries int) bool {
+	for i := 0; i < maxTries; i++ {
+		_, err := http.Get("https://api.github.com")
+		if err == nil {
+			return true
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return false
 }
 
 func AlphaMapKeys[V any](m map[string]V) []string {

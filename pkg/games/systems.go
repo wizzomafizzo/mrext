@@ -60,8 +60,6 @@ var CoreGroups = map[string][]System{
 // TODO: alternate arcade folders
 // TODO: custom scan function
 // TODO: custom launch function
-// TODO: support for multiple folders (think about symlink support here, check for dupes)
-// TODO: could cut down on work scanning by folder rather than system
 // TODO: support globbing on extensions
 
 var Systems = map[string]System{
@@ -300,11 +298,12 @@ var Systems = map[string]System{
 	// TODO: EpochGalaxy2
 	//       Has a folder and mount entry but commented as "remove".
 	"FDS": {
-		Id:     "FDS",
-		Name:   "Famicom Disk System",
-		Alias:  []string{"FamicomDiskSystem"},
-		Folder: []string{"NES"},
-		Rbf:    "_Console/NES",
+		Id:      "FDS",
+		Name:    "Famicom Disk System",
+		SetName: "FDS",
+		Alias:   []string{"FamicomDiskSystem"},
+		Folder:  []string{"NES", "FDS"},
+		Rbf:     "_Console/NES",
 		AltRbf: AltRbfOpts{
 			AltRbfLLAPI: []string{"NES_LLAPI"},
 			AltRbfYC:    []string{"NESYC"},

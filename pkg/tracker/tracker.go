@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/metadata"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +22,8 @@ const (
 	EventActionGameStart
 	EventActionGameStop
 )
+
+const ArcadeSystem = "Arcade"
 
 type EventAction struct {
 	Timestamp  time.Time
@@ -43,6 +46,13 @@ type GameTime struct {
 	Time   int
 }
 
+type NameMapping struct {
+	CoreName   string
+	System     string
+	Name       string // TODO: use names.txt
+	ArcadeName string
+}
+
 type Db interface {
 	FixPowerLoss() (bool, error)
 	AddEvent(ev EventAction) error
@@ -54,15 +64,57 @@ type Db interface {
 }
 
 type Tracker struct {
-	Logger     *service.Logger
-	Config     *config.UserConfig
-	Db         Db
-	mu         sync.Mutex
-	ActiveCore string
-	ActiveGame string
-	Events     []EventAction
-	CoreTimes  map[string]CoreTime
-	GameTimes  map[string]GameTime
+	Logger           *service.Logger
+	Config           *config.UserConfig
+	Db               Db
+	mu               sync.Mutex
+	ActiveCore       string
+	ActiveSystem     string
+	ActiveSystemName string
+	ActiveGame       string
+	ActiveGameName   string
+	Events           []EventAction
+	CoreTimes        map[string]CoreTime
+	GameTimes        map[string]GameTime
+	NameMap          []NameMapping
+}
+
+func generateNameMap(logger *service.Logger) []NameMapping {
+	nameMap := make([]NameMapping, 0)
+
+	for _, system := range games.Systems {
+		if system.SetName != "" {
+			nameMap = append(nameMap, NameMapping{
+				CoreName: system.SetName,
+				System:   system.Id,
+				Name:     system.Name,
+			})
+		} else if len(system.Folder) > 0 {
+			nameMap = append(nameMap, NameMapping{
+				CoreName: system.Folder[0],
+				System:   system.Id,
+				Name:     system.Name,
+			})
+		} else {
+			logger.Warn("system %s has no setname or folder", system.Id)
+		}
+	}
+
+	arcadeDbEntries, err := metadata.ReadArcadeDb()
+	if err != nil {
+		logger.Error("error reading arcade db: %s", err)
+	} else {
+		for _, entry := range arcadeDbEntries {
+			nameMap = append(nameMap, NameMapping{
+				CoreName:   entry.Setname,
+				System:     ArcadeSystem,
+				Name:       ArcadeSystem,
+				ArcadeName: entry.Name,
+			})
+		}
+	}
+
+	return nameMap
 }
 
 func NewTracker(logger *service.Logger, cfg *config.UserConfig, db Db) (*Tracker, error) {
@@ -75,16 +127,46 @@ func NewTracker(logger *service.Logger, cfg *config.UserConfig, db Db) (*Tracker
 		logger.Warn("fixed missing events from power loss")
 	}
 
+	nameMap := generateNameMap(logger)
+	logger.Info("loaded %d name mappings", len(nameMap))
+
 	return &Tracker{
-		Logger:     logger,
-		Config:     cfg,
-		Db:         db,
-		ActiveCore: "",
-		ActiveGame: "",
-		Events:     []EventAction{},
-		CoreTimes:  map[string]CoreTime{},
-		GameTimes:  map[string]GameTime{},
+		Logger:           logger,
+		Config:           cfg,
+		Db:               db,
+		ActiveCore:       "",
+		ActiveSystem:     "",
+		ActiveSystemName: "",
+		ActiveGame:       "",
+		ActiveGameName:   "",
+		Events:           []EventAction{},
+		CoreTimes:        map[string]CoreTime{},
+		GameTimes:        map[string]GameTime{},
+		NameMap:          nameMap,
 	}, nil
+}
+
+func (tr *Tracker) ReloadNameMap() {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+
+	nameMap := generateNameMap(tr.Logger)
+	tr.Logger.Info("loaded %d name mappings", len(nameMap))
+	tr.NameMap = nameMap
+}
+
+func (tr *Tracker) LookupName(name string) NameMapping {
+	for _, mapping := range tr.NameMap {
+		if len(mapping.CoreName) != len(name) {
+			continue
+		}
+
+		if strings.EqualFold(mapping.CoreName, name) {
+			return mapping
+		}
+	}
+
+	return NameMapping{}
 }
 
 func (tr *Tracker) execHook(bin string, arg string) {
@@ -164,7 +246,16 @@ func (tr *Tracker) stopCore() bool {
 		}
 
 		tr.addEvent(EventActionCoreStop, tr.ActiveCore)
+
+		if tr.ActiveCore == ArcadeSystem {
+			tr.ActiveGame = ""
+			tr.ActiveGameName = ""
+			tr.addEvent(EventActionGameStop, ArcadeSystem)
+		}
+
 		tr.ActiveCore = ""
+		tr.ActiveSystem = ""
+		tr.ActiveSystemName = ""
 
 		return true
 	} else {
@@ -172,7 +263,7 @@ func (tr *Tracker) stopCore() bool {
 	}
 }
 
-// Load the current running core and set it as active.
+// LoadCore loads the current running core and set it as active.
 func (tr *Tracker) LoadCore() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
@@ -203,6 +294,21 @@ func (tr *Tracker) LoadCore() {
 			return
 		}
 
+		result := tr.LookupName(coreName)
+		if result != (NameMapping{}) {
+			tr.ActiveSystem = result.System
+			tr.ActiveSystemName = result.Name
+
+			if result.System == ArcadeSystem {
+				tr.ActiveGame = coreName
+				tr.ActiveGameName = result.ArcadeName
+				tr.addEvent(EventActionGameStart, coreName)
+			}
+		} else {
+			tr.ActiveSystem = ""
+			tr.ActiveSystemName = ""
+		}
+
 		if _, ok := tr.CoreTimes[coreName]; !ok {
 			ct, err := tr.Db.GetCore(coreName)
 			if tr.Db.NoResults(err) {
@@ -218,10 +324,6 @@ func (tr *Tracker) LoadCore() {
 		}
 
 		tr.addEvent(EventActionCoreStart, coreName)
-
-		//if !strings.HasPrefix(tr.ActiveGame, tr.ActiveCore) {
-		//	tr.stopGame()
-		//}
 	}
 }
 
@@ -236,6 +338,7 @@ func (tr *Tracker) stopGame() bool {
 
 		tr.addEvent(EventActionGameStop, tr.ActiveGame)
 		tr.ActiveGame = ""
+		tr.ActiveGameName = ""
 		return true
 	} else {
 		return false
@@ -276,7 +379,6 @@ func (tr *Tracker) loadGame() {
 		tr.Logger.Error("error finding system for game: %s", err)
 	}
 
-	// TODO: i don't think this is working
 	var folder string
 	if err != nil && len(system.Folder) > 0 {
 		folder = system.Folder[0]
@@ -288,6 +390,8 @@ func (tr *Tracker) loadGame() {
 		tr.stopGame()
 
 		tr.ActiveGame = id
+		name = strings.TrimSuffix(name, filepath.Ext(name))
+		tr.ActiveGameName = name
 
 		if _, ok := tr.GameTimes[id]; !ok {
 			gt, err := tr.Db.GetGame(id)
@@ -357,7 +461,7 @@ func (tr *Tracker) tick(saveInterval int) {
 	}
 }
 
-// StartTicker Start thread for updating core/game play times.
+// StartTicker starts the thread for updating core/game play times.
 func (tr *Tracker) StartTicker(saveInterval int) {
 	tr.Logger.Info("starting ticker with save interval %dm", saveInterval)
 	ticker := time.NewTicker(time.Second)
