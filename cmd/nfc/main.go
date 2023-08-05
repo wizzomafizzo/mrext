@@ -33,6 +33,14 @@ var (
 	lastScanFile       = filepath.Join(config.TempFolder, "NFCSCAN")
 )
 
+const (
+	TypeNTAG213 = "NTAG213"
+	TypeNTAG215 = "NTAG215"
+	TypeNTAG216 = "NTAG216"
+)
+
+// TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
+
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
 	var stopService bool
 	go func() {
@@ -98,15 +106,17 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 					logger.Info("new card UID: %s", currentCardID)
 					lastSeenCardUID = currentCardID
 
-					// TODO: this is actually a string?
 					cardType, err := getCardType(pnd)
 					if err != nil {
 						logger.Error("error getting card type: %s", err)
 					}
-					logger.Info("card type is: %d", cardType)
+					if cardType == "" {
+						logger.Warn("unknown card type")
+					} else {
+						logger.Info("card type: %s", cardType)
+					}
 
 					blockCount := getDataAreaSize(cardType)
-
 					record, err := readRecord(pnd, blockCount)
 					if err != nil {
 						logger.Error("error reading record: %s", err)
@@ -231,14 +241,14 @@ func getDataAreaSize(cardType string) int {
 	switch cardType {
 	// https://www.shopnfc.com/en/content/6-nfc-tags-specs
 
-	case "NTAG213":
+	case TypeNTAG213:
 		// Block 0x04 to 0x27 = 0x23 (35)
 		// Or capacity (144 - 4) / 4
 		return 35
-	case "NTAG215":
+	case TypeNTAG215:
 		// Guessing this is (504 - 4) / 4 = 125
 		return 125
-	case "NTAG216":
+	case TypeNTAG216:
 		// Block 0x04 to 0xE1 = 0xDD (221)
 		// Or capacity (888 - 4) / 4
 		return 221
@@ -391,11 +401,11 @@ func getCardType(pnd nfc.Device) (string, error) {
 
 	switch rx[2] {
 	case 0x12:
-		return "NTAG213", nil
-	case 0x1E:
-		return "NTAG215", nil
+		return TypeNTAG213, nil
+	case 0x3E:
+		return TypeNTAG215, nil
 	case 0x6D:
-		return "NTAG216", nil
+		return TypeNTAG216, nil
 	default:
 		return "", fmt.Errorf("unknown card type: %v", rx[2])
 	}
