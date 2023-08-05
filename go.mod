@@ -19,6 +19,7 @@ require github.com/fsnotify/fsnotify v1.5.4
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/clausecker/nfc/v2 v2.1.4 // indirect
 	github.com/miekg/dns v1.1.55 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.11.0 // indirect

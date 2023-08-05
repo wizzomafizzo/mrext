@@ -42,7 +42,7 @@ var (
 	kernelBuild          = filepath.Join(cwd, "scripts", "kernelbuild")
 	kernelBuildImageName = "mrext/kernelbuild"
 	kernelRepoName       = "Linux-Kernel_MiSTer"
-	kernelRepoPath       = filepath.Join(os.TempDir(), "mrext-"+kernelRepoName)
+	kernelRepoPath       = filepath.Join(kernelBuild, "_build", kernelRepoName)
 	kernelRepoUrl        = fmt.Sprintf("https://github.com/MiSTer-devel/%s.git", kernelRepoName)
 )
 
@@ -95,6 +95,13 @@ var apps = []app{
 		bin:       "random.sh",
 		releaseId: "mrext/random",
 		inAll:     true,
+	},
+	{
+		name:      "nfc",
+		path:      filepath.Join(cwd, "cmd", "nfc"),
+		bin:       "nfc.sh",
+		releaseId: "mrext/nfc",
+		ldFlags:   "-lnfc -lusb",
 	},
 	{
 		name: "samindex",
@@ -470,10 +477,6 @@ func MakeKernelImage() {
 func Kernel() {
 	if _, err := os.Stat(kernelRepoPath); os.IsNotExist(err) {
 		_ = sh.RunV("git", "clone", "--depth", "1", kernelRepoUrl, kernelRepoPath)
-	} else {
-		_ = sh.RunV("git", "-C", kernelRepoPath, "reset", "--hard", "HEAD")
-		_ = sh.RunV("git", "-C", kernelRepoPath, "clean", "-df")
-		_ = sh.RunV("git", "-C", kernelRepoPath, "pull")
 	}
 
 	patches, _ := filepath.Glob(filepath.Join(kernelBuild, "*.patch"))
@@ -483,7 +486,8 @@ func Kernel() {
 
 	kCmd := sh.RunCmd("sudo", "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", kernelRepoPath, "/build"), "--user", "1000:1000", kernelBuildImageName)
 	_ = kCmd("make", "MiSTer_defconfig")
-	_ = kCmd("make", "-j6", "zImage")
+	_ = kCmd("make", "modules")
+	_ = kCmd("make", "-j16", "zImage")
 	_ = kCmd("make", "socfpga_cyclone5_de10_nano.dtb")
 
 	zImage, _ := os.Open(filepath.Join(kernelRepoPath, "arch", "arm", "boot", "zImage"))

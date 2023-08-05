@@ -56,6 +56,11 @@ type UserConfig struct {
 	Search     SearchConfig     `ini:"search,omitempty"`
 	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
 	Remote     RemoteConfig     `ini:"remote,omitempty"`
+	NfcConfig  NfcConfig        `ini:"nfc,omitempty"`
+}
+
+type NfcConfig struct {
+	ConnectionString string `ini:"connection_string,omitempty"`
 }
 
 func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {

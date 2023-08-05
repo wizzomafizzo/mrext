@@ -16,5 +16,7 @@ go.work
 /out
 cmd/remote/_client/build
 scripts/armbuild/_build
+scripts/kernelbuild/_build
 cmd/vplay/_player/*
 !cmd/vplay/_player/README
+.DS_Store
