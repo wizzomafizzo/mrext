@@ -102,7 +102,6 @@ var apps = []app{
 		bin:       "nfc.sh",
 		releaseId: "mrext/nfc",
 		ldFlags:   "-lnfc -lusb",
-		inAll:     true,
 	},
 	{
 		name: "samindex",
