@@ -167,3 +167,23 @@ func UpdateUsbHidQuirks(quirks []string) error {
 
 	return WriteUBootParams(params)
 }
+
+func EnableFastUsbPoll() error {
+	params, err := ReadUBootParams()
+	if err != nil {
+		return err
+	}
+
+	args := make(map[string]string)
+	if v, ok := params[UBootKernelParam]; ok {
+		args = parseKernelArgs(v)
+	}
+
+	args["loglevel"] = "4"
+	args["usbhid.jspoll"] = "1"
+	args["xpad.cpoll"] = "1"
+
+	params[UBootKernelParam] = makeKernelArgs(args)
+
+	return WriteUBootParams(params)
+}
