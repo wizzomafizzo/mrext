@@ -35,7 +35,7 @@ var (
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
 	// TODO: move these to config
-	databaseFile = filepath.Join(config.SdFolder, "tokens.csv")
+	databaseFile = filepath.Join(config.SdFolder, "nfc.csv")
 	lastScanFile = filepath.Join(config.TempFolder, "NFCSCAN")
 	logger       = service.NewLogger(appName)
 )
