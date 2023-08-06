@@ -20,60 +20,60 @@ import (
 
 // TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
 
-var (
+const (
 	appName            = "nfc"
-	supportedCardTypes = []nfc.Modulation{
-		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
-	}
 	connectMaxTries    = 10
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
-	databaseFile       = filepath.Join(config.SdFolder, "nfc-mapping.csv")
-	lastScanFile       = filepath.Join(config.TempFolder, "NFCSCAN")
 )
 
-type lastSeenCard struct {
+var (
+	supportedCardTypes = []nfc.Modulation{
+		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
+	}
+	databaseFile = filepath.Join(config.SdFolder, "nfc-mapping.csv")
+	lastScanFile = filepath.Join(config.TempFolder, "NFCSCAN")
+	logger       = service.NewLogger(appName)
+)
+
+type Card struct {
 	CardType string
 	UID      string
+	Text     string
 	ScanTime time.Time
 }
 
 func pollDevice(
-	logger *service.Logger,
 	cfg *config.UserConfig,
 	pnd *nfc.Device,
-	lastSeen lastSeenCard,
-	db *map[string]string,
-) (lastSeenCard, error) {
+	lastSeen Card,
+) (Card, error) {
 	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
 	if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
 		return lastSeen, fmt.Errorf("error polling: %s", err)
 	}
 
 	if count <= 0 {
+		// TODO: reset last seen card if it's been a while since we saw it
 		return lastSeen, nil
 	}
 
-	currentCardID := getCardUID(target)
-	if currentCardID == "" {
-		logger.Warn("unsupported card type: %s", target.String())
+	cardUid := getCardUID(target)
+	if cardUid == "" {
+		logger.Warn("unable to detect card UID: %s", target.String())
 	}
 
-	// TODO: i'd like to put this check on on a timer so you can still have cards that are
-	//       meant to be scanned multiple times in a row
-	if currentCardID == lastSeen.UID {
+	if cardUid == lastSeen.UID {
 		return lastSeen, nil
 	}
 
-	logger.Info("new card UID: %s", currentCardID)
+	logger.Info("card UID: %s", cardUid)
 
 	cardType, err := getCardType(*pnd)
 	if err != nil {
 		logger.Error("error getting card type: %s", err)
-	}
-
-	if cardType == "" {
+	} else if cardType == "" {
 		logger.Warn("unknown card type")
 	} else {
 		logger.Info("card type: %s", cardType)
@@ -82,53 +82,43 @@ func pollDevice(
 	blockCount := getDataAreaSize(cardType)
 	record, err := readRecord(*pnd, blockCount)
 	if err != nil {
-		return lastSeenCard{}, fmt.Errorf("error reading record: %s", err)
+		return lastSeen, fmt.Errorf("error reading record: %s", err)
 	}
 	logger.Info("record bytes: %s", hex.EncodeToString(record))
 
 	tagText := parseRecordText(record)
-
-	if tagText != "" {
-		logger.Info("decoded text NDEF: %s", tagText)
-
-		err = writeScanResult(tagText)
-		if err != nil {
-			logger.Warn("error writing tmp scan result: %s", err)
-		}
-
-		err = loadCoreFromFilename(cfg, tagText)
-		if err != nil {
-			logger.Error("error loading core: %s", err)
-		}
-		// TODO: if string is in special format
-		//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
+	if tagText == "" {
+		logger.Warn("no text NDEF found")
 	} else {
-		logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
-		err = loadCoreFromCardUID(cfg, *db, currentCardID)
-		if err != nil {
-			logger.Error("error loading core: %s", err)
-		}
+		logger.Info("decoded text NDEF: %s", tagText)
 	}
 
-	return lastSeenCard{
+	card := Card{
 		CardType: cardType,
-		UID:      currentCardID,
+		UID:      cardUid,
+		Text:     tagText,
 		ScanTime: time.Now(),
-	}, nil
+	}
+
+	err = writeScanResult(tagText)
+	if err != nil {
+		logger.Warn("error writing tmp scan result: %s", err)
+	}
+
+	err = launchCard(cfg, card)
+	if err != nil {
+		logger.Error("error launching card: %s", err)
+	}
+
+	return card, nil
 }
 
-func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
+func startService(cfg *config.UserConfig) (func() error, error) {
 	var stopService bool
 	go func() {
-		logger.Info("loading database: %s", databaseFile)
-		database, err := loadDatabase()
-		if err != nil {
-			logger.Error("error loading database: %s", err)
-		} else {
-			logger.Info("loaded %d mappings", len(database))
-		}
-
 		var pnd nfc.Device
+		var err error
+
 		tries := 0
 		for {
 			pnd, err = nfc.Open(cfg.NfcConfig.ConnectionString)
@@ -143,6 +133,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 			}
 			tries++
 		}
+
 		defer func(pnd nfc.Device) {
 			err := pnd.Close()
 			if err != nil {
@@ -158,14 +149,14 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 		logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
 
-		lastSeen := lastSeenCard{}
+		lastSeen := Card{}
 
 		for {
 			if stopService {
 				break
 			}
 
-			newSeen, err := pollDevice(logger, cfg, &pnd, lastSeen, &database)
+			newSeen, err := pollDevice(cfg, &pnd, lastSeen)
 			if err != nil {
 				logger.Error("error during poll: %s", err)
 			} else {
@@ -228,8 +219,6 @@ func main() {
 	svcOpt := flag.String("service", "", "manage nfc service (start, stop, restart, status)")
 	flag.Parse()
 
-	logger := service.NewLogger(appName)
-
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
@@ -241,7 +230,7 @@ func main() {
 		Name:   appName,
 		Logger: logger,
 		Entry: func() (func() error, error) {
-			return startService(logger, cfg)
+			return startService(cfg)
 		},
 	})
 	if err != nil {

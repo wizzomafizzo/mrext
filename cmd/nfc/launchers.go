@@ -45,6 +45,32 @@ func loadDatabase() (map[string]string, error) {
 	return database, nil
 }
 
+func launchCard(cfg *config.UserConfig, card Card) error {
+	if card.Text != "" {
+		err := loadCoreFromFilename(cfg, card.Text)
+		if err != nil {
+			return fmt.Errorf("error loading core: %s", err)
+		}
+		// TODO: if string is in special format
+		//       e.g. !!GBA:abad9c764c35b8202e3d9e5915ca7007bdc7cc62 try to load that way.
+	} else {
+		logger.Info("no text NDEF found, falling back to UID mapping in CSV file")
+
+		db, err := loadDatabase()
+		if err != nil {
+			logger.Error("error loading database: %s", err)
+			return err
+		}
+
+		err = loadCoreFromCardUID(cfg, db, card.UID)
+		if err != nil {
+			logger.Error("error loading core: %s", err)
+		}
+	}
+
+	return nil
+}
+
 func loadCoreFromFilename(cfg *config.UserConfig, filename string) error {
 	// TODO: this will not work very well long term, full core filename changes each release
 	//		 but it's ok, no problem using partial matches as mister does
@@ -58,6 +84,13 @@ func loadCoreFromFilename(cfg *config.UserConfig, filename string) error {
 }
 
 func loadCoreFromCardUID(cfg *config.UserConfig, db map[string]string, cardId string) error {
+	database, err := loadDatabase()
+	if err != nil {
+		logger.Error("error loading database: %s", err)
+	} else {
+		logger.Info("loaded %d mappings", len(database))
+	}
+
 	filename, ok := db[cardId]
 	if !ok {
 		return fmt.Errorf("no core mapped for card ID: %s", cardId)
