@@ -4,84 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/config"
-	"math/rand"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"os"
+	"strings"
 )
 
 const (
 	appName         = "random"
 	maxPickAttempts = 100
 )
-
-// Recursively search through given folder for a valid game file for that system.
-func tryPickRandomGame(system *games.System, folder string) (string, error) {
-	files, err := os.ReadDir(folder)
-	if err != nil {
-		return "", err
-	}
-
-	if len(files) == 0 {
-		return "", fmt.Errorf("no files in %s", folder)
-	}
-
-	var validFiles []os.DirEntry
-	for _, file := range files {
-		if file.IsDir() {
-			validFiles = append(validFiles, file)
-		} else if utils.IsZip(file.Name()) {
-			validFiles = append(validFiles, file)
-		} else if games.MatchSystemFile(*system, file.Name()) {
-			validFiles = append(validFiles, file)
-		}
-	}
-
-	if len(validFiles) == 0 {
-		return "", fmt.Errorf("no valid files in %s", folder)
-	}
-
-	file, err := utils.RandomElem(validFiles)
-	if err != nil {
-		return "", err
-	}
-
-	path := filepath.Join(folder, file.Name())
-	if file.IsDir() {
-		return tryPickRandomGame(system, path)
-	} else if utils.IsZip(path) {
-		// zip files
-		zipFiles, err := utils.ListZip(path)
-		if err != nil {
-			return "", err
-		}
-		if len(zipFiles) == 0 {
-			return "", fmt.Errorf("no files in %s", path)
-		}
-		// just shoot our shot on a zip instead of checking every file
-		randomZip, err := utils.RandomElem(zipFiles)
-		if err != nil {
-			return "", err
-		}
-		zipPath := filepath.Join(path, randomZip)
-		if games.MatchSystemFile(*system, zipPath) {
-			return zipPath, nil
-		} else {
-			return "", fmt.Errorf("invalid file picked in %s", path)
-		}
-	} else {
-		return path, nil
-	}
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func main() {
 	// TODO: support an ini file for default values
@@ -183,7 +116,7 @@ func main() {
 				continue
 			}
 
-			game, err := tryPickRandomGame(system, folder)
+			game, err := mister.TryPickRandomGame(system, folder)
 			if err != nil || game == "" {
 				continue
 			} else {

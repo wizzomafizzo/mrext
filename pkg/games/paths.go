@@ -184,3 +184,26 @@ func GetActiveSystemPaths(cfg *config.UserConfig, systems []System) []PathResult
 
 	return matches
 }
+
+func GetPopulatedGamesFolders(cfg *config.UserConfig, systems []System) map[string][]string {
+	results := GetSystemPaths(cfg, systems)
+	if len(results) == 0 {
+		return nil
+	}
+
+	populated := make(map[string][]string)
+
+	for _, folder := range results {
+		files, err := os.ReadDir(folder.Path)
+
+		if err != nil {
+			continue
+		}
+
+		if len(files) > 0 {
+			populated[folder.System.Id] = append(populated[folder.System.Id], folder.Path)
+		}
+	}
+
+	return populated
+}

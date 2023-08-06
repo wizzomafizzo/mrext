@@ -2,8 +2,10 @@ package mister
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	s "strings"
 
@@ -96,6 +98,22 @@ func launchTempMgl(system *games.System, path string) error {
 	if err != nil {
 		return err
 	}
+
+	tmpFile, err := writeTempFile(mgl, "mgl")
+	if err != nil {
+		return err
+	}
+
+	return launchFile(tmpFile)
+}
+
+// LaunchShortCore attempts to launch a core with a short path, as per what's
+// allowed in an MGL file.
+func LaunchShortCore(path string) error {
+	mgl := fmt.Sprintf(
+		"<mistergamedescription>\n\t<rbf>%s</rbf>\n</mistergamedescription>\n",
+		path,
+	)
 
 	tmpFile, err := writeTempFile(mgl, "mgl")
 	if err != nil {
@@ -346,4 +364,190 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 	}
 
 	return nil
+}
+
+// TryPickRandomGame recursively searches through given folder for a valid game
+// file for that system.
+func TryPickRandomGame(system *games.System, folder string) (string, error) {
+	files, err := os.ReadDir(folder)
+	if err != nil {
+		return "", err
+	}
+
+	if len(files) == 0 {
+		return "", fmt.Errorf("no files in %s", folder)
+	}
+
+	var validFiles []os.DirEntry
+	for _, file := range files {
+		if file.IsDir() {
+			validFiles = append(validFiles, file)
+		} else if utils.IsZip(file.Name()) {
+			validFiles = append(validFiles, file)
+		} else if games.MatchSystemFile(*system, file.Name()) {
+			validFiles = append(validFiles, file)
+		}
+	}
+
+	if len(validFiles) == 0 {
+		return "", fmt.Errorf("no valid files in %s", folder)
+	}
+
+	file, err := utils.RandomElem(validFiles)
+	if err != nil {
+		return "", err
+	}
+
+	path := filepath.Join(folder, file.Name())
+	if file.IsDir() {
+		return TryPickRandomGame(system, path)
+	} else if utils.IsZip(path) {
+		// zip files
+		zipFiles, err := utils.ListZip(path)
+		if err != nil {
+			return "", err
+		}
+		if len(zipFiles) == 0 {
+			return "", fmt.Errorf("no files in %s", path)
+		}
+		// just shoot our shot on a zip instead of checking every file
+		randomZip, err := utils.RandomElem(zipFiles)
+		if err != nil {
+			return "", err
+		}
+		zipPath := filepath.Join(path, randomZip)
+		if games.MatchSystemFile(*system, zipPath) {
+			return zipPath, nil
+		} else {
+			return "", fmt.Errorf("invalid file picked in %s", path)
+		}
+	} else {
+		return path, nil
+	}
+}
+
+func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
+	const maxTries = 100
+
+	populated := games.GetPopulatedGamesFolders(cfg, systems)
+	if len(populated) == 0 {
+		return fmt.Errorf("no populated games folders found")
+	}
+
+	for i := 0; i < maxTries; i++ {
+		systemId, err := utils.RandomElem(utils.MapKeys(populated))
+		if err != nil {
+			return err
+		}
+
+		folders := populated[systemId]
+		var files []string
+		for _, folder := range folders {
+			results, err := games.GetFiles(systemId, folder)
+			if err != nil {
+				return err
+			}
+			files = append(files, results...)
+		}
+
+		if len(files) == 0 {
+			continue
+		}
+
+		system, err := games.GetSystem(systemId)
+		if err != nil {
+			return err
+		}
+
+		game, err := utils.RandomElem(files)
+		if err != nil {
+			return err
+		}
+
+		return LaunchGame(*system, game)
+	}
+
+	return fmt.Errorf("failed to find a random game")
+}
+
+func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
+	// detection can never be perfect, but these characters are illegal in
+	// windows filenames and heavily avoided in linux. use them to mark that
+	// this is a command
+	if s.HasPrefix(text, "**") {
+		text = s.TrimPrefix(text, "**")
+		parts := s.SplitN(text, ":", 2)
+		if len(parts) < 2 {
+			return fmt.Errorf("invalid command: %s", text)
+		}
+
+		cmd, args := s.TrimSpace(parts[0]), s.TrimSpace(parts[1])
+
+		// TODO: search game file
+		// TODO: game file by hash
+
+		switch cmd {
+		case "system":
+			if s.EqualFold(args, "menu") {
+				return LaunchMenu()
+			}
+
+			system, err := games.LookupSystem(args)
+			if err != nil {
+				return err
+			}
+
+			return LaunchCore(*system)
+		case "command":
+			if !manual {
+				return fmt.Errorf("commands must be manually run")
+			}
+
+			command := exec.Command("bash", "-c", args)
+			err := command.Start()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		case "random":
+			if args == "" {
+				return fmt.Errorf("no system specified")
+			}
+
+			if args == "all" {
+				return LaunchRandomGame(cfg, games.AllSystems())
+			}
+
+			// TODO: allow multiple systems
+			system, err := games.LookupSystem(args)
+			if err != nil {
+				return err
+			}
+
+			return LaunchRandomGame(cfg, []games.System{*system})
+		default:
+			return fmt.Errorf("unknown command: %s", cmd)
+		}
+	}
+
+	// if it's not a command, assume it's some kind of file path
+	if filepath.IsAbs(text) {
+		return LaunchGenericFile(cfg, text)
+	}
+
+	// if it's a relative path with no extension, assume it's a core
+	if filepath.Ext(text) == "" {
+		return LaunchShortCore(text)
+	}
+
+	// then try check for it in each game folder
+	for _, folder := range games.GetGamesFolders(cfg) {
+		path := filepath.Join(folder, text)
+		if _, err := os.Stat(path); err == nil {
+			return LaunchGenericFile(cfg, path)
+		}
+	}
+
+	return fmt.Errorf("could not find file: %s", text)
 }
