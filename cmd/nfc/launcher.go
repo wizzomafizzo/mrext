@@ -68,10 +68,12 @@ func launchCard(cfg *config.UserConfig, card Card) error {
 	}
 
 	if override, ok := uidMap[card.UID]; ok {
+		logger.Info("launching with uid match override: %s", override)
 		return mister.LaunchToken(cfg, true, override)
 	}
 
 	if override, ok := textMap[card.Text]; ok {
+		logger.Info("launching with text match override: %s", override)
 		return mister.LaunchToken(cfg, true, override)
 	}
 

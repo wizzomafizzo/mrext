@@ -20,6 +20,10 @@ import (
 
 // TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
 // TODO: play a fun sound when a scan is successful or fails
+// TODO: a -test command to see what the result of an NDEF would be
+// TODO: would it be possible to unlock the OSD with a card?
+// TODO: more concrete amiibo support
+// TODO: reading database each scan may be causing flickering in menu
 
 const (
 	appName            = "nfc"
@@ -34,10 +38,10 @@ var (
 	supportedCardTypes = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
-	// TODO: move these to config
+	logger = service.NewLogger(appName)
+	// TODO: move these to config with new names
 	databaseFile = filepath.Join(config.SdFolder, "nfc.csv")
 	lastScanFile = filepath.Join(config.TempFolder, "NFCSCAN")
-	logger       = service.NewLogger(appName)
 )
 
 type Card struct {
