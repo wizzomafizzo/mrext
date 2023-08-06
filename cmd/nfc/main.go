@@ -19,6 +19,7 @@ import (
 )
 
 // TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
+// TODO: play a fun sound when a scan is successful or fails
 
 const (
 	appName            = "nfc"
@@ -26,13 +27,14 @@ const (
 	timesToPoll        = 20
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
+	timeToForgetCard   = 5 * time.Second
 )
 
 var (
 	supportedCardTypes = []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
-	databaseFile = filepath.Join(config.SdFolder, "nfc-mapping.csv")
+	databaseFile = filepath.Join(config.SdFolder, "nfc.csv")
 	lastScanFile = filepath.Join(config.TempFolder, "NFCSCAN")
 	logger       = service.NewLogger(appName)
 )
@@ -55,7 +57,11 @@ func pollDevice(
 	}
 
 	if count <= 0 {
-		// TODO: reset last seen card if it's been a while since we saw it
+		if lastSeen.UID != "" && time.Since(lastSeen.ScanTime) > timeToForgetCard {
+			logger.Info("card removed")
+			lastSeen = Card{}
+		}
+
 		return lastSeen, nil
 	}
 
