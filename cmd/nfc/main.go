@@ -24,6 +24,8 @@ import (
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
 // TODO: reading database each scan may be causing flickering in menu
+// TODO: strip colons from UID mapping file entries
+// TODO: create a test web nfc reader in separate github repo, hosted on pages
 
 const (
 	appName            = "nfc"

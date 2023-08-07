@@ -1,18 +1,51 @@
 # NFC
 
-⚠️ ***Work in progress***
+NFC is a service for launching games, cores and custom dynamic commands using a USB NFC card reader. All hardware required is inexpensive, easily available and quick to set up.
 
-NFC is a service for loading your favourite cores using NFC tags or cards.
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
-## Hardware required
+## Hardware
 
-Any reader compatible with [libnfc](https://nfc-tools.github.io/projects/libnfc/) can be plugged straight into the MiSTer.
+The following hardware is currently known to work. Many other devices may work, but might also require a project update for proper support. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'd like to add a working device to this list, or troubleshoot a device that isn't working.
 
-Supported tags types: NTAG 213, NTAG 215, NTAG 216
+This project uses the [libnfc](https://nfc-tools.github.io/projects/libnfc/) library, so any device supported by it should work.
 
-## Setup
+### Readers
+
+- **ACR122U USB NFC reader**: plug and play, cheap, littered on Amazon, eBay and AliExpress
+- **PN532 NFC module**: really cheap, small, also requires a USB to TTL cable, some (small) manual configuration and possibly some soldering
+
+### Tags
+
+The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
+
+- **NTAG213**: 144 bytes of storage
+- **NTAG215**: 504 bytes of storage
+- **NTAG216**: 888 bytes of storage
+- **Amiibo**: supported using the `nfc.csv` file describe below
+
+Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large collection of games with deep folders.
+
+## Install
+
+Download [Remote](https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
+
+Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` or `downloader` script:
+```
+[mrext/nfc]
+db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/nfc/nfc.json
+```
+
+Once installed, run `nfc` from the MiSTer `Scripts` menu, a prompt will offer to enable NFC as a startup service, then the service will be started in the background.
+
+This service must be running for NFC to work, but it has no impact on your MiSTer's performance.
+
+### Hardware configuration
+
+Your reader may work out of the box with no extra configuration. 
 
 It should work out of the box with a `ACR122U USB NFC reader`
+
 If you are using a PN532 connected to a USB -> TTL cable then the following config may be needed in `/media/fat/Scripts/nfc.ini`:
 
 ```
