@@ -11,7 +11,7 @@ import (
 )
 
 type NfcMappingEntry struct {
-	MatchUid  string `csv:"match_uid"`
+	MatchUID  string `csv:"match_uid"`
 	MatchText string `csv:"match_text"`
 	Text      string `csv:"text"`
 }
@@ -41,13 +41,13 @@ func loadDatabase() (map[string]string, map[string]string, error) {
 
 	count := 0
 	for i, entry := range entries {
-		if entry.MatchUid == "" && entry.MatchText == "" {
+		if entry.MatchUID == "" && entry.MatchText == "" {
 			logger.Warn("entry %d has no UID or text, skipping", i+1)
 			continue
 		}
 
-		if entry.MatchUid != "" {
-			uids[entry.MatchUid] = entry.Text
+		if entry.MatchUID != "" {
+			uids[entry.MatchUID] = entry.Text
 		}
 
 		if entry.MatchText != "" {

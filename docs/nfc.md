@@ -22,9 +22,9 @@ The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 - **NTAG213**: 144 bytes of storage
 - **NTAG215**: 504 bytes of storage
 - **NTAG216**: 888 bytes of storage
-- **Amiibo**: supported using the `nfc.csv` file describe below
+- **Amiibo**: supported using the `nfc.csv` file described below
 
-Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large collection of games with deep folders.
+Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large collection of games with deep folders. The tag may need to store the whole game path.
 
 ## Install
 

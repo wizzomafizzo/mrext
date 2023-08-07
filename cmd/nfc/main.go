@@ -23,9 +23,11 @@ import (
 // TODO: a -test command to see what the result of an NDEF would be
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
-// TODO: reading database each scan may be causing flickering in menu
-// TODO: strip colons from UID mapping file entries
+// TODO: cache the nfc db in memory and reload on inotify change
+// TODO: strip colons from UID mapping file entries and make lowercase
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
+// TODO: way to check the status of the service
+// TODO: use a tag to signal that that next tag should have the active game written to it
 
 const (
 	appName            = "nfc"
@@ -113,7 +115,7 @@ func pollDevice(
 		ScanTime: time.Now(),
 	}
 
-	err = writeScanResult(tagText)
+	err = writeScanResult(card.UID, card.Text)
 	if err != nil {
 		logger.Warn("error writing tmp scan result: %s", err)
 	}
@@ -186,7 +188,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 	}, nil
 }
 
-func writeScanResult(tagText string) error {
+func writeScanResult(uid string, text string) error {
 	f, err := os.Create(lastScanFile)
 	if err != nil {
 		return fmt.Errorf("unable to create scan result file %s: %s", lastScanFile, err)
@@ -195,7 +197,7 @@ func writeScanResult(tagText string) error {
 		_ = f.Close()
 	}(f)
 
-	_, err = f.WriteString(tagText)
+	_, err = f.WriteString(fmt.Sprintf("%s,%s", uid, text))
 	if err != nil {
 		return fmt.Errorf("unable to write scan result file %s: %s", lastScanFile, err)
 	}
