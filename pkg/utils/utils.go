@@ -20,6 +20,8 @@ import (
 	"golang.org/x/term"
 )
 
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func IsZip(path string) bool {
 	// TODO: this should check the file header
 	return filepath.Ext(strings.ToLower(path)) == ".zip"
@@ -125,7 +127,7 @@ func RandomElem[T any](xs []T) (T, error) {
 	if len(xs) == 0 {
 		return item, fmt.Errorf("empty slice")
 	} else {
-		item = xs[rand.Intn(len(xs))]
+		item = xs[r.Intn(len(xs))]
 		return item, nil
 	}
 }
