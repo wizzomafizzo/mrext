@@ -15,7 +15,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0
 )
 
-require github.com/fsnotify/fsnotify v1.5.4
+require github.com/fsnotify/fsnotify v1.6.0
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
@@ -40,6 +40,6 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/txn2/txeh v1.4.0
 	golang.org/x/image v0.9.0
-	golang.org/x/sys v0.9.0
+	golang.org/x/sys v0.11.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

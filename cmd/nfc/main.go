@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"os"
 	"sync"
 	"time"
@@ -23,7 +24,6 @@ import (
 // TODO: a -test command to see what the result of an NDEF would be
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
-// TODO: cache the nfc db in memory and reload on inotify change
 // TODO: strip colons from UID mapping file entries and make lowercase
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
 // TODO: way to check the status of the service
@@ -59,24 +59,24 @@ type ServiceState struct {
 	lastScanned     Card
 	stopService     bool
 	disableLauncher bool
+	dbLoaded        time.Time
+	uidMap          map[string]string
+	textMap         map[string]string
 }
 
 func (s *ServiceState) SetActiveCard(card Card) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.activeCard = card
+	if s.activeCard.UID != "" {
+		s.lastScanned = card
+	}
 }
 
 func (s *ServiceState) GetActiveCard() Card {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.activeCard
-}
-
-func (s *ServiceState) SetLastScanned(card Card) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.lastScanned = card
 }
 
 func (s *ServiceState) GetLastScanned() Card {
@@ -115,8 +115,27 @@ func (s *ServiceState) IsLauncherDisabled() bool {
 	return s.disableLauncher
 }
 
+func (s *ServiceState) GetDB() (map[string]string, map[string]string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.uidMap, s.textMap
+}
+
+func (s *ServiceState) GetDBLoaded() time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.dbLoaded
+}
+
+func (s *ServiceState) SetDB(uidMap map[string]string, textMap map[string]string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dbLoaded = time.Now()
+	s.uidMap = uidMap
+	s.textMap = textMap
+}
+
 func pollDevice(
-	cfg *config.UserConfig,
 	pnd *nfc.Device,
 	activeCard Card,
 ) (Card, error) {
@@ -175,21 +194,91 @@ func pollDevice(
 		ScanTime: time.Now(),
 	}
 
-	err = writeScanResult(card.UID, card.Text)
-	if err != nil {
-		logger.Warn("error writing tmp scan result: %s", err)
-	}
-
-	err = launchCard(cfg, card)
-	if err != nil {
-		logger.Error("error launching card: %s", err)
-	}
-
 	return card, nil
 }
 
 func startService(cfg *config.UserConfig) (func() error, error) {
 	state := &ServiceState{}
+
+	err := loadDatabase(state)
+	if err != nil {
+		logger.Error("error loading database: %s", err)
+	}
+
+	var closeDbWatcher func() error
+	dbWatcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Error("error creating watcher: %s", err)
+	} else {
+		closeDbWatcher = dbWatcher.Close
+	}
+
+	go func() {
+		// this turned out to be not trivial to say the least, mostly due to
+		// the fact the fsnotify library does not implement the IN_CLOSE_WRITE
+		// inotify event, which signals the file has finished being written
+		// see: https://github.com/fsnotify/fsnotify/issues/372
+		//
+		// during a standard write operation, a file may emit multiple write
+		// events, including when the file could be half-written
+		//
+		//it's also the case that editors may delete the file and create a new
+		// one, which kills the active watcher
+		//
+		// this solution is very ugly, but it appears to work well :)
+		// i think it will be sufficient for the use case, and i really like
+		// this idea a lot. it's certainly preferable to the screen flicker
+		// with the previous setup
+		//
+		// there doesn't appear to be any actively maintained wrapper for
+		// inotify, so i think it would be best to write one for mrext later
+		const delay = 1 * time.Second
+		for {
+			select {
+			case event, ok := <-dbWatcher.Events:
+				if !ok {
+					return
+				}
+				if event.Has(fsnotify.Write) {
+					// usually receives multiple write events, just act on the first
+					if time.Since(state.GetDBLoaded()) < delay {
+						continue
+					}
+					time.Sleep(delay)
+					logger.Info("database changed, reloading")
+					err := loadDatabase(state)
+					if err != nil {
+						logger.Error("error loading database: %s", err)
+					}
+				} else if event.Has(fsnotify.Remove) {
+					// editors may also delete the file on write
+					time.Sleep(delay)
+					_, err := os.Stat(config.NfcDatabaseFile)
+					if err == nil {
+						err = dbWatcher.Add(config.NfcDatabaseFile)
+						if err != nil {
+							logger.Error("error watching database: %s", err)
+						}
+						logger.Info("database changed, reloading")
+						err := loadDatabase(state)
+						if err != nil {
+							logger.Error("error loading database: %s", err)
+						}
+					}
+				}
+			case err, ok := <-dbWatcher.Errors:
+				if !ok {
+					return
+				}
+				logger.Error("watcher error: %s", err)
+			}
+		}
+	}()
+
+	err = dbWatcher.Add(config.NfcDatabaseFile)
+	if err != nil {
+		logger.Error("error watching database: %s", err)
+	}
 
 	go func() {
 		var pnd nfc.Device
@@ -230,27 +319,44 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				break
 			}
 
-			newScanned, err := pollDevice(cfg, &pnd, state.GetActiveCard())
+			activeCard := state.GetActiveCard()
+			newScanned, err := pollDevice(&pnd, activeCard)
 			if err != nil {
 				logger.Error("error during poll: %s", err)
-			} else {
-				state.SetActiveCard(newScanned)
-				if state.GetActiveCard().UID != "" {
-					state.SetLastScanned(state.GetActiveCard())
-				}
+				goto end
 			}
 
+			state.SetActiveCard(newScanned)
+
+			if newScanned.UID == "" || activeCard.UID == newScanned.UID {
+				goto end
+			}
+
+			err = writeScanResult(newScanned)
+			if err != nil {
+				logger.Warn("error writing tmp scan result: %s", err)
+			}
+
+			err = launchCard(cfg, state)
+			if err != nil {
+				logger.Error("error launching card: %s", err)
+			}
+
+		end:
 			time.Sleep(periodBetweenLoop)
 		}
 	}()
 
 	return func() error {
 		state.StopService()
+		if closeDbWatcher != nil {
+			return closeDbWatcher()
+		}
 		return nil
 	}, nil
 }
 
-func writeScanResult(uid string, text string) error {
+func writeScanResult(card Card) error {
 	f, err := os.Create(config.NfcLastScanFile)
 	if err != nil {
 		return fmt.Errorf("unable to create scan result file %s: %s", config.NfcLastScanFile, err)
@@ -259,7 +365,7 @@ func writeScanResult(uid string, text string) error {
 		_ = f.Close()
 	}(f)
 
-	_, err = f.WriteString(fmt.Sprintf("%s,%s", uid, text))
+	_, err = f.WriteString(fmt.Sprintf("%s,%s", card.UID, card.Text))
 	if err != nil {
 		return fmt.Errorf("unable to write scan result file %s: %s", config.NfcLastScanFile, err)
 	}

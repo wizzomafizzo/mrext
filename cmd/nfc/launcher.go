@@ -16,18 +16,18 @@ type NfcMappingEntry struct {
 	Text      string `csv:"text"`
 }
 
-func loadDatabase() (map[string]string, map[string]string, error) {
+func loadDatabase(state *ServiceState) error {
 	uids := make(map[string]string)
 	texts := make(map[string]string)
 
 	if _, err := os.Stat(config.NfcDatabaseFile); errors.Is(err, os.ErrNotExist) {
 		logger.Info("no database file found, skipping")
-		return uids, texts, nil
+		return nil
 	}
 
 	f, err := os.Open(config.NfcDatabaseFile)
 	if err != nil {
-		return uids, texts, err
+		return err
 	}
 	defer func(c io.Closer) {
 		_ = c.Close()
@@ -36,7 +36,7 @@ func loadDatabase() (map[string]string, map[string]string, error) {
 	entries := make([]NfcMappingEntry, 0)
 	err = gocsv.Unmarshal(f, &entries)
 	if err != nil {
-		return uids, texts, err
+		return err
 	}
 
 	count := 0
@@ -58,14 +58,14 @@ func loadDatabase() (map[string]string, map[string]string, error) {
 	}
 	logger.Info("loaded %d entries from database", count)
 
-	return uids, texts, nil
+	state.SetDB(uids, texts)
+
+	return nil
 }
 
-func launchCard(cfg *config.UserConfig, card Card) error {
-	uidMap, textMap, err := loadDatabase()
-	if err != nil {
-		return err
-	}
+func launchCard(cfg *config.UserConfig, state *ServiceState) error {
+	card := state.GetActiveCard()
+	uidMap, textMap := state.GetDB()
 
 	if override, ok := uidMap[card.UID]; ok {
 		logger.Info("launching with uid match override: %s", override)
@@ -81,7 +81,8 @@ func launchCard(cfg *config.UserConfig, card Card) error {
 		return fmt.Errorf("no text NDEF found in card or database")
 	}
 
-	err = mister.LaunchToken(cfg, false, card.Text)
+	logger.Info("launching with text: %s", card.Text)
+	err := mister.LaunchToken(cfg, false, card.Text)
 	if err != nil {
 		return err
 	}
