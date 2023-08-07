@@ -24,7 +24,6 @@ import (
 // TODO: a -test command to see what the result of an NDEF would be
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
-// TODO: strip colons from UID mapping file entries and make lowercase
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
 // TODO: way to check the status of the service
 // TODO: use a tag to signal that that next tag should have the active game written to it
@@ -222,7 +221,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		// during a standard write operation, a file may emit multiple write
 		// events, including when the file could be half-written
 		//
-		//it's also the case that editors may delete the file and create a new
+		// it's also the case that editors may delete the file and create a new
 		// one, which kills the active watcher
 		//
 		// this solution is very ugly, but it appears to work well :)

@@ -8,6 +8,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"io"
 	"os"
+	"strings"
 )
 
 type NfcMappingEntry struct {
@@ -47,11 +48,15 @@ func loadDatabase(state *ServiceState) error {
 		}
 
 		if entry.MatchUID != "" {
-			uids[entry.MatchUID] = entry.Text
+			uid := strings.TrimSpace(entry.MatchUID)
+			uid = strings.ToLower(uid)
+			uid = strings.ReplaceAll(uid, ":", "")
+			uids[uid] = strings.TrimSpace(entry.Text)
 		}
 
 		if entry.MatchText != "" {
-			texts[entry.MatchText] = entry.Text
+			text := strings.TrimSpace(entry.MatchText)
+			texts[text] = strings.TrimSpace(entry.Text)
 		}
 
 		count++
