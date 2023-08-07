@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -27,6 +28,7 @@ import (
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
 // TODO: way to check the status of the service
 // TODO: use a tag to signal that that next tag should have the active game written to it
+// TODO: option to use search.db instead of on demand index for random
 
 const (
 	appName            = "nfc"
@@ -51,23 +53,85 @@ type Card struct {
 	ScanTime time.Time
 }
 
+type ServiceState struct {
+	mu              sync.Mutex
+	activeCard      Card
+	lastScanned     Card
+	stopService     bool
+	disableLauncher bool
+}
+
+func (s *ServiceState) SetActiveCard(card Card) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.activeCard = card
+}
+
+func (s *ServiceState) GetActiveCard() Card {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.activeCard
+}
+
+func (s *ServiceState) SetLastScanned(card Card) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.lastScanned = card
+}
+
+func (s *ServiceState) GetLastScanned() Card {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.lastScanned
+}
+
+func (s *ServiceState) StopService() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.stopService = true
+}
+
+func (s *ServiceState) ShouldStopService() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.stopService
+}
+
+func (s *ServiceState) DisableLauncher() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.disableLauncher = true
+}
+
+func (s *ServiceState) EnableLauncher() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.disableLauncher = false
+}
+
+func (s *ServiceState) IsLauncherDisabled() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.disableLauncher
+}
+
 func pollDevice(
 	cfg *config.UserConfig,
 	pnd *nfc.Device,
-	lastSeen Card,
+	activeCard Card,
 ) (Card, error) {
 	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
 	if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
-		return lastSeen, fmt.Errorf("error polling: %s", err)
+		return activeCard, fmt.Errorf("error polling: %s", err)
 	}
 
 	if count <= 0 {
-		if lastSeen.UID != "" && time.Since(lastSeen.ScanTime) > timeToForgetCard {
+		if activeCard.UID != "" && time.Since(activeCard.ScanTime) > timeToForgetCard {
 			logger.Info("card removed")
-			lastSeen = Card{}
+			activeCard = Card{}
 		}
 
-		return lastSeen, nil
+		return activeCard, nil
 	}
 
 	cardUid := getCardUID(target)
@@ -75,8 +139,8 @@ func pollDevice(
 		logger.Warn("unable to detect card UID: %s", target.String())
 	}
 
-	if cardUid == lastSeen.UID {
-		return lastSeen, nil
+	if cardUid == activeCard.UID {
+		return activeCard, nil
 	}
 
 	logger.Info("card UID: %s", cardUid)
@@ -93,7 +157,7 @@ func pollDevice(
 	blockCount := getDataAreaSize(cardType)
 	record, err := readRecord(*pnd, blockCount)
 	if err != nil {
-		return lastSeen, fmt.Errorf("error reading record: %s", err)
+		return activeCard, fmt.Errorf("error reading record: %s", err)
 	}
 	logger.Info("record bytes: %s", hex.EncodeToString(record))
 
@@ -125,7 +189,8 @@ func pollDevice(
 }
 
 func startService(cfg *config.UserConfig) (func() error, error) {
-	var stopService bool
+	state := &ServiceState{}
+
 	go func() {
 		var pnd nfc.Device
 		var err error
@@ -160,18 +225,19 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 		logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
 
-		lastSeen := Card{}
-
 		for {
-			if stopService {
+			if state.ShouldStopService() {
 				break
 			}
 
-			newSeen, err := pollDevice(cfg, &pnd, lastSeen)
+			newScanned, err := pollDevice(cfg, &pnd, state.GetActiveCard())
 			if err != nil {
 				logger.Error("error during poll: %s", err)
 			} else {
-				lastSeen = newSeen
+				state.SetActiveCard(newScanned)
+				if state.GetActiveCard().UID != "" {
+					state.SetLastScanned(state.GetActiveCard())
+				}
 			}
 
 			time.Sleep(periodBetweenLoop)
@@ -179,7 +245,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 	}()
 
 	return func() error {
-		stopService = true
+		state.StopService()
 		return nil
 	}, nil
 }
