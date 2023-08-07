@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -43,9 +42,6 @@ var (
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}
 	logger = service.NewLogger(appName)
-	// TODO: move these to config with new names
-	databaseFile = filepath.Join(config.SdFolder, "nfc.csv")
-	lastScanFile = filepath.Join(config.TempFolder, "NFCSCAN")
 )
 
 type Card struct {
@@ -189,9 +185,9 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 }
 
 func writeScanResult(uid string, text string) error {
-	f, err := os.Create(lastScanFile)
+	f, err := os.Create(config.NfcLastScanFile)
 	if err != nil {
-		return fmt.Errorf("unable to create scan result file %s: %s", lastScanFile, err)
+		return fmt.Errorf("unable to create scan result file %s: %s", config.NfcLastScanFile, err)
 	}
 	defer func(f *os.File) {
 		_ = f.Close()
@@ -199,7 +195,7 @@ func writeScanResult(uid string, text string) error {
 
 	_, err = f.WriteString(fmt.Sprintf("%s,%s", uid, text))
 	if err != nil {
-		return fmt.Errorf("unable to write scan result file %s: %s", lastScanFile, err)
+		return fmt.Errorf("unable to write scan result file %s: %s", config.NfcLastScanFile, err)
 	}
 
 	return nil

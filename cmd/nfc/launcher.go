@@ -20,12 +20,12 @@ func loadDatabase() (map[string]string, map[string]string, error) {
 	uids := make(map[string]string)
 	texts := make(map[string]string)
 
-	if _, err := os.Stat(databaseFile); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(config.NfcDatabaseFile); errors.Is(err, os.ErrNotExist) {
 		logger.Info("no database file found, skipping")
 		return uids, texts, nil
 	}
 
-	f, err := os.Open(databaseFile)
+	f, err := os.Open(config.NfcDatabaseFile)
 	if err != nil {
 		return uids, texts, err
 	}
