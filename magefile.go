@@ -101,7 +101,7 @@ var apps = []app{
 		path:      filepath.Join(cwd, "cmd", "nfc"),
 		bin:       "nfc.sh",
 		releaseId: "mrext/nfc",
-		ldFlags:   "-lnfc -lusb",
+		ldFlags:   "-lnfc -lusb -lcurses",
 	},
 	{
 		name: "samindex",

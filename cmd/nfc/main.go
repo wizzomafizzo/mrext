@@ -6,13 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	gc "github.com/rthornton128/goncurses"
+	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"net"
 	"os"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -454,7 +454,7 @@ func writeScanResult(card Card) error {
 	return nil
 }
 
-func tryAddStartup() error {
+func addToStartup() error {
 	var startup mister.Startup
 
 	err := startup.Load()
@@ -463,16 +463,14 @@ func tryAddStartup() error {
 	}
 
 	if !startup.Exists("mrext/" + appName) {
-		if utils.YesOrNoPrompt("NFC must be set to run on MiSTer startup. Add it now?") {
-			err = startup.AddService("mrext/" + appName)
-			if err != nil {
-				return err
-			}
+		err = startup.AddService("mrext/" + appName)
+		if err != nil {
+			return err
+		}
 
-			err = startup.Save()
-			if err != nil {
-				return err
-			}
+		err = startup.Save()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -490,9 +488,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: diable for prod build, make user configurable later
-	logger.EnableDebug = true
-
 	svc, err := service.NewService(service.ServiceArgs{
 		Name:   appName,
 		Logger: logger,
@@ -508,24 +503,46 @@ func main() {
 
 	svc.ServiceHandler(svcOpt)
 
-	err = tryAddStartup()
+	interactive := true
+	stdscr, err := curses.Setup()
 	if err != nil {
-		logger.Error("error adding startup: %s", err)
-		fmt.Println("Error adding to startup:", err)
+		logger.Error("starting curses: %s", err)
+		interactive = false
+	}
+	defer gc.End()
+
+	if !interactive {
+		err = addToStartup()
+		if err != nil {
+			logger.Error("error adding startup: %s", err)
+			fmt.Println("Error adding to startup:", err)
+		}
+	} else {
+		err = tryAddStartup(stdscr)
+		if err != nil {
+			logger.Error("error adding startup: %s", err)
+		}
 	}
 
 	if !svc.Running() {
 		err := svc.Start()
 		if err != nil {
 			logger.Error("error starting service: %s", err)
-			fmt.Println("Error starting service:", err)
+			if !interactive {
+				fmt.Println("Error starting service:", err)
+			}
 			os.Exit(1)
-		} else {
+		} else if !interactive {
 			fmt.Println("Service started successfully.")
 			os.Exit(0)
 		}
-	} else {
+	} else if !interactive {
 		fmt.Println("Service is running.")
 		os.Exit(0)
+	}
+
+	err = displayServiceInfo(stdscr, svc)
+	if err != nil {
+		logger.Error("error displaying service info: %s", err)
 	}
 }
