@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"net"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -58,7 +60,7 @@ type ServiceState struct {
 	lastScanned     Card
 	stopService     bool
 	disableLauncher bool
-	dbLoaded        time.Time
+	dbLoadTime      time.Time
 	uidMap          map[string]string
 	textMap         map[string]string
 }
@@ -97,18 +99,21 @@ func (s *ServiceState) ShouldStopService() bool {
 }
 
 func (s *ServiceState) DisableLauncher() {
+	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = true
 }
 
 func (s *ServiceState) EnableLauncher() {
+	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = false
 }
 
 func (s *ServiceState) IsLauncherDisabled() bool {
+	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.disableLauncher
@@ -120,16 +125,16 @@ func (s *ServiceState) GetDB() (map[string]string, map[string]string) {
 	return s.uidMap, s.textMap
 }
 
-func (s *ServiceState) GetDBLoaded() time.Time {
+func (s *ServiceState) GetDBLoadTime() time.Time {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.dbLoaded
+	return s.dbLoadTime
 }
 
 func (s *ServiceState) SetDB(uidMap map[string]string, textMap map[string]string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.dbLoaded = time.Now()
+	s.dbLoadTime = time.Now()
 	s.uidMap = uidMap
 	s.textMap = textMap
 }
@@ -177,7 +182,7 @@ func pollDevice(
 	if err != nil {
 		return activeCard, fmt.Errorf("error reading record: %s", err)
 	}
-	logger.Info("record bytes: %s", hex.EncodeToString(record))
+	logger.Debug("record bytes: %s", hex.EncodeToString(record))
 
 	tagText := parseRecordText(record)
 	if tagText == "" {
@@ -240,7 +245,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				}
 				if event.Has(fsnotify.Write) {
 					// usually receives multiple write events, just act on the first
-					if time.Since(state.GetDBLoaded()) < delay {
+					if time.Since(state.GetDBLoadTime()) < delay {
 						continue
 					}
 					time.Sleep(delay)
@@ -346,7 +351,84 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		}
 	}()
 
+	socket, err := net.Listen("unix", config.TempFolder+"/nfc.sock")
+	if err != nil {
+		logger.Error("error creating socket: %s", err)
+		return nil, err
+	}
+
+	go func() {
+		for {
+			if state.ShouldStopService() {
+				break
+			}
+
+			conn, err := socket.Accept()
+			if err != nil {
+				logger.Error("error accepting connection: %s", err)
+				return
+			}
+
+			go func(conn net.Conn) {
+				logger.Debug("new socket connection")
+
+				defer func(conn net.Conn) {
+					err := conn.Close()
+					if err != nil {
+						logger.Warn("error closing connection: %s", err)
+					}
+				}(conn)
+
+				buf := make([]byte, 4096)
+
+				n, err := conn.Read(buf)
+				if err != nil {
+					logger.Error("error reading from connection: %s", err)
+					return
+				}
+
+				if n == 0 {
+					return
+				}
+				logger.Debug("received %d bytes", n)
+
+				payload := ""
+
+				switch strings.TrimSpace(string(buf[:n])) {
+				case "status":
+					lastScanned := state.GetLastScanned()
+					if lastScanned.UID != "" {
+						payload = fmt.Sprintf(
+							"%d,%s,%s",
+							lastScanned.ScanTime.Unix(),
+							lastScanned.UID,
+							lastScanned.Text,
+						)
+					} else {
+						payload = "0,,"
+					}
+				default:
+					logger.Warn("unknown command: %s", strings.TrimRight(string(buf[:n]), "\n"))
+				}
+
+				if payload == "" {
+					return
+				}
+
+				_, err = conn.Write([]byte(payload))
+				if err != nil {
+					logger.Error("error writing to connection: %s", err)
+					return
+				}
+			}(conn)
+		}
+	}()
+
 	return func() error {
+		err := socket.Close()
+		if err != nil {
+			logger.Warn("error closing socket: %s", err)
+		}
 		state.StopService()
 		if closeDbWatcher != nil {
 			return closeDbWatcher()
@@ -407,6 +489,9 @@ func main() {
 		fmt.Println("Error loading config:", err)
 		os.Exit(1)
 	}
+
+	// TODO: diable for prod build, make user configurable later
+	logger.EnableDebug = true
 
 	svc, err := service.NewService(service.ServiceArgs{
 		Name:   appName,
