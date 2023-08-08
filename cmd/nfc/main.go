@@ -31,6 +31,9 @@ import (
 // TODO: use a tag to signal that that next tag should have the active game written to it
 // TODO: option to use search.db instead of on demand index for random
 // TODO: check if a game is launched while the gui is open and close it (may not be possible)
+// TODO: clean up mgl files in tmp
+// TODO: error during poll: error polling: input / output error
+//       device was unplugged, gets stuck in a loop playing fail sound
 
 const (
 	appName            = "nfc"
