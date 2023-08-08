@@ -10,6 +10,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"net"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -27,9 +28,9 @@ import (
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
-// TODO: way to check the status of the service
 // TODO: use a tag to signal that that next tag should have the active game written to it
 // TODO: option to use search.db instead of on demand index for random
+// TODO: check if a game is launched while the gui is open and close it (may not be possible)
 
 const (
 	appName            = "nfc"
@@ -38,6 +39,8 @@ const (
 	periodBetweenPolls = 300 * time.Millisecond
 	periodBetweenLoop  = 300 * time.Millisecond
 	timeToForgetCard   = 5 * time.Second
+	successPath        = config.TempFolder + "/success.wav"
+	failPath           = config.TempFolder + "/fail.wav"
 )
 
 var (
@@ -209,6 +212,41 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		logger.Error("error loading database: %s", err)
 	}
 
+	// TODO: don't want to depend on external aplay command, but i'm out of
+	//       time to keep messing with this. oto/beep would not work for me
+	//       and are annoying to compile statically
+	sf, err := os.Create(successPath)
+	if err != nil {
+		logger.Error("error creating success sound file: %s", err)
+	}
+	_, err = sf.Write(successSound)
+	if err != nil {
+		logger.Error("error writing success sound file: %s", err)
+	}
+	_ = sf.Close()
+	playSuccess := func() {
+		err := exec.Command("aplay", successPath).Run()
+		if err != nil {
+			logger.Error("error playing success sound: %s", err)
+		}
+	}
+
+	ff, err := os.Create(failPath)
+	if err != nil {
+		logger.Error("error creating fail sound file: %s", err)
+	}
+	_, err = ff.Write(failSound)
+	if err != nil {
+		logger.Error("error writing fail sound file: %s", err)
+	}
+	_ = ff.Close()
+	playFail := func() {
+		err := exec.Command("aplay", failPath).Run()
+		if err != nil {
+			logger.Error("error playing fail sound: %s", err)
+		}
+	}
+
 	var closeDbWatcher func() error
 	dbWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -290,6 +328,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 
 		tries := 0
 		for {
+			// TODO: don't show every failed attempt error, tidy the log
 			pnd, err = nfc.Open(cfg.NfcConfig.ConnectionString)
 			if err != nil {
 				logger.Error("could not open device: %s", err)
@@ -327,6 +366,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 			newScanned, err := pollDevice(&pnd, activeCard)
 			if err != nil {
 				logger.Error("error during poll: %s", err)
+				playFail()
 				goto end
 			}
 
@@ -336,6 +376,8 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				goto end
 			}
 
+			playSuccess()
+
 			err = writeScanResult(newScanned)
 			if err != nil {
 				logger.Warn("error writing tmp scan result: %s", err)
@@ -344,6 +386,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 			err = launchCard(cfg, state)
 			if err != nil {
 				logger.Error("error launching card: %s", err)
+				playFail()
 			}
 
 		end:

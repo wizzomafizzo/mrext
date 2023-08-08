@@ -19,8 +19,6 @@ require github.com/fsnotify/fsnotify v1.6.0
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/clausecker/nfc/v2 v2.1.4 // indirect
-	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d // indirect
 	github.com/miekg/dns v1.1.55 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
@@ -33,6 +31,8 @@ require golang.org/x/term v0.9.0
 require (
 	github.com/bendahl/uinput v1.6.0
 	github.com/c-seeger/mac-gen-go v0.0.0-20210816124238-465118e656da
+	github.com/clausecker/nfc/v2 v2.1.4
+	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.4.0
