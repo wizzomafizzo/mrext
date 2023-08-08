@@ -37,7 +37,7 @@ collection of games with deep folders. The tag may need to store the whole game 
 
 ## Install
 
-Download [Remote](https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh) and copy it to the `Scripts`
+Download [NFC](https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh) and copy it to the `Scripts`
 folder on your MiSTer's SD card.
 
 Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` or
