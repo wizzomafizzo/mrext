@@ -10,7 +10,8 @@ import (
 )
 
 type Logger struct {
-	log *log.Logger
+	log         *log.Logger
+	EnableDebug bool
 }
 
 func NewLogger(name string) *Logger {
@@ -35,4 +36,11 @@ func (l *Logger) Warn(format string, v ...any) {
 
 func (l *Logger) Error(format string, v ...any) {
 	l.log.Println("ERROR", fmt.Sprintf(format, v...))
+}
+
+func (l *Logger) Debug(format string, v ...any) {
+	if !l.EnableDebug {
+		return
+	}
+	l.log.Println("DEBUG", fmt.Sprintf(format, v...))
 }
