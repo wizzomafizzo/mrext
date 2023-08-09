@@ -43,29 +43,25 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 	}
 }
 
-func LaunchQRGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
+func LaunchToken(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		data := vars["data"]
 
-		path, err := base64.URLEncoding.DecodeString(data)
+		logger.Info("launch token: %s", data)
+
+		encoding := base64.URLEncoding.WithPadding(base64.NoPadding)
+		path, err := encoding.DecodeString(data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("launch qr game: decoding data: %s", err)
+			logger.Error("error decoding data: %s", err)
 			return
 		}
 
-		system, err := games.BestSystemMatch(cfg, string(path))
-		if err != nil {
-			http.Error(w, "no system found for game", http.StatusBadRequest)
-			logger.Error("launch qr game: no system found for game: %s", path)
-			return
-		}
-
-		err = mister.LaunchGame(system, string(path))
+		err = mister.LaunchToken(cfg, false, string(path))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("launch qr game: during launch: %s", err)
+			logger.Error("error during launch: %s", err)
 			return
 		}
 	}
