@@ -87,12 +87,12 @@ done by simply writing the path to the file to the tag.
 
 For example, to launch a game, write something like this to the tag:
 ```
-/media/fat/games/Genesis/@Genesis - MegaSD Mega EverDrive 2022-05-18.zip/1 US - Q-Z/Road Rash (USA, Europe).md
+/media/fat/games/Genesis/1 US - Q-Z/Road Rash (USA, Europe).md
 ```
 
 To save space and to handle games moving between storage devices, you can also use a relative path:
 ```
-Genesis/@Genesis - MegaSD Mega EverDrive 2022-05-18.zip/1 US - Q-Z/Road Rash (USA, Europe).md
+Genesis/1 US - Q-Z/Road Rash (USA, Europe).md
 ```
 
 This will search for the file in all standard MiSTer game folder paths including CIFS.
@@ -108,6 +108,11 @@ _@Favorites/Super Metroid.mgl
 Because core filenames often change, it's supported to use the same short name as in a .MGL file to launch it:
 ```
 _Console/PSX
+```
+
+.ZIP files are also supported natively, same as they are in MiSTer itself. Just treat the .ZIP file as a folder name:
+```
+Genesis/@Genesis - MegaSD Mega EverDrive 2022-05-18.zip/1 US - Q-Z/Road Rash (USA, Europe).md
 ```
 
 ### Custom commands
