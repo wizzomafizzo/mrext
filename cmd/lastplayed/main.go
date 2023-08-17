@@ -311,7 +311,7 @@ func main() {
 	if !misterini.RecentsOptionEnabled() {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
-		fmt.Println("Configure it in the MiSTer.ini file, reboot and run lastplayed again.")
+		fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")
 		os.Exit(1)
 	}
 
