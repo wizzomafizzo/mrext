@@ -323,15 +323,35 @@ func LaunchMenu() error {
 
 // LaunchGenericFile Given a generic file path, launch it using the correct method, if possible.
 func LaunchGenericFile(cfg *config.UserConfig, path string) error {
-	file, err := os.Stat(path)
-	if err != nil {
-		return fmt.Errorf("path is not accessible: %s", err)
+	// TODO: move this to a common function, and the one in launchtoken
+	inZip := false
+	parts := s.Split(path, "/")
+	for i, part := range parts {
+		if s.HasSuffix(s.ToLower(part), ".zip") {
+			zipPath := filepath.Join(parts[:i+1]...)
+			if path[0] == '/' {
+				zipPath = "/" + zipPath
+			}
+			if _, err := os.Stat(zipPath); err != nil {
+				return fmt.Errorf("containing zip file not found for %s: %s", path, zipPath)
+			}
+			inZip = true
+			break
+		}
 	}
 
-	if file.IsDir() {
-		return fmt.Errorf("path is a directory")
+	if !inZip {
+		file, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("path is not accessible: %s", err)
+		}
+
+		if file.IsDir() {
+			return fmt.Errorf("path is a directory")
+		}
 	}
 
+	var err error
 	isGame := false
 	ext := s.ToLower(filepath.Ext(path))
 	switch ext {
@@ -541,7 +561,21 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 		return LaunchShortCore(text)
 	}
 
-	// then try check for it in each game folder
+	// if the file is in a .zip, just check .zip exists in each games folder
+	parts := s.Split(text, "/")
+	for i, part := range parts {
+		if s.HasSuffix(s.ToLower(part), ".zip") {
+			zipPath := filepath.Join(parts[:i+1]...)
+			for _, folder := range games.GetGamesFolders(cfg) {
+				if _, err := os.Stat(filepath.Join(folder, zipPath)); err == nil {
+					return LaunchGenericFile(cfg, filepath.Join(folder, text))
+				}
+			}
+			break
+		}
+	}
+
+	// then try check for the whole path in each game folder
 	for _, folder := range games.GetGamesFolders(cfg) {
 		path := filepath.Join(folder, text)
 		if _, err := os.Stat(path); err == nil {
