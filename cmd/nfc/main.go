@@ -328,6 +328,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		var pnd nfc.Device
 		var err error
 
+	reconnect:
 		tries := 0
 		for {
 			// TODO: don't show every failed attempt error, tidy the log
@@ -373,7 +374,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				if time.Since(lastError) > 1*time.Second {
 					playFail()
 				}
-				return
+				goto reconnect
 			} else if err != nil {
 				logger.Error("error during poll: %s", err)
 				if time.Since(lastError) > 1*time.Second {

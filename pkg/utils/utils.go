@@ -309,3 +309,9 @@ func AlphaMapKeys[V any](m map[string]V) []string {
 	sort.Strings(keys)
 	return keys
 }
+
+func Reverse[S ~[]E, E any](s S) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}

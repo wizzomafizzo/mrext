@@ -6,6 +6,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net"
 	"os"
 	"strconv"
@@ -173,6 +174,7 @@ func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) erro
 					break
 				}
 			}
+			utils.Reverse(logLines)
 		}
 
 		clearLine(1)
