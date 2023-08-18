@@ -229,10 +229,13 @@ def create_mgl_file(system_name, filename, mgl_args, sub_path):
     if not os.path.exists(mgl_folder):
         os.makedirs(mgl_folder)
     if not os.path.exists(mgl_path):
-        with open(mgl_path, "w") as f:
-            mgl = generate_mgl(*mgl_args)
-            f.write(mgl)
-        return True
+        try:
+            with open(mgl_path, "w") as f:
+                mgl = generate_mgl(*mgl_args)
+                f.write(mgl)
+            return True
+        except OSError:
+            return False
     else:
         return False
 
