@@ -1169,7 +1169,9 @@ def add_favorite_workflow():
             # this shouldn't really happen due to the contraints on the file picker
             raise Exception("Rom file type does not match any MGL definition")
 
-        # setname = display_set_name(file_type)
+        setname = None
+        if file_type in SET_NAMES:
+            setname = SET_NAMES[file_type]
 
         rbf = get_system_core(file_type, rbf)
 
@@ -1179,7 +1181,7 @@ def add_favorite_workflow():
             mgl_def[2],
             mgl_def[3],
             ("../../../../.." + item),
-            None,
+            setname,
         )
         add_favorite_mgl(item, path, mgl_data)
 
