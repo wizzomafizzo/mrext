@@ -32,7 +32,6 @@ import (
 // TODO: option to use search.db instead of on demand index for random
 // TODO: check if a game is launched while the gui is open and close it (may not be possible)
 // TODO: clean up mgl files in tmp
-// TODO: multi line text support on log view
 
 const (
 	appName            = "nfc"
