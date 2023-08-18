@@ -38,6 +38,7 @@ ALLOWED_SD_FILES = {
     "games",
 }
 
+
 # shallow search of rbfs on sd
 def all_rbfs() -> list[str]:
     rbfs = []
@@ -89,7 +90,7 @@ YC_CORES = (
 
 
 def find_alt_core(
-    alt_cores: tuple[tuple[str]], system_id: str, default_rbf: str
+        alt_cores: tuple[tuple[str]], system_id: str, default_rbf: str
 ) -> str:
     core = None
 
@@ -119,6 +120,7 @@ CORE_FILES = {".rbf", ".mra", ".mgl"}
 
 # (<games folder name>, <relative rbf location>, (<set of file extensions>, <delay>, <type>, <index>)[])
 MGL_MAP = (
+    ("Amiga", "_Computer/Minimig", (({".adf"}, 1, "f", 0),)),
     ("Arcadia", "_Console/Arcadia", (({".bin"}, 1, "f", 1),)),
     ("AVision", "_Console/AdventureVision", (({".bin"}, 1, "f", 1),)),
     ("Astrocade", "_Console/Astrocade", (({".bin"}, 1, "f", 1),)),
@@ -140,8 +142,10 @@ MGL_MAP = (
     ("CreatiVision", "_Console/CreatiVision", (({".rom", ".bin"}, 1, "f", 1),)),
     ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb", ".gbc"}, 2, "f", 1),)),
     ("GAMEBOY", "_Console/Gameboy", (({".gb", ".gbc"}, 2, "f", 1),)),
+    ("GBC", "_Console/Gameboy", (({".gbc"}, 2, "f", 1),)),
     ("Gamate", "_Console/Gamate", (({".bin"}, 1, "f", 1),)),
     ("GameNWatch", "_Console/GnW", (({".bin"}, 1, "f", 1),)),
+    ("GameGear", "_Console/SMS", (({".gg"}, 1, "f", 2),)),
     ("GBA2P", "_Console/GBA2P", (({".gba"}, 2, "f", 0),)),
     ("GBA", "_Console/GBA", (({".gba"}, 2, "f", 1),)),
     ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
@@ -151,17 +155,17 @@ MGL_MAP = (
         (({".rom", ".int", ".bin"}, 1, "f", 1),),
     ),
     ("MegaCD", "_Console/MegaCD", (({".cue", ".chd"}, 1, "s", 0),)),
-    (
-        "NeoGeo",
-        "_Console/NeoGeo",
-        (({".neo"}, 1, "f", 1), ({".iso", ".bin"}, 1, "s", 1)),
-    ),
+    ("N64", "_Console/N64", (({".n64", ".z64"}, 1, "f", 1),)),
+    ("NeoGeo-CD", "_Console/NeoGeo", (({".cue", ".chd"}, 1, "s", 1),),),
+    ("NeoGeo", "_Console/NeoGeo", (({".neo"}, 1, "f", 1),),),
     ("NES", "_Console/NES", (({".nes", ".fds", ".nsf"}, 2, "f", 1),)),
-    ("NEOGEO", "_Console/NeoGeo", (({".neo"}, 1, "f", 1),)),
     ("ODYSSEY2", "_Console/Odyssey2", (({".bin"}, 1, "f", 1),)),
     ("PSX", "_Console/PSX", (({".cue", ".chd"}, 1, "s", 1),)),
+    ("PocketChallengeV2", "_Console/WonderSwan", (({".pc2"}, 1, "f", 1),)),
     ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
+    ("Saturn", "_Console/Saturn", (({".cue"}, 1, "s", 0),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 1),)),
+    ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),
     ("SNES", "_Console/SNES", (({".sfc", ".smc", ".bin", ".bs"}, 2, "f", 0),)),
@@ -182,7 +186,17 @@ MGL_MAP = (
     ("VC4000", "_Console/VC4000", (({".bin"}, 1, "f", 1),)),
     ("VECTREX", "_Console/Vectrex", (({".ovr", ".vec", ".bin", ".rom"}, 1, "f", 1),)),
     ("WonderSwan", "_Console/WonderSwan", (({".wsc", ".ws"}, 1, "f", 1),)),
+    ("WonderSwanColor", "_Console/WonderSwan", (({".wsc"}, 1, "f", 1),)),
 )
+
+SET_NAMES = {
+    "ATARI2600": "Atari2600",
+    "GBC": "GBC",
+    "GameGear": "GameGear",
+    "PocketChallengeV2": "PocketChallengeV2",
+    "SG1000": "SG1000",
+    "WonderSwanColor": "WonderSwanColor",
+}
 
 GAMES_FOLDERS = (
     "/media/fat",
@@ -202,7 +216,7 @@ SELECTION_HISTORY = {
     "__MAIN__": "1",
 }
 
-BAD_CHARS = '<>:"/\|?*'
+BAD_CHARS = '<>:"/\\|?*'
 
 ZIP_CACHE = {}
 
@@ -331,9 +345,20 @@ def rename_favorite(path, new_path):
 
 
 # generate XML contents for MGL file
-def make_mgl(rbf, delay, type, index, path):
-    mgl = '<mistergamedescription>\n\t<rbf>{}</rbf>\n\t<file delay="{}" type="{}" index="{}" path="{}"/>\n</mistergamedescription>'
-    return mgl.format(rbf, delay, type, index, path)
+def make_mgl(rbf, delay, _type, index, path, setname):
+    if setname is not None:
+        mgl = '<mistergamedescription>\n\t' \
+              '<rbf>{}</rbf>\n\t' \
+              '<setname>{}</setname>\n\t' \
+              '<file delay="{}" type="{}" index="{}" path="{}"/>\n' \
+              '</mistergamedescription>'
+        return mgl.format(rbf, setname, delay, _type, index, path)
+    else:
+        mgl = '<mistergamedescription>\n\t' \
+              '<rbf>{}</rbf>\n\t' \
+              '<file delay="{}" type="{}" index="{}" path="{}"/>\n' \
+              '</mistergamedescription>'
+        return mgl.format(rbf, delay, _type, index, path)
 
 
 def create_default_favorites():
@@ -347,9 +372,9 @@ def cleanup_default_favorites():
     cores_path = os.path.join(default_path, "cores")
 
     if (
-        os.path.exists(default_path)
-        and len(os.listdir(default_path)) == 1
-        and os.path.exists(cores_path)
+            os.path.exists(default_path)
+            and len(os.listdir(default_path)) == 1
+            and os.path.exists(cores_path)
     ):
         os.remove(cores_path)
         os.rmdir(default_path)
@@ -366,7 +391,15 @@ def get_menu_output(output):
 def get_mgl_system(path):
     if os.path.exists(path):
         with open(path, "r") as f:
-            core = re.search("\<rbf\>.+\/(.+)\</rbf\>", f.read())
+            core = re.search("<rbf>.+/(.+)</rbf>", f.read())
+            if core:
+                return core.groups()[0]
+
+
+def get_mgl_setname(path):
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            core = re.search("<setname>(.+)</setname>", f.read())
             if core:
                 return core.groups()[0]
 
@@ -443,7 +476,7 @@ def display_main_menu():
 
     selection, button = menu()
     # ignore separator menu items
-    while selection == None and button == 0:
+    while selection is None and button == 0:
         selection, button = menu()
 
     if button == 0:
@@ -492,6 +525,35 @@ def display_add_favorite_name(item, msg=None):
 
     if button == 0:
         return name + ext
+    else:
+        return None
+
+
+def display_set_name(file_type):
+    args = [
+        "dialog",
+        "--title",
+        WINDOW_TITLE,
+        "--inputbox",
+        "[Optional] Enter an alternative core name (setname). This will be used to make the core use a new config "
+        "file and folder with the entered name. Leave blank, or the default value, for no change.",
+        WINDOW_DIMENSIONS[0],
+        WINDOW_DIMENSIONS[1],
+    ]
+
+    setname = ""
+    if file_type in SET_NAMES:
+        setname = SET_NAMES[file_type]
+
+    args.append(setname)
+
+    result = subprocess.run(args, env=dialog_env(), stderr=subprocess.PIPE)
+
+    name = str(result.stderr.decode())
+    button = get_menu_output(result.returncode)
+
+    if button == 0:
+        return name
     else:
         return None
 
@@ -563,7 +625,7 @@ def display_create_folder():
 
 
 def display_add_favorite_folder(
-    include_root=True, msg="Select a folder to place favorite.", ignore_path=None
+        include_root=True, msg="Select a folder to place favorite.", ignore_path=None
 ):
     args = [
         "dialog",
@@ -744,6 +806,10 @@ def display_modify_item(path):
     elif ext == ".mgl":
         info += "Type: Game\n"
         info += f"System: {get_mgl_system(path)}\n"
+
+    setname = get_mgl_setname(path)
+    if setname:
+        info += f"Set name: {setname}\n"
 
     if os.path.isdir(path):
         info += "Type: Folder\n"
@@ -959,9 +1025,9 @@ def display_launcher_select(start_folder):
 
         # shortcut to external drive
         show_external = (
-            folder == SD_ROOT
-            and os.path.isdir(EXTERNAL_FOLDER)
-            and len(os.listdir(EXTERNAL_FOLDER)) > 0
+                folder == SD_ROOT
+                and os.path.isdir(EXTERNAL_FOLDER)
+                and len(os.listdir(EXTERNAL_FOLDER)) > 0
         )
         if show_external:
             args.extend([str(idx), "<GO TO USB DRIVE>"])
@@ -1103,6 +1169,8 @@ def add_favorite_workflow():
             # this shouldn't really happen due to the contraints on the file picker
             raise Exception("Rom file type does not match any MGL definition")
 
+        # setname = display_set_name(file_type)
+
         rbf = get_system_core(file_type, rbf)
 
         mgl_data = make_mgl(
@@ -1111,6 +1179,7 @@ def add_favorite_workflow():
             mgl_def[2],
             mgl_def[3],
             ("../../../../.." + item),
+            None,
         )
         add_favorite_mgl(item, path, mgl_data)
 
