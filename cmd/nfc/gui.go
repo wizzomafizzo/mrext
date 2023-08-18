@@ -210,13 +210,51 @@ func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) erro
 		win.MoveAddChar(5, 0, goncurses.ACS_LTEE)
 		win.MoveAddChar(5, width-1, goncurses.ACS_RTEE)
 
-		for i := 0; i < len(logLines); i++ {
-			clearLine(6 + i)
-			line := logLines[len(logLines)-1-i]
-			if len(line) > 53 {
-				line = line[:53-3] + "..."
+		// maximum 10 log lines, from line 6 to 15 of the window
+		// print from bottom to top, if a line is over the width (53), split it
+		// to a second line. if it's still over the width (106), truncate the second
+		// line with a "..." on the end
+		// TODO: this doesn't quite capture every edge case and it would make a good
+		// 		 general purpose function in the curses package
+		winLine := 15
+		logLine := len(logLines) - 1
+		for i := 0; i < 10; i++ {
+			if logLine < 0 || winLine < 6 {
+				break
 			}
-			printLeft(6+i, line)
+
+			line := logLines[logLine]
+			logLine--
+
+			if len(line) > 53 {
+				if winLine < 6 {
+					break
+				}
+
+				if winLine == 6 {
+					// just truncate the line
+					line = line[:53-3] + "..."
+					clearLine(winLine)
+					win.MovePrint(winLine, 2, line)
+					break
+				}
+
+				line1 := line[:53]
+				line2 := line[53:]
+				if len(line2) > 53 {
+					line2 = line2[:53-3] + "..."
+				}
+				clearLine(winLine)
+				win.MovePrint(winLine, 2, line2)
+				winLine--
+				clearLine(winLine)
+				win.MovePrint(winLine, 2, line1)
+				winLine--
+			} else {
+				clearLine(winLine)
+				win.MovePrint(winLine, 2, line)
+				winLine--
+			}
 		}
 
 		clearLine(height - 2)
