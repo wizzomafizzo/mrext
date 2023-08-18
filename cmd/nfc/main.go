@@ -23,7 +23,7 @@ import (
 )
 
 // TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
-// TODO: play a fun sound when a scan is successful or fails
+// TODO: play sound using go library
 // TODO: a -test command to see what the result of an NDEF would be
 // TODO: would it be possible to unlock the OSD with a card?
 // TODO: more concrete amiibo support
@@ -32,8 +32,7 @@ import (
 // TODO: option to use search.db instead of on demand index for random
 // TODO: check if a game is launched while the gui is open and close it (may not be possible)
 // TODO: clean up mgl files in tmp
-// TODO: error during poll: error polling: input / output error
-//       device was unplugged, gets stuck in a loop playing fail sound
+// TODO: multi line text support on log view
 
 const (
 	appName            = "nfc"
@@ -151,7 +150,7 @@ func pollDevice(
 ) (Card, error) {
 	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
 	if err != nil && !errors.Is(err, nfc.Error(nfc.ETIMEOUT)) {
-		return activeCard, fmt.Errorf("error polling: %s", err)
+		return activeCard, err
 	}
 
 	if count <= 0 {
@@ -359,6 +358,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 
 		logger.Info("opened connection: %s %s", pnd, pnd.Connection())
 		logger.Info("polling for %d times with %s delay", timesToPoll, periodBetweenPolls)
+		var lastError time.Time
 
 		for {
 			if state.ShouldStopService() {
@@ -367,9 +367,19 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 
 			activeCard := state.GetActiveCard()
 			newScanned, err := pollDevice(&pnd, activeCard)
-			if err != nil {
+			if errors.Is(err, nfc.Error(nfc.EIO)) {
 				logger.Error("error during poll: %s", err)
-				playFail()
+				logger.Error("fatal IO error, device was unplugged, exiting...")
+				if time.Since(lastError) > 1*time.Second {
+					playFail()
+				}
+				return
+			} else if err != nil {
+				logger.Error("error during poll: %s", err)
+				if time.Since(lastError) > 1*time.Second {
+					playFail()
+				}
+				lastError = time.Now()
 				goto end
 			}
 
@@ -389,7 +399,11 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 			err = launchCard(cfg, state)
 			if err != nil {
 				logger.Error("error launching card: %s", err)
-				playFail()
+				if time.Since(lastError) > 1*time.Second {
+					playFail()
+				}
+				lastError = time.Now()
+				goto end
 			}
 
 		end:
