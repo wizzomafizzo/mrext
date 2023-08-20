@@ -3,14 +3,16 @@ package menu
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/service"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 // TODO: should be in config
@@ -35,30 +37,40 @@ type ListMenuPayload struct {
 	Items []Item  `json:"items"`
 }
 
-// TODO: this should be cached and made a map (or maybe not, it's quite fast lol)
+var namesMapping = map[string]string{}
+
 func getNamesTxt(original string, filetype string) (string, error) {
 	if filetype == "folder" {
 		return "", nil
 	}
 
-	file, err := os.Open(namesTxtPath)
-	if err != nil {
-		return "", err
+	if len(namesMapping) == 0 {
+		fs := os.DirFS("/")
+		err := loadNamesMapping(fs)
+		if err != nil {
+			return "", err
+		}
 	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+
+	return namesMapping[original], nil
+}
+
+func loadNamesMapping(f fs.FS) error {
+	file, err := f.Open(strings.TrimPrefix(namesTxtPath, "/"))
+	if err != nil {
+		return err
+	}
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.SplitN(line, ":", 2)
-		if len(parts) > 1 && parts[0] == original {
-			return strings.Trim(parts[1], " "), nil
+		if len(parts) > 1 {
+			namesMapping[parts[0]] = strings.Trim(parts[1], " ")
 		}
 	}
 
-	return "", nil
+	return nil
 }
 
 func isValidMenuFile(file os.DirEntry, includeHidden bool) bool {
