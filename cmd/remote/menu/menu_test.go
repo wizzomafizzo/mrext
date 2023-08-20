@@ -44,7 +44,7 @@ func TestGetNamesTxtReturnsCorrectName(t *testing.T) {
 	}
 
 	expected := "Mega Drive"
-	actual, err := getNamesTxt("Genesis", "file")
+	actual, err := GetNamesTxt("Genesis", "")
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -61,7 +61,7 @@ func TestGetNamesTxtReturnsEmptyStringForFolder(t *testing.T) {
 	}
 
 	expected := ""
-	actual, err := getNamesTxt("_Favourites", "folder")
+	actual, err := GetNamesTxt("_Favourites", "folder")
 	if err != nil {
 		t.Errorf("%v", err)
 	}

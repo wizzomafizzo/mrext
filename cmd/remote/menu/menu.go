@@ -39,7 +39,7 @@ type ListMenuPayload struct {
 
 var namesMapping = map[string]string{}
 
-func getNamesTxt(original string, filetype string) (string, error) {
+func GetNamesTxt(original string, filetype string) (string, error) {
 	if filetype == "folder" {
 		return "", nil
 	}
@@ -220,7 +220,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 				continue
 			}
 
-			namesTxtResult, err := getNamesTxt(formatted, filetype)
+			namesTxtResult, err := GetNamesTxt(formatted, filetype)
 			if err != nil {
 				logger.Error("couldn't get names.txt for %s: %s", name, err)
 			}
