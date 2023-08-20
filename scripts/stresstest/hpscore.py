@@ -4,9 +4,9 @@ import time
 import requests
 import os
 
-MISTER_ADDR = "mistuh"
+MISTER_ADDR = "10.0.0.218"
 REMOTE_URL = "http://{}:8182/api".format(MISTER_ADDR)
-SPYRO_PATH = "/media/fat/Spyro.mgl"
+SPYRO_PATH = "/media/fat/Spyro_cifs.mgl"
 
 
 def launch_menu():
