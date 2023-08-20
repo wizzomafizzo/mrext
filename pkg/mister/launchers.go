@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	s "strings"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -102,6 +103,11 @@ func launchTempMgl(system *games.System, path string) error {
 	tmpFile, err := writeTempFile(mgl, "mgl")
 	if err != nil {
 		return err
+	} else {
+		go func() {
+			time.Sleep(5 * time.Second)
+			_ = os.Remove(tmpFile)
+		}()
 	}
 
 	return launchFile(tmpFile)

@@ -727,6 +727,7 @@ var Systems = map[string]System{
 		Category:     CategoryConsole,
 		Manufacturer: ManufacturerNintendo,
 		ReleaseDate:  "1996-06-23",
+		Alias:        []string{"N64"},
 		Folder:       []string{"N64"},
 		Rbf:          "_Console/N64",
 		Slots: []Slot{

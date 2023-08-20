@@ -130,6 +130,12 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name:      "launchseq",
+		path:      filepath.Join(cwd, "cmd", "launchseq"),
+		bin:       "launchseq.sh",
+		releaseId: "mrext/launchseq",
+	},
+	{
 		name:      "playlog",
 		path:      filepath.Join(cwd, "cmd", "playlog"),
 		bin:       "playlog.sh",
