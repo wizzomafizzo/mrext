@@ -19,7 +19,6 @@ type System struct {
 	Id            string `json:"id"`
 	Name          string `json:"name"`
 	Category      string `json:"category"`
-	LocalisedName string `json:"localisedName"`
 }
 
 var ignoreSystems = []string{
@@ -43,18 +42,16 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 				continue
 			}
 
-			localisedName, err := menu.GetNamesTxt(system.Name, "")
-
-			if err != nil {
-				localisedName = ""
+			name, _ := menu.GetNamesTxt(system.Name, "")
+			if name == "" {
+				name = system.Name
 			}
 
 			systems = append(systems, System{
 				Id:   system.Id,
-				Name: system.Name,
+				Name: name,
 				// TODO: error checking
 				Category:      strings.Split(system.Rbf, "/")[0][1:],
-				LocalisedName: localisedName,
 			})
 		}
 

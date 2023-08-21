@@ -3,12 +3,14 @@ package games
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
+
+	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
-	"net/http"
-	"sync"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -192,9 +194,14 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 				continue
 			}
 
+			name, _ := menu.GetNamesTxt(sysDef.Name, "")
+			if name == "" {
+				name = sysDef.Name
+			}
+
 			payload.Systems = append(payload.Systems, listSystemsPayloadSystem{
 				Id:   id,
-				Name: sysDef.Name,
+				Name: name,
 			})
 		}
 
