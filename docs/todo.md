@@ -9,7 +9,7 @@ High level features, ideas and changes.
 - [ ] Support alternate arcade folders for those sets
 - [ ] Custom system scan and launch functions to support Amiga MegaAGS image
 - [ ] Support setname attribute on child systems (configurable)
-- [ ] Support names.txt console names
+- [x] Support names.txt console names
 - [ ] Linux startup manager
 - [ ] Theme for curses dialog
 - [ ] Rewrite GamesMenu in mrext (big speed improvement and minor UI improvement)

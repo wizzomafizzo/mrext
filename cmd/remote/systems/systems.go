@@ -2,9 +2,11 @@ package systems
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 
 	"github.com/gorilla/mux"
 
@@ -14,9 +16,9 @@ import (
 )
 
 type System struct {
-	Id       string `json:"id"`
-	Name     string `json:"name"`
-	Category string `json:"category"`
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Category      string `json:"category"`
 }
 
 var ignoreSystems = []string{
@@ -40,11 +42,16 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 				continue
 			}
 
+			name, _ := menu.GetNamesTxt(system.Name, "")
+			if name == "" {
+				name = system.Name
+			}
+
 			systems = append(systems, System{
 				Id:   system.Id,
-				Name: system.Name,
+				Name: name,
 				// TODO: error checking
-				Category: strings.Split(system.Rbf, "/")[0][1:],
+				Category:      strings.Split(system.Rbf, "/")[0][1:],
 			})
 		}
 
