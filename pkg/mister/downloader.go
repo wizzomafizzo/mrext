@@ -3,6 +3,7 @@ package mister
 import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"gopkg.in/ini.v1"
+	"os"
 )
 
 const downloaderIniFile = config.SdFolder + "/downloader.ini"
@@ -13,9 +14,14 @@ type DownloaderIni struct {
 }
 
 func LoadDownloaderIni() (*DownloaderIni, error) {
-	iniFile, err := ini.Load(downloaderIniFile)
-	if err != nil {
-		return nil, err
+	var iniFile *ini.File
+	if _, err := os.Stat(downloaderIniFile); os.IsNotExist(err) {
+		iniFile = ini.Empty()
+	} else {
+		iniFile, err = ini.Load(downloaderIniFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	dbs := make(map[string]string)
