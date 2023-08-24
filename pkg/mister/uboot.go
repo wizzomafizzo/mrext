@@ -187,3 +187,21 @@ func EnableFastUsbPoll() error {
 
 	return WriteUBootParams(params)
 }
+
+func IsFastUsbPollActive() (bool, error) {
+	params, err := ReadUBootParams()
+	if err != nil {
+		return false, err
+	}
+
+	args := make(map[string]string)
+	if v, ok := params[UBootKernelParam]; ok {
+		args = parseKernelArgs(v)
+	}
+
+	if _, ok := args["usbhid.jspoll"]; ok {
+		return true, nil
+	}
+
+	return false, nil
+}
