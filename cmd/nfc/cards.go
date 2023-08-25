@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/clausecker/nfc/v2"
 )
 
@@ -38,7 +39,7 @@ func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
 	offset := 4
 
 	for i := 0; i <= (blockCount / 4); i++ {
-		blocks, err := readFourBlocks(pnd, byte(offset))
+		blocks, err := comm(pnd, []byte{0x30, byte(offset)}, 16)
 		if err != nil {
 			return nil, err
 		}
@@ -76,16 +77,13 @@ func getCardUID(target nfc.Target) string {
 	return uid
 }
 
-func readFourBlocks(pnd nfc.Device, offset byte) ([]byte, error) {
-	// Read 16 bytes at a time from a Type 2 tag
-	// For NTAG this would be 4 blocks or pages.
-	tx := []byte{0x30, offset}
-	rx := make([]byte, 16)
+func comm(pnd nfc.Device, tx []byte, replySize int) ([]byte, error) {
+	rx := make([]byte, replySize)
 
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		return nil, fmt.Errorf("error reading blocks: %s", err)
+		return nil, fmt.Errorf("error reading block: %s", err)
 	}
 
 	return rx, nil
@@ -112,4 +110,78 @@ func getCardType(pnd nfc.Device) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown card type: %v", rx[2])
 	}
+}
+
+func isMifare(target nfc.Target) bool {
+	switch target.Modulation() {
+	case nfc.Modulation{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106}:
+		var card = target.(*nfc.ISO14443aTarget)
+		// https://www.nxp.com/docs/en/application-note/AN10833.pdf page 9
+		if card.Atqa == [2]byte{0x00, 0x04} && card.Sak == 0x08 {
+			return true
+		}
+		break
+	default:
+		return false
+	}
+	return false
+}
+
+func isNtag(target nfc.Target) bool {
+	switch target.Modulation() {
+	case nfc.Modulation{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106}:
+		var card = target.(*nfc.ISO14443aTarget)
+		// https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf page 33
+		if card.Atqa == [2]byte{0x00, 0x44} && card.Sak == 0x00 {
+			return true
+		}
+		break
+	default:
+		return false
+	}
+
+	return false
+}
+
+func authMifareCommand(block byte) []byte {
+	return []byte{
+		// Auth using key A
+		0x60, block,
+		// NDEF well known private key
+		0xd3, 0xf7, 0xd3, 0xf7, 0xd3, 0xf7,
+		//
+		0xd9, 0xcb, 0xab, 0x35,
+	}
+}
+
+func readMifare(pnd nfc.Device) ([]byte, error) {
+
+	var allBlocks = []byte{}
+	for block := 0; block < 64; block++ {
+		if block <= 3 {
+			// The first sector contains infomation we don't care about and
+			// also has a different key (0xA0A1A2A3A4A5) YAGNI, so skip over
+			continue
+		}
+
+		// Mifare is split up into 16 sectors each containing 4 blocks.
+		// We need to authenticate before any read/ write operations can be performed
+		// Only need to authenticate once per sector
+		if block%4 == 0 {
+			comm(pnd, authMifareCommand(byte(block)), 2)
+		}
+
+		blockData, err := comm(pnd, []byte{0x30, byte(block)}, 16)
+		if err != nil {
+			return nil, err
+		}
+		// The last block of a sector contains KeyA + Permissions + KeyB
+		// We don't care about that info so skip if present.
+		// TODO: Hacky. Should just skip over the block instead of reading / matching it
+		if !bytes.Contains(blockData, []byte{0x7f, 0x07, 0x88, 0x40}) {
+			allBlocks = append(allBlocks, blockData...)
+		}
+
+	}
+	return allBlocks, nil
 }

@@ -5,15 +5,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	gc "github.com/rthornton128/goncurses"
-	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	gc "github.com/rthornton128/goncurses"
+	"github.com/wizzomafizzo/mrext/pkg/curses"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -172,37 +173,59 @@ func pollDevice(
 
 	logger.Info("card UID: %s", cardUid)
 
-	cardType, err := getCardType(*pnd)
-	if err != nil {
-		logger.Error("error getting card type: %s", err)
-	} else if cardType == "" {
-		logger.Warn("unknown card type")
-	} else {
-		logger.Info("card type: %s", cardType)
+	if isMifare(target) {
+		logger.Info("Mifare card detected")
+		resp, err := readMifare(*pnd)
+		if err != nil {
+			logger.Error("Error reading mifare: %s", err)
+		}
+
+		card := Card{
+			CardType: "Mifare", // TODO: constant
+			UID:      cardUid,
+			Text:     parseRecordText(resp),
+			ScanTime: time.Now(),
+		}
+
+		return card, nil
 	}
 
-	blockCount := getDataAreaSize(cardType)
-	record, err := readRecord(*pnd, blockCount)
-	if err != nil {
-		return activeCard, fmt.Errorf("error reading record: %s", err)
-	}
-	logger.Debug("record bytes: %s", hex.EncodeToString(record))
+	if isNtag(target) {
+		logger.Info("NTAG card detected")
+		cardType, err := getCardType(*pnd)
+		if err != nil {
+			logger.Error("error getting card type: %s", err)
+		} else if cardType == "" {
+			logger.Warn("unknown card type")
+		} else {
+			logger.Info("card type: %s", cardType)
+		}
 
-	tagText := parseRecordText(record)
-	if tagText == "" {
-		logger.Warn("no text NDEF found")
-	} else {
-		logger.Info("decoded text NDEF: %s", tagText)
+		blockCount := getDataAreaSize(cardType)
+		record, err := readRecord(*pnd, blockCount)
+		if err != nil {
+			return activeCard, fmt.Errorf("error reading record: %s", err)
+		}
+		logger.Debug("record bytes: %s", hex.EncodeToString(record))
+
+		tagText := parseRecordText(record)
+		if tagText == "" {
+			logger.Warn("no text NDEF found")
+		} else {
+			logger.Info("decoded text NDEF: %s", tagText)
+		}
+
+		card := Card{
+			CardType: cardType,
+			UID:      cardUid,
+			Text:     tagText,
+			ScanTime: time.Now(),
+		}
+
+		return card, nil
 	}
 
-	card := Card{
-		CardType: cardType,
-		UID:      cardUid,
-		Text:     tagText,
-		ScanTime: time.Now(),
-	}
-
-	return card, nil
+	return Card{}, errors.New("Unsupported card type")
 }
 
 func startService(cfg *config.UserConfig) (func() error, error) {
