@@ -548,6 +548,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger.EnableDebug = true
+
 	svc, err := service.NewService(service.ServiceArgs{
 		Name:   appName,
 		Logger: logger,

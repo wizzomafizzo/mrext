@@ -19,10 +19,13 @@ RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 
 # install libnfc dependencies
 RUN apt-get install -y libusb-dev libtool autoconf automake
+COPY ./patches/0001-Fixes-error-libnfc.driver.acr122_usb-Invalid-RDR_to_.patch /tmp
+COPY ./patches/0002-Removed-USB-alternate-setting.patch /tmp
 # install custom version of libnfc
 RUN mkdir /internal && cd /internal && \
-    git clone --depth 1 https://github.com/sam1902/libnfc && \
+    git clone --depth 1 https://github.com/nfc-tools/libnfc.git && \
     cd libnfc && \
+    git apply /tmp/*.patch && \
     autoreconf -vis && \
     ./configure && \
     make -j "$(nproc)" && \

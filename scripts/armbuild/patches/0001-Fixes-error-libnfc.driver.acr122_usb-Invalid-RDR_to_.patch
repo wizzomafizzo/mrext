@@ -1,26 +1,26 @@
-From 27e26d8d1595cd83d9cb799fa85117593dc94783 Mon Sep 17 00:00:00 2001
-From: Samuel Prevost <samuel.prevost@pm.me>
-Date: Sun, 23 Aug 2020 13:51:36 +0200
-Subject: [PATCH] Fixes error libnfc.driver.acr122_usb Invalid
+From 6c0d3dfaf823f353218af0ace334adac5f2b4729 Mon Sep 17 00:00:00 2001
+From: Callan Barrett <callan@zoocar.org>
+Date: Fri, 25 Aug 2023 20:56:03 +0800
+Subject: [PATCH 1/2] Fixes error libnfc.driver.acr122_usb Invalid
  RDR_to_PC_DataBlock frame
 
 ---
- libnfc/drivers/acr122_usb.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ libnfc/drivers/acr122_usb.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/libnfc/drivers/acr122_usb.c b/libnfc/drivers/acr122_usb.c
-index 17ae5fba..640d617f 100644
+index a9c73a1..6748000 100644
 --- a/libnfc/drivers/acr122_usb.c
 +++ b/libnfc/drivers/acr122_usb.c
-@@ -612,6 +612,7 @@ acr122_usb_receive(nfc_device *pnd, uint8_t *pbtData, const size_t szDataLen, co
-
+@@ -612,6 +612,7 @@ read:
+ 
    uint8_t attempted_response = RDR_to_PC_DataBlock;
    size_t len;
 +  int error, status;
-
+ 
    if (res == NFC_ETIMEOUT) {
      if (DRIVER_DATA(pnd)->abort_flag) {
-@@ -623,7 +624,7 @@ acr122_usb_receive(nfc_device *pnd, uint8_t *pbtData, const size_t szDataLen, co
+@@ -623,7 +624,7 @@ read:
        goto read;
      }
    }
@@ -29,16 +29,13 @@ index 17ae5fba..640d617f 100644
      log_put(LOG_GROUP, LOG_CATEGORY, NFC_LOG_PRIORITY_ERROR, "%s", "Invalid RDR_to_PC_DataBlock frame");
      // try to interrupt current device state
      acr122_usb_ack(pnd);
-@@ -638,6 +639,17 @@ acr122_usb_receive(nfc_device *pnd, uint8_t *pbtData, const size_t szDataLen, co
+@@ -638,6 +639,14 @@ read:
    offset++;
-
+ 
    len = abtRxBuf[offset++];
 +  status = abtRxBuf[7];
 +  error = abtRxBuf[8];
-+  if (len == 0 && error == 0xFE) { // ICC_MUTE; XXX check for more errors
-+      // Do not check status; my ACR122U seemingly has status=0 in this case,
-+      // even though the spec says it should have had bmCommandStatus=1
-+      // and bmICCStatus=1.
++  if (len == 0 && error == 0xFE) {
 +      log_put(LOG_GROUP, LOG_CATEGORY, NFC_LOG_PRIORITY_DEBUG, "%s", "Command timed out");
 +      pnd->last_error = NFC_ETIMEOUT;
 +      return pnd->last_error;
@@ -47,7 +44,7 @@ index 17ae5fba..640d617f 100644
    if (!((len > 1) && (abtRxBuf[10] == 0xd5))) { // In case we didn't get an immediate answer:
      if (len != 2) {
        log_put(LOG_GROUP, LOG_CATEGORY, NFC_LOG_PRIORITY_ERROR, "%s", "Wrong reply");
-@@ -666,7 +678,7 @@ acr122_usb_receive(nfc_device *pnd, uint8_t *pbtData, const size_t szDataLen, co
+@@ -666,7 +675,7 @@ read:
          goto read; // FIXME May cause some trouble on Touchatag, right ?
        }
      }
@@ -56,12 +53,15 @@ index 17ae5fba..640d617f 100644
        // try to interrupt current device state
        acr122_usb_ack(pnd);
        pnd->last_error = NFC_EIO;
-@@ -705,7 +717,7 @@ acr122_usb_receive(nfc_device *pnd, uint8_t *pbtData, const size_t szDataLen, co
-
+@@ -705,7 +714,7 @@ read:
+ 
    // Skip CCID remaining bytes
    offset += 2; // bSlot and bSeq are not used
 -  offset += 2; // XXX bStatus and bError should maybe checked ?
 +  offset += 2; // bStatus and bError is partially checked
    offset += 1; // bRFU should be 0x00
-
+ 
    // TFI + PD0 (CC+1)
+-- 
+2.41.0
+

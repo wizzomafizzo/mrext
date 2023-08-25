@@ -1,0 +1,41 @@
+From e639d58f72984b432a453c29c9c5b57e3b568326 Mon Sep 17 00:00:00 2001
+From: Callan Barrett <callan@zoocar.org>
+Date: Fri, 25 Aug 2023 20:57:25 +0800
+Subject: [PATCH 2/2] Removed USB alternate setting
+
+---
+ libnfc/drivers/acr122_usb.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/libnfc/drivers/acr122_usb.c b/libnfc/drivers/acr122_usb.c
+index 6748000..717dc3f 100644
+--- a/libnfc/drivers/acr122_usb.c
++++ b/libnfc/drivers/acr122_usb.c
+@@ -433,15 +433,15 @@ acr122_usb_open(const nfc_context *context, const nfc_connstring connstring)
+       }
+ 
+       // Check if there are more than 0 alternative interfaces and claim the first one
+-      if (dev->config->interface->altsetting->bAlternateSetting > 0) {
+-        res = usb_set_altinterface(data.pudh, 0);
+-        if (res < 0) {
+-          log_put(LOG_GROUP, LOG_CATEGORY, NFC_LOG_PRIORITY_ERROR, "Unable to set alternate setting on USB interface (%s)", _usb_strerror(res));
+-          usb_close(data.pudh);
+-          // we failed to use the specified device
+-          goto free_mem;
+-        }
+-      }
++      //if (dev->config->interface->altsetting->bAlternateSetting > 0) {
++      //  res = usb_set_altinterface(data.pudh, 0);
++      //  if (res < 0) {
++      //    log_put(LOG_GROUP, LOG_CATEGORY, NFC_LOG_PRIORITY_ERROR, "Unable to set alternate setting on USB interface (%s)", _usb_strerror(res));
++      //    usb_close(data.pudh);
++      //    // we failed to use the specified device
++      //    goto free_mem;
++      //  }
++      //}
+ 
+       // Allocate memory for the device info and specification, fill it and return the info
+       pnd = nfc_device_new(context, connstring);
+-- 
+2.41.0
+
