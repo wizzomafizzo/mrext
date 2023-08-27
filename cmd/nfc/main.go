@@ -175,7 +175,7 @@ func pollDevice(
 
 	if isMifare(target) {
 		logger.Info("Mifare card detected")
-		resp, err := readMifare(*pnd)
+		resp, err := readMifare(*pnd, cardUid)
 		if err != nil {
 			logger.Error("Error reading mifare: %s", err)
 		}

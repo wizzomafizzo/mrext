@@ -143,18 +143,20 @@ func isNtag(target nfc.Target) bool {
 	return false
 }
 
-func authMifareCommand(block byte) []byte {
-	return []byte{
+func authMifareCommand(block byte, cardUid string) []byte {
+	command := []byte{
 		// Auth using key A
 		0x60, block,
-		// NDEF well known private key
+		// Using the NDEF well known private key
 		0xd3, 0xf7, 0xd3, 0xf7, 0xd3, 0xf7,
-		//
-		0xd9, 0xcb, 0xab, 0x35,
 	}
+	// And finally append the card UID to the end
+	uidBytes, _ := hex.DecodeString(cardUid)
+	return append(command, uidBytes...)
+
 }
 
-func readMifare(pnd nfc.Device) ([]byte, error) {
+func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 
 	var allBlocks = []byte{}
 	for block := 0; block < 64; block++ {
@@ -168,7 +170,7 @@ func readMifare(pnd nfc.Device) ([]byte, error) {
 		// We need to authenticate before any read/ write operations can be performed
 		// Only need to authenticate once per sector
 		if block%4 == 0 {
-			comm(pnd, authMifareCommand(byte(block)), 2)
+			comm(pnd, authMifareCommand(byte(block), cardUid), 2)
 		}
 
 		blockData, err := comm(pnd, []byte{0x30, byte(block)}, 16)
