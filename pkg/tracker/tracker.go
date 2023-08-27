@@ -31,6 +31,15 @@ type EventAction struct {
 	Target     string
 	TargetPath string
 	TotalTime  int // for recovery from power loss
+	ActiveCore struct {
+		Core       string
+		System     string
+		SystemName string
+	}
+	ActiveGame struct {
+		Path string
+		Name string
+	}
 }
 
 type CoreTime struct {
@@ -206,6 +215,19 @@ func (tr *Tracker) addEvent(action int, target string) {
 		TotalTime: totalTime,
 	}
 
+	core, ok := tr.CoreTimes[tr.ActiveCore]
+	if ok {
+		ev.ActiveCore.Core = core.Name
+		ev.ActiveCore.System = tr.ActiveSystem
+		ev.ActiveCore.SystemName = tr.ActiveSystemName
+	}
+
+	game, ok := tr.GameTimes[tr.ActiveGame]
+	if ok {
+		ev.ActiveGame.Path = game.Path
+		ev.ActiveGame.Name = game.Name
+	}
+
 	targetTime, ok := tr.GameTimes[target]
 	if ok {
 		ev.TargetPath = targetTime.Path
@@ -336,9 +358,10 @@ func (tr *Tracker) stopGame() bool {
 			}
 		}
 
-		tr.addEvent(EventActionGameStop, tr.ActiveGame)
+		target := tr.ActiveGame
 		tr.ActiveGame = ""
 		tr.ActiveGameName = ""
+		tr.addEvent(EventActionGameStop, target)
 		return true
 	} else {
 		return false
