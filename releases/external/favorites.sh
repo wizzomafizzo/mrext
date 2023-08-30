@@ -398,10 +398,13 @@ def get_mgl_system(path):
 
 def get_mgl_setname(path):
     if os.path.exists(path):
-        with open(path, "r") as f:
-            core = re.search("<setname>(.+)</setname>", f.read())
-            if core:
-                return core.groups()[0]
+        try:
+            with open(path, "r") as f:
+                core = re.search("<setname>(.+)</setname>", f.read())
+                if core:
+                    return core.groups()[0]
+        except UnicodeDecodeError:
+            return None
 
 
 def dialog_env():
