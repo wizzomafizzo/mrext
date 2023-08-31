@@ -6,6 +6,8 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
+<a href="https://play.google.com/store/apps/details?id=net.mrext.remote"><img src="https://github.com/steverichey/google-play-badge-svg/raw/master/img/en_get.svg" alt="Download Android App" title="Download Android App" width="140"></a>
+
 ## Features
 
 * Control MiSTer directly with a virtual remote control interface
