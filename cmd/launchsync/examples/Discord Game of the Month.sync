@@ -1,7 +1,7 @@
 name = Discord Game of the Month
 author = MiSTer Discord Community
 url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
-updated = 2023-01-06 00:00
+updated = 2023-08-31 00:00
 
 [2022-04 Crystalis]
 system = NES
@@ -61,3 +61,23 @@ match = Snatcher
 system = NES
 match = ~^Blaster Master (USA)$
 match = Blaster Master
+
+[2023-02 Goof Troop]
+system = SNES
+match = ~^Goof Troop (USA)$
+match = Goof Troop
+
+[2023-03 Lunar The Silver Star]
+system = MegaCD
+match = Lunar - The Silver Star (USA)
+match = Lunar - The Silver Star
+
+[2023-04 Castlevania: Aria of Sorrow]
+system = GBA
+match = ~^Castlevania - Aria of Sorrow (USA)$
+match = Castlevania - Aria of Sorrow
+
+[2023-05 Mr. Gimmick]
+system = NES
+match = Mr. Gimmick
+match = Gimmick
