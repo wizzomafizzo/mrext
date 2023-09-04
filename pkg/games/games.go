@@ -194,14 +194,14 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			// zip files
 			zipFiles, err := utils.ListZip(path)
 			if err != nil {
-				return err
+				// skip invalid zip files
+				return nil
 			}
 
 			for i := range zipFiles {
 				if MatchSystemFile(*system, zipFiles[i]) {
 					abs := filepath.Join(path, zipFiles[i])
 					*results = append(*results, abs)
-
 				}
 			}
 		} else {
