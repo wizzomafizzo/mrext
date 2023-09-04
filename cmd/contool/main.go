@@ -161,13 +161,13 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 	return totalGames
 }
 
-func tryLaunchGame(launchPath string) error {
+func tryLaunchGame(cfg *config.UserConfig, launchPath string) error {
 	system, err := games.BestSystemMatch(&config.UserConfig{}, launchPath)
 	if err != nil {
 		return fmt.Errorf("error during launch: %s", err)
 	}
 
-	err = mister.LaunchGame(system, launchPath)
+	err = mister.LaunchGame(cfg, system, launchPath)
 	if err != nil {
 		return fmt.Errorf("error during launch: %s", err)
 	}
@@ -187,7 +187,7 @@ func main() {
 
 	// launch game
 	if *launchPath != "" {
-		err := tryLaunchGame(*launchPath)
+		err := tryLaunchGame(&config.UserConfig{}, *launchPath)
 		if err != nil {
 			fmt.Println("Error launching game:", err)
 			os.Exit(1)

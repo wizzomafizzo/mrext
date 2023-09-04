@@ -195,7 +195,7 @@ func main() {
 			if *verbose || !*update {
 				fmt.Print("- " + game.name + "... ")
 			}
-			file, found, err := tryLinkGame(sync, game, index)
+			file, found, err := tryLinkGame(cfg, sync, game, index)
 			if *verbose || !*update {
 				if err != nil {
 					fmt.Printf("error: %s\n", err)

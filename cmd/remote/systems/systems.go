@@ -2,6 +2,7 @@ package systems
 
 import (
 	"encoding/json"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"net/http"
 	"strings"
 
@@ -16,9 +17,9 @@ import (
 )
 
 type System struct {
-	Id            string `json:"id"`
-	Name          string `json:"name"`
-	Category      string `json:"category"`
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
 }
 
 var ignoreSystems = []string{
@@ -51,7 +52,7 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 				Id:   system.Id,
 				Name: name,
 				// TODO: error checking
-				Category:      strings.Split(system.Rbf, "/")[0][1:],
+				Category: strings.Split(system.Rbf, "/")[0][1:],
 			})
 		}
 
@@ -64,7 +65,7 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
-func LaunchCore(logger *service.Logger) http.HandlerFunc {
+func LaunchCore(cfg *config.UserConfig, logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -75,7 +76,7 @@ func LaunchCore(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		err = mister.LaunchCore(*system)
+		err = mister.LaunchCore(cfg, *system)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch core: during launch: %s", err)

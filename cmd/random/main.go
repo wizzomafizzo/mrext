@@ -122,7 +122,7 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				err := mister.LaunchGame(*system, game)
+				err := mister.LaunchGame(cfg, *system, game)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -163,7 +163,7 @@ func main() {
 			} else {
 				// we did it
 				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				err := mister.LaunchGame(*system, game)
+				err := mister.LaunchGame(cfg, *system, game)
 				if err != nil {
 					fmt.Println(err)
 				}

@@ -314,7 +314,7 @@ func notFoundFilename(folder string, game syncFileGame) string {
 	return filepath.Join(folder, game.folder, game.name+" [NOT FOUND].mgl")
 }
 
-func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
+func tryLinkGame(cfg *config.UserConfig, sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
 	var match txtindex.SearchResult
 
 	for _, m := range game.matches {
@@ -364,7 +364,7 @@ func tryLinkGame(sync *syncFile, game syncFileGame, index txtindex.Index) (strin
 	if match.Name != "" {
 		// found a match
 		// TODO: don't write if it's the same file
-		_, err := mister.CreateLauncher(game.system, match.Path, launcherFolder, game.name)
+		_, err := mister.CreateLauncher(cfg, game.system, match.Path, launcherFolder, game.name)
 		if err != nil {
 			return "", false, err
 		}

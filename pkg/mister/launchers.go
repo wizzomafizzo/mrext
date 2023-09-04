@@ -14,7 +14,20 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
-func GenerateMgl(system *games.System, path string) (string, error) {
+func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (string, error) {
+	// override the system rbf with the user specified one
+	for _, setCore := range cfg.Systems.SetCore {
+		parts := s.SplitN(setCore, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		if s.EqualFold(parts[0], system.Id) {
+			system.Rbf = parts[1]
+			break
+		}
+	}
+
 	if path == "" {
 		if system.SetName == "" {
 			return fmt.Sprintf(
@@ -94,8 +107,8 @@ func launchFile(path string) error {
 	return nil
 }
 
-func launchTempMgl(system *games.System, path string) error {
-	mgl, err := GenerateMgl(system, path)
+func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) error {
+	mgl, err := GenerateMgl(cfg, system, path)
 	if err != nil {
 		return err
 	}
@@ -129,7 +142,7 @@ func LaunchShortCore(path string) error {
 	return launchFile(tmpFile)
 }
 
-func LaunchGame(system games.System, path string) error {
+func LaunchGame(cfg *config.UserConfig, system games.System, path string) error {
 	switch s.ToLower(filepath.Ext(path)) {
 	case ".mra":
 		err := launchFile(path)
@@ -151,7 +164,7 @@ func LaunchGame(system games.System, path string) error {
 			system.Rbf = rbfs[system.Id].MglName
 		}
 
-		err := launchTempMgl(&system, path)
+		err := launchTempMgl(cfg, &system, path)
 		if err != nil {
 			return err
 		}
@@ -239,7 +252,7 @@ func DeleteLauncher(path string) error {
 	return TrySetupArcadeCoresLink(filepath.Dir(path))
 }
 
-func CreateLauncher(system *games.System, gameFile string, folder string, name string) (string, error) {
+func CreateLauncher(cfg *config.UserConfig, system *games.System, gameFile string, folder string, name string) (string, error) {
 	if system == nil {
 		return "", fmt.Errorf("no system specified")
 	}
@@ -267,7 +280,7 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 	} else {
 		mglPath := GetLauncherFilename(system, folder, name)
 
-		mgl, err := GenerateMgl(system, gameFile)
+		mgl, err := GenerateMgl(cfg, system, gameFile)
 		if err != nil {
 			return "", err
 		}
@@ -282,13 +295,13 @@ func CreateLauncher(system *games.System, gameFile string, folder string, name s
 }
 
 // LaunchCore Launch a core given a possibly partial path, as per MGL files.
-func LaunchCore(system games.System) error {
+func LaunchCore(cfg *config.UserConfig, system games.System) error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
 
 	if system.SetName != "" {
-		return LaunchGame(system, "")
+		return LaunchGame(cfg, system, "")
 	}
 
 	var path string
@@ -374,7 +387,7 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 			return fmt.Errorf("unknown file type: %s", ext)
 		}
 
-		err = launchTempMgl(&system, path)
+		err = launchTempMgl(cfg, &system, path)
 		isGame = true
 	}
 
@@ -490,7 +503,7 @@ func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
 			return err
 		}
 
-		return LaunchGame(*system, game)
+		return LaunchGame(cfg, *system, game)
 	}
 
 	return fmt.Errorf("failed to find a random game")
@@ -523,7 +536,7 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 				return err
 			}
 
-			return LaunchCore(*system)
+			return LaunchCore(cfg, *system)
 		case "command":
 			if !manual {
 				return fmt.Errorf("commands must be manually run")

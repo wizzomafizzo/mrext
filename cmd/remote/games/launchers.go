@@ -34,7 +34,7 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 			return
 		}
 
-		err = mister.LaunchGame(system, args.Path)
+		err = mister.LaunchGame(cfg, system, args.Path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch game: during launch: %s", err)
@@ -145,6 +145,7 @@ func CreateLauncher(logger *service.Logger, cfg *config.UserConfig) http.Handler
 		args.Name = utils.StripBadFileChars(args.Name)
 
 		mglPath, err := mister.CreateLauncher(
+			cfg,
 			&system,
 			args.GamePath,
 			args.Folder,
