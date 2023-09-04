@@ -1,10 +1,10 @@
 {
   "db_id": "mrext/remote",
-  "timestamp": 1692341024,
+  "timestamp": 1693839952,
   "files": {
     "Scripts/remote.sh": {
-      "hash": "facfa7cef0d5337820641f785f996381",
-      "size": 7819760,
+      "hash": "fe7f0da1c1b4a1837dfd6969de36a2cb",
+      "size": 7834296,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh",
       "reboot": true
     }
