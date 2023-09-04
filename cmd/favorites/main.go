@@ -59,7 +59,7 @@ func main() {
 		system = *lookup
 	}
 
-	path, err := mister.CreateLauncher(&system, *gameFile, *menuFolder, *favName)
+	path, err := mister.CreateLauncher(&config.UserConfig{}, &system, *gameFile, *menuFolder, *favName)
 	if err != nil {
 		fmt.Printf("Error creating favorite: %s\n", err)
 		os.Exit(1)

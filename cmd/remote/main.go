@@ -200,7 +200,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 
 	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
-	sub.HandleFunc("/systems/{id}", systems.LaunchCore(logger)).Methods("POST")
+	sub.HandleFunc("/systems/{id}", systems.LaunchCore(cfg, logger)).Methods("POST")
 
 	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapersHandler(logger)).Methods("GET")
 	sub.HandleFunc("/wallpapers", wallpapers.UnsetWallpaperHandler(logger)).Methods("DELETE")

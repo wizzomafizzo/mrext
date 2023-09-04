@@ -213,7 +213,7 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 				log.Fatal(err)
 			}
 
-			err = mister.LaunchGame(*system, game.Path)
+			err = mister.LaunchGame(cfg, *system, game.Path)
 			if err != nil {
 				log.Fatal(err)
 			} else {
