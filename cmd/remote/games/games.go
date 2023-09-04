@@ -17,7 +17,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 )
 
-const pageSize = 250
+const pageSize = 500
 
 type SearchResultGame struct {
 	System systems.System `json:"system"`
