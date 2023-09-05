@@ -5,15 +5,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	gc "github.com/rthornton128/goncurses"
-	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	gc "github.com/rthornton128/goncurses"
+	"github.com/wizzomafizzo/mrext/pkg/curses"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -172,22 +173,32 @@ func pollDevice(
 
 	logger.Info("card UID: %s", cardUid)
 
-	cardType, err := getCardType(*pnd)
-	if err != nil {
-		logger.Error("error getting card type: %s", err)
-	} else if cardType == "" {
-		logger.Warn("unknown card type")
-	} else {
-		logger.Info("card type: %s", cardType)
+	record := []byte{}
+	cardType := getCardType(target)
+
+	if cardType == TypeNTAG {
+		logger.Info("NTAG detected")
+		capacity, err := getNtagCapacity(*pnd)
+		if err != nil {
+			logger.Error("error reading ntag capacity: %s", err)
+		}
+		record, err = readRecord(*pnd, capacity)
+		if err != nil {
+			return activeCard, fmt.Errorf("error reading ntag: %s", err)
+		}
+		cardType = TypeNTAG
 	}
 
-	blockCount := getDataAreaSize(cardType)
-	record, err := readRecord(*pnd, blockCount)
-	if err != nil {
-		return activeCard, fmt.Errorf("error reading record: %s", err)
+	if cardType == TypeMifare {
+		logger.Info("Mifare detected")
+		record, err = readMifare(*pnd, cardUid)
+		if err != nil {
+			logger.Error("error reading mifare: %s", err)
+		}
+		cardType = TypeMifare
 	}
+
 	logger.Debug("record bytes: %s", hex.EncodeToString(record))
-
 	tagText := parseRecordText(record)
 	if tagText == "" {
 		logger.Warn("no text NDEF found")
