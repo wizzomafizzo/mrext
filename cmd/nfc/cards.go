@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/clausecker/nfc/v2"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -129,11 +130,18 @@ func authMifareCommand(block byte, cardUid string) []byte {
 
 func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 
+	permissionSectors := []int{4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60}
 	var allBlocks = []byte{}
 	for block := 0; block < 64; block++ {
 		if block <= 3 {
 			// The first sector contains infomation we don't care about and
 			// also has a different key (0xA0A1A2A3A4A5) YAGNI, so skip over
+			continue
+		}
+
+		// The last block of a sector contains KeyA + Permissions + KeyB
+		// We don't care about that info so skip if present.
+		if slices.Contains(permissionSectors, block+1) {
 			continue
 		}
 
@@ -147,12 +155,6 @@ func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 		blockData, err := comm(pnd, []byte{0x30, byte(block)}, 16)
 		if err != nil {
 			return nil, err
-		}
-		// The last block of a sector contains KeyA + Permissions + KeyB
-		// We don't care about that info so skip if present.
-		// TODO: Hacky. Should just skip over the block instead of reading / matching it
-		if bytes.Contains(blockData, []byte{0x7f, 0x07, 0x88, 0x40}) {
-			continue
 		}
 
 		allBlocks = append(allBlocks, blockData...)
