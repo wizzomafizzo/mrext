@@ -174,25 +174,22 @@ func pollDevice(
 	logger.Info("card UID: %s", cardUid)
 
 	record := []byte{}
-	cardType := ""
-	if isNtag(target) {
+	cardType := getCardType(target)
+
+	if cardType == TypeNTAG {
 		logger.Info("NTAG detected")
-		cardType, err := getCardType(*pnd)
+		capacity, err := getNtagCapacity(*pnd)
 		if err != nil {
-			logger.Error("error getting NTAG type: %s", err)
-		} else if cardType == "" {
-			logger.Warn("unknown NTAG type")
-		} else {
-			logger.Info("NTAG type: %s", cardType)
+			logger.Error("error reading ntag capacity: %s", err)
 		}
-		blockCount := getDataAreaSize(cardType)
-		record, err = readRecord(*pnd, blockCount)
+		record, err = readRecord(*pnd, capacity)
 		if err != nil {
-			return activeCard, fmt.Errorf("error reading record: %s", err)
+			return activeCard, fmt.Errorf("error reading ntag: %s", err)
 		}
+		cardType = TypeNTAG
 	}
 
-	if isMifare(target) {
+	if cardType == TypeMifare {
 		logger.Info("Mifare detected")
 		record, err = readMifare(*pnd, cardUid)
 		if err != nil {

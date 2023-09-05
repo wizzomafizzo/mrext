@@ -9,34 +9,12 @@ import (
 )
 
 const (
-	TypeNTAG213 = "NTAG213"
-	TypeNTAG215 = "NTAG215"
-	TypeNTAG216 = "NTAG216"
-	TypeMifare  = "MIFARE"
+	TypeNTAG   = "NTAG"
+	TypeMifare = "MIFARE"
 )
 
 var NDEF_END = []byte{0xFE}
 var NDEF_START = []byte{0x54, 0x02, 0x65, 0x6E}
-
-func getDataAreaSize(cardType string) int {
-	switch cardType {
-	// https://www.shopnfc.com/en/content/6-nfc-tags-specs
-
-	case TypeNTAG213:
-		// Block 0x04 to 0x27 = 0x23 (35)
-		// Or capacity (144 - 4) / 4
-		return 35
-	case TypeNTAG215:
-		// Guessing this is (504 - 4) / 4 = 125
-		return 125
-	case TypeNTAG216:
-		// Block 0x04 to 0xE1 = 0xDD (221)
-		// Or capacity (888 - 4) / 4
-		return 221
-	default:
-		return 35 // fallback to NTAG213
-	}
-}
 
 func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
 	allBlocks := make([]byte, 0)
@@ -93,7 +71,7 @@ func comm(pnd nfc.Device, tx []byte, replySize int) ([]byte, error) {
 	return rx, nil
 }
 
-func getCardType(pnd nfc.Device) (string, error) {
+func getNtagCapacity(pnd nfc.Device) (int, error) {
 	// Find tag capacity by looking in block 3 (capability container)
 	tx := []byte{0x30, 0x03}
 	rx := make([]byte, 16)
@@ -101,50 +79,39 @@ func getCardType(pnd nfc.Device) (string, error) {
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		return "", fmt.Errorf("error card type: %s", err)
+		return 0, err
 	}
 
 	switch rx[2] {
 	case 0x12:
-		return TypeNTAG213, nil
+		// NTAG213. (144 -4) / 4
+		return 35, nil
 	case 0x3E:
-		return TypeNTAG215, nil
+		// NTAG215. (504 - 4) / 4
+		return 125, nil
 	case 0x6D:
-		return TypeNTAG216, nil
+		// NTAG216. (888 -4) / 4
+		return 221, nil
 	default:
-		return "", fmt.Errorf("unknown card type: %v", rx[2])
+		// fallback to NTAG213
+		return 35, nil
 	}
 }
 
-func isMifare(target nfc.Target) bool {
+func getCardType(target nfc.Target) string {
 	switch target.Modulation() {
 	case nfc.Modulation{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106}:
 		var card = target.(*nfc.ISO14443aTarget)
-		// https://www.nxp.com/docs/en/application-note/AN10833.pdf page 9
 		if card.Atqa == [2]byte{0x00, 0x04} && card.Sak == 0x08 {
-			return true
+			// https://www.nxp.com/docs/en/application-note/AN10833.pdf page 9
+			return TypeMifare
 		}
-		break
-	default:
-		return false
-	}
-	return false
-}
-
-func isNtag(target nfc.Target) bool {
-	switch target.Modulation() {
-	case nfc.Modulation{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106}:
-		var card = target.(*nfc.ISO14443aTarget)
-		// https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf page 33
 		if card.Atqa == [2]byte{0x00, 0x44} && card.Sak == 0x00 {
-			return true
+			// https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf page 33
+			return TypeNTAG
 		}
-		break
-	default:
-		return false
 	}
-
-	return false
+	return ""
 }
 
 func authMifareCommand(block byte, cardUid string) []byte {
