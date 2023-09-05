@@ -14,6 +14,9 @@ const (
 	TypeNTAG216 = "NTAG216"
 )
 
+var NDEF_END = []byte{0xFE}
+var NDEF_START = []byte{0x54, 0x02, 0x65, 0x6E}
+
 func getDataAreaSize(cardType string) int {
 	switch cardType {
 	// https://www.shopnfc.com/en/content/6-nfc-tags-specs
@@ -52,8 +55,8 @@ func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
 
 func parseRecordText(blocks []byte) string {
 	// Find the text NDEF record
-	startIndex := bytes.Index(blocks, []byte{0x54, 0x02, 0x65, 0x6E})
-	endIndex := bytes.Index(blocks, []byte{0xFE})
+	startIndex := bytes.Index(blocks, NDEF_START)
+	endIndex := bytes.Index(blocks, NDEF_END)
 
 	if startIndex != -1 && endIndex != -1 {
 		tagText := string(blocks[startIndex+4 : endIndex])
@@ -180,8 +183,17 @@ func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 		// The last block of a sector contains KeyA + Permissions + KeyB
 		// We don't care about that info so skip if present.
 		// TODO: Hacky. Should just skip over the block instead of reading / matching it
-		if !bytes.Contains(blockData, []byte{0x7f, 0x07, 0x88, 0x40}) {
-			allBlocks = append(allBlocks, blockData...)
+		if bytes.Contains(blockData, []byte{0x7f, 0x07, 0x88, 0x40}) {
+			continue
+		}
+
+		allBlocks = append(allBlocks, blockData...)
+
+		if bytes.Contains(blockData, NDEF_END) {
+			// Once we find the end of the NDEF text record there is no need to
+			// continue reading the rest of the card.
+			// This should make things "load" quicker
+			break
 		}
 
 	}
