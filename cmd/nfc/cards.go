@@ -12,6 +12,7 @@ const (
 	TypeNTAG213 = "NTAG213"
 	TypeNTAG215 = "NTAG215"
 	TypeNTAG216 = "NTAG216"
+	TypeMifare  = "MIFARE"
 )
 
 var NDEF_END = []byte{0xFE}

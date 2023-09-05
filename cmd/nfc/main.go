@@ -173,59 +173,50 @@ func pollDevice(
 
 	logger.Info("card UID: %s", cardUid)
 
-	if isMifare(target) {
-		logger.Info("Mifare card detected")
-		resp, err := readMifare(*pnd, cardUid)
-		if err != nil {
-			logger.Error("Error reading mifare: %s", err)
-		}
-
-		card := Card{
-			CardType: "Mifare", // TODO: constant
-			UID:      cardUid,
-			Text:     parseRecordText(resp),
-			ScanTime: time.Now(),
-		}
-
-		return card, nil
-	}
-
+	record := []byte{}
+	cardType := ""
 	if isNtag(target) {
-		logger.Info("NTAG card detected")
+		logger.Info("NTAG detected")
 		cardType, err := getCardType(*pnd)
 		if err != nil {
-			logger.Error("error getting card type: %s", err)
+			logger.Error("error getting NTAG type: %s", err)
 		} else if cardType == "" {
-			logger.Warn("unknown card type")
+			logger.Warn("unknown NTAG type")
 		} else {
-			logger.Info("card type: %s", cardType)
+			logger.Info("NTAG type: %s", cardType)
 		}
-
 		blockCount := getDataAreaSize(cardType)
-		record, err := readRecord(*pnd, blockCount)
+		record, err = readRecord(*pnd, blockCount)
 		if err != nil {
 			return activeCard, fmt.Errorf("error reading record: %s", err)
 		}
-		logger.Debug("record bytes: %s", hex.EncodeToString(record))
-
-		tagText := parseRecordText(record)
-		if tagText == "" {
-			logger.Warn("no text NDEF found")
-		} else {
-			logger.Info("decoded text NDEF: %s", tagText)
-		}
-
-		card := Card{
-			CardType: cardType,
-			UID:      cardUid,
-			Text:     tagText,
-			ScanTime: time.Now(),
-		}
-
-		return card, nil
 	}
 
-	return Card{}, errors.New("Unsupported card type")
+	if isMifare(target) {
+		logger.Info("Mifare detected")
+		record, err = readMifare(*pnd, cardUid)
+		if err != nil {
+			logger.Error("error reading mifare: %s", err)
+		}
+		cardType = TypeMifare
+	}
+
+	logger.Debug("record bytes: %s", hex.EncodeToString(record))
+	tagText := parseRecordText(record)
+	if tagText == "" {
+		logger.Warn("no text NDEF found")
+	} else {
+		logger.Info("decoded text NDEF: %s", tagText)
+	}
+
+	card := Card{
+		CardType: cardType,
+		UID:      cardUid,
+		Text:     tagText,
+		ScanTime: time.Now(),
+	}
+
+	return card, nil
 }
 
 func startService(cfg *config.UserConfig) (func() error, error) {
