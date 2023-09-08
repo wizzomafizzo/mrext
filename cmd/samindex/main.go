@@ -19,6 +19,7 @@ var idMap = map[string]string{
 	"Gameboy":        "gb",
 	"GameboyColor":   "gbc",
 	"GameGear":       "gg",
+	"Nintendo64":     "n64",
 	"MasterSystem":   "sms",
 	"Sega32X":        "s32x",
 	"TurboGrafx16":   "tgfx16",
