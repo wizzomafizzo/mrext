@@ -3,15 +3,22 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/clausecker/nfc/v2"
+	"github.com/hsanjuan/go-ndef"
 	"golang.org/x/exp/slices"
 )
 
 const (
-	TypeNTAG   = "NTAG"
-	TypeMifare = "MIFARE"
+	TypeNTAG          = "NTAG"
+	TypeMifare        = "MIFARE"
+	WRITE_COMMAND     = byte(0xA2)
+	READ_COMMAND      = byte(0x30)
+	NTAG_213_CAPACITY = 114
+	NTAG_215_CAPACITY = 496
+	NTAG_216_CAPACITY = 872
 )
 
 var NDEF_END = []byte{0xFE}
@@ -168,4 +175,50 @@ func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 
 	}
 	return allBlocks, nil
+}
+
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
+}
+
+// Only supports NTAG.
+// Mifare requires an authentication call and a different write method (0xA0)
+func writeTextToCard(pnd nfc.Device, text string, cardCapacity int) ([]byte, error) {
+	ndef := ndef.NewTextMessage(text, "en")
+	var payload, err = ndef.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: messages can be longer than 255 however, the checksum gets a bit more complicated.
+	const artificial_limit = 255
+	if len(payload) > artificial_limit {
+		return nil, errors.New(fmt.Sprintf("Message exceeds limit %d bytes vs %d bytes", len(payload), artificial_limit))
+	}
+	var header = []byte{0x03, byte(len(payload))} // Add checksum
+
+	payload = append(header, payload...)
+	payload = append(payload, []byte{0xFE}...)
+
+	if len(payload) > cardCapacity {
+		return nil, errors.New(fmt.Sprintf("Payload too big for card: %d bytes vs %d bytes\n", len(payload), cardCapacity))
+	}
+
+	var startingBlock byte = 0x04
+	for i, chunk := range chunkBy(payload, 4) {
+		for len(chunk) < 4 {
+			chunk = append(chunk, []byte{0x00}...)
+		}
+		var tx = []byte{WRITE_COMMAND, startingBlock + byte(i)}
+		tx = append(tx, chunk...)
+		_, err := comm(pnd, tx, 1)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return payload, nil
 }
