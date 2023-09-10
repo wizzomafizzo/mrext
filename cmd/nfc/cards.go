@@ -80,7 +80,7 @@ func comm(pnd nfc.Device, tx []byte, replySize int) ([]byte, error) {
 	return rx, nil
 }
 
-func getNtagCapacity(pnd nfc.Device) (int, error) {
+func getNtagBlockCount(pnd nfc.Device) (int, error) {
 	// Find tag capacity by looking in block 3 (capability container)
 	tx := []byte{0x30, 0x03}
 	rx := make([]byte, 16)
