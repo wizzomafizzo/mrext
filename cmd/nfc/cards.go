@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -12,13 +13,13 @@ import (
 )
 
 const (
-	TypeNTAG          = "NTAG"
-	TypeMifare        = "MIFARE"
-	WRITE_COMMAND     = byte(0xA2)
-	READ_COMMAND      = byte(0x30)
-	NTAG_213_CAPACITY = 114
-	NTAG_215_CAPACITY = 496
-	NTAG_216_CAPACITY = 872
+	TypeNTAG                = "NTAG"
+	TypeMifare              = "MIFARE"
+	WRITE_COMMAND           = byte(0xA2)
+	READ_COMMAND            = byte(0x30)
+	NTAG_213_CAPACITY_BYTES = 114
+	NTAG_215_CAPACITY_BYTES = 496
+	NTAG_216_CAPACITY_BYTES = 872
 )
 
 var NDEF_END = []byte{0xFE}
@@ -186,25 +187,19 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 
 // Only supports NTAG.
 // Mifare requires an authentication call and a different write method (0xA0)
-func writeTextToCard(pnd nfc.Device, text string, cardCapacity int) ([]byte, error) {
-	ndef := ndef.NewTextMessage(text, "en")
-	var payload, err = ndef.Marshal()
+func writeTextToCard(pnd nfc.Device, text string) ([]byte, error) {
+	var payload, err = BuildMessage(text)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: messages can be longer than 255 however, the checksum gets a bit more complicated.
-	const artificial_limit = 255
-	if len(payload) > artificial_limit {
-		return nil, errors.New(fmt.Sprintf("Message exceeds limit %d bytes vs %d bytes", len(payload), artificial_limit))
+	cardCapacity, err := getNtagCapacity(pnd)
+	if err != nil {
+		return nil, err
 	}
-	var header = []byte{0x03, byte(len(payload))} // Add checksum
-
-	payload = append(header, payload...)
-	payload = append(payload, []byte{0xFE}...)
 
 	if len(payload) > cardCapacity {
-		return nil, errors.New(fmt.Sprintf("Payload too big for card: %d bytes vs %d bytes\n", len(payload), cardCapacity))
+		return nil, errors.New(fmt.Sprintf("Payload too big for card: [%d/%d] bytes used\n", len(payload), cardCapacity))
 	}
 
 	var startingBlock byte = 0x04
@@ -221,4 +216,64 @@ func writeTextToCard(pnd nfc.Device, text string, cardCapacity int) ([]byte, err
 	}
 
 	return payload, nil
+}
+
+func getNtagCapacity(pnd nfc.Device) (int, error) {
+	// Find tag capacity by looking in block 3 (capability container)
+	tx := []byte{READ_COMMAND, 0x03}
+	rx := make([]byte, 16)
+
+	timeout := 0
+	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
+	if err != nil {
+		return 0, err
+	}
+
+	// https://github.com/adafruit/Adafruit_MFRC630/blob/master/docs/NTAG.md#capability-container
+	switch rx[2] {
+	case 0x12:
+		return NTAG_213_CAPACITY_BYTES, nil
+	case 0x3E:
+		return NTAG_215_CAPACITY_BYTES, nil
+	case 0x6D:
+		return NTAG_216_CAPACITY_BYTES, nil
+	default:
+		// fallback
+		return NTAG_213_CAPACITY_BYTES, nil
+	}
+}
+
+func BuildMessage(message string) ([]byte, error) {
+	ndef := ndef.NewTextMessage(message, "en")
+	var payload, err = ndef.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	var header, _ = CalculateNdefHeader(payload)
+	if err != nil {
+		return nil, err
+	}
+	payload = append(header, payload...)
+	payload = append(payload, []byte{0xFE}...)
+	return payload, nil
+}
+
+func CalculateNdefHeader(ndefRecord []byte) ([]byte, error) {
+	var recordLength = len(ndefRecord)
+	if recordLength < 255 {
+		return []byte{0x03, byte(len(ndefRecord))}, nil
+	}
+
+	// NFCForum-TS-Type-2-Tag_1.1.pdf Page 9
+	// > 255 Use three consecutive bytes format
+	len := new(bytes.Buffer)
+	err := binary.Write(len, binary.BigEndian, uint16(recordLength))
+	if err != nil {
+		return nil, err
+	}
+
+	var header = []byte{0x03, 0xFF}
+	return append(header, len.Bytes()...), nil
+
 }
