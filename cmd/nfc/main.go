@@ -561,16 +561,37 @@ func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionStr
 		fmt.Println("Could not open device:: %s", err)
 		os.Exit(1)
 	}
+	defer func(pnd nfc.Device) {
+		err := pnd.Close()
+		if err != nil {
+			logger.Warn("error closing device: %s", err)
+		}
+		logger.Info("closed nfc device")
+	}(pnd)
 
-	bytesWritten, err := writeTextToCard(pnd, textToWrite)
+	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+
 	if err != nil {
-		logger.Error("error writing to card: %s", err)
-		fmt.Println("Error writing to card: %s", err)
+		logger.Error("could not poll: %s", err)
+		fmt.Println("Could not poll: " + err.Error())
 		os.Exit(1)
 	}
 
-	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
-	fmt.Println("Successfully wrote to card")
+	if count > 0 {
+		var currentCardID = getCardUID(target)
+		fmt.Println(currentCardID)
+
+		bytesWritten, err := writeTextToCard(pnd, textToWrite)
+		if err != nil {
+			logger.Error("error writing to card: %s", err)
+			fmt.Println("Error writing to card: %s", err)
+			os.Exit(1)
+		}
+
+		logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
+		fmt.Println("Successfully wrote to card")
+	}
+
 	os.Exit(0)
 }
 
