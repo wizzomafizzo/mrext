@@ -558,7 +558,7 @@ func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionStr
 	pnd, err := nfc.Open(connectionString)
 	if err != nil {
 		logger.Error("could not open device: %s", err)
-		fmt.Println("Could not open device:: %s", err)
+		fmt.Println("Could not open device:", err)
 		os.Exit(1)
 	}
 	defer func(pnd nfc.Device) {
@@ -573,24 +573,27 @@ func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionStr
 
 	if err != nil {
 		logger.Error("could not poll: %s", err)
-		fmt.Println("Could not poll: " + err.Error())
+		fmt.Println("Could not poll:", err)
 		os.Exit(1)
 	}
 
-	if count > 0 {
-		var currentCardID = getCardUID(target)
-		fmt.Println(currentCardID)
-
-		bytesWritten, err := writeTextToCard(pnd, textToWrite)
-		if err != nil {
-			logger.Error("error writing to card: %s", err)
-			fmt.Println("Error writing to card: %s", err)
-			os.Exit(1)
-		}
-
-		logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
-		fmt.Println("Successfully wrote to card")
+	if count == 0 {
+		logger.Error("could not find a card")
+		fmt.Println("Could not find a card")
+		os.Exit(1)
 	}
+
+	logger.Info("Found card with UID: %s", getCardUID(target))
+
+	bytesWritten, err := writeTextToCard(pnd, textToWrite)
+	if err != nil {
+		logger.Error("error writing to card: %s", err)
+		fmt.Println("Error writing to card:", err)
+		os.Exit(1)
+	}
+
+	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
+	fmt.Println("Successfully wrote to card")
 
 	os.Exit(0)
 }
