@@ -548,8 +548,35 @@ func addToStartup() error {
 	return nil
 }
 
+func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionString string) {
+	if serviceIsRunning {
+		logger.Error("please stop the nfc service before writing to card")
+		fmt.Println("Please stop the nfc service before writing to card")
+		os.Exit(1)
+	}
+
+	pnd, err := nfc.Open(connectionString)
+	if err != nil {
+		logger.Error("could not open device: %s", err)
+		fmt.Println("Could not open device:: %s", err)
+		os.Exit(1)
+	}
+
+	bytesWritten, err := writeTextToCard(pnd, textToWrite)
+	if err != nil {
+		logger.Error("error writing to card: %s", err)
+		fmt.Println("Error writing to card: %s", err)
+		os.Exit(1)
+	}
+
+	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
+	fmt.Println("Successfully wrote to card")
+	os.Exit(0)
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage nfc service (start, stop, restart, status)")
+	writeOpt := flag.String("write", "", "write text to tag")
 	flag.Parse()
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
@@ -570,6 +597,10 @@ func main() {
 		logger.Error("error creating service: %s", err)
 		fmt.Println("Error creating service:", err)
 		os.Exit(1)
+	}
+
+	if *writeOpt != "" {
+		handleWriteCommand(*writeOpt, svc.Running(), cfg.NfcConfig.ConnectionString)
 	}
 
 	svc.ServiceHandler(svcOpt)
