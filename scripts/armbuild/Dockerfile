@@ -20,9 +20,11 @@ RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 # install libnfc dependencies
 RUN apt-get install -y libusb-dev libtool autoconf automake
 # install custom version of libnfc
-RUN mkdir /internal && cd /internal && \
+COPY patches/acr122u-clone-fix.patch /internal/acr122u-clone-fix.patch
+RUN cd /internal && \
     git clone --depth 1 https://github.com/sam1902/libnfc && \
     cd libnfc && \
+    git apply /internal/acr122u-clone-fix.patch && \
     autoreconf -vis && \
     ./configure && \
     make -j "$(nproc)" && \

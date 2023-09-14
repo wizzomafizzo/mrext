@@ -1,0 +1,20 @@
+diff --git a/libnfc/drivers/acr122_usb.c b/libnfc/drivers/acr122_usb.c
+index 640d617..6b1e6eb 100644
+--- a/libnfc/drivers/acr122_usb.c
++++ b/libnfc/drivers/acr122_usb.c
+@@ -433,6 +433,7 @@ acr122_usb_open(const nfc_context *context, const nfc_connstring connstring)
+       }
+ 
+       // Check if there are more than 0 alternative interfaces and claim the first one
++      /*
+       if (dev->config->interface->altsetting->bAlternateSetting > 0) {
+         res = usb_set_altinterface(data.pudh, 0);
+         if (res < 0) {
+@@ -442,6 +443,7 @@ acr122_usb_open(const nfc_context *context, const nfc_connstring connstring)
+           goto free_mem;
+         }
+       }
++      */
+ 
+       // Allocate memory for the device info and specification, fill it and return the info
+       pnd = nfc_device_new(context, connstring);
