@@ -199,7 +199,7 @@ func pollDevice(
 	}
 
 	logger.Debug("record bytes: %s", hex.EncodeToString(record))
-	tagText := parseRecordText(record)
+	tagText := ParseRecordText(record)
 	if tagText == "" {
 		logger.Warn("no text NDEF found")
 	} else {
@@ -584,6 +584,13 @@ func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionStr
 	}
 
 	logger.Info("Found card with UID: %s", getCardUID(target))
+
+	cardType := getCardType(target)
+	if cardType != TypeNTAG {
+		logger.Error("unsupported card type: %s", cardType)
+		fmt.Println("Unsupported card type: " + cardType)
+		os.Exit(1)
+	}
 
 	bytesWritten, err := writeTextToCard(pnd, textToWrite)
 	if err != nil {
