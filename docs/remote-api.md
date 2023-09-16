@@ -1,42 +1,49 @@
 # Remote API
 
 <!-- TOC -->
-
 * [Remote API](#remote-api)
-    * [REST](#rest)
-        * [Screenshots](#screenshots)
-            * [List screenshots](#list-screenshots)
-            * [Take new screenshot](#take-new-screenshot)
-            * [View a screenshot](#view-a-screenshot)
-            * [Delete a screenshot](#delete-a-screenshot)
-        * [Systems](#systems)
-            * [List systems](#list-systems)
-            * [Launch system](#launch-system)
-        * [Wallpapers](#wallpapers)
-            * [List wallpapers](#list-wallpapers)
-            * [Clear active wallpaper](#clear-active-wallpaper)
-            * [View a wallpaper](#view-a-wallpaper)
-            * [Set active wallpaper](#set-active-wallpaper)
-        * [Music](#music)
-            * [Get music service status](#get-music-service-status)
-            * [Play music](#play-music)
-            * [Stop music](#stop-music)
-            * [Skip current track](#skip-current-track)
-            * [Set playback type](#set-playback-type)
-            * [List playlists](#list-playlists)
-            * [Set active playlist](#set-active-playlist)
-        * [Games](#games)
-            * [Search for games](#search-for-games)
-            * [List indexed systems](#list-indexed-systems)
-            * [Launch game](#launch-game)
-            * [Generate search index](#generate-search-index)
-            * [Check current playing game and system](#check-current-playing-game-and-system)
-        * [Launchers](#launchers)
-            * [Launch token data](#launch-token-data)
-            * [Launch games, cores, arcade and .mgl](#launch-games-cores-arcade-and-mgl)
-            * [Launch menu](#launch-menu)
-    * [WebSocket](#websocket)
-
+  * [REST](#rest)
+    * [Screenshots](#screenshots)
+      * [List screenshots](#list-screenshots)
+      * [Take new screenshot](#take-new-screenshot)
+      * [View a screenshot](#view-a-screenshot)
+      * [Delete a screenshot](#delete-a-screenshot)
+    * [Systems](#systems)
+      * [List systems](#list-systems)
+      * [Launch system](#launch-system)
+    * [Wallpapers](#wallpapers)
+      * [List wallpapers](#list-wallpapers)
+      * [Clear active wallpaper](#clear-active-wallpaper)
+      * [View a wallpaper](#view-a-wallpaper)
+      * [Set active wallpaper](#set-active-wallpaper)
+    * [Music](#music)
+      * [Get music service status](#get-music-service-status)
+      * [Play music](#play-music)
+      * [Stop music](#stop-music)
+      * [Skip current track](#skip-current-track)
+      * [Set playback type](#set-playback-type)
+      * [List playlists](#list-playlists)
+      * [Set active playlist](#set-active-playlist)
+    * [Games](#games)
+      * [Search for games](#search-for-games)
+      * [List indexed systems](#list-indexed-systems)
+      * [Launch game](#launch-game)
+      * [Generate search index](#generate-search-index)
+      * [Check current playing game and system](#check-current-playing-game-and-system)
+    * [Launchers](#launchers)
+      * [Launch token data](#launch-token-data)
+      * [Launch games, cores, arcade and .mgl](#launch-games-cores-arcade-and-mgl)
+      * [Launch menu](#launch-menu)
+      * [Create shortcuts (.mgl files)](#create-shortcuts-mgl-files)
+    * [Controls (keyboard)](#controls-keyboard)
+      * [Send named keyboard key or combo](#send-named-keyboard-key-or-combo)
+      * [Send raw keyboard key](#send-raw-keyboard-key)
+    * [Menu](#menu)
+      * [List menu folder](#list-menu-folder)
+      * [Create menu folder](#create-menu-folder)
+      * [Rename menu item](#rename-menu-item)
+      * [Delete menu item](#delete-menu-item)
+  * [WebSocket](#websocket)
 <!-- TOC -->
 
 ## REST
@@ -828,6 +835,237 @@ Example request:
 
 ```shell
 curl --request POST --url "http://mister:8182/api/launch/menu"
+```
+
+#### Create shortcuts (.mgl files)
+
+Creates a .mgl file at the specified location for a game file. System and all necessary .mgl configuration is
+auto-detected.
+
+```plaintext
+POST /launch/new
+```
+
+Arguments (JSON):
+
+| Attribute  | Type   | Required | Description                                                                        |
+|------------|--------|----------|------------------------------------------------------------------------------------|
+| `gamePath` | string | Yes      | Path to the game file.                                                             |
+| `folder`   | string | Yes      | Folder .mgl file will be created (including underscores before menu folder names). |
+| `name`     | string | Yes      | Name of .mgl file, excluding extension.                                            |
+
+On success, returns `200` and object:
+
+| Attribute | Type   | Description                  |
+|-----------|--------|------------------------------|
+| `path`    | string | Final path of new .mgl file. |
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/launch/new" --data '{"gamePath":"/media/fat/games/PSX/1 USA - A-D/Crash Bandicoot (USA).chd","folder":"_@Favorites","name":"Crash Bandicoot"}'
+```
+
+Example response:
+
+```json
+{
+  "path": "/media/fat/_@Favorites/Crash Bandicoot.mgl"
+}
+```
+
+### Controls (keyboard)
+
+#### Send named keyboard key or combo
+
+Sends a keyboard key or combo to the MiSTer based on a predefined list of names that describe its function.
+See [here](https://github.com/wizzomafizzo/mrext/blob/f03acd3b2cab6950037a83f73bdd37af3b63510e/cmd/remote/control/control.go#L49)
+for the full list of names available.
+
+```plaintext
+POST /controls/keyboard/{name}
+```
+
+Arguments:
+
+| Attribute | Type   | Required | Description           |
+|-----------|--------|----------|-----------------------|
+| `name`    | string | Yes      | Name of keyboard key. |
+
+On success, returns `200`.
+
+If the name is not recognised, returns `500`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/controls/keyboard/confirm"
+```
+
+#### Send raw keyboard key
+
+Send a keyboard key based on its uinput code.
+See [here](https://github.com/bendahl/uinput/blob/600101208cf24d14eff079d2478ac1f8cad4ae8a/keycodes.go#L5) for full list
+of possible codes.
+
+*This method does not allow for sending combos, but a `-` can be prepended to the code to hold shift while sending.*
+
+```plaintext
+POST /controls/keyboard-raw/{code}
+```
+
+Arguments:
+
+| Attribute | Type   | Required | Description         |
+|-----------|--------|----------|---------------------|
+| `code`    | number | Yes      | uinput code of key. |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/controls/keyboard-raw/-16"
+```
+
+### Menu
+
+#### List menu folder
+
+List the contents of a menu folder.
+
+```plaintext
+POST /menu/view
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                                |
+|-----------|--------|----------|--------------------------------------------|
+| `path`    | string | Yes      | Path of menu folder (relative to SD card). |
+
+On success, returns `200` and object:
+
+| Attribute | Type   | Description                       |
+|-----------|--------|-----------------------------------|
+| `items`   | Item[] | List of Item objects (see below). |
+
+Item object:
+
+| Attribute   | Type    | Description                                                                        |
+|-------------|---------|------------------------------------------------------------------------------------|
+| `name`      | string  | Filename of item excluding extension (prefers `names.txt`).                        |
+| `path`      | string  | Absolute path to file.                                                             |
+| `parent`    | string  | Path to parent folder.                                                             |
+| `filename`  | string  | Full filename of item.                                                             |
+| `extension` | string  | File extension of item.                                                            |
+| `type`      | string  | Type of file: `folder`, `mra`, `rbf`, `mgl`, `unknown`                             |
+| `modified`  | string  | File modified date. Format: `YYYY-MM-DDThh:mm:ss+TZ`                               |
+| `version`   | string? | *Cores only.* Release date of core from filename. Format: `YYYY-MM-DDThh:mm:ss+TZ` |
+| `size`      | number  | Size of file in bytes.                                                             |
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/menu/view" --data '{"path":"."}'
+```
+
+Example response:
+
+```json
+{
+  "items": [
+    {
+      "name": "10-Yard Fight (USA, Europe)",
+      "path": "/media/fat/10-Yard Fight (USA, Europe).mgl",
+      "parent": ".",
+      "filename": "10-Yard Fight (USA, Europe).mgl",
+      "extension": ".mgl",
+      "type": "mgl",
+      "modified": "2023-08-12T08:30:38+08:00",
+      "size": 259
+    },
+    {
+      "name": "3 Count Bout",
+      "path": "/media/fat/3 Count Bout.mgl",
+      "parent": ".",
+      "filename": "3 Count Bout.mgl",
+      "extension": ".mgl",
+      "type": "mgl",
+      "modified": "2023-08-14T09:59:04+08:00",
+      "size": 130
+    }
+  ]
+}
+```
+
+#### Create menu folder
+
+Create a new menu folder. Underscore (`_`) is automatically prepended to the folder name.
+
+```plaintext
+POST /menu/files/create
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `type`    | string | Yes      | Must be: `folder`                                 |
+| `folder`  | string | Yes      | Path containing new folder (relative to SD card). |
+| `name`    | string | Yes      | Name of new folder.                               |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/menu/files/create" --data '{"type":"folder","folder":".","name":"New Folder"}'
+```
+
+#### Rename menu item
+
+Rename a menu item.
+
+```plaintext
+POST /menu/files/rename
+```
+
+Arguments (JSON):
+
+| Attribute  | Type   | Required | Description                     |
+|------------|--------|----------|---------------------------------|
+| `fromPath` | string | Yes      | Absolute path to existing file. |
+| `toPath`   | string | Yes      | Absolute path to new file.      |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/menu/files/rename" --data '{"fromPath":"/media/fat/New Folder","toPath":"/media/fat/New Folder 2"}'
+```
+
+#### Delete menu item
+
+Delete a menu item.
+
+```plaintext
+POST /menu/files/delete
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                         |
+|-----------|--------|----------|-------------------------------------|
+| `path`    | string | Yes      | Path of file (relative to SD card). |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/menu/files/delete" --data '{"path":"/media/fat/New Folder 2"}'
 ```
 
 ## WebSocket
