@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	TypeNTAG   = "NTAG"
-	TypeMifare = "MIFARE"
+	TypeNTAG      = "NTAG"
+	TypeMifare    = "MIFARE"
+	WRITE_COMMAND = byte(0xA2)
+	READ_COMMAND  = byte(0x30)
 )
 
 var NDEF_END = []byte{0xFE}
@@ -31,19 +33,6 @@ func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
 	}
 
 	return allBlocks, nil
-}
-
-func parseRecordText(blocks []byte) string {
-	// Find the text NDEF record
-	startIndex := bytes.Index(blocks, NDEF_START)
-	endIndex := bytes.Index(blocks, NDEF_END)
-
-	if startIndex != -1 && endIndex != -1 {
-		tagText := string(blocks[startIndex+4 : endIndex])
-		return tagText
-	}
-
-	return ""
 }
 
 func getCardUID(target nfc.Target) string {
@@ -66,37 +55,10 @@ func comm(pnd nfc.Device, tx []byte, replySize int) ([]byte, error) {
 	timeout := 0
 	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
 	if err != nil {
-		return nil, fmt.Errorf("error reading block: %s", err)
+		return nil, fmt.Errorf("comm error: %s", err)
 	}
 
 	return rx, nil
-}
-
-func getNtagCapacity(pnd nfc.Device) (int, error) {
-	// Find tag capacity by looking in block 3 (capability container)
-	tx := []byte{0x30, 0x03}
-	rx := make([]byte, 16)
-
-	timeout := 0
-	_, err := pnd.InitiatorTransceiveBytes(tx, rx, timeout)
-	if err != nil {
-		return 0, err
-	}
-
-	switch rx[2] {
-	case 0x12:
-		// NTAG213. (144 -4) / 4
-		return 35, nil
-	case 0x3E:
-		// NTAG215. (504 - 4) / 4
-		return 125, nil
-	case 0x6D:
-		// NTAG216. (888 -4) / 4
-		return 221, nil
-	default:
-		// fallback to NTAG213
-		return 35, nil
-	}
 }
 
 func getCardType(target nfc.Target) string {
@@ -129,7 +91,6 @@ func authMifareCommand(block byte, cardUid string) []byte {
 }
 
 func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
-
 	permissionSectors := []int{4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60}
 	var allBlocks = []byte{}
 	for block := 0; block < 64; block++ {

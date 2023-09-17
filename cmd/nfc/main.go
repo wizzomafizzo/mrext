@@ -178,7 +178,7 @@ func pollDevice(
 
 	if cardType == TypeNTAG {
 		logger.Info("NTAG detected")
-		capacity, err := getNtagCapacity(*pnd)
+		capacity, err := getNtagBlockCount(*pnd)
 		if err != nil {
 			logger.Error("error reading ntag capacity: %s", err)
 		}
@@ -199,7 +199,7 @@ func pollDevice(
 	}
 
 	logger.Debug("record bytes: %s", hex.EncodeToString(record))
-	tagText := parseRecordText(record)
+	tagText := ParseRecordText(record)
 	if tagText == "" {
 		logger.Warn("no text NDEF found")
 	} else {
@@ -548,8 +548,66 @@ func addToStartup() error {
 	return nil
 }
 
+func handleWriteCommand(textToWrite string, serviceIsRunning bool, connectionString string) {
+	if serviceIsRunning {
+		logger.Error("please stop the nfc service before writing to card")
+		fmt.Println("Please stop the nfc service before writing to card")
+		os.Exit(1)
+	}
+
+	pnd, err := nfc.Open(connectionString)
+	if err != nil {
+		logger.Error("could not open device: %s", err)
+		fmt.Println("Could not open device:", err)
+		os.Exit(1)
+	}
+	defer func(pnd nfc.Device) {
+		err := pnd.Close()
+		if err != nil {
+			logger.Warn("error closing device: %s", err)
+		}
+		logger.Info("closed nfc device")
+	}(pnd)
+
+	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+
+	if err != nil {
+		logger.Error("could not poll: %s", err)
+		fmt.Println("Could not poll:", err)
+		os.Exit(1)
+	}
+
+	if count == 0 {
+		logger.Error("could not find a card")
+		fmt.Println("Could not find a card")
+		os.Exit(1)
+	}
+
+	logger.Info("Found card with UID: %s", getCardUID(target))
+
+	cardType := getCardType(target)
+	if cardType != TypeNTAG {
+		logger.Error("unsupported card type: %s", cardType)
+		fmt.Println("Unsupported card type: " + cardType)
+		os.Exit(1)
+	}
+
+	bytesWritten, err := writeTextToCard(pnd, textToWrite)
+	if err != nil {
+		logger.Error("error writing to card: %s", err)
+		fmt.Println("Error writing to card:", err)
+		os.Exit(1)
+	}
+
+	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
+	fmt.Println("Successfully wrote to card")
+
+	os.Exit(0)
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage nfc service (start, stop, restart, status)")
+	writeOpt := flag.String("write", "", "write text to tag")
 	flag.Parse()
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
@@ -570,6 +628,10 @@ func main() {
 		logger.Error("error creating service: %s", err)
 		fmt.Println("Error creating service:", err)
 		os.Exit(1)
+	}
+
+	if *writeOpt != "" {
+		handleWriteCommand(*writeOpt, svc.Running(), cfg.NfcConfig.ConnectionString)
 	}
 
 	svc.ServiceHandler(svcOpt)
