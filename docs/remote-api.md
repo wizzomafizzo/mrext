@@ -43,12 +43,47 @@
       * [Create menu folder](#create-menu-folder)
       * [Rename menu item](#rename-menu-item)
       * [Delete menu item](#delete-menu-item)
+    * [Scripts](#scripts)
+      * [Launch a script](#launch-a-script)
+      * [List scripts](#list-scripts)
+      * [Open framebuffer console](#open-framebuffer-console)
+      * [Kill active script](#kill-active-script)
+    * [Settings](#settings)
+      * [List .ini files](#list-ini-files)
+      * [Set active .ini file](#set-active-ini-file)
+      * [Get .ini file values](#get-ini-file-values)
+      * [Set .ini file values](#set-ini-file-values)
+      * [Set menu background mode](#set-menu-background-mode)
+      * [Restart Remote service](#restart-remote-service)
+      * [Download Remote log file](#download-remote-log-file)
+      * [List Remote peers on network](#list-remote-peers-on-network)
+      * [Get custom Remote logo](#get-custom-remote-logo)
+      * [Reboot MiSTer](#reboot-mister)
+      * [Generate a MAC address](#generate-a-mac-address)
+    * [Get system information](#get-system-information)
   * [WebSocket](#websocket)
+    * [Connection](#connection)
+      * [Indexing status](#indexing-status)
+      * [Core status](#core-status)
+      * [Game status](#game-status)
+    * [Events](#events)
+    * [Commands](#commands)
+      * [Get indexing status](#get-indexing-status)
+      * [Send named keyboard key or combo](#send-named-keyboard-key-or-combo-1)
+      * [Send raw keyboard key](#send-raw-keyboard-key-1)
+      * [Send raw keyboard key down](#send-raw-keyboard-key-down)
+      * [Send raw keyboard key up](#send-raw-keyboard-key-up)
 <!-- TOC -->
 
 ## REST
 
+The REST API is accessible at `http://<ip or hostname>:8182/api` on a default Remote install. It can be used through any standard HTTP client. Examples below use [curl](https://curl.se/).
+
+See the [supported systems](systems.md) page for a list of system IDs referred to throughout this document.
+
 ### Screenshots
+
+Methods related to viewing, manageing and taking screenshots.
 
 #### List screenshots
 
@@ -184,11 +219,11 @@ This method takes no arguments.
 
 On success, returns `200` and a list of objects with attributes:
 
-| Attribute  | Type   | Description                                              |
-|------------|--------|----------------------------------------------------------|
-| `id`       | string | Remote's internal ID of the system.                      |
-| `name`     | string | Friendly name of system. Prefers using `names.txt` file. |
-| `category` | string | Name of subfolder core .rbf file is contained in.        |
+| Attribute  | Type   | Description                                                              |
+|------------|--------|--------------------------------------------------------------------------|
+| `id`       | string | Remote's internal ID of the system. See [systems](systems.md). |
+| `name`     | string | Friendly name of system. Prefers using `names.txt` file.                 |
+| `category` | string | Name of subfolder core .rbf file is contained in.                        |
 
 Example request:
 
@@ -223,9 +258,9 @@ POST /systems/{id}
 
 Arguments:
 
-| Attribute | Type   | Required | Description           |
-|-----------|--------|----------|-----------------------|
-| `id`      | string | Yes      | System's internal ID. |
+| Attribute | Type   | Required | Description            |
+|-----------|--------|----------|------------------------|
+| `id`      | string | Yes      | System's internal ID. See [systems](systems.md). |
 
 On success, returns `200`.
 
@@ -258,7 +293,7 @@ On success, returns `200` and object:
 |------------------|-------------|---------------------------------------------------------------------------------------------------------|
 | `active`         | string      | Filename of active wallpaper. Empty string if none set.                                                 |
 | `backgroundMode` | number      | The current index of "background mode" set in MiSTer menu. This is the mode changed when F1 is pressed. |
-| `wallpapers`     | wallpaper[] | See below.                                                                                              |
+| `wallpapers`     | Wallpaper[] | See below.                                                                                              |
 
 Wallpaper object:
 
@@ -567,7 +602,7 @@ On success, returns `200` and object:
 
 | Attribute  | Type     | Description                                                                                  |
 |------------|----------|----------------------------------------------------------------------------------------------|
-| `data`     | result[] | List of result objects (see below).                                                          |
+| `data`     | Result[] | List of result objects (see below).                                                          |
 | `total`    | number   | Total number of results.                                                                     |
 | `pageSize` | number   | Max number of results per page. *Accurate, but multiple pages aren't currently implemented.* |
 | `page`     | number   | Current page number.                                                                         |
@@ -576,16 +611,16 @@ Result object:
 
 | Attribute | Type   | Description                              |
 |-----------|--------|------------------------------------------|
-| `system`  | system | Information of system game is linked to. |
+| `system`  | System | Information of system game is linked to. |
 | `name`    | string | Filename of game excluding extension.    |
 | `path`    | string | Absolute path to game file.              |
 
 System object:
 
-| Attribute | Type   | Description                   |
-|-----------|--------|-------------------------------|
-| `id`      | string | Internal ID of linked system. |
-| `name`    | string | Friendly name of system.      |
+| Attribute | Type   | Description                    |
+|-----------|--------|--------------------------------|
+| `id`      | string | Internal ID of linked system. See [systems](systems.md). |
+| `name`    | string | Friendly name of system.       |
 
 Example request:
 
@@ -774,7 +809,7 @@ Example response:
 #### Launch token data
 
 Launch encoded data matching format of
-the [NFC script](https://github.com/wizzomafizzo/mrext/blob/main/docs/nfc.md#setting-up-tags) which includes cores,
+the [NFC script](nfc.md#setting-up-tags) which includes cores,
 games, .mras, .mgls and custom commands. This method is intended for QR code launching or any other devices with limited
 REST support. Data is encoded in [base64url](https://simplycalc.com/base64url-encode.php).
 
@@ -1068,4 +1103,600 @@ Example request:
 curl --request POST --url "http://mister:8182/api/menu/files/delete" --data '{"path":"/media/fat/New Folder 2"}'
 ```
 
+### Scripts
+
+Scripts are located in the `Scripts` folder on the SD card. These methods currently do not support scripts in subfolders
+or on external mounts.
+
+#### Launch a script
+
+Launch a script by filename. This method is intended to replicate exactly how launching a script from the MiSTer menu
+works. It attempts to switch to the framebuffer console and then launches the script using the same wrapper tmp script.
+
+```plaintext
+POST /scripts/launch/{filename}
+```
+
+Arguments:
+
+| Attribute  | Type   | Required | Description         |
+|------------|--------|----------|---------------------|
+| `filename` | string | Yes      | Filename of script. |
+
+Always returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/scripts/launch/update_all.sh"
+```
+
+#### List scripts
+
+List all scripts in the `Scripts` folder.
+
+```plaintext
+GET /scripts/list
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute   | Type     | Description                                   |
+|-------------|----------|-----------------------------------------------|
+| `canLaunch` | boolean  | Reports if the menu core is currently active. |
+| `scripts`   | Script[] | List of Script objects (see below).           |
+
+Script object:
+
+| Attribute  | Type   | Description                             |
+|------------|--------|-----------------------------------------|
+| `name`     | string | Filename of script excluding extension. |
+| `filename` | string | Full filename of script.                |
+| `path`     | string | Absolute path to script.                |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/scripts/list"
+```
+
+Example response:
+
+```json
+{
+  "canLaunch": true,
+  "scripts": [
+    {
+      "name": "Install_ScummVM",
+      "filename": "Install_ScummVM.sh",
+      "path": "/media/fat/Scripts/Install_ScummVM.sh"
+    },
+    {
+      "name": "MiSTer_SAM_off",
+      "filename": "MiSTer_SAM_off.sh",
+      "path": "/media/fat/Scripts/MiSTer_SAM_off.sh"
+    },
+    {
+      "name": "MiSTer_SAM_on",
+      "filename": "MiSTer_SAM_on.sh",
+      "path": "/media/fat/Scripts/MiSTer_SAM_on.sh"
+    }
+  ]
+}
+```
+
+#### Open framebuffer console
+
+Switch to the framebuffer console using the keyboard. This method works even if the menu is asleep.
+
+```plaintext
+POST /scripts/console
+```
+
+This method takes no arguments.
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/scripts/console"
+```
+
+#### Kill active script
+
+Kill the active script.
+
+```plaintext
+POST /scripts/kill
+```
+
+This method takes no arguments.
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/scripts/kill"
+```
+
+### Settings
+
+Most configuration is done through the `inis` endpoint. This is a low-level interface to the `MiSTer.ini` files that
+makes them accessible as a dictionary of string keys to string values.
+
+Notes on usage:
+
+- Keys are edited as needed, you don't need to send the entire state of the file to keep everything there, just the keys
+  you want to change.
+- This interface has very minimal validation, make sure to validate settings yourself.
+- Set a value to an empty string to remove it from the file.
+- Sections, like `[SNES]`, are not currently supported. All values edited are in the `[MiSTer]` section, but it's safe
+  to edit a file containing these sections, they remain untouched.
+- Some internal keys are added with a leading double underscore (`__`). These map back to system configuration files not
+  included in the `MiSTer.ini` files. Currently these are: `__hostname`, `__ethernetMacAddress`
+
+#### List .ini files
+
+List all available MiSTer.ini files on the SD card including alternate files.
+
+```plaintext
+GET /settings/inis
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute | Type   | Description                                                                                                                                          |
+|-----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `active`  | number | `0` to `4`. This is the current active .ini file's ID in the list. `0` is a special value meaning no value has been set, which falls back on ID `1`. |
+| `inis`    | Ini[]  | List of Ini objects (see below).                                                                                                                     |
+
+Ini object:
+
+| Attribute     | Type   | Description                                        |
+|---------------|--------|----------------------------------------------------|
+| `id`          | number | ID of .ini file.                                   |
+| `displayName` | string | Name of the .ini file as it would show in the OSD. |
+| `filename`    | string | Filename of the .ini file.                         |
+| `path`        | string | Absolute path to the .ini file.                    |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/inis"
+```
+
+Example response:
+
+```json
+{
+  "active": 0,
+  "inis": [
+    {
+      "id": 1,
+      "displayName": "Main",
+      "filename": "MiSTer.ini",
+      "path": "/media/fat/MiSTer.ini"
+    }
+  ]
+}
+```
+
+#### Set active .ini file
+
+Set the active .ini file by ID. Like MiSTer itself, this change is not persistent, and will be lost on reboot.
+
+```plaintext
+PUT /settings/inis
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description      |
+|-----------|--------|----------|------------------|
+| `ini`     | number | Yes      | ID of .ini file. |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request PUT --url "http://mister:8182/api/settings/inis" --data '{"ini":1}'
+```
+
+#### Get .ini file values
+
+Get all values from the specified .ini file.
+
+```plaintext
+GET /settings/inis/{id}
+```
+
+Arguments:
+
+| Attribute | Type   | Required | Description                            |
+|-----------|--------|----------|----------------------------------------|
+| `id`      | number | Yes      | ID of .ini file. `1`, `2`, `3` or `4`. |
+
+On success, returns `200` a dictionary of string keys to string values. Keys are case sensitive and map back to the
+appropriate key in the .ini file.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/inis/1"
+```
+
+Example reponse:
+
+```json
+{
+  "__ethernetMacAddress": "",
+  "__hostname": "MiSTuh",
+  "bootcore_timeout": "10",
+  "bt_auto_disconnect": "0",
+  "bt_reset_before_pair": "0",
+  "composite_sync": "0",
+  "controller_info": "6",
+  "direct_video": "0",
+  "disable_autofire": "0",
+  "fb_size": "0",
+  "fb_terminal": "1",
+  "font": "font/myfont.pf",
+  "forced_scandoubler": "0",
+  "gamepad_defaults": "0"
+}
+```
+
+#### Set .ini file values
+
+Set values in the specified .ini file.
+
+```plaintext
+PUT /settings/inis/{id}
+```
+
+Arguments (JSON):
+
+A dictionary of string keys to string values. Keys are case sensitive and map back to the appropriate key in the .ini
+file. If in the menu, the core will be restarted to apply the changes.
+
+Example request:
+
+```shell
+curl --request PUT --url "http://mister:8182/api/settings/inis/1" --data '{"composite_sync":"1"}'
+```
+
+#### Set menu background mode
+
+Set the "background mode" of the menu core. Equivalent to when `F1` is pressed in the menu, but doesn't use keyboard
+input.
+
+```plaintext
+PUT /settings/core/menu
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description |
+|-----------|--------|----------|-------------|
+| `mode`    | number | Yes      | `0` to `7`  |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request PUT --url "http://mister:8182/api/settings/core/menu" --data '{"mode":0}'
+```
+
+#### Restart Remote service
+
+Restart the Remote service. Used for reloading after an update.
+
+```plaintext
+POST /settings/remote/restart
+```
+
+This method takes no arguments.
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/settings/remote/restart"
+```
+
+#### Download Remote log file
+
+Offers the Remote log file for download.
+
+```plaintext
+GET /settings/remote/log
+```
+
+This method takes no arguments.
+
+On success, returns `200` and raw log file data with appropriate HTTP headers.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/remote/log" > remote.log
+```
+
+#### List Remote peers on network
+
+By default, Remote will scan regularly for other instances of Remote (other MiSTers) on the local network. This method
+gives access to that list of clients.
+
+```plaintext
+GET /settings/remote/peers
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute | Type   | Description                       |
+|-----------|--------|-----------------------------------|
+| `peers`   | Peer[] | List of Peer objects (see below). |
+
+Peer object:
+
+| Attribute  | Type   | Description                |
+|------------|--------|----------------------------|
+| `hostname` | string | Hostname of peer.          |
+| `version`  | string | Version of Remote on peer. |
+| `ip`       | string | IP address of peer.        |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/remote/peers"
+```
+
+Example response:
+
+```json
+{
+  "peers": [
+    {
+      "hostname": "MiSTuh.local",
+      "version": "0.2.4",
+      "ip": "10.0.0.107"
+    }
+  ]
+}
+```
+
+#### Get custom Remote logo
+
+Download the custom Remote logo file. This is just used for optional customisation in the Remote web UI.
+
+```plaintext
+GET /settings/remote/logo
+```
+
+This method takes no arguments.
+
+On success, returns `200` and raw logo file data with appropriate HTTP headers.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/remote/logo" > logo.png
+```
+
+#### Reboot MiSTer
+
+Reboot the MiSTer.
+
+```plaintext
+POST /settings/system/reboot
+```
+
+This method takes no arguments.
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/settings/system/reboot"
+```
+
+#### Generate a MAC address
+
+Generate a random MAC address. This is a utility function used for the `__ethernetMacAddress` key in the .ini files. It
+doesn't actually set the value in the .ini file.
+
+```plaintext
+GET /settings/system/generate-mac
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute | Type   | Description               |
+|-----------|--------|---------------------------|
+| `mac`     | string | Random valid MAC address. |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/system/generate-mac"
+```
+
+Example response:
+
+```json
+{
+  "mac": "32:d4:c2:00:00:6b"
+}
+```
+
+### Get system information
+
+Get information about the MiSTer system such as network, hostname, last update and disk usage.
+
+```plaintext
+GET /sysinfo
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute  | Type     | Description                                      |
+|------------|----------|--------------------------------------------------|
+| `ips`      | string[] | List of IP addresses.                            |
+| `hostname` | string   | Hostname of MiSTer.                              |
+| `dns`      | string   | DNS name of MiSTer.                              |
+| `version`  | string   | Version of Remote.                               |
+| `updated`  | string   | Last update time of MiSTer (through downloader). |
+| `disks`    | Disk[]   | List of Disk objects (see below).                |
+
+Disk object:
+
+| Attribute     | Type   | Description                                 |
+|---------------|--------|---------------------------------------------|
+| `path`        | string | Mount path of disk.                         |
+| `total`       | number | Total size of disk in bytes.                |
+| `used`        | number | Used size of disk in bytes.                 |
+| `free`        | number | Free size of disk in bytes.                 |
+| `displayName` | string | Friendly name of disk. Hardcoded in Remote. |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/sysinfo"
+```
+
+Example response:
+
+```json
+{
+  "ips": [
+    "10.0.0.107",
+    "10.0.0.218"
+  ],
+  "hostname": "MiSTuh",
+  "dns": "MiSTuh.local",
+  "version": "0.2.4",
+  "updated": "2023-08-30T19:35:02+08:00",
+  "disks": [
+    {
+      "path": "/media/fat",
+      "total": 511848742912,
+      "used": 449839759360,
+      "free": 62008983552,
+      "displayName": "SD card"
+    }
+  ]
+}
+```
+
 ## WebSocket
+
+Remote's WebSocket interface is available on the `/ws` endpoint. It's used for monitoring game and core status of the
+MiSTer, search indexing status, and a more granular lower latency keyboard input method.
+
+Multiple WebSocket connections are supported.
+
+### Connection
+
+On initial connection, the client will be sent messages giving current state.
+
+#### Indexing status
+
+Format: `indexStatus:{exists},{inProgress},{totalSteps},{currentStep},{currentStepDescription}`
+
+| Attribute                | Type    | Description                                                               |
+|--------------------------|---------|---------------------------------------------------------------------------|
+| `exists`                 | boolean | `y` if an index exists on disk, otherwise `n`.                            |
+| `inProgress`             | boolean | `y` if an index is currently being generated, otherwise `n`.              |
+| `totalSteps`             | number  | Total number of steps in the index generation process. Split by system.   |
+| `currentStep`            | number  | Current step in the index generation process. Split by system.            |
+| `currentStepDescription` | string  | Description of current step in the index generation process. System name. |
+
+Steps are used for displaying detailed indexing status to the user.
+
+#### Core status
+
+Format: `coreRunning:{name}`
+
+| Attribute | Type   | Description                                                    |
+|-----------|--------|----------------------------------------------------------------|
+| `name`    | string | `setname` of currently running core, blank if menu is running. |
+
+#### Game status
+
+Format: `gameRunning:{system}/{name}`
+
+| Attribute | Type   | Description |
+|-----------|---------|------------------|
+| `system`  | string | System ID of currently running core. |
+| `name`    | string | Filename of currently running game. |
+
+This field is blank if no game is running.
+
+### Events
+
+As their state changes, all clients connected to the WebSocket will be sent event updates for the messages listed in the
+connection section. The format of these is exactly the same as the connection messages.
+
+If the MiSTer exits to menu, the `gameRunning` and `coreRunning` events will be sent with blank values.
+
+### Commands
+
+These commands can be sent from the client to the server to perform actions.
+
+#### Get indexing status
+
+Format: `getIndexStatus`
+
+Returns the index status message as described in the connection section.
+
+#### Send named keyboard key or combo
+
+Format: `kbd:{name}`
+
+| Attribute | Type   | Description                                                                 |
+|-----------|--------|-----------------------------------------------------------------------------|
+| `name`    | string | Name of keyboard key, as described in the `/controls/keyboard` REST method. |
+
+#### Send raw keyboard key
+
+Format: `kbdRaw:{code}`
+
+| Attribute | Type   | Description                                                                   |
+|-----------|--------|-------------------------------------------------------------------------------|
+| `code`    | number | uinput code of key, as described in the `/controls/keyboard-raw` REST method. |
+
+#### Send raw keyboard key down
+
+Sends just a key down event, enabling holding keys and key combos.
+
+Format: `kbdRawDown:{code}`
+
+| Attribute | Type   | Description                                                                   |
+|-----------|--------|-------------------------------------------------------------------------------|
+| `code`    | number | uinput code of key, as described in the `/controls/keyboard-raw` REST method. |
+
+#### Send raw keyboard key up
+
+Sends just a key up event. Don't forget to do this after key down.
+
+Format: `kbdRawUp:{code}`
+
+| Attribute | Type   | Description                                                                   |
+|-----------|--------|-------------------------------------------------------------------------------|
+| `code`    | number | uinput code of key, as described in the `/controls/keyboard-raw` REST method. |
