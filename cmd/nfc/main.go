@@ -338,7 +338,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		tries := 0
 		for {
 			// TODO: don't show every failed attempt error, tidy the log
-			pnd, err = nfc.Open(cfg.NfcConfig.ConnectionString)
+			pnd, err = nfc.Open(cfg.Nfc.ConnectionString)
 			if err != nil {
 				logger.Error("could not open device: %s", err)
 				if tries >= connectMaxTries {
@@ -665,7 +665,7 @@ func main() {
 	}
 
 	if *writeOpt != "" {
-		handleWriteCommand(*writeOpt, svc, cfg.NfcConfig.ConnectionString)
+		handleWriteCommand(*writeOpt, svc, cfg.Nfc.ConnectionString)
 	}
 
 	svc.ServiceHandler(svcOpt)

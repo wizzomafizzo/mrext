@@ -80,6 +80,7 @@ in `nfc.ini` in the `Scripts` folder:
 ```
 [nfc]
 connection_string="pn532_uart:/dev/ttyUSB0"
+allow_commands=no
 ```
 
 Create this file if it doesn't exist. Be aware the `ttyUSB0` part may be different if you have other devices connected
@@ -165,7 +166,7 @@ You can also select all systems with `**random:all`.
 #### command
 
 **This feature is intentionally disabled for security reasons when run straight from a tag. You can still use it,
-but only via the `nfc.csv` file explained below.**
+but only via the `nfc.csv` file explained below or by enabling the `allow_commands` option in `nfc.ini`.**
 
 This command will run a MiSTer Linux command directly. For example:
 ```
