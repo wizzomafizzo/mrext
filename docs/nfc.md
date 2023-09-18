@@ -212,3 +212,28 @@ match_uid,match_text,text
 
 Only one `match_` column is required for an entry, and the `match_uid` can include colons and uppercase characters.
 You can get the UID of a tag by checking the output in the `nfc` Script display or on your phone.
+
+### Writing to tags
+
+The NFC script currently supports writing to NTAG tags through the command line option `-write <text>`.
+
+For example, from the console or SSH:
+```
+/media/fat/Scripts/nfc.sh -write "_Console/SNES"
+```
+This will write the text `_Console/SNES` to the next detected tag.
+
+This is available to any script or application on the MiSTer.
+
+### Reading tags
+
+Whenever a tag is successfully scanned, its UID and text contents (if available) will be written to the
+file `/tmp/NFCSCAN`. The contents of the file is in the format `<uid>,<text>`.
+
+You can monitor the file for changes to detect when a tag is scanned with the `inotifywait` command that is
+shipped on the MiSTer Linux image. For example:
+```
+while inotifywait -e modify /tmp/NFCSCAN; do
+    echo "Tag scanned"
+done
+```

@@ -550,7 +550,7 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 		err := svc.Stop()
 		if err != nil {
 			logger.Error("error stopping service: %s", err)
-			fmt.Println("Error stopping service:", err)
+			_, _ = fmt.Fprintln(os.Stderr, "Error stopping service:", err)
 			os.Exit(1)
 		}
 
@@ -563,7 +563,7 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 			tries--
 			if tries <= 0 {
 				logger.Error("error stopping service: %s", err)
-				fmt.Println("Error stopping service:", err)
+				_, _ = fmt.Fprintln(os.Stderr, "Error stopping service:", err)
 				os.Exit(1)
 			}
 		}
@@ -579,7 +579,8 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 			logger.Error("could not open device: %s", err)
 			if tries >= connectMaxTries {
 				logger.Error("giving up, exiting")
-				return
+				_, _ = fmt.Fprintln(os.Stderr, "Could not open device:", err)
+				os.Exit(1)
 			}
 		} else {
 			break
@@ -598,13 +599,13 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 
 	if err != nil {
 		logger.Error("could not poll: %s", err)
-		fmt.Println("Could not poll:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Could not poll:", err)
 		os.Exit(1)
 	}
 
 	if count == 0 {
 		logger.Error("could not find a card")
-		fmt.Println("Could not find a card")
+		_, _ = fmt.Fprintln(os.Stderr, "Could not find a card")
 		os.Exit(1)
 	}
 
@@ -613,25 +614,25 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 	cardType := getCardType(target)
 	if cardType != TypeNTAG {
 		logger.Error("unsupported card type: %s", cardType)
-		fmt.Println("Unsupported card type: " + cardType)
+		_, _ = fmt.Fprintln(os.Stderr, "Unsupported card type: "+cardType)
 		os.Exit(1)
 	}
 
 	bytesWritten, err := writeTextToCard(pnd, textToWrite)
 	if err != nil {
 		logger.Error("error writing to card: %s", err)
-		fmt.Println("Error writing to card:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Error writing to card:", err)
 		os.Exit(1)
 	}
 
 	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
-	fmt.Println("Successfully wrote to card")
+	_, _ = fmt.Fprintln(os.Stderr, "Successfully wrote to card")
 
 	if serviceRunning {
 		err := svc.Start()
 		if err != nil {
 			logger.Error("error starting service: %s", err)
-			fmt.Println("Error starting service:", err)
+			_, _ = fmt.Fprintln(os.Stderr, "Error starting service:", err)
 			os.Exit(1)
 		}
 	}
