@@ -1,4 +1,4 @@
-package misterini
+package mister
 
 const (
 	KeyYpbpr                   = "ypbpr"

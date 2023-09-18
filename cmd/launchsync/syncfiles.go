@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"io"
 	"io/fs"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"gopkg.in/ini.v1"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )

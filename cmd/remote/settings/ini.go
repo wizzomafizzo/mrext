@@ -3,7 +3,6 @@ package settings
 import (
 	"encoding/json"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/misterini"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"io"
 	"net/http"
@@ -31,7 +30,7 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 			return
 		}
 
-		mi, err := misterini.Get(reqId)
+		mi, err := mister.GetMisterIni(reqId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get mister.ini: %s", err)
@@ -88,7 +87,7 @@ func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("load ini request: %d", reqId)
 
-		mi, err := misterini.Get(reqId)
+		mi, err := mister.GetMisterIni(reqId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get mister.ini: %s", err)
@@ -102,7 +101,7 @@ func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
 			return
 		}
 
-		section, err := mi.File.GetSection(misterini.MainIniSection)
+		section, err := mi.File.GetSection(mister.MainIniSection)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get mister.ini section: %s", err)
@@ -138,13 +137,13 @@ func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
 }
 
 type IniResponse struct {
-	Active int                   `json:"active"`
-	Inis   []misterini.MisterIni `json:"inis"`
+	Active int                `json:"active"`
+	Inis   []mister.MisterIni `json:"inis"`
 }
 
 func HandleListInis(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		inis, err := misterini.GetAllWithDefault()
+		inis, err := mister.GetAllWithDefaultMisterIni()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list mister.inis: %s", err)
@@ -158,7 +157,7 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		inisList := make([]misterini.MisterIni, 0)
+		inisList := make([]mister.MisterIni, 0)
 		for _, ini := range inis {
 			inisList = append(inisList, ini)
 		}
@@ -198,7 +197,7 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		availableInis, err := misterini.GetAllWithDefault()
+		availableInis, err := mister.GetAllWithDefaultMisterIni()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list mister.inis: %s", err)

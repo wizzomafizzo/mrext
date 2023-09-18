@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"log"
 	"os"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
