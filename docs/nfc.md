@@ -37,8 +37,6 @@ Feel free to [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) t
 
 ### Tags
 
-**NOTE: Many ACR122U readers also come with a handful of Mifare 1K cards. These are not currently supported by the script, but hang onto them! They will be supported in an update coming soon.**
-
 The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 
 | Device                 | Details                                            |
@@ -46,6 +44,7 @@ The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 | NTAG213                | 144 bytes storage                                  |
 | NTAG215                | 504 bytes storage                                  |
 | NTAG216                | 888 bytes storage                                  |
+| MIFARE Classic 1K      | 716 bytes storage, often ships with readers        |
 | Amiibo                 | Supported using the `nfc.csv` file described below |
 
 Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large
@@ -162,6 +161,19 @@ This command will launch a game a random for the given system. For example:
 This will launch a random SNES game each time you scan the tag.
 
 You can also select all systems with `**random:all`.
+
+#### ini
+
+Loads the specified MiSTer.ini file and relaunches the menu core if open.
+
+Specify the .ini file with its index in the list shown in the MiSTer menu. Numbers `1` to `4`.
+
+For example:
+```
+**ini:1
+```
+
+This switch will not persist after a reboot, same as loading it through the OSD.
 
 #### command
 
