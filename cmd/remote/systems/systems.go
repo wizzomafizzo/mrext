@@ -3,6 +3,7 @@ package systems
 import (
 	"encoding/json"
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"net/http"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 

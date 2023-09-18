@@ -41,6 +41,7 @@ type RemoteConfig struct {
 
 type NfcConfig struct {
 	ConnectionString string `ini:"connection_string,omitempty"`
+	AllowCommands    bool   `ini:"allow_commands,omitempty"`
 }
 
 type SystemsConfig struct {
@@ -57,7 +58,7 @@ type UserConfig struct {
 	Search     SearchConfig     `ini:"search,omitempty"`
 	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
 	Remote     RemoteConfig     `ini:"remote,omitempty"`
-	NfcConfig  NfcConfig        `ini:"nfc,omitempty"` // TODO: rename to Nfc
+	Nfc        NfcConfig        `ini:"nfc,omitempty"`
 	Systems    SystemsConfig    `ini:"systems,omitempty"`
 }
 

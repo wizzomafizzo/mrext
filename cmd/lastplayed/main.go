@@ -6,7 +6,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/misterini"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -308,7 +307,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !misterini.RecentsOptionEnabled() {
+	if !mister.RecentsOptionEnabled() {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
 		fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")

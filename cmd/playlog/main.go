@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/misterini"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"os"
 
@@ -118,7 +117,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !misterini.RecentsOptionEnabled() {
+	if !mister.RecentsOptionEnabled() {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)

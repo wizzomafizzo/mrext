@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	s "strings"
 	"time"
 
@@ -565,6 +566,26 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 			}
 
 			return LaunchRandomGame(cfg, []games.System{*system})
+		case "ini":
+			inis, err := GetAllMisterIni()
+			if err != nil {
+				return err
+			}
+
+			if len(inis) == 0 {
+				return fmt.Errorf("no ini files found")
+			}
+
+			id, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			if id < 1 || id > len(inis) {
+				return fmt.Errorf("ini id out of range: %d", id)
+			}
+
+			return SetActiveIni(id)
 		default:
 			return fmt.Errorf("unknown command: %s", cmd)
 		}
@@ -603,4 +624,23 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 	}
 
 	return fmt.Errorf("could not find file: %s", text)
+}
+
+func RelaunchIfInMenu() error {
+	if _, err := os.Stat(config.CoreNameFile); err == nil {
+		name, err := os.ReadFile(config.CoreNameFile)
+		if err != nil {
+			err := LaunchMenu()
+			if err != nil {
+				return err
+			}
+		} else if string(name) == config.MenuCore {
+			err := LaunchMenu()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

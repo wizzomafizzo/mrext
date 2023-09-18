@@ -100,7 +100,7 @@ func launchCard(cfg *config.UserConfig, state *ServiceState) error {
 	}
 
 	logger.Info("launching with text: %s", card.Text)
-	err := mister.LaunchToken(cfg, false, card.Text)
+	err := mister.LaunchToken(cfg, cfg.Nfc.AllowCommands, card.Text)
 	if err != nil {
 		return err
 	}

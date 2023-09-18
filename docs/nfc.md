@@ -37,8 +37,6 @@ Feel free to [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) t
 
 ### Tags
 
-**NOTE: Many ACR122U readers also come with a handful of Mifare 1K cards. These are not currently supported by the script, but hang onto them! They will be supported in an update coming soon.**
-
 The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 
 | Device                 | Details                                            |
@@ -46,6 +44,7 @@ The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 | NTAG213                | 144 bytes storage                                  |
 | NTAG215                | 504 bytes storage                                  |
 | NTAG216                | 888 bytes storage                                  |
+| MIFARE Classic 1K      | 716 bytes storage, often ships with readers        |
 | Amiibo                 | Supported using the `nfc.csv` file described below |
 
 Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large
@@ -80,6 +79,7 @@ in `nfc.ini` in the `Scripts` folder:
 ```
 [nfc]
 connection_string="pn532_uart:/dev/ttyUSB0"
+allow_commands=no
 ```
 
 Create this file if it doesn't exist. Be aware the `ttyUSB0` part may be different if you have other devices connected
@@ -162,10 +162,23 @@ This will launch a random SNES game each time you scan the tag.
 
 You can also select all systems with `**random:all`.
 
+#### ini
+
+Loads the specified MiSTer.ini file and relaunches the menu core if open.
+
+Specify the .ini file with its index in the list shown in the MiSTer menu. Numbers `1` to `4`.
+
+For example:
+```
+**ini:1
+```
+
+This switch will not persist after a reboot, same as loading it through the OSD.
+
 #### command
 
 **This feature is intentionally disabled for security reasons when run straight from a tag. You can still use it,
-but only via the `nfc.csv` file explained below.**
+but only via the `nfc.csv` file explained below or by enabling the `allow_commands` option in `nfc.ini`.**
 
 This command will run a MiSTer Linux command directly. For example:
 ```
@@ -199,3 +212,28 @@ match_uid,match_text,text
 
 Only one `match_` column is required for an entry, and the `match_uid` can include colons and uppercase characters.
 You can get the UID of a tag by checking the output in the `nfc` Script display or on your phone.
+
+### Writing to tags
+
+The NFC script currently supports writing to NTAG tags through the command line option `-write <text>`.
+
+For example, from the console or SSH:
+```
+/media/fat/Scripts/nfc.sh -write "_Console/SNES"
+```
+This will write the text `_Console/SNES` to the next detected tag.
+
+This is available to any script or application on the MiSTer.
+
+### Reading tags
+
+Whenever a tag is successfully scanned, its UID and text contents (if available) will be written to the
+file `/tmp/NFCSCAN`. The contents of the file is in the format `<uid>,<text>`.
+
+You can monitor the file for changes to detect when a tag is scanned with the `inotifywait` command that is
+shipped on the MiSTer Linux image. For example:
+```
+while inotifywait -e modify /tmp/NFCSCAN; do
+    echo "Tag scanned"
+done
+```

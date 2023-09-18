@@ -299,25 +299,6 @@ func SetMenuBackgroundMode(mode int) error {
 	return os.WriteFile(config.MenuConfigFile, file, 0644)
 }
 
-func RelaunchIfInMenu() error {
-	if _, err := os.Stat(config.CoreNameFile); err == nil {
-		name, err := os.ReadFile(config.CoreNameFile)
-		if err != nil {
-			err := LaunchMenu()
-			if err != nil {
-				return err
-			}
-		} else if string(name) == config.MenuCore {
-			err := LaunchMenu()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func GetMounts(cfg *config.UserConfig) ([]string, error) {
 	file, err := os.ReadFile("/proc/mounts")
 	if err != nil {

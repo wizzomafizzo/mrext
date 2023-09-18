@@ -1,8 +1,7 @@
-package misterini
+package mister
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"gopkg.in/ini.v1"
 	"os"
@@ -24,7 +23,7 @@ type MisterIni struct {
 	File        *ini.File `json:"-"`
 }
 
-func GetAll() ([]MisterIni, error) {
+func GetAllMisterIni() ([]MisterIni, error) {
 	var inis []MisterIni
 
 	files, err := os.ReadDir(config.SdFolder)
@@ -94,8 +93,8 @@ func GetAll() ([]MisterIni, error) {
 	return inis, nil
 }
 
-func GetActive() (MisterIni, error) {
-	activeId, err := mister.GetActiveIni()
+func GetActiveMisterIni() (MisterIni, error) {
+	activeId, err := GetActiveIni()
 	if err != nil {
 		return MisterIni{}, err
 	}
@@ -104,7 +103,7 @@ func GetActive() (MisterIni, error) {
 		activeId = 1
 	}
 
-	inis, err := GetAll()
+	inis, err := GetAllMisterIni()
 	if err != nil {
 		return MisterIni{}, err
 	}
@@ -116,8 +115,8 @@ func GetActive() (MisterIni, error) {
 	return inis[activeId-1], nil
 }
 
-func Get(id int) (MisterIni, error) {
-	inis, err := GetAll()
+func GetMisterIni(id int) (MisterIni, error) {
+	inis, err := GetAllMisterIni()
 	if err != nil {
 		return MisterIni{}, err
 	}
@@ -129,9 +128,9 @@ func Get(id int) (MisterIni, error) {
 	return inis[id-1], nil
 }
 
-// GetAllWithDefault returns all ini files, setting up a default one if none exist.
-func GetAllWithDefault() ([]MisterIni, error) {
-	inis, err := GetAll()
+// GetAllWithDefaultMisterIni returns all ini files, setting up a default one if none exist.
+func GetAllWithDefaultMisterIni() ([]MisterIni, error) {
+	inis, err := GetAllMisterIni()
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,7 @@ func GetAllWithDefault() ([]MisterIni, error) {
 	return inis, nil
 }
 
-func blankFile() (*ini.File, error) {
+func blankMisterIniFile() (*ini.File, error) {
 	iniFile := ini.Empty()
 	_, err := iniFile.NewSection(MainIniSection)
 	return iniFile, err
@@ -160,7 +159,7 @@ func (mi *MisterIni) Load() error {
 
 	if _, err := os.Stat(mi.Path); os.IsNotExist(err) {
 		if mi.Filename == DefaultIniFilename {
-			blank, err := blankFile()
+			blank, err := blankMisterIniFile()
 			if err != nil {
 				return err
 			}
@@ -342,7 +341,7 @@ func (mi *MisterIni) RemoveKey(key string) error {
 }
 
 func RecentsOptionEnabled() bool {
-	iniFile, err := GetActive()
+	iniFile, err := GetActiveMisterIni()
 	if err != nil {
 		return false
 	}
@@ -361,7 +360,7 @@ func RecentsOptionEnabled() bool {
 }
 
 func GetInisWithout(key string, value string) ([]MisterIni, error) {
-	inis, err := GetAll()
+	inis, err := GetAllMisterIni()
 	if err != nil {
 		return nil, err
 	}
