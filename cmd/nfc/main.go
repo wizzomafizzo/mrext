@@ -25,14 +25,10 @@ import (
 
 // TODO: something like the nfc-list utility so new users with unsupported readers can help identify them
 // TODO: play sound using go library
-// TODO: a -test command to see what the result of an NDEF would be
 // TODO: would it be possible to unlock the OSD with a card?
-// TODO: more concrete amiibo support
 // TODO: create a test web nfc reader in separate github repo, hosted on pages
 // TODO: use a tag to signal that that next tag should have the active game written to it
-// TODO: option to use search.db instead of on demand index for random
-// TODO: check if a game is launched while the gui is open and close it (may not be possible)
-// TODO: clean up mgl files in tmp
+// TODO: if it exists, use search.db instead of on demand index for random
 
 const (
 	appName            = "nfc"
@@ -173,7 +169,7 @@ func pollDevice(
 
 	logger.Info("card UID: %s", cardUid)
 
-	record := []byte{}
+	var record []byte
 	cardType := getCardType(target)
 
 	if cardType == TypeNTAG {

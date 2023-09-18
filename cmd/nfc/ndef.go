@@ -20,9 +20,9 @@ func ParseRecordText(blocks []byte) string {
 	return ""
 }
 
-func BuildMessage(message string) ([]byte, error) {
-	ndef := ndef.NewTextMessage(message, "en")
-	var payload, err = ndef.Marshal()
+func BuildMessage(text string) ([]byte, error) {
+	msg := ndef.NewTextMessage(text, "en")
+	var payload, err = msg.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +44,12 @@ func CalculateNdefHeader(ndefRecord []byte) ([]byte, error) {
 
 	// NFCForum-TS-Type-2-Tag_1.1.pdf Page 9
 	// > 255 Use three consecutive bytes format
-	len := new(bytes.Buffer)
-	err := binary.Write(len, binary.BigEndian, uint16(recordLength))
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, uint16(recordLength))
 	if err != nil {
 		return nil, err
 	}
 
 	var header = []byte{0x03, 0xFF}
-	return append(header, len.Bytes()...), nil
+	return append(header, buf.Bytes()...), nil
 }
