@@ -610,6 +610,7 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 
 			for i := 0; i < amount; i++ {
 				kbd.Press(6)
+				time.Sleep(100 * time.Millisecond)
 			}
 
 			return nil
@@ -622,6 +623,7 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 
 			for i := 0; i < amount; i++ {
 				kbd.Press(7)
+				time.Sleep(100 * time.Millisecond)
 			}
 
 			return nil
