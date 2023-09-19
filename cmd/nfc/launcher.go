@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gocarina/gocsv"
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"io"
 	"os"
@@ -81,7 +82,7 @@ func loadDatabase(state *ServiceState) error {
 	return nil
 }
 
-func launchCard(cfg *config.UserConfig, state *ServiceState) error {
+func launchCard(cfg *config.UserConfig, state *ServiceState, kbd input.Keyboard) error {
 	card := state.GetActiveCard()
 	uidMap, textMap := state.GetDB()
 
@@ -108,7 +109,7 @@ func launchCard(cfg *config.UserConfig, state *ServiceState) error {
 	cmds := strings.Split(text, "||")
 
 	for _, cmd := range cmds {
-		err := mister.LaunchToken(cfg, cfg.Nfc.AllowCommands || override, cmd)
+		err := mister.LaunchToken(cfg, cfg.Nfc.AllowCommands || override, kbd, cmd)
 		if err != nil {
 			return err
 		}

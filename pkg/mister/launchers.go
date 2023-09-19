@@ -2,6 +2,7 @@ package mister
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io/ioutil"
 	"net/http"
@@ -511,7 +512,7 @@ func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
 	return fmt.Errorf("failed to find a random game")
 }
 
-func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
+func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text string) error {
 	// detection can never be perfect, but these characters are illegal in
 	// windows filenames and heavily avoided in linux. use them to mark that
 	// this is a command
@@ -591,6 +592,15 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 			go func() {
 				_, _ = http.Get(args)
 			}()
+			return nil
+		case "key":
+			code, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			kbd.Press(code)
+
 			return nil
 		default:
 			return fmt.Errorf("unknown command: %s", cmd)

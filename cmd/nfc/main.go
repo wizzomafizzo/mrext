@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"net"
 	"os"
 	"os/exec"
@@ -215,7 +216,13 @@ func pollDevice(
 func startService(cfg *config.UserConfig) (func() error, error) {
 	state := &ServiceState{}
 
-	err := loadDatabase(state)
+	kbd, err := input.NewKeyboard()
+	if err != nil {
+		logger.Error("failed to initialize keyboard: %s", err)
+		return nil, err
+	}
+
+	err = loadDatabase(state)
 	if err != nil {
 		logger.Error("error loading database: %s", err)
 	}
@@ -403,7 +410,7 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				logger.Warn("error writing tmp scan result: %s", err)
 			}
 
-			err = launchCard(cfg, state)
+			err = launchCard(cfg, state, kbd)
 			if err != nil {
 				logger.Error("error launching card: %s", err)
 				if time.Since(lastError) > 1*time.Second {
