@@ -85,24 +85,33 @@ func launchCard(cfg *config.UserConfig, state *ServiceState) error {
 	card := state.GetActiveCard()
 	uidMap, textMap := state.GetDB()
 
-	if override, ok := uidMap[card.UID]; ok {
-		logger.Info("launching with uid match override: %s", override)
-		return mister.LaunchToken(cfg, true, override)
+	text := card.Text
+	override := false
+
+	if v, ok := uidMap[card.UID]; ok {
+		logger.Info("launching with uid match override")
+		text = v
+		override = true
 	}
 
-	if override, ok := textMap[card.Text]; ok {
-		logger.Info("launching with text match override: %s", override)
-		return mister.LaunchToken(cfg, true, override)
+	if v, ok := textMap[card.Text]; ok {
+		logger.Info("launching with text match override")
+		text = v
+		override = true
 	}
 
 	if card.Text == "" {
 		return fmt.Errorf("no text NDEF found in card or database")
 	}
 
-	logger.Info("launching with text: %s", card.Text)
-	err := mister.LaunchToken(cfg, cfg.Nfc.AllowCommands, card.Text)
-	if err != nil {
-		return err
+	logger.Info("launching with text: %s", text)
+	cmds := strings.Split(text, "||")
+
+	for _, cmd := range cmds {
+		err := mister.LaunchToken(cfg, cfg.Nfc.AllowCommands || override, cmd)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
