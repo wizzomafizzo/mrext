@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -586,6 +587,11 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 			}
 
 			return SetActiveIni(id)
+		case "get":
+			go func() {
+				_, _ = http.Get(args)
+			}()
+			return nil
 		default:
 			return fmt.Errorf("unknown command: %s", cmd)
 		}
