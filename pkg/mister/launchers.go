@@ -2,8 +2,10 @@ package mister
 
 import (
 	"fmt"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -510,7 +512,7 @@ func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
 	return fmt.Errorf("failed to find a random game")
 }
 
-func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
+func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text string) error {
 	// detection can never be perfect, but these characters are illegal in
 	// windows filenames and heavily avoided in linux. use them to mark that
 	// this is a command
@@ -586,6 +588,45 @@ func LaunchToken(cfg *config.UserConfig, manual bool, text string) error {
 			}
 
 			return SetActiveIni(id)
+		case "get":
+			go func() {
+				_, _ = http.Get(args)
+			}()
+			return nil
+		case "key":
+			code, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			kbd.Press(code)
+
+			return nil
+		case "coinp1":
+			amount, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			for i := 0; i < amount; i++ {
+				kbd.Press(6)
+				time.Sleep(100 * time.Millisecond)
+			}
+
+			return nil
+		case "coinp2":
+			// TODO: this is lazy, make a function
+			amount, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			for i := 0; i < amount; i++ {
+				kbd.Press(7)
+				time.Sleep(100 * time.Millisecond)
+			}
+
+			return nil
 		default:
 			return fmt.Errorf("unknown command: %s", cmd)
 		}
