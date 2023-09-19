@@ -16,7 +16,8 @@ const (
 	MIFARE_BLOCK_SIZE_BYTES           = 16
 )
 
-func authMifareCommand(block byte, cardUid string) []byte {
+// buildMifareAuthCommand returns a command to authenticate against a block
+func buildMifareAuthCommand(block byte, cardUid string) []byte {
 	command := []byte{
 		// Auth using key A
 		0x60, block,
@@ -26,9 +27,9 @@ func authMifareCommand(block byte, cardUid string) []byte {
 	// And finally append the card UID to the end
 	uidBytes, _ := hex.DecodeString(cardUid)
 	return append(command, uidBytes...)
-
 }
 
+// readMifare reads data from all blocks in sectors 1-15
 func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 	permissionSectors := []int{4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60}
 	var allBlocks = []byte{}
@@ -49,7 +50,7 @@ func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 		// We need to authenticate before any read/ write operations can be performed
 		// Only need to authenticate once per sector
 		if block%4 == 0 {
-			comm(pnd, authMifareCommand(byte(block), cardUid), 2)
+			comm(pnd, buildMifareAuthCommand(byte(block), cardUid), 2)
 		}
 
 		blockData, err := comm(pnd, []byte{0x30, byte(block)}, 16)
@@ -67,13 +68,16 @@ func readMifare(pnd nfc.Device, cardUid string) ([]byte, error) {
 		}
 
 	}
+
 	return allBlocks, nil
 }
 
+// getMifareCapacityInBytes returns the Mifare card capacity
 func getMifareCapacityInBytes() int {
 	return (MIFARE_WRITABLE_BLOCKS_PER_SECTOR * MIFARE_WRITABLE_SECTOR_COUNT) * MIFARE_BLOCK_SIZE_BYTES
 }
 
+// writeMifare writes the given text string to a Mifare card starting from sector, skipping any trailer blocks
 func writeMifare(pnd nfc.Device, text string, cardUid string) ([]byte, error) {
 	var payload, err = BuildMessage(text)
 	if err != nil {
@@ -100,7 +104,7 @@ func writeMifare(pnd nfc.Device, text string, cardUid string) ([]byte, error) {
 			blockToWrite := (sector * 4) + sectorIndex
 			if sectorIndex == 0 {
 				// We changed sectors, time to authenticate
-				_, err := comm(pnd, authMifareCommand(byte(blockToWrite), cardUid), 2)
+				_, err := comm(pnd, buildMifareAuthCommand(byte(blockToWrite), cardUid), 2)
 				if err != nil {
 					return nil, err
 				}
