@@ -602,6 +602,29 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 			kbd.Press(code)
 
 			return nil
+		case "coinp1":
+			amount, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			for i := 0; i < amount; i++ {
+				kbd.Press(6)
+			}
+
+			return nil
+		case "coinp2":
+			// TODO: this is lazy, make a function
+			amount, err := strconv.Atoi(args)
+			if err != nil {
+				return err
+			}
+
+			for i := 0; i < amount; i++ {
+				kbd.Press(7)
+			}
+
+			return nil
 		default:
 			return fmt.Errorf("unknown command: %s", cmd)
 		}
