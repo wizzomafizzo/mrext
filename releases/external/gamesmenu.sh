@@ -33,7 +33,7 @@ MGL_MAP = (
     ("GAMEBOY", "_Console/Gameboy", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("GBA2P", "_Console/GBA2P", (({".gba"}, 1, "f", 0),)),
     ("GBA", "_Console/GBA", (({".gba"}, 1, "f", 0),)),
-    ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 0),)),
+    ("MegaDrive", "_Console/MegaDrive", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
     ("MegaCD", "_Console/MegaCD", (({".cue", ".chd"}, 1, "s", 0),)),
     (
         "NEOGEO",

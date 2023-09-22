@@ -148,6 +148,7 @@ MGL_MAP = (
     ("GameGear", "_Console/SMS", (({".gg"}, 1, "f", 2),)),
     ("GBA2P", "_Console/GBA2P", (({".gba"}, 2, "f", 0),)),
     ("GBA", "_Console/GBA", (({".gba"}, 2, "f", 1),)),
+    ("MegaDrive", "_Console/MegaDrive", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
     ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
     (
         "Intellivision",
