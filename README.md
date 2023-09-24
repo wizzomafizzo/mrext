@@ -51,7 +51,7 @@ Create and manage shortcuts for your favorite games. Favorites allows you to pic
 ## GamesMenu
 Browse your entire collection from the main MiSTer menu. GamesMenu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
 
-<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/games_menu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
+<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
 <a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
 
 ## LaunchSync
