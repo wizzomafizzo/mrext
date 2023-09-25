@@ -5,13 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/input"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/input"
 
 	"github.com/fsnotify/fsnotify"
 	gc "github.com/rthornton128/goncurses"
@@ -616,19 +617,30 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 		os.Exit(1)
 	}
 
-	logger.Info("Found card with UID: %s", getCardUID(target))
+	cardUid := getCardUID(target)
+	logger.Info("Found card with UID: %s", cardUid)
 
 	cardType := getCardType(target)
-	if cardType != TypeNTAG {
-		logger.Error("unsupported card type: %s", cardType)
-		_, _ = fmt.Fprintln(os.Stderr, "Unsupported card type: "+cardType)
-		os.Exit(1)
-	}
+	bytesWritten := []byte{}
 
-	bytesWritten, err := writeTextToCard(pnd, textToWrite)
-	if err != nil {
-		logger.Error("error writing to card: %s", err)
-		_, _ = fmt.Fprintln(os.Stderr, "Error writing to card:", err)
+	switch cardType {
+	case TypeMifare:
+		bytesWritten, err = writeMifare(pnd, textToWrite, cardUid)
+		if err != nil {
+			logger.Error("error writing to card: %s", err)
+			fmt.Fprintln(os.Stderr, "Error writing to card:", err)
+			fmt.Println("Mifare cards need to NDEF formatted. If this is a brand new card, please use NFC tools mobile app to write some text (this only needs to be done the first time)")
+			os.Exit(1)
+		}
+	case TypeNTAG:
+		bytesWritten, err = writeNtag(pnd, textToWrite)
+		if err != nil {
+			logger.Error("error writing to card: %s", err)
+			_, _ = fmt.Fprintln(os.Stderr, "Error writing to card:", err)
+			os.Exit(1)
+		}
+	default:
+		logger.Error("Unsupported card type: %s", cardType)
 		os.Exit(1)
 	}
 

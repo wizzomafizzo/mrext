@@ -15,7 +15,7 @@ const (
 
 // Only supports NTAG.
 // Mifare requires an authentication call and a different write method (0xA0)
-func writeTextToCard(pnd nfc.Device, text string) ([]byte, error) {
+func writeNtag(pnd nfc.Device, text string) ([]byte, error) {
 	var payload, err = BuildMessage(text)
 	if err != nil {
 		return nil, err
