@@ -238,6 +238,9 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 	}
 	_ = sf.Close()
 	playSuccess := func() {
+		if cfg.Nfc.DisableSounds {
+			return
+		}
 		err := exec.Command("aplay", successPath).Start()
 		if err != nil {
 			logger.Error("error playing success sound: %s", err)
@@ -254,6 +257,9 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 	}
 	_ = ff.Close()
 	playFail := func() {
+		if cfg.Nfc.DisableSounds {
+			return
+		}
 		err := exec.Command("aplay", failPath).Start()
 		if err != nil {
 			logger.Error("error playing fail sound: %s", err)

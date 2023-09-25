@@ -13,20 +13,15 @@ All hardware required is inexpensive, easily available and quick to set up.
   * [Tags](#tags)
 * [Install](#install)
   * [Hardware configuration](#hardware-configuration)
+* [Configuration](#configuration)
 * [Setting up tags](#setting-up-tags)
   * [Combining commands](#combining-commands)
   * [Launching games and cores](#launching-games-and-cores)
   * [Custom commands](#custom-commands)
-    * [Launch a system (system)](#launch-a-system-system)
-    * [Launch a random game (random)](#launch-a-random-game-random)
-    * [Change the actve MiSTer.ini file (ini)](#change-the-actve-misterini-file-ini)
-    * [Make an HTTP request to a URL (get)](#make-an-http-request-to-a-url-get)
-    * [Press a keyboard key (key)](#press-a-keyboard-key-key)
-    * [Insert a coin/credit (coinp1/coinp2)](#insert-a-coincredit-coinp1coinp2)
-    * [Run a system/Linux command (command)](#run-a-systemlinux-command-command)
-  * [Mappings database](#mappings-database)
-  * [Writing to tags](#writing-to-tags)
-  * [Reading tags](#reading-tags)
+* [Mappings database](#mappings-database)
+* [Writing to tags](#writing-to-tags)
+* [Reading tags](#reading-tags)
+* [Service socket](#service-socket)
 <!-- TOC -->
 
 ## Thanks to
@@ -123,6 +118,7 @@ If one doesn't exist, create a new one. This example has all the default values:
 [nfc]
 connection_string=""
 allow_commands=no
+disable_sounds=no
 ```
 
 All lines except the `[nfc]` header are optional.
@@ -136,6 +132,10 @@ and it currently required for the PN532 module.
 
 Enables the [command](#run-a-systemlinux-command-command) custom command to be triggered from a tag. By default this is
 disabled and only works from the `nfc.csv` file described below.
+
+### disable_sounds
+
+Disables the success and fail sounds played when a tag is scanned.
 
 ## Setting up tags
 
