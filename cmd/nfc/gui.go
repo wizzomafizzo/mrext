@@ -138,18 +138,16 @@ func displayServiceInfo(stdscr *goncurses.Window, service *service.Service) erro
 				logger.Debug("could not write to nfc service: %s", err)
 			} else {
 				buf := make([]byte, 4096)
-				n, err := conn.Read(buf)
+				_, err := conn.Read(buf)
 				if err != nil {
 					logger.Debug("could not read from nfc service: %s", err)
 				} else {
-					parts := strings.Split(string(buf[:n]), ",")
-					if len(parts) == 3 {
-						if parts[0] != "0" {
-							scanTime = parts[0]
-						}
-						tagUid = parts[1]
-						tagText = parts[2]
+					parts := strings.SplitN(string(buf), ",", 5)
+					if parts[0] != "0" {
+						scanTime = parts[0]
 					}
+					tagUid = parts[1]
+					tagText = parts[3]
 				}
 			}
 		}

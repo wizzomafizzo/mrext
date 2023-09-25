@@ -476,14 +476,14 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 					lastScanned := state.GetLastScanned()
 					if lastScanned.UID != "" {
 						payload = fmt.Sprintf(
-							"%d,%s,%s,%t",
+							"%d,%s,%t,%s",
 							lastScanned.ScanTime.Unix(),
 							lastScanned.UID,
-							lastScanned.Text,
 							!state.IsLauncherDisabled(),
+							lastScanned.Text,
 						)
 					} else {
-						payload = fmt.Sprintf("0,,,%t", !state.IsLauncherDisabled())
+						payload = fmt.Sprintf("0,,%t,", !state.IsLauncherDisabled())
 					}
 				case "disable":
 					state.DisableLauncher()
