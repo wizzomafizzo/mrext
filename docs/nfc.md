@@ -6,28 +6,33 @@ All hardware required is inexpensive, easily available and quick to set up.
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
 <!-- TOC -->
-* [NFC](#nfc)
-  * [Card labels](#card-labels)
-  * [Hardware required](#hardware-required)
-    * [Readers](#readers)
-    * [Tags](#tags)
-  * [Install](#install)
-    * [Hardware configuration](#hardware-configuration)
-  * [Setting up tags](#setting-up-tags)
-    * [Combining commands](#combining-commands)
-    * [Launching games and cores](#launching-games-and-cores)
-    * [Custom commands](#custom-commands)
-      * [Launch a system (system)](#launch-a-system-system)
-      * [Launch a random game (random)](#launch-a-random-game-random)
-      * [Change the actve MiSTer.ini file (ini)](#change-the-actve-misterini-file-ini)
-      * [Make an HTTP request to a URL (get)](#make-an-http-request-to-a-url-get)
-      * [Press a keyboard key (key)](#press-a-keyboard-key-key)
-      * [Insert a coin/credit (coinp1/coinp2)](#insert-a-coincredit-coinp1coinp2)
-      * [Run a system/Linux command (command)](#run-a-systemlinux-command-command)
-    * [Mappings database](#mappings-database)
-    * [Writing to tags](#writing-to-tags)
-    * [Reading tags](#reading-tags)
+* [Thanks to](#thanks-to)
+* [Card labels](#card-labels)
+* [Hardware required](#hardware-required)
+  * [Readers](#readers)
+  * [Tags](#tags)
+* [Install](#install)
+  * [Hardware configuration](#hardware-configuration)
+* [Setting up tags](#setting-up-tags)
+  * [Combining commands](#combining-commands)
+  * [Launching games and cores](#launching-games-and-cores)
+  * [Custom commands](#custom-commands)
+    * [Launch a system (system)](#launch-a-system-system)
+    * [Launch a random game (random)](#launch-a-random-game-random)
+    * [Change the actve MiSTer.ini file (ini)](#change-the-actve-misterini-file-ini)
+    * [Make an HTTP request to a URL (get)](#make-an-http-request-to-a-url-get)
+    * [Press a keyboard key (key)](#press-a-keyboard-key-key)
+    * [Insert a coin/credit (coinp1/coinp2)](#insert-a-coincredit-coinp1coinp2)
+    * [Run a system/Linux command (command)](#run-a-systemlinux-command-command)
+  * [Mappings database](#mappings-database)
+  * [Writing to tags](#writing-to-tags)
+  * [Reading tags](#reading-tags)
 <!-- TOC -->
+
+## Thanks to
+
+- [symm](https://github.com/symm) - for doing all the actual (hard) work of making the NFC scanners function on MiSTer.
+- [ElRojo](https://github.com/ElRojo/MiSTerRFID) & [javiwwweb](https://github.com/javiwwweb/MisTerRFID) - for project inspiration.
 
 ## Card labels
 
