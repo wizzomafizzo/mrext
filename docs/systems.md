@@ -486,7 +486,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Genesis
 
-**ID**: Genesis  | **Aliases**: MegaDrive  | **Folders**: Genesis | **RBF**: _Console/Genesis
+**ID**: Genesis  | **Aliases**: MegaDrive  | **Folders**: MegaDrive, Genesis | **RBF**: _Console/MegaDrive
 
 
 | Label | Files | Delay | Type | Index |
@@ -700,7 +700,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Nintendo 64
 
-**ID**: Nintendo64  | **Folders**: N64 | **RBF**: _Console/N64
+**ID**: Nintendo64  | **Aliases**: N64  | **Folders**: N64 | **RBF**: _Console/N64
 
 
 | Label | Files | Delay | Type | Index |
