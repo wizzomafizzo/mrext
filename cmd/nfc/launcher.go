@@ -101,7 +101,7 @@ func launchCard(cfg *config.UserConfig, state *ServiceState, kbd input.Keyboard)
 		override = true
 	}
 
-	if card.Text == "" {
+	if text == "" {
 		return fmt.Errorf("no text NDEF found in card or database")
 	}
 
