@@ -102,21 +102,18 @@ func (s *ServiceState) ShouldStopService() bool {
 }
 
 func (s *ServiceState) DisableLauncher() {
-	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = true
 }
 
 func (s *ServiceState) EnableLauncher() {
-	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = false
 }
 
 func (s *ServiceState) IsLauncherDisabled() bool {
-	// TODO: implement this
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.disableLauncher
@@ -411,6 +408,11 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 				logger.Warn("error writing tmp scan result: %s", err)
 			}
 
+			if state.IsLauncherDisabled() {
+				logger.Info("launcher disabled, skipping")
+				goto end
+			}
+
 			err = launchCard(cfg, state, kbd)
 			if err != nil {
 				logger.Error("error launching card: %s", err)
@@ -474,20 +476,23 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 					lastScanned := state.GetLastScanned()
 					if lastScanned.UID != "" {
 						payload = fmt.Sprintf(
-							"%d,%s,%s",
+							"%d,%s,%s,%t",
 							lastScanned.ScanTime.Unix(),
 							lastScanned.UID,
 							lastScanned.Text,
+							!state.IsLauncherDisabled(),
 						)
 					} else {
-						payload = "0,,"
+						payload = fmt.Sprintf("0,,,%t", !state.IsLauncherDisabled())
 					}
+				case "disable":
+					state.DisableLauncher()
+					logger.Info("launcher disabled")
+				case "enable":
+					state.EnableLauncher()
+					logger.Info("launcher enabled")
 				default:
 					logger.Warn("unknown command: %s", strings.TrimRight(string(buf[:n]), "\n"))
-				}
-
-				if payload == "" {
-					return
 				}
 
 				_, err = conn.Write([]byte(payload))
