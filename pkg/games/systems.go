@@ -549,7 +549,7 @@ var Systems = map[string]System{
 		Manufacturer: ManufacturerSega,
 		ReleaseDate:  "1988-10-29",
 		Alias:        []string{"MegaDrive"},
-		Folder:       []string{"MegaDrive"},
+		Folder:       []string{"MegaDrive", "Genesis"},
 		Rbf:          "_Console/MegaDrive",
 		Slots: []Slot{
 			{
