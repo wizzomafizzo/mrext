@@ -221,7 +221,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 
-	sub.HandleFunc("/l/{data:.*}", games.LaunchToken(logger, cfg)).Methods("GET")
+	sub.HandleFunc("/l/{data:.*}", games.LaunchToken(logger, cfg, kbd)).Methods("GET")
 
 	sub.HandleFunc("/launch", games.LaunchFile(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/launch/menu", games.LaunchMenu).Methods("POST")

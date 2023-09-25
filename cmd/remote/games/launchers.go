@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -43,7 +44,7 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 	}
 }
 
-func LaunchToken(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
+func LaunchToken(logger *service.Logger, cfg *config.UserConfig, kbd input.Keyboard) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		data := vars["data"]
@@ -58,7 +59,7 @@ func LaunchToken(logger *service.Logger, cfg *config.UserConfig) http.HandlerFun
 			return
 		}
 
-		err = mister.LaunchToken(cfg, false, string(path))
+		err = mister.LaunchToken(cfg, false, kbd, string(path))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("error during launch: %s", err)
