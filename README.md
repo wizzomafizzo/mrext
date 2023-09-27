@@ -202,6 +202,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
   Update script for the Flynn's DOS Shareware pack on the AO486 core.
 
+- [MiSTer-scripts](https://github.com/SwedishGojira/MiSTer-scripts)
+
+  Setup scripts for the Saturn and N64 cores.
+
 - [Top 300 Updater](https://github.com/flynnsbit/Top300_updates)
 
   Update script for Flynn's Top 300 pack on the AO486 core.
