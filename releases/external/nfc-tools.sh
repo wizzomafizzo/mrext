@@ -9,6 +9,7 @@ fullFileBrowser="false"
 url_regex="^(http|https|ftp)://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}(/.*)?$"
 basedir="/media/fat/"
 nfcCommand="${scriptdir}/nfc.sh"
+settings="${scriptdir}/nfc.ini"
 map="/media/fat/nfc.csv"
 mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
@@ -612,6 +613,27 @@ _craftCommand(){
 _Settings() {
 	local menuOptions selected
 	menuOptions=(
+		"Service"	"Toggle the NFC Service"
+		"Commands"	"Toggles the ability to run Linux commands from NFC tags"
+		"Sounds" 	"Toggles the success and fail sounds played when a tag is scanned"
+		"Connection"	"Hardware configuration for certain NFC readers"
+	)
+
+	while true; do
+		selected="$(_menu -- "${menuOptions[@]}")"
+		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+		case "${selected}" in
+			Service) _serviceSetting ;;
+			Commands) _commandSetting ;;
+			Sounds) _soundSetting ;;
+			Connection) _connectionSetting ;;
+		esac
+	done
+}
+
+_serviceSetting() {
+	local menuOptions selected
+	menuOptions=(
 		"Enable"     "Enable NFC service"  "off"
 		"Disable"    "Disable NFC service" "off"
 	)
@@ -619,7 +641,6 @@ _Settings() {
 	"${nfcStatus}" || menuOptions[5]="on"
 
 	selected="$(_radiolist -- "${menuOptions[@]}" )"
-
 	case "${selected}" in
 		Enable)
 			"${nfcCommand}" -service start || { _error "Unable to start the NFC service"; return; }
@@ -632,6 +653,124 @@ _Settings() {
 			nfcStatus="false"
 			export nfcStatus
 			_msgbox "The NFC service stopped"
+			;;
+	esac
+}
+
+_commandSetting() {
+	local menuOptions selected
+	menuOptions=(
+		"Enable"     "Enable Linux commands"  "off"
+		"Disable"    "Disable Linux commands" "off"
+	)
+
+	[[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
+
+	if grep -q "^allow_commands=yes" "${settings}"; then
+		menuOptions[2]="on"
+	else
+		menuOptions[5]="on"
+	fi
+
+	selected="$(_radiolist -- "${menuOptions[@]}" )"
+	case "${selected}" in
+		Enable)
+			if grep -q "^allow_commands=" "${settings}"; then
+			    sed -i "s/^allow_commands=.*/allow_commands=yes/" "${settings}"
+			else
+			    echo "allow_commands=yes" >> "${settings}"
+			fi
+			;;
+		Disable)
+			if grep -q "^allow_commands=" "${settings}"; then
+			    sed -i "s/^allow_commands=.*/allow_commands=no/" "${settings}"
+			else
+			    echo "allow_commands=no" >> "${settings}"
+			fi
+			;;
+	esac
+}
+
+_soundSetting() {
+	local menuOptions selected
+	menuOptions=(
+		"Enable"     "Enable the success and fail sounds played when a tag is scanned" "off"
+		"Disable"    "Disable the success and fail sounds played when a tag is scanned" "off"
+	)
+
+	[[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
+
+	if grep -q "^disable_sounds=no" "${settings}"; then
+		menuOptions[5]="on"
+	else
+		menuOptions[2]="on"
+	fi
+
+	selected="$(_radiolist -- "${menuOptions[@]}" )"
+	case "${selected}" in
+		Enable)
+			if grep -q "^disable_sounds=" "${settings}"; then
+			    sed -i "s/^disable_sounds=.*/disable_sounds=yes/" "${settings}"
+			else
+			    echo "disable_sounds=yes" >> "${settings}"
+			fi
+			;;
+		Disable)
+			if grep -q "^disable_sounds=" "${settings}"; then
+			    sed -i "s/^disable_sounds=.*/disable_sounds=no/" "${settings}"
+			else
+			    echo "disable_sounds=no" >> "${settings}"
+			fi
+			;;
+	esac
+}
+
+_connectionSetting() {
+	local menuOptions selected customString
+	menuOptions=(
+		"Default"   "Automatically detect hardware (recommended for most devices)"  "off"
+		"PN532"     "Select this option if you are using a PN532 UART module"       "off"
+		"Custom"    "Manually enter a custom connection string"                     "off"
+	)
+
+	[[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
+
+	if ! grep -q "^connection_string=.*" "${settings}"; then
+		menuOptions[2]="on"
+	elif grep -q "^connection_string=\"\"" "${settings}"; then
+		menuOptions[2]="on"
+	elif grep -q "^connection_string=\"pn532_uart:/dev/ttyUSB0\"" "${settings}"; then
+		menuOptions[5]="on"
+	elif grep -q "^connection_string=\".*\"" "${settings}"; then
+		menuOptions[8]="on"
+		customString="$(grep "^connection_string=" "${settings}" | cut -d '=' -f 2)"
+		menuOptions[7]="Current custom option: ${customString}"
+	fi
+
+	selected="$(_radiolist -- "${menuOptions[@]}" )"
+	case "${selected}" in
+		Default)
+			if grep -q "^connection_string=" "${settings}"; then
+				sed -i "s/^connection_string=.*/connection_string=\"\"/" "${settings}"
+			else
+				echo 'connection_string=""' >> "${settings}"
+			fi
+			;;
+		PN532)
+			if grep -q "^connection_string=" "${settings}"; then
+				sed -i 's/^connection_string=.*/connection_string="pn532_uart:\/dev\/ttyUSB0"/' "${settings}"
+			else
+				echo 'connection_string="pn532_uart:/dev/ttyUSB0"' >> "${settings}"
+			fi
+			;;
+		Custom)
+			customString="$(_inputbox "Enter connection string" "${customString}")"
+			#TODO sanitize input
+			if grep -q "^connection_string=" "${settings}"; then
+				sed -i "s/^connection_string=.*/connection_string=\"${customString}\"/" "${settings}"
+			else
+				echo "connection_string=\"${customString}\"" >> "${settings}"
+			fi
 			;;
 	esac
 }
@@ -843,6 +982,7 @@ _Mappings() {
 		"1" "${match_uid}"
 		"2" "${match_text}"
 		"3" "${text}"
+		#TODO item to delete line
 	)
 
 	selected="$(_menu \
