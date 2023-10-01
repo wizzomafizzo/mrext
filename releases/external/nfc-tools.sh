@@ -24,14 +24,14 @@ fi
 [[ -n "${nfcReadingStatus}" ]] && nfcReadingStatus="$(cut -d ',' -f 3 <<< "${nfcReadingStatus}")"
 [[ -n "${nfcReadingStatus}" ]] || nfcReadingStatus="false"
 cmdPalette=(
-	"system"	"This command will launch a system"
-	"random"	"This command will launch a game a random for the given system"
-	"ini"		"Loads the specified MiSTer.ini file and relaunches the menu core if open"
+	"system"	"Launch a system"
+	"random"	"Launch a random game for the given system"
+	"ini"		"Loads the specified MiSTer ini file"
 	"get"		"Perform an HTTP GET request to the specified URL"
-	"key"		"Press a key on the keyboard using its uinput code"
+	"key"		"Press a key on the keyboard"
 	"coinp1"	"Insert a coin/credit for player 1"
 	"coinp2"	"Insert a coin/credit for player 2"
-	"command"	"This command will run a MiSTer Linux command directly"
+	"command"	"Run Linux command"
 )
 consoles=(
 	"AdventureVision"	"Adventure Vision"
@@ -617,7 +617,7 @@ _Settings() {
 	menuOptions=(
 		"Service"	"Toggle the NFC Service"
 		"Commands"	"Toggles the ability to run Linux commands from NFC tags"
-		"Sounds" 	"Toggles the success and fail sounds played when a tag is scanned"
+		"Sounds" 	"Toggles sounds played when a tag is scanned"
 		"Connection"	"Hardware configuration for certain NFC readers"
 	)
 
@@ -696,8 +696,8 @@ _commandSetting() {
 _soundSetting() {
 	local menuOptions selected
 	menuOptions=(
-		"Enable"     "Enable the success and fail sounds played when a tag is scanned" "off"
-		"Disable"    "Disable the success and fail sounds played when a tag is scanned" "off"
+		"Enable"     "Enable sounds played when a tag is scanned" "off"
+		"Disable"    "Disable sounds played when a tag is scanned" "off"
 	)
 
 	[[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
@@ -730,7 +730,7 @@ _soundSetting() {
 _connectionSetting() {
 	local menuOptions selected customString
 	menuOptions=(
-		"Default"   "Automatically detect hardware (recommended for most devices)"  "off"
+		"Default"   "Automatically detect hardware (recommended)"  "off"
 		"PN532"     "Select this option if you are using a PN532 UART module"       "off"
 		"Custom"    "Manually enter a custom connection string"                     "off"
 	)
