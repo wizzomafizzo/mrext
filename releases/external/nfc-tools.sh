@@ -6,11 +6,13 @@ scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.1"
 fullFileBrowser="false"
 #TODO thoroughly test this regex, being cognicent of users needs
-url_regex="^(http|https|ftp)://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}(/.*)?$"
+url_regex='^(http|https|ftp)://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}(/.*)?$'
 basedir="/media/fat/"
 nfcCommand="${scriptdir}/nfc.sh"
 settings="${scriptdir}/nfc.ini"
 map="/media/fat/nfc.csv"
+#For debugging purpouse
+[[ -d "/media/fat" ]] || map="${scriptdir}/nfc.csv"
 mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
 if [[ "${nfcStatus}" == "nfc service running" ]]; then
@@ -569,7 +571,7 @@ _craftCommand(){
 				http="$(_inputbox "Enter URL" "https://")"
 				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 				[[ "${http}" =~ ${url_regex} ]] && break
-				_error "${http} doesn't appear to be a valid URL"
+				_error "${http} doesn't appear to be a valid URL\n\nIf you believe this is a mistake please open an issue at\n\Zuhttps://github.com/wizzomafizzo/mrext/issues\ZU"
 			done
 			command="${command}:${http}"
 			;;
@@ -950,7 +952,7 @@ _Mappings() {
 	local oldMap arrayIndex line lineNumber match_uid match_text text menuOptions selected replacement_match_text replacement_match_uid replacement_text message new_match_uid new_text
 	unset replacement_match_uid replacement_text
 
-	[[ ! -e "${map}" ]] || printf "%s\n" "${mapHeader}" >> "${map}" || { _error "Can't initialize mappings database!" ; return 1 ; }
+	[[ -e "${map}" ]] || printf "%s\n" "${mapHeader}" >> "${map}" || { _error "Can't initialize mappings database!" ; return 1 ; }
 
 	mapfile -t -O 1 -s 1 oldMap < "${map}"
 	echo "${oldMap[@]}"
@@ -979,29 +981,36 @@ _Mappings() {
 	text="$(cut -d ',' -f 3 <<< "${oldMap[$line]}")"
 
 	menuOptions=(
-		"1" "${match_uid}"
-		"2" "${match_text}"
-		"3" "${text}"
-		#TODO item to delete line
+		"UID" "${match_uid}"
+		"Match" "${match_text}"
+		"Text" "${text}"
+		"Delete" "Remove entry from mappings database"
 	)
 
 	selected="$(_menu \
 		-- "${menuOptions[@]}" )"
+	exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { _Mappings ; return ; }
 
 	case "${selected}" in
-	1)
+	UID)
 		# Replace match_uid
 		replacement_match_uid="$(_readTag | cut -d ',' -f 2)"
 		[[ -z "${replacement_match_uid}" ]] && return
 		;;
-	2)
+	Match)
 		# Replace match_text
 		replacement_match_text="$( _inputbox "Replace match text" "${match_text}" || return )"
+		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 		;;
-	3)
+	Text)
 		# Replace text
 		replacement_text="$(_commandPalette)"
 		[[ -z "${replacement_text}" ]] && { _msgbox "Nothing selected for writing" ; return ; }
+		;;
+	Delete)
+		# Delete line from Mappings database
+		sed -i "${lineNumber}d" "${map}"
+		return
 		;;
 	esac
 
@@ -1247,9 +1256,11 @@ _error() {
 	shift
 	[[ "${1}" =~ ^[0-9]+$ ]] && exitcode="${1}" && shift
 	opts=("${@}")
+
 	dialog \
 		--backtitle "${title}" \
-		--title "ERROR:" \
+		--title "\Z1ERROR:\Zn" \
+		--colors \
 		"${opts[@]}" \
 		--msgbox "${msg}" \
 		22 77 3>&1 1>&2 2>&3 >"$(tty)" <"$(tty)"
