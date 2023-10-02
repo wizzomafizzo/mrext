@@ -380,29 +380,30 @@ keycodes=(
 	"Rfkill"		"247" #KeyThatControlsAllRadios
 	"Micmute"		"248" #Mute/UnmuteTheMicrophone
 
-	"ButtonGamepad"		"0x130"
-
-	"ButtonSouth"		"0x130" # A / X
-	"ButtonEast"		"0x131" # X / Square
-	"ButtonNorth"		"0x133" # Y / Triangle
-	"ButtonWest"		"0x134" # B / Circle
-
-	"ButtonBumperLeft"	"0x136" # L1
-	"ButtonBumperRight"	"0x137" # R1
-	"ButtonTriggerLeft"	"0x138" # L2
-	"ButtonTriggerRight"	"0x139" # R2
-	"ButtonThumbLeft"	"0x13d" # L3
-	"ButtonThumbRight"	"0x13e" # R3
-
-	"ButtonSelect"		"0x13a"
-	"ButtonStart"		"0x13b"
-
-	"ButtonDpadUp"		"0x220"
-	"ButtonDpadDown"	"0x221"
-	"ButtonDpadLeft"	"0x222"
-	"ButtonDpadRight"	"0x223"
-
-	"ButtonMode"		"0x13c" # This is the special button that usually bears the Xbox or Playstation logo
+## Valid uinput keycodes, not supported, may be supported in the future
+#	"ButtonGamepad"		"0x130"
+#
+#	"ButtonSouth"		"0x130" # A / X
+#	"ButtonEast"		"0x131" # X / Square
+#	"ButtonNorth"		"0x133" # Y / Triangle
+#	"ButtonWest"		"0x134" # B / Circle
+#
+#	"ButtonBumperLeft"	"0x136" # L1
+#	"ButtonBumperRight"	"0x137" # R1
+#	"ButtonTriggerLeft"	"0x138" # L2
+#	"ButtonTriggerRight"	"0x139" # R2
+#	"ButtonThumbLeft"	"0x13d" # L3
+#	"ButtonThumbRight"	"0x13e" # R3
+#
+#	"ButtonSelect"		"0x13a"
+#	"ButtonStart"		"0x13b"
+#
+#	"ButtonDpadUp"		"0x220"
+#	"ButtonDpadDown"	"0x221"
+#	"ButtonDpadLeft"	"0x222"
+#	"ButtonDpadRight"	"0x223"
+#
+#	"ButtonMode"		"0x13c" # This is the special button that usually bears the Xbox or Playstation logo
 )
 
 _depends() {
@@ -434,13 +435,32 @@ main() {
 }
 
 _Read() {
-	local nfcSCAN nfcUID nfcTXT
+	local nfcSCAN nfcUID nfcTXT mappedMatch message
 
 	nfcSCAN="$(_readTag)"
 	exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 	nfcTXT="$(cut -d ',' -f 4 <<< "${nfcSCAN}" )"
 	nfcUID="$(cut -d ',' -f 2 <<< "${nfcSCAN}" )"
-	[[ -n "${nfcSCAN}" ]] && _yesno "Tag contents: ${nfcTXT}\n Tag UID: ${nfcUID}" --yes-label "OK" --no-label "Re-Map" --extra-button --extra-label "Clone Tag"
+	read -rd '' message <<_EOF_
+Tag contents: ${nfcTXT}
+Tag UID: ${nfcUID}
+_EOF_
+	[[ -f "${map}" ]] && mappedMatch="$(grep -i "^${nfcUID}" "${map}")"
+	[[ -n "${mappedMatch}" ]] && read -rd '' message <<_EOF_
+${message}
+
+Mapped matche by UID:
+${mappedMatch}
+_EOF_
+
+	[[ -f "${map}" ]] && matchedEntry="$(_searchMatchText "${nfcTXT}")"
+	[[ -n "${matchedEntry}" ]] && read -rd '' message <<_EOF_
+${message}
+
+Mapped matche by match_text:
+${matchedEntry}
+_EOF_
+	[[ -n "${nfcSCAN}" ]] && _yesno "${message}" --yes-label "OK" --no-label "Re-Map" --extra-button --extra-label "Clone Tag"
 	case "${?}" in
 		1)
 			_writeTextToMap --uid "${nfcUID}" "$(_commandPalette)"
@@ -622,7 +642,7 @@ _Settings() {
 	)
 
 	while true; do
-		selected="$(_menu -- "${menuOptions[@]}")"
+		selected="$(_menu --cancel-label "Back" -- "${menuOptions[@]}")"
 		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 		case "${selected}" in
 			Service) _serviceSetting ;;
@@ -678,16 +698,16 @@ _commandSetting() {
 	case "${selected}" in
 		Enable)
 			if grep -q "^allow_commands=" "${settings}"; then
-			    sed -i "s/^allow_commands=.*/allow_commands=yes/" "${settings}"
+				sed -i "s/^allow_commands=.*/allow_commands=yes/" "${settings}"
 			else
-			    echo "allow_commands=yes" >> "${settings}"
+				echo "allow_commands=yes" >> "${settings}"
 			fi
 			;;
 		Disable)
 			if grep -q "^allow_commands=" "${settings}"; then
-			    sed -i "s/^allow_commands=.*/allow_commands=no/" "${settings}"
+				sed -i "s/^allow_commands=.*/allow_commands=no/" "${settings}"
 			else
-			    echo "allow_commands=no" >> "${settings}"
+				echo "allow_commands=no" >> "${settings}"
 			fi
 			;;
 	esac
@@ -712,16 +732,16 @@ _soundSetting() {
 	case "${selected}" in
 		Enable)
 			if grep -q "^disable_sounds=" "${settings}"; then
-			    sed -i "s/^disable_sounds=.*/disable_sounds=yes/" "${settings}"
+				sed -i "s/^disable_sounds=.*/disable_sounds=yes/" "${settings}"
 			else
-			    echo "disable_sounds=yes" >> "${settings}"
+				echo "disable_sounds=yes" >> "${settings}"
 			fi
 			;;
 		Disable)
 			if grep -q "^disable_sounds=" "${settings}"; then
-			    sed -i "s/^disable_sounds=.*/disable_sounds=no/" "${settings}"
+				sed -i "s/^disable_sounds=.*/disable_sounds=no/" "${settings}"
 			else
-			    echo "disable_sounds=no" >> "${settings}"
+				echo "disable_sounds=no" >> "${settings}"
 			fi
 			;;
 	esac
@@ -787,8 +807,12 @@ _About() {
 ${title} ${version}-${gitbranch}-${builddate} + ${githash}
 
 Add useful description here!
+
+Wizzo     \Zugithub.com/wizzomafizzo\Zn
+Gaz       \Zugithub.com/symm\Zn
+Ziggurat  \Zugithub.com/sigboe\Zn
 _EOF_
-	_msgbox "${about}" --title "About"
+	_msgbox "${about}" --no-collapse --colors --title "About"
 }
 
 # dialog --fselect broken out to a function,
@@ -938,14 +962,16 @@ _browseZip() {
 }
 
 # Map or remap filepath or command for a given NFC tag (written to local database)
-# Usage: _map "UID" "Text"
+# Usage: _map "UID" "Match Text" "Text"
+# Values may be empty
 _map() {
-	local uid txt
+	local uid match txt
 	uid="${1}"
-	txt="${2}"
+	match="${2}"
+	txt="${3}"
 	[[ -e "${map}" ]] ||  printf "%s\n" "${mapHeader}" >> "${map}" || { _error "Can't initialize mappings database!" ; return 1 ; }
-	grep -q "^${uid}" "${map}" && sed -i "/^${uid}/d" "${map}"
-	printf "%s,,%s\n" "${uid}" "${txt}" >> "${map}"
+	[[ -z "${uid}" ]] || { grep -q "^${uid}" "${map}" && sed -i "/^${uid}/d" "${map}" ; }
+	printf "%s,%s,%s\n" "${uid}" "${match}" "${txt}" >> "${map}"
 }
 
 _Mappings() {
@@ -961,15 +987,21 @@ _Mappings() {
 
 	line="$(msg="${mapHeader}" _menu \
 		--extra-button --extra-label "New" \
+		--cancel-label "Back" \
 		-- "${arrayIndex[@]//\"/}" )"
 
 	if [[ "${?}" == "3" ]]; then
-		new_match_uid="$(_readTag | cut -d ',' -f 2)"
-		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
-		new_match_uid="$(cut -d ',' -f 2 <<< "${new_match_uid}")"
+		if _yesno "Read tag or type match text?" --yes-label "Read tag" --no-label "Match text"; then
+			new_match_uid="$(_readTag)"
+			exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+			new_match_uid="$(cut -d ',' -f 2 <<< "${new_match_uid}")"
+		else
+			new_match_text="$( _inputbox "Replace match text" "${match_text}")"
+			exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+		fi
 		new_text="$(_commandPalette)"
 		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
-		_map "${new_match_uid}" "${new_text}"
+		_map "${new_match_uid}" "${new_match_text}" "${new_text}"
 		_Mappings
 		return
 	fi
@@ -996,20 +1028,28 @@ _Mappings() {
 		# Replace match_uid
 		replacement_match_uid="$(_readTag | cut -d ',' -f 2)"
 		[[ -z "${replacement_match_uid}" ]] && return
+		replacement_match_text="${match_text}"
+		replacement_text="${text}"
+
 		;;
 	Match)
 		# Replace match_text
-		replacement_match_text="$( _inputbox "Replace match text" "${match_text}" || return )"
+		replacement_match_text="$( _inputbox "Replace match text" "${match_text}")"
 		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+		replacement_match_uid="${match_uid}"
+		replacement_text="${text}"
 		;;
 	Text)
 		# Replace text
 		replacement_text="$(_commandPalette)"
 		[[ -z "${replacement_text}" ]] && { _msgbox "Nothing selected for writing" ; return ; }
+		replacement_match_uid="${match_uid}"
+		replacement_match_text="${match_text}"
 		;;
 	Delete)
 		# Delete line from Mappings database
 		sed -i "${lineNumber}d" "${map}"
+		_Mappings
 		return
 		;;
 	esac
@@ -1018,10 +1058,10 @@ _Mappings() {
 Replace:
 ${match_uid},${match_text},${text}
 With:
-${replacement_match_uid:-$match_uid},${replacement_match_text:-$match_text},${replacement_text:-$text}
+${replacement_match_uid},${replacement_match_text},${replacement_text}
 _EOF_
 	_yesno "${message}" || return
-	sed -i "${lineNumber}c\\${replacement_match_uid:-$match_uid},${replacement_match_text:-$match_text},${replacement_text:-$text}" "${map}"
+	sed -i "${lineNumber}c\\${replacement_match_uid},${replacement_match_text},${replacement_text}" "${map}"
 
 }
 
@@ -1107,6 +1147,24 @@ _readTag() {
 	[[ "${nfcReadingStatus}" ]] && echo "enable" | socat - UNIX-CONNECT:/tmp/nfc.sock
 	#[[ -z "${nfcSCAN}" ]] && { _error "Tag not read" ; _readTag ; }
 	[[ -n "${nfcSCAN}" ]] && echo "${nfcSCAN}"
+}
+
+# Search for possible matches by match_text in the mappings database
+# Usage: _searchMatchText "Text"
+# Returns lines that match
+_searchMatchText() {
+	local nfcTxt
+	nfcTxt="${1}"
+
+	[[ -f "${map}" ]] || return
+	[[ $(head -n 1 "${map}") == "${mapHeader}" ]] || return
+
+	sed 1d "${map}" | while IFS=, read -r match_uid match_text text; do
+		[[ -z "${match_text}" ]] && continue
+		if [[ "${nfcTxt}" == *"${match_text}"* ]]; then
+			echo "${match_uid},${match_text},${text}"
+		fi
+	done
 }
 
 
