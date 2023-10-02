@@ -522,7 +522,7 @@ _commandPalette() {
 	)
 
 	selected="$(_menu \
-		--cancel-label "Exit" \
+		--cancel-label "Back" \
 		--default-item "${selected}" \
 		-- "${menuOptions[@]}" )"
 	exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
@@ -565,7 +565,7 @@ _craftCommand(){
 	#	command="||"
 	#fi
 	selected="$(_menu \
-		--cancel-label "Exit" \
+		--cancel-label "Back" \
 		-- "${cmdPalette[@]}" )"
 	exitcode="${?}"
 	[[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
@@ -991,14 +991,23 @@ _Mappings() {
 		-- "${arrayIndex[@]//\"/}" )"
 
 	if [[ "${?}" == "3" ]]; then
-		if _yesno "Read tag or type match text?" --yes-label "Read tag" --no-label "Match text"; then
-			new_match_uid="$(_readTag)"
-			exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
-			new_match_uid="$(cut -d ',' -f 2 <<< "${new_match_uid}")"
-		else
-			new_match_text="$( _inputbox "Replace match text" "${match_text}")"
-			exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
-		fi
+		_yesno "Read tag or type match text?" \
+			--yes-label "Read tag" --no-label "Cancel" \
+			--extra-button --extra-label "Match text"
+		case "${?}" in
+			0)
+				new_match_uid="$(_readTag)"
+				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+				new_match_uid="$(cut -d ',' -f 2 <<< "${new_match_uid}")"
+				;;
+			3)
+				new_match_text="$( _inputbox "Replace match text" "${match_text}")"
+				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+				;;
+			1|255)
+				return
+				;;
+		esac
 		new_text="$(_commandPalette)"
 		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 		_map "${new_match_uid}" "${new_match_text}" "${new_text}"
