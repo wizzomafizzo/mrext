@@ -34,24 +34,24 @@ func readNtag(pnd nfc.Device, logger *service.Logger) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+	logger.Info("NTAG has %d blocks", blockCount)
 
 	allBlocks := make([]byte, 0)
-	blockNumber := 4
+	currentBlock := 4
 
 	for i := 0; i <= (blockCount / 4); i++ {
-		blocks, err := comm(pnd, []byte{READ_COMMAND, byte(blockNumber)}, 16)
+		blocks, err := comm(pnd, []byte{READ_COMMAND, byte(currentBlock)}, 16)
 		if err != nil {
 			return nil, err
 		}
 
-		if byte(blockNumber) == 0x04 {
-			if bytes.Equal(blocks[0:14], LEGO_DIMENSIONS_MATCHER) {
-				logger.Info("found Lego Dimensions")
-				return []byte{}, nil
-			}
+		if byte(currentBlock) == 0x04 && bytes.Equal(blocks[0:14], LEGO_DIMENSIONS_MATCHER) {
+			logger.Info("found Lego Dimensions tag")
+			return []byte{}, nil
 		}
+
 		allBlocks = append(allBlocks, blocks...)
-		blockNumber = blockNumber + 4
+		currentBlock = currentBlock + 4
 	}
 
 	return allBlocks, nil
