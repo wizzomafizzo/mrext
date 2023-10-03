@@ -1,20 +1,62 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
 	"github.com/clausecker/nfc/v2"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 const (
 	NTAG_213_CAPACITY_BYTES = 114
+	NTAG_213_IDENTIFIER     = 0x12
+
 	NTAG_215_CAPACITY_BYTES = 496
+	NTAG_215_IDENTIFIER     = 0x3E
+
 	NTAG_216_CAPACITY_BYTES = 872
+	NTAG_216_IDENTIFIER     = 0x6D
 )
 
-// Only supports NTAG.
-// Mifare requires an authentication call and a different write method (0xA0)
+// Can be identified by matching blocks 0x03-0x07
+// https://github.com/RfidResearchGroup/proxmark3/blob/master/client/src/cmdhfmfu.c
+var LEGO_DIMENSIONS_MATCHER = []byte{
+	//0xE1, 0x10, 0x12, 0x00, // Skip as we never read 0x03
+	0x01, 0x03, 0xA0, 0x0C,
+	0x34, 0x03, 0x13, 0xD1,
+	0x01, 0x0F, 0x54, 0x02,
+	0x65, 0x6E}
+
+func readNtag(pnd nfc.Device, logger *service.Logger) ([]byte, error) {
+	blockCount, err := getNtagBlockCount(pnd)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	allBlocks := make([]byte, 0)
+	blockNumber := 4
+
+	for i := 0; i <= (blockCount / 4); i++ {
+		blocks, err := comm(pnd, []byte{READ_COMMAND, byte(blockNumber)}, 16)
+		if err != nil {
+			return nil, err
+		}
+
+		if byte(blockNumber) == 0x04 {
+			if bytes.Equal(blocks[0:14], LEGO_DIMENSIONS_MATCHER) {
+				logger.Info("found Lego Dimensions")
+				return []byte{}, nil
+			}
+		}
+		allBlocks = append(allBlocks, blocks...)
+		blockNumber = blockNumber + 4
+	}
+
+	return allBlocks, nil
+}
+
 func writeNtag(pnd nfc.Device, text string) ([]byte, error) {
 	var payload, err = BuildMessage(text)
 	if err != nil {
@@ -48,7 +90,7 @@ func writeNtag(pnd nfc.Device, text string) ([]byte, error) {
 
 func getNtagBlockCount(pnd nfc.Device) (int, error) {
 	// Find tag capacity by looking in block 3 (capability container)
-	tx := []byte{0x30, 0x03}
+	tx := []byte{READ_COMMAND, 0x03}
 	rx := make([]byte, 16)
 
 	timeout := 0
@@ -86,11 +128,11 @@ func getNtagCapacity(pnd nfc.Device) (int, error) {
 
 	// https://github.com/adafruit/Adafruit_MFRC630/blob/master/docs/NTAG.md#capability-container
 	switch rx[2] {
-	case 0x12:
+	case NTAG_213_IDENTIFIER:
 		return NTAG_213_CAPACITY_BYTES, nil
-	case 0x3E:
+	case NTAG_215_IDENTIFIER:
 		return NTAG_215_CAPACITY_BYTES, nil
-	case 0x6D:
+	case NTAG_216_IDENTIFIER:
 		return NTAG_216_CAPACITY_BYTES, nil
 	default:
 		// fallback

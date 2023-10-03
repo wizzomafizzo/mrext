@@ -173,11 +173,7 @@ func pollDevice(
 
 	if cardType == TypeNTAG {
 		logger.Info("NTAG detected")
-		capacity, err := getNtagBlockCount(*pnd)
-		if err != nil {
-			logger.Error("error reading ntag capacity: %s", err)
-		}
-		record, err = readRecord(*pnd, capacity)
+		record, err = readNtag(*pnd, logger)
 		if err != nil {
 			return activeCard, fmt.Errorf("error reading ntag: %s", err)
 		}
