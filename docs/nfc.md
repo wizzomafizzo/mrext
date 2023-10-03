@@ -70,6 +70,7 @@ The form factor of the tag is up to you. Can be a card, sticker, keychain, etc.
 | NTAG216                | 888 bytes storage                                  |
 | MIFARE Classic 1K      | 716 bytes storage, often ships with readers        |
 | Amiibo                 | Supported using the `nfc.csv` file described below |
+| Lego Dimensions        | Supported using the `nfc.csv` file described below |
 
 Custom NFC commands can be written to NTAG213 without issue, but keep storage size in mind if you have a large
 collection of games with deep folders. The tag may need to store the whole game path.
