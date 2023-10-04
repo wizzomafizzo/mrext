@@ -14,25 +14,6 @@ const (
 	READ_COMMAND  = byte(0x30)
 )
 
-var NDEF_END = []byte{0xFE}
-var NDEF_START = []byte{0x54, 0x02, 0x65, 0x6E}
-
-func readRecord(pnd nfc.Device, blockCount int) ([]byte, error) {
-	allBlocks := make([]byte, 0)
-	offset := 4
-
-	for i := 0; i <= (blockCount / 4); i++ {
-		blocks, err := comm(pnd, []byte{0x30, byte(offset)}, 16)
-		if err != nil {
-			return nil, err
-		}
-		allBlocks = append(allBlocks, blocks...)
-		offset = offset + 4
-	}
-
-	return allBlocks, nil
-}
-
 func getCardUID(target nfc.Target) string {
 	var uid string
 	switch target.Modulation() {

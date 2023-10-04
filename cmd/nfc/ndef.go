@@ -7,6 +7,9 @@ import (
 	"github.com/hsanjuan/go-ndef"
 )
 
+var NDEF_END = []byte{0xFE}
+var NDEF_START = []byte{0x54, 0x02, 0x65, 0x6E}
+
 func ParseRecordText(blocks []byte) string {
 	// Find the text NDEF record
 	startIndex := bytes.Index(blocks, NDEF_START)
