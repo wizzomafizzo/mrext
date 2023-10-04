@@ -20,7 +20,8 @@ if [[ "${nfcStatus}" == "nfc service running" ]]; then
 else
 	nfcStatus="false"
 fi
-[[ -f "/tmp/nfc.sock" ]] && nfcReadingStatus="$(echo "status" | socat - UNIX-CONNECT:/tmp/nfc.sock)"
+nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
+[[ -f "/tmp/nfc.sock" ]] && nfcReadingStatus="$(echo "status" | socat - "${nfcSocket}")"
 [[ -n "${nfcReadingStatus}" ]] && nfcReadingStatus="$(cut -d ',' -f 3 <<< "${nfcReadingStatus}")"
 [[ -n "${nfcReadingStatus}" ]] || nfcReadingStatus="false"
 cmdPalette=(
@@ -936,11 +937,8 @@ _browseZip() {
 
 		dirList=( "${relativeComponents[@]}" )
 		dirList+=( "${currentDirList[@]}" )
-		selected="$(dialog \
-			--backtitle "${title}" \
-			--title "${zipFile}" \
-			--menu "${currentDir}" \
-			22 77 16 "${dirList[@]}" 3>&1 1>&2 2>&3 >"$(tty)" <"$(tty)")"
+		selected="$(msg="${currentDir}" _menu --backtitle "${title}" \
+			--title "${zipFile}" -- "${dirList[@]}")"
 		exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
 		case "${selected,,}" in
@@ -981,30 +979,41 @@ _Mappings() {
 	[[ -e "${map}" ]] || printf "%s\n" "${mapHeader}" >> "${map}" || { _error "Can't initialize mappings database!" ; return 1 ; }
 
 	mapfile -t -O 1 -s 1 oldMap < "${map}"
-	echo "${oldMap[@]}"
 
 	mapfile -t arrayIndex < <( _numberedArray "${oldMap[@]}" )
+
+	# Display something useful if the file is empty
+	[[ "${#arrayIndex[@]}" -eq 0 ]] && arrayIndex=( "File Empty" "" )
 
 	line="$(msg="${mapHeader}" _menu \
 		--extra-button --extra-label "New" \
 		--cancel-label "Back" \
 		-- "${arrayIndex[@]//\"/}" )"
+	exitcode="${?}"
 
-	if [[ "${?}" == "3" ]]; then
+	# Cancel button (Back) or Esc hit
+	[[ "${exitcode}" -eq "1" ]] || [[ "${exitcode}" -eq "255" ]] && return "${exitcode}"
+
+	# Extra button (New) pressed
+	if [[ "${exitcode}" == "3" ]]; then
 		_yesno "Read tag or type match text?" \
 			--yes-label "Read tag" --no-label "Cancel" \
 			--extra-button --extra-label "Match text"
 		case "${?}" in
 			0)
+				# Yes button (Read tag)
 				new_match_uid="$(_readTag)"
 				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 				new_match_uid="$(cut -d ',' -f 2 <<< "${new_match_uid}")"
 				;;
 			3)
+				# Extra button (Match text)
 				new_match_text="$( _inputbox "Replace match text" "${match_text}")"
 				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 				;;
 			1|255)
+				# No button (Cancel)
+				_Mappings
 				return
 				;;
 		esac
@@ -1015,7 +1024,7 @@ _Mappings() {
 		return
 	fi
 
-	[[ -z "${line}" ]] && return
+	[[ ${line} == "File Empty" ]] && return
 	lineNumber=$((line + 1))
 	match_uid="$(cut -d ',' -f 1 <<< "${oldMap[$line]}")"
 	match_text="$(cut -d ',' -f 2 <<< "${oldMap[$line]}")"
@@ -1029,6 +1038,7 @@ _Mappings() {
 	)
 
 	selected="$(_menu \
+		--cancel-label "Done" \
 		-- "${menuOptions[@]}" )"
 	exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { _Mappings ; return ; }
 
@@ -1144,17 +1154,17 @@ _writeTextToMap() {
 # Returns: "Unix epoch time","UID","core launch status","text"
 _readTag() {
 	local nfcSCAN nfcUID nfcTXT
-	nfcScanTime="$(echo "status" | socat - UNIX-CONNECT:/tmp/nfc.sock | cut -d ',' -f 1)"
-	[[ "${nfcReadingStatus}" ]] && echo "disable" | socat - UNIX-CONNECT:/tmp/nfc.sock
+	nfcScanTime="$(echo "status" | socat - "${nfcSocket}" | cut -d ',' -f 1)"
+	[[ "${nfcReadingStatus}" ]] && echo "disable" | socat - "${nfcSocket}"
 	_infobox "Scan NFC Tag to continue...\n\nPress any key to go back"
 	while true; do
-		[[ "${nfcScanTime}" != "$(echo "status" | socat - UNIX-CONNECT:/tmp/nfc.sock 2>/dev/null | cut -d ',' -f 1)" ]] && break
+		[[ "${nfcScanTime}" != "$(echo "status" | socat - "${nfcSocket}" 2>/dev/null | cut -d ',' -f 1)" ]] && break
 		sleep 1
 		read -t 1 -n 1 -r  && return 1
 	done
-	nfcSCAN="$(echo "status" | socat - UNIX-CONNECT:/tmp/nfc.sock)"
-	[[ "${nfcReadingStatus}" ]] && echo "enable" | socat - UNIX-CONNECT:/tmp/nfc.sock
-	#[[ -z "${nfcSCAN}" ]] && { _error "Tag not read" ; _readTag ; }
+	nfcSCAN="$(echo "status" | socat - "${nfcSocket}")"
+	[[ "${nfcReadingStatus}" ]] && echo "enable" | socat - "${nfcSocket}"
+	[[ -z "${nfcSCAN}" ]] && _error "Tag not read"
 	[[ -n "${nfcSCAN}" ]] && echo "${nfcSCAN}"
 }
 
@@ -1196,7 +1206,7 @@ _inputbox() {
 }
 
 # Display a menu
-# Usage: _menu [--optional-arguments] -- [tag item]
+# Usage: [msg="message"] _menu [--optional-arguments] -- [ tag item ] ...
 # You can pass additioal arguments to the dialog program
 # Backtitle is already set
 _menu() {
@@ -1228,7 +1238,7 @@ _menu() {
 }
 
 # Display a radio menu
-# Usage: _radiolist [--optional-arguments] -- [tag item status]
+# Usage: [msg="message"] _radiolist [--optional-arguments] -- [ tag item status ] ...
 # You can pass additioal arguments to the dialog program
 # Backtitle is already set
 _radiolist() {
@@ -1254,7 +1264,7 @@ _radiolist() {
 	dialog \
 		--backtitle "${title}" \
 		"${optional_args[@]}" \
-		--radiolist "Chose one" \
+		--radiolist "${msg:-Chose one}" \
 		22 77 16 "${menu_items[@]}" 3>&1 1>&2 2>&3 >"$(tty)" <"$(tty)"
 	return "${?}"
 }
@@ -1312,7 +1322,7 @@ _yesno() {
 }
 
 # Display an error
-# Usage: _error "My error" [1] [--optional-arguments]
+# Usage: _error "My error" [<number>] [--optional-arguments]
 # If the second argument is a number, the program will exit with that number as an exit code.
 # You can pass additioal arguments to the dialog program
 # Backtitle and title are already set
