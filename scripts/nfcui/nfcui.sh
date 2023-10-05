@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2094 # Dirty hack avoid runcommand to steal stdout
 
-title="MiSTer NFC Writer"
+title="MiSTer NFC"
 scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.1"
 fullFileBrowser="false"
-#TODO thoroughly test this regex, being cognicent of users needs
+#TODO thoroughly test this regex, being cognizant of users needs
 url_regex='^(http|https|ftp)://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}(/.*)?$'
 basedir="/media/fat/"
 nfcCommand="${scriptdir}/nfc.sh"
@@ -26,8 +26,8 @@ nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
 [[ -n "${nfcReadingStatus}" ]] || nfcReadingStatus="false"
 cmdPalette=(
 	"system"	"Launch a system"
-	"random"	"Launch a random game for the given system"
-	"ini"		"Loads the specified MiSTer ini file"
+	"random"	"Launch a random game for a system"
+	"ini"		"Change to the specified MiSTer ini file"
 	"get"		"Perform an HTTP GET request to the specified URL"
 	"key"		"Press a key on the keyboard"
 	"coinp1"	"Insert a coin/credit for player 1"
@@ -414,17 +414,17 @@ _depends() {
 		_exit 1
 	fi
 
-	# commented out for testing purpouse
+	# commented out for testing purpose
 	#[[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found" "1"
 }
 
 main() {
 	export selected
 	menuOptions=(
-		"Read"     "Read NFC Tag"
-		"Write"    "Write ROM file paths to NFC Tag"
+		"Read"     "Read NFC tag contents"
+		"Write"    "Write game or command to NFC tag"
 		"Mappings" "Edit the mappings database"
-		"Settings" "Options for ${title}"
+		"Settings" "Options for NFC script"
 		"About"    "About this program"
 	)
 
@@ -450,7 +450,7 @@ _EOF_
 	[[ -n "${mappedMatch}" ]] && read -rd '' message <<_EOF_
 ${message}
 
-Mapped matche by UID:
+Mapped match by UID:
 ${mappedMatch}
 _EOF_
 
@@ -458,7 +458,7 @@ _EOF_
 	[[ -n "${matchedEntry}" ]] && read -rd '' message <<_EOF_
 ${message}
 
-Mapped matche by match_text:
+Mapped match by match_text:
 ${matchedEntry}
 _EOF_
 	[[ -n "${nfcSCAN}" ]] && _yesno "${message}" --yes-label "OK" --no-label "Re-Map" --extra-button --extra-label "Clone Tag"
@@ -478,22 +478,22 @@ _Write() {
 	[[ "${?}" -eq 1 || "${?}" -eq 255 ]] && return
 	txtSize="$(echo -n "${text}" | wc --bytes)"
 	read -rd '' message <<_EOF_
-The following file or command (without quotes) is to be written:
+The following file or command will be written:
 
-"${text:0:144}\Z4${text:144:504}\Z2${text:504:716}\Z3${text:716:888}\Z1${text:888}\Zn"
+${text:0:144}\Z4${text:144:504}\Z2${text:504:716}\Z3${text:716:888}\Z1${text:888}\Zn
 
-The NFC Tag needs to be able to fit at least ${txtSize} Bytes to write this tag
+The NFC tag needs to be able to fit at least ${txtSize} bytes.
 Common tag sizes:
 NTAG213 		144 bytes storage
 \Z4NTAG215 		504 bytes storage
 \Z2MIFARE Classic 1K 	716 bytes storage
 \Z3NTAG216 		888 bytes storage
-\Z1Text over this size will be colored red\Zn
+\Z1Text over this size will be colored red.\Zn
 _EOF_
 	_yesno "${message}" --colors --yes-label "Write to Tag" --extra-button --extra-label "Write to Map" --no-label "Cancel"
 	answer="${?}"
-	[[ -z "${text}" ]] && { _msgbox "Nothing selected for writing" ; return ; }
-	[[ "${text}" =~ ^\*\*command:* ]] && { _msgbox "Writing system commands to NFC tags are disabled" ; return ; }
+	[[ -z "${text}" ]] && { _msgbox "Nothing selected for writing." ; return ; }
+	[[ "${text}" =~ ^\*\*command:* ]] && { _msgbox "Writing system commands to NFC tags is disabled." ; return ; }
 	case "${answer}" in
 		0)
 			_writeTag "${text}"
@@ -517,9 +517,9 @@ _commandPalette() {
 	recursion=false
 	[[ "${1}" == "-r" ]] && recursion="true"
 	menuOptions=(
-		"Input"    "Input text manually, requires a keyboard"
-		"Pick"     "Pick a file, including files inside zip files"
-		"Commands" "Craft a custom command using a command palette"
+	  "Pick"     "Pick a game, core or arcade file (supports .zip files)"
+	  "Commands" "Craft a custom command using the command palette"
+		"Input"    "Input text manually (requires a keyboard)"
 	)
 
 	selected="$(_menu \
@@ -589,6 +589,7 @@ _craftCommand(){
 			;;
 		get)
 			while true; do
+			  # TODO: honestly, i'd say just get rid of the verification
 				http="$(_inputbox "Enter URL" "https://")"
 				exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 				[[ "${http}" =~ ${url_regex} ]] && break
@@ -628,7 +629,7 @@ _craftCommand(){
 			command="${command}:${linuxcmd}"
 			;;
 	esac
-	_yesno "Do you wish to add an additional command?" --defaultno && command="${command}||$(_commandPalette -r)"
+	_yesno "Add an additional command?" --defaultno && command="${command}||$(_commandPalette -r)"
 	echo "${command}"
 
 }
@@ -636,9 +637,9 @@ _craftCommand(){
 _Settings() {
 	local menuOptions selected
 	menuOptions=(
-		"Service"	"Toggle the NFC Service"
-		"Commands"	"Toggles the ability to run Linux commands from NFC tags"
-		"Sounds" 	"Toggles sounds played when a tag is scanned"
+		"Service"	    "Start/stop the NFC service"
+		"Commands"	  "Toggles the ability to run Linux commands from NFC tags"
+		"Sounds" 	    "Toggles sounds played when a tag is scanned"
 		"Connection"	"Hardware configuration for certain NFC readers"
 	)
 
