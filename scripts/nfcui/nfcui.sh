@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2094 # Dirty hack avoid runcommand to steal stdout
 
+# Match MiSTer theme
+export DIALOGRC="/media/fat/Scripts/.dialogrc"
+
 title="MiSTer NFC"
 scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.1"
