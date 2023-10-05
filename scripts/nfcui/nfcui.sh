@@ -15,8 +15,10 @@ mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
 if [[ "${nfcStatus}" == "nfc service running" ]]; then
   nfcStatus="true"
+  msg="Service: Enabled"
 else
   nfcStatus="false"
+  msg="Service: Disabled"
 fi
 nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
 if [[ -f "${nfcSocket#*:}" ]]; then
@@ -25,6 +27,8 @@ if [[ -f "${nfcSocket#*:}" ]]; then
   # Disable reading for the duration of the script
   # we trap the EXIT signal and execute the _exit() function to turn it on again
   echo "disable" | socat - "${nfcSocket}"
+else
+  nfcReadingStatus="false"
 fi
 # Match MiSTer theme
 [[ -f "/media/fat/Scripts/.dialogrc" ]] && export DIALOGRC="/media/fat/Scripts/.dialogrc"
@@ -436,8 +440,9 @@ main() {
     "About"     "About this program"
   )
 
+
   selected="$(_menu \
-    --cancel-label "Exit" \
+    --cancel-label "Exit" --colors \
     --default-item "${selected}" \
     -- "${menuOptions[@]}")"
 
@@ -676,14 +681,12 @@ _serviceSetting() {
   case "${selected}" in
     Enable)
       "${nfcCommand}" -service start || { _error "Unable to start the NFC service"; return; }
-      nfcStatus="true"
-      export nfcStatus
+      export nfcStatus="true" msg="Service: Enabled"
       _msgbox "The NFC service started"
       ;;
     Disable)
       "${nfcCommand}" -service stop || { _error "Unable to stop the NFC service"; return; }
-      nfcStatus="false"
-      export nfcStatus
+      export nfcStatus="false" msg="Service: Disabled"
       _msgbox "The NFC service stopped"
       ;;
   esac
