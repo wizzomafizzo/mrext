@@ -13,13 +13,20 @@ map="/media/fat/nfc.csv"
 [[ -d "/media/fat" ]] || map="${scriptdir}/nfc.csv"
 mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
-if [[ "${nfcStatus}" == "nfc service running" ]]; then
-  nfcStatus="true"
-  msg="Service: Enabled"
-else
-  nfcStatus="false"
-  msg="Service: Disabled"
-fi
+case "${nfcStatus}" in
+  "nfc service running")
+    nfcStatus="true"
+    msg="Service: Enabled"
+    ;;
+  "nfc service not running")
+    nfcStatus="false"
+    msg="Service: Disabled"
+    ;;
+  *)
+    nfcStatus="false"
+    nfcUnavailable="true"
+    msg="Service: Unavailable"
+esac
 nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
 if [[ -f "${nfcSocket#*:}" ]]; then
   nfcReadingStatus="$(echo "status" | socat - "${nfcSocket}")"
@@ -670,6 +677,9 @@ _Settings() {
 
 _serviceSetting() {
   local menuOptions selected
+
+  "${nfcUnavailable}" && { _error "NFC Service Unavailable!\n\nIs the NFC script installed?"; return; }
+
   menuOptions=(
     "Enable"   "Enable NFC service"  "off"
     "Disable"  "Disable NFC service" "off"
