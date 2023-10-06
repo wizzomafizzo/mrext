@@ -16,10 +16,12 @@ nfcStatus="$("${nfcCommand}" --service status)"
 case "${nfcStatus}" in
   "nfc service running")
     nfcStatus="true"
+    nfcUnavailable="false"
     msg="Service: Enabled"
     ;;
   "nfc service not running")
     nfcStatus="false"
+    nfcUnavailable="false"
     msg="Service: Disabled"
     ;;
   *)
