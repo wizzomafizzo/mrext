@@ -495,8 +495,13 @@ _EOF_
 }
 
 _Write() {
-  local fileSelected message txtSize
-  [[ -n "${text}" ]] || text="${1}$(_commandPalette)"
+  local fileSelected message txtSize text
+  # We can decide text via environment, and we can extend the command via argument
+  # but since extending the command is done recursively it inherits the environemnt
+  # so we do this check
+  if [[ -z "${text}" ]] || [[ -n "${1}" ]]; then
+    text="${1}$(_commandPalette)"
+  fi
   [[ "${?}" -eq 1 || "${?}" -eq 255 ]] && return
   txtSize="$(echo -n "${text}" | wc --bytes)"
   read -rd '' message <<_EOF_
