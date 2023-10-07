@@ -496,7 +496,7 @@ _EOF_
 
 _Write() {
   local fileSelected message txtSize
-  text="${1}$(_commandPalette)"
+  [[ -n "${text}" ]] || text="${1}$(_commandPalette)"
   [[ "${?}" -eq 1 || "${?}" -eq 255 ]] && return
   txtSize="$(echo -n "${text}" | wc --bytes)"
   read -rd '' message <<_EOF_
@@ -1091,7 +1091,8 @@ _Mappings() {
     ;;
   Write)
     # Write to physical tag
-    _writeTag "${text}"
+    #_writeTag "${text}"
+    text="${text}" _Write
     return
     ;;
   Delete)
