@@ -5,7 +5,7 @@ title="MiSTer NFC"
 scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.1"
 fullFileBrowser="false"
-basedir="/media/fat/"
+basedir="/media/fat"
 nfcCommand="${scriptdir}/nfc.sh"
 settings="${scriptdir}/nfc.ini"
 map="/media/fat/nfc.csv"
@@ -41,7 +41,7 @@ else
 fi
 # Match MiSTer theme
 [[ -f "/media/fat/Scripts/.dialogrc" ]] && export DIALOGRC="/media/fat/Scripts/.dialogrc"
-#dialog escape codes, requires --cloros
+#dialog escape codes, requires --colors
 # shellcheck disable=SC2034
 black="\Z0" red="\Z1" green="\Z2" yellow="\Z3" blue="\Z4" magenta="\Z5" cyan="\Z6" white="\Z7" bold="\Zb" unbold="\ZB" reverse="\Zr" unreverse="\ZR" underline="\Zu" noUnderline="\ZU" reset="\Zn"
 
@@ -483,7 +483,7 @@ ${message}
 Mapped match by match_text:
 ${matchedEntry}
 _EOF_
-  [[ -n "${nfcSCAN}" ]] && _yesno "${message}" --yes-label "OK" --no-label "Re-Map" --extra-button --extra-label "Clone Tag"
+  [[ -n "${nfcSCAN}" ]] && _yesno "${message}" --ok-label "OK" --yes-label "OK" --no-label "Re-Map" --cancel-label "Re-Map" --extra-button --extra-label "Clone Tag"
   case "${?}" in
     1)
       _writeTextToMap --uid "${nfcUID}" "$(_commandPalette)"
@@ -496,7 +496,7 @@ _EOF_
 
 _Write() {
   local fileSelected message txtSize
-  text="$(_commandPalette)"
+  text="${1}$(_commandPalette)"
   [[ "${?}" -eq 1 || "${?}" -eq 255 ]] && return
   txtSize="$(echo -n "${text}" | wc --bytes)"
   read -rd '' message <<_EOF_
@@ -512,7 +512,7 @@ ${green}MIFARE Classic 1K  716 bytes storage
 ${yellow}NTAG216    888 bytes storage
 ${red}Text over this size will be colored red.${reset}
 _EOF_
-  _yesno "${message}" --colors --yes-label "Write to Tag" --extra-button --extra-label "Write to Map" --no-label "Cancel"
+  _yesno "${message}" --colors --ok-label "Write to Tag" --yes-label "Write to Tag" --extra-button --extra-label "Write to Map" --no-label "Cancel" --help-button --help-label "Chain Commands"
   answer="${?}"
   [[ -z "${text}" ]] && { _msgbox "Nothing selected for writing." ; return ; }
   case "${answer}" in
@@ -524,6 +524,10 @@ _EOF_
         return
       fi
       _writeTag "${text}"
+      ;;
+    2)
+      # Help Button (Chain Commands)
+      _Write "${text}||"
       ;;
     3)
       # Extra button (Write to Map)
@@ -541,8 +545,6 @@ _EOF_
 # Example: text="$(_commandPalette)"
 _commandPalette() {
   local menuOptions selected recursion
-  recursion=false
-  [[ "${1}" == "-r" ]] && recursion="true"
   menuOptions=(
     "Pick"      "Pick a game, core or arcade file (supports .zip files)"
     "Commands"  "Craft a custom command using the command palette"
@@ -563,7 +565,6 @@ _commandPalette() {
       echo "${inputText}"
       ;;
     Pick)
-      #TODO refactor here a bit, because we may want to run commands after launching a file
       fileSelected="$(_fselect "${basedir}")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       [[ ! -f "${fileSelected//.zip\/*/.zip}" ]] && { _error "No file was selected." ; return ; }
@@ -585,13 +586,7 @@ _commandPalette() {
 # Usage: _craftCommand
 _craftCommand(){
   local command selected console recursion
-  "${recursion}" || command="**"
-  ## Test if function is called recursively
-  #if [[ "${FUNCNAME[0]}" != "${FUNCNAME[1]}" ]]; then
-  #   command="**"
-  #else
-  #   command="||"
-  #fi
+  command="**"
   selected="$(_menu \
     --cancel-label "Back" \
     -- "${cmdPalette[@]}" )"
@@ -651,7 +646,6 @@ _craftCommand(){
       command="${command}:${linuxcmd}"
       ;;
   esac
-  _yesno "Add an additional command?" --defaultno && command="${command}||$(_commandPalette -r)"
   echo "${command}"
 
 }
@@ -1021,7 +1015,8 @@ _Mappings() {
   # Extra button (New) pressed
   if [[ "${exitcode}" == "3" ]]; then
     _yesno "Read tag or type match text?" \
-      --yes-label "Read tag" --no-label "Cancel" \
+      --ok-label "Read tag" --yes-label "Read tag" \
+      --no-label "Cancel" \
       --extra-button --extra-label "Match text"
     case "${?}" in
       0)
@@ -1041,7 +1036,11 @@ _Mappings() {
         return
         ;;
     esac
-    new_text="$(_commandPalette)"
+    while true; do
+      [[ -z "${new_text}" ]] && new_text="$(_commandPalette)"
+      [[ -z "${new_text}" ]] || new_text="${new_text}||$(_commandPalette)"
+      _yesno "Do you want to chain more commands?" --defaultno || break
+    done
     exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
     _map "${new_match_uid}" "${new_match_text}" "${new_text}"
     _Mappings
@@ -1058,6 +1057,7 @@ _Mappings() {
     "UID"     "${match_uid}"
     "Match"   "${match_text}"
     "Text"    "${text}"
+    "Write"   "Write text to physical tag"
     "Delete"  "Remove entry from mappings database"
   )
 
@@ -1088,6 +1088,11 @@ _Mappings() {
     [[ -z "${replacement_text}" ]] && { _msgbox "Nothing selected for writing" ; return ; }
     replacement_match_uid="${match_uid}"
     replacement_match_text="${match_text}"
+    ;;
+  Write)
+    # Write to physical tag
+    _writeTag "${text}"
+    return
     ;;
   Delete)
     # Delete line from Mappings database
