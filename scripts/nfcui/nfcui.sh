@@ -917,11 +917,10 @@ _fselect() {
 # Usage: _browseZip "file.zip"
 # returns a file path of a file inside the zip file
 _browseZip() {
-  local zipFile zipContents dirList currentDir relativeComponents currentDirTree relativePath
+  local zipFile currentDir relativeComponents currentDirTree relativePath
   zipFile="${1}"
   currentDir=""
-  mapfile -t zipContents < <(unzip -l "${zipFile}" | awk 'NR > 3 {for (i=4; i<=NF; i++) {printf "%s", $i; if (i != NF) printf " ";} printf "\n"}')
-  unset "zipContents[-1]" "zipContents[-1]"
+
   relativeComponents=(
     ".." "Up one directory"
   )
@@ -929,13 +928,9 @@ _browseZip() {
 
     unset currentDirTree
     unset currentDirList
-    for entry in "${zipContents[@]}"; do
-      if [[ "${entry}" == "$currentDir" ]]; then
-        true
-      elif [[ "${entry}" == "$currentDir"* ]]; then
-        currentDirTree+=( "${entry}" )
-      fi
-    done
+    _infobox "Loading."
+    readarray -t currentDirTree <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}")"
+    _infobox "Loading.."
 
     declare -a currentDirList
     for entry in "${currentDirTree[@]}"; do
@@ -943,25 +938,16 @@ _browseZip() {
         relativePath="${entry#"$currentDir"}"
         if [[ ${relativePath} == *"/"* ]]; then
           [[ "${currentDirList[-2]}" == "${relativePath%%/*}/" ]] && continue
-          currentDirList+=( "${relativePath%%/*}/" )
+          currentDirList+=( "${relativePath%%/*}/" "Directory" )
         else
           [[ "${currentDirList[-2]}" == "${relativePath}" ]] && continue
-          currentDirList+=( "${relativePath}" )
-        fi
-
-
-        if [[ "${currentDirList[-1]}" == */ ]]; then
-          currentDirList+=( "Directory" )
-        else
-          currentDirList+=( "File" )
+          currentDirList+=( "${relativePath}" "File" )
         fi
       fi
     done
 
-    dirList=( "${relativeComponents[@]}" )
-    dirList+=( "${currentDirList[@]}" )
     selected="$(msg="${currentDir}" _menu --backtitle "${title}" \
-      --title "${zipFile}" -- "${dirList[@]}")"
+      --title "${zipFile}" -- "${relativeComponents[@]}" "${currentDirList[@]}")"
     exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
     case "${selected,,}" in
