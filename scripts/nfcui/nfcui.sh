@@ -30,7 +30,7 @@ case "${nfcStatus}" in
     msg="Service: Unavailable"
 esac
 nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
-if [[ -f "${nfcSocket#*:}" ]]; then
+if [[ -S "${nfcSocket#*:}" ]]; then
   nfcReadingStatus="$(echo "status" | socat - "${nfcSocket}")"
   nfcReadingStatus="$(cut -d ',' -f 3 <<< "${nfcReadingStatus}")"
   # Disable reading for the duration of the script
@@ -822,19 +822,24 @@ _connectionSetting() {
 }
 
 _About() {
-  local about githash builddate gitbranch
-  githash="$(git rev-parse --short HEAD)"
-  gitbranch="$(git rev-parse --abbrev-ref HEAD)"
-  builddate="$(git log -1 --date=short --pretty=format:%cd)"
-  #TODO actually write an about page
+  local about
   read -rd '' about <<_EOF_
-${title} ${version}-${gitbranch}-${builddate} + ${githash}
+${bold}${title}${unbold}
+${version}
+A tool for making and working with NFC tags on MiSTer FPGA
 
-Add useful description here!
+Whats New? Get involved? Need help?
+  ${underline}github.com/wizzomafizzo/mrext${noUnderline}
 
-Wizzo     ${underline}github.com/wizzomafizzo${reset}
-Gaz       ${underline}github.com/symm${reset}
-Ziggurat  ${underline}github.com/sigboe${reset}
+Why did the NFC tag break up with the Wi-Fi router?
+  Because it wanted a closer connection!
+
+Wizzo     ${underline}github.com/wizzomafizzo${noUnderline}
+Gaz       ${underline}github.com/symm${noUnderline}
+Ziggurat  ${underline}github.com/sigboe${noUnderline}
+
+License: GPL v3.0
+${underline}github.com/wizzomafizzo/mrext/blob/main/LICENSE${noUnderline}
 _EOF_
   _msgbox "${about}" --no-collapse --colors --title "About"
 }
@@ -846,7 +851,7 @@ _EOF_
 # Usage: _fselect "${fullPath}"
 # returns the file that is selected including the full path, if full path is used.
 _fselect() {
-  local termh windowh dirList selected extension fileName fullPath newDir
+  local termh windowh relativeComponents selected fullPath newDir currentDirDirs currentDirFiles
   fullPath="${1}"
   [[ -f "${fullPath}" ]] && { echo "${fullPath}"; return; }
   termh="$(tput lines)"
@@ -863,34 +868,20 @@ _fselect() {
   else
     # in case of a very tiny terminal window
     # make an array of the filenames and put them into --menu instead
-    dirList=(
+    relativeComponents=(
       "goto"  "Go to directory (keyboard required)"
       ".."    "Up one directory"
     )
 
-    while read -r folderName; do
-      dirList+=("$(basename "${folderName}")" "Directory")
-
-    done < <(find "${fullPath}" -mindepth 1 -maxdepth 1 ! -name '.*' -type d)
-
-    while read -r fileName; do
-      extension="${fileName##*.}"
-      case "${extension,,}" in
-      "")
-        dirList+=("$(basename "${fileName}")")
-        dirList+=("")
-        ;;
-
-      *)
-        dirList+=("$(basename "${fileName}")")
-        dirList+=("File")
-        ;;
-      esac
-
-    done < <(find "${fullPath}" -maxdepth 1 -type f)
+    # Get all folders in the current dir, and put them into an array Dialog likes,
+    # then do the same for all the files. They are added with full path names
+    # we could remove them here, but feels snappier for the user when we use
+    # bash variable expansion with ##*/ when we expand the array
+    readarray -t currentDirDirs <<< "$(find "${fullPath}" -mindepth 1 -maxdepth 1 -type d | while read -r line; do echo -e "${line}\nDirectory"; done)"
+    readarray -t currentDirFiles <<< "$(find "${fullPath}" -mindepth 1 -maxdepth 1 -type f | while read -r line; do echo -e "${line}\nFile"; done)"
 
     selected="$(msg="Pick a game to write to NFC Tag" \
-      _menu  --title "${fullPath}" -- "${dirList[@]}")"
+      _menu  --title "${fullPath}" -- "${relativeComponents[@]}" "${currentDirDirs[@]##*/}" "${currentDirFiles[@]##*/}" )"
     exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
     case "${selected,,}" in
@@ -917,7 +908,7 @@ _fselect() {
 # Usage: _browseZip "file.zip"
 # returns a file path of a file inside the zip file
 _browseZip() {
-  local zipFile currentDir relativeComponents currentDirTree relativePath
+  local zipFile currentDir relativeComponents currentDirDirs currentDirFiles
   zipFile="${1}"
   currentDir=""
 
@@ -926,28 +917,23 @@ _browseZip() {
   )
   while true; do
 
-    unset currentDirTree
-    unset currentDirList
+    # Lets do some black magic. We do this because its many many times faster than previous methods used. I don't know if it can be optimized more in bash.
+    # use readarray to make an array for current direcotires in the current directory we are browsing. We read the whole zipFile every time in this wile true loop
+    # as it's faster. remove first and last line, remove leading whitespace. filter out elements not in currentDir, remove current dir it self,
+    # remove the current dir path from elements, filter out any elements not inclduing a / as they are files, remove elements in subdirectories, and filter duplicates
+    # lastly interleave the elements with the element "Directory" because dialog --menu expects a description for each element.
+    #
+    # Then do the same for currentDirFiles, but filtering out any element that has a / in them as they are folders. And use "File" as description instead.
     _infobox "Loading."
-    readarray -t currentDirTree <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}")"
+    readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}" | sed -e "/^${currentDir//\//\\/}$/d" -e "s|^${currentDir}||" | grep "/" | sed 's/\/.*$/\//' | uniq | while read -r line; do echo -e "${line}\nDirectory"; done)"
     _infobox "Loading.."
-
-    declare -a currentDirList
-    for entry in "${currentDirTree[@]}"; do
-      if [[ "${entry%/}" != "${currentDir}/"* ]]; then
-        relativePath="${entry#"$currentDir"}"
-        if [[ ${relativePath} == *"/"* ]]; then
-          [[ "${currentDirList[-2]}" == "${relativePath%%/*}/" ]] && continue
-          currentDirList+=( "${relativePath%%/*}/" "Directory" )
-        else
-          [[ "${currentDirList[-2]}" == "${relativePath}" ]] && continue
-          currentDirList+=( "${relativePath}" "File" )
-        fi
-      fi
-    done
+    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}" | sed -e "/^${currentDir//\//\\/}$/d" -e "s|^${currentDir}||" | grep -v "/" | while read -r line; do echo -e "${line}\nFile"; done)"
+    _infobox "Loading..."
+    [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
+    [[ "${#currentDirFiles[@]}" -le "1" ]] && unset currentDirFiles
 
     selected="$(msg="${currentDir}" _menu --backtitle "${title}" \
-      --title "${zipFile}" -- "${relativeComponents[@]}" "${currentDirList[@]}")"
+      --title "${zipFile}" -- "${relativeComponents[@]}" "${currentDirDirs[@]}" "${currentDirFiles[@]}")"
     exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
     case "${selected,,}" in
@@ -1127,9 +1113,9 @@ _writeTag() {
   local txt
   txt="${1}"
 
-  "${nfcStatus}" && { "${nfcCommand}" -service stop || { _error "Unable to stop the NFC service" ; return ; } ; }
-  "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; "${nfcCommand}" -service start ;  return; }
-  "${nfcStatus}" && { "${nfcCommand}" -service start || { _error "Unable to start the NFC service" ; return ; } ; }
+  "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; return; }
+  # Workaround for -write enabling launching games again
+  echo "disable" | socat - "${nfcSocket}"
 
   _msgbox "${txt} \n successfully written to NFC tag"
 }
