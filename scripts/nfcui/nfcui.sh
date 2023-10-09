@@ -839,7 +839,7 @@ Gaz       ${underline}github.com/symm${noUnderline}
 Ziggurat  ${underline}github.com/sigboe${noUnderline}
 
 License: GPL v3.0
-${underline}github.com/wizzomafizzo/mrext/blob/main/LICENSE${noUnderline}
+  ${underline}github.com/wizzomafizzo/mrext/blob/main/LICENSE${noUnderline}
 _EOF_
   _msgbox "${about}" --no-collapse --colors --title "About"
 }
