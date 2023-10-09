@@ -435,8 +435,7 @@ _depends() {
     _exit 1
   fi
 
-  # commented out for testing purpose
-  #[[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found" "1"
+  [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found" "1"
 }
 
 main() {
@@ -834,8 +833,8 @@ Whats New? Get involved? Need help?
 Why did the NFC tag break up with the Wi-Fi router?
   Because it wanted a closer connection!
 
-Wizzo     ${underline}github.com/wizzomafizzo${noUnderline}
 Gaz       ${underline}github.com/symm${noUnderline}
+Wizzo     ${underline}github.com/wizzomafizzo${noUnderline}
 Ziggurat  ${underline}github.com/sigboe${noUnderline}
 
 License: GPL v3.0
