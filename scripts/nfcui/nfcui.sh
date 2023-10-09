@@ -435,7 +435,7 @@ _depends() {
     _exit 1
   fi
 
-  [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found" "1"
+  [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found\nRead more at ${underline}github.com/wizzomafizzo/mrext${noUnderline}" "1" --colors
 }
 
 main() {
