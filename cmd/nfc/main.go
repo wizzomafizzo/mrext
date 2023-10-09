@@ -33,14 +33,15 @@ import (
 // TODO: if it exists, use search.db instead of on demand index for random
 
 const (
-	appName            = "nfc"
-	connectMaxTries    = 10
-	timesToPoll        = 20
-	periodBetweenPolls = 300 * time.Millisecond
-	periodBetweenLoop  = 300 * time.Millisecond
-	timeToForgetCard   = 5 * time.Second
-	successPath        = config.TempFolder + "/success.wav"
-	failPath           = config.TempFolder + "/fail.wav"
+	appName              = "nfc"
+	connectMaxTries      = 10
+	timesToPoll          = 20
+	periodBetweenPolls   = 300 * time.Millisecond
+	periodBetweenLoop    = 300 * time.Millisecond
+	timeToForgetCard     = 5 * time.Second
+	successPath          = config.TempFolder + "/success.wav"
+	failPath             = config.TempFolder + "/fail.wav"
+	launcherDisabledPath = config.TempFolder + "/nfc.disabled"
 )
 
 var (
@@ -105,12 +106,18 @@ func (s *ServiceState) DisableLauncher() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = true
+	if _, err := os.Create(launcherDisabledPath); err != nil {
+		logger.Error("error creating launcher disabled file: %s", err)
+	}
 }
 
 func (s *ServiceState) EnableLauncher() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disableLauncher = false
+	if err := os.Remove(launcherDisabledPath); err != nil {
+		logger.Error("error removing launcher disabled file: %s", err)
+	}
 }
 
 func (s *ServiceState) IsLauncherDisabled() bool {
@@ -335,6 +342,10 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 	err = dbWatcher.Add(config.NfcDatabaseFile)
 	if err != nil {
 		logger.Error("error watching database: %s", err)
+	}
+
+	if _, err := os.Stat(launcherDisabledPath); err == nil {
+		state.DisableLauncher()
 	}
 
 	go func() {
@@ -584,6 +595,17 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 		}
 	}
 
+	restartService := func() {
+		if serviceRunning {
+			err := svc.Start()
+			if err != nil {
+				logger.Error("error starting service: %s", err)
+				_, _ = fmt.Fprintln(os.Stderr, "Error starting service:", err)
+				os.Exit(1)
+			}
+		}
+	}
+
 	var pnd nfc.Device
 	var err error
 
@@ -595,6 +617,7 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 			if tries >= connectMaxTries {
 				logger.Error("giving up, exiting")
 				_, _ = fmt.Fprintln(os.Stderr, "Could not open device:", err)
+				restartService()
 				os.Exit(1)
 			}
 		} else {
@@ -615,12 +638,14 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 	if err != nil {
 		logger.Error("could not poll: %s", err)
 		_, _ = fmt.Fprintln(os.Stderr, "Could not poll:", err)
+		restartService()
 		os.Exit(1)
 	}
 
 	if count == 0 {
 		logger.Error("could not find a card")
 		_, _ = fmt.Fprintln(os.Stderr, "Could not find a card")
+		restartService()
 		os.Exit(1)
 	}
 
@@ -637,6 +662,7 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 			logger.Error("error writing to card: %s", err)
 			fmt.Fprintln(os.Stderr, "Error writing to card:", err)
 			fmt.Println("Mifare cards need to NDEF formatted. If this is a brand new card, please use NFC tools mobile app to write some text (this only needs to be done the first time)")
+			restartService()
 			os.Exit(1)
 		}
 	case TypeNTAG:
@@ -644,25 +670,19 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 		if err != nil {
 			logger.Error("error writing to card: %s", err)
 			_, _ = fmt.Fprintln(os.Stderr, "Error writing to card:", err)
+			restartService()
 			os.Exit(1)
 		}
 	default:
 		logger.Error("Unsupported card type: %s", cardType)
+		restartService()
 		os.Exit(1)
 	}
 
 	logger.Info("successfully wrote to card: %s", hex.EncodeToString(bytesWritten))
 	_, _ = fmt.Fprintln(os.Stderr, "Successfully wrote to card")
 
-	if serviceRunning {
-		err := svc.Start()
-		if err != nil {
-			logger.Error("error starting service: %s", err)
-			_, _ = fmt.Fprintln(os.Stderr, "Error starting service:", err)
-			os.Exit(1)
-		}
-	}
-
+	restartService()
 	os.Exit(0)
 }
 
