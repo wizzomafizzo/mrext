@@ -876,8 +876,12 @@ _fselect() {
     # then do the same for all the files. They are added with full path names
     # we could remove them here, but feels snappier for the user when we use
     # bash variable expansion with ##*/ when we expand the array
-    readarray -t currentDirDirs <<< "$(find "${fullPath}" -mindepth 1 -maxdepth 1 -type d | while read -r line; do echo -e "${line}\nDirectory"; done)"
-    readarray -t currentDirFiles <<< "$(find "${fullPath}" -mindepth 1 -maxdepth 1 -type f | while read -r line; do echo -e "${line}\nFile"; done)"
+    readarray -t currentDirDirs <<< "$(\
+      find "${fullPath}" -mindepth 1 -maxdepth 1 -type d |
+      while read -r line; do echo -e "${line}\nDirectory"; done)"
+    readarray -t currentDirFiles <<< "$(\
+      find "${fullPath}" -mindepth 1 -maxdepth 1 -type f |
+      while read -r line; do echo -e "${line}\nFile"; done)"
 
     selected="$(msg="Pick a game to write to NFC Tag" \
       _menu  --title "${fullPath}" -- "${relativeComponents[@]}" "${currentDirDirs[@]##*/}" "${currentDirFiles[@]##*/}" )"
@@ -916,17 +920,32 @@ _browseZip() {
   )
   while true; do
 
-    # Lets do some black magic. We do this because its many many times faster than previous methods used. I don't know if it can be optimized more in bash.
-    # use readarray to make an array for current direcotires in the current directory we are browsing. We read the whole zipFile every time in this wile true loop
-    # as it's faster. remove first and last line, remove leading whitespace. filter out elements not in currentDir, remove current dir it self,
-    # remove the current dir path from elements, filter out any elements not inclduing a / as they are files, remove elements in subdirectories, and filter duplicates
-    # lastly interleave the elements with the element "Directory" because dialog --menu expects a description for each element.
+    # Lets do some black magic. We do this because its many many times faster than previous methods used.
+    # List all the files and folders in the archive.
+    # Then filter out lines not starting with "  " (these are not files) and $currentDir (this may be empty)
+    # Then remove the leading whitespace, lines only containing $currentDir and leading $currentDir from lines
+    # Lines without a / in them now are files, not folder so filter them out
+    # Then lines with a / in them, substitute the first occurence of / to the end of line, with just a slash
+    # Then remove dupicates
+    # Lastly for every line we add a line with the description "Directory" dialog --menu requires this
     #
-    # Then do the same for currentDirFiles, but filtering out any element that has a / in them as they are folders. And use "File" as description instead.
+    # Then do more or less the same for currentDirFiles, but there are some differences.
     _infobox "Loading."
-    readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}" | sed -e "/^${currentDir//\//\\/}$/d" -e "s|^${currentDir}||" | grep "/" | sed 's/\/.*$/\//' | uniq | while read -r line; do echo -e "${line}\nDirectory"; done)"
+    readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}" |
+      grep "^  ${currentDir}" |
+      sed -e "s/^[[:space:]]*//;/^${currentDir//\//\\/}$/d;s|^${currentDir}||" |
+      grep "/" |
+      sed 's/\/.*$/\//' |
+      uniq |
+      while read -r line; do echo -e "${line}\nDirectory"; done)"
+
     _infobox "Loading.."
-    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}"  | tail -n +2 | head -n -1 | sed 's/^[[:space:]]*//' | grep "${currentDir}" | sed -e "/^${currentDir//\//\\/}$/d" -e "s|^${currentDir}||" | grep -v "/" | while read -r line; do echo -e "${line}\nFile"; done)"
+    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}"  |
+      grep "^  ${currentDir}" |
+      sed -e "s/^[[:space:]]*//;/^${currentDir//\//\\/}$/d;s|^${currentDir}||" |
+      grep -v "/" |
+      while read -r line; do echo -e "${line}\nFile"; done)"
+
     _infobox "Loading..."
     [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
     [[ "${#currentDirFiles[@]}" -le "1" ]] && unset currentDirFiles
