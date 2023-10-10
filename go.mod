@@ -19,7 +19,6 @@ require github.com/fsnotify/fsnotify v1.6.0
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/hsanjuan/go-ndef v0.0.1 // indirect
 	github.com/miekg/dns v1.1.55 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
@@ -36,6 +35,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/hsanjuan/go-ndef v0.0.1
 	github.com/joho/godotenv v1.4.0
 	github.com/libp2p/zeroconf/v2 v2.2.0
 	github.com/rs/cors v1.8.2

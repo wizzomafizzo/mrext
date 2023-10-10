@@ -47,13 +47,14 @@ var (
 )
 
 type app struct {
-	name      string
-	path      string
-	bin       string
-	ldFlags   string
-	releaseId string
-	reboot    bool
-	inAll     bool
+	name         string
+	path         string
+	bin          string
+	ldFlags      string
+	releaseId    string
+	reboot       bool
+	inAll        bool
+	releaseFiles []string
 }
 
 var apps = []app{
@@ -97,11 +98,13 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
-		name:      "nfc",
-		path:      filepath.Join(cwd, "cmd", "nfc"),
-		bin:       "nfc.sh",
-		releaseId: "mrext/nfc",
-		ldFlags:   "-lnfc -lusb -lcurses",
+		name:         "nfc",
+		path:         filepath.Join(cwd, "cmd", "nfc"),
+		bin:          "nfc.sh",
+		releaseId:    "mrext/nfc",
+		ldFlags:      "-lnfc -lusb -lcurses",
+		inAll:        true,
+		releaseFiles: []string{filepath.Join(cwd, "scripts", "nfcui", "nfcui.sh")},
 	},
 	{
 		name: "samindex",
@@ -341,24 +344,27 @@ func UpdateAllDb() {
 		}
 
 		releaseBin := filepath.Join(binReleasesDir, app.bin)
+		files := append(app.releaseFiles, releaseBin)
 
-		hash, err := getMd5Hash(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting hash for", app.name, err)
-			os.Exit(1)
-		}
+		for _, f := range files {
+			hash, err := getMd5Hash(f)
+			if err != nil {
+				fmt.Println("Error getting hash for", app.name, err)
+				os.Exit(1)
+			}
 
-		size, err := getFileSize(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting size for", app.name, err)
-			os.Exit(1)
-		}
+			size, err := getFileSize(f)
+			if err != nil {
+				fmt.Println("Error getting size for", app.name, err)
+				os.Exit(1)
+			}
 
-		dbFile.Files["Scripts/"+app.bin] = updateDbFile{
-			Hash:   hash,
-			Size:   size,
-			Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, app.bin),
-			Reboot: app.reboot,
+			dbFile.Files["Scripts/"+filepath.Base(f)] = updateDbFile{
+				Hash:   hash,
+				Size:   size,
+				Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, filepath.Base(f)),
+				Reboot: app.reboot,
+			}
 		}
 	}
 
@@ -401,11 +407,20 @@ func Release(name string) {
 
 	rd := filepath.Join(releasesDir, a.name)
 	_ = os.MkdirAll(rd, 0755)
+	_ = os.MkdirAll(binReleasesDir, 0755)
 	releaseBin := filepath.Join(binReleasesDir, a.bin)
 	err := sh.Copy(releaseBin, filepath.Join(binDir, "linux_arm", a.bin))
 	if err != nil {
 		fmt.Println("Error copying binary", err)
 		os.Exit(1)
+	}
+
+	for _, f := range a.releaseFiles {
+		err := sh.Copy(filepath.Join(binReleasesDir, filepath.Base(f)), f)
+		if err != nil {
+			fmt.Println("Error copying release file", err)
+			os.Exit(1)
+		}
 	}
 
 	if upxBin == "" {
@@ -428,32 +443,35 @@ func Release(name string) {
 	}
 
 	if a.releaseId != "" {
-		hash, err := getMd5Hash(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting hash", a.name, err)
-			os.Exit(1)
-		}
-
-		size, err := getFileSize(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting size", a.name, err)
-			os.Exit(1)
-		}
-
+		files := append(a.releaseFiles, releaseBin)
 		dbFile := updateDb{
 			DbId:      a.releaseId,
 			Timestamp: time.Now().Unix(),
-			Files: map[string]updateDbFile{
-				"Scripts/" + a.bin: {
-					Hash:   hash,
-					Size:   size,
-					Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, a.bin),
-					Reboot: a.reboot,
-				},
-			},
+			Files:     map[string]updateDbFile{},
 			Folders: map[string]updateDbFolder{
 				"Scripts": {},
 			},
+		}
+
+		for _, f := range files {
+			hash, err := getMd5Hash(f)
+			if err != nil {
+				fmt.Println("Error getting hash", a.name, err)
+				os.Exit(1)
+			}
+
+			size, err := getFileSize(f)
+			if err != nil {
+				fmt.Println("Error getting size", a.name, err)
+				os.Exit(1)
+			}
+
+			dbFile.Files["Scripts/"+filepath.Base(f)] = updateDbFile{
+				Hash:   hash,
+				Size:   size,
+				Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, filepath.Base(f)),
+				Reboot: a.reboot,
+			}
 		}
 
 		dbFileJson, _ := json.MarshalIndent(dbFile, "", "  ")
