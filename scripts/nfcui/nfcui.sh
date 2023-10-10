@@ -920,30 +920,25 @@ _browseZip() {
   )
   while true; do
 
-    # Lets do some black magic. We do this because its many many times faster than previous methods used.
-    # List all the files and folders in the archive.
-    # Then filter out lines not starting with "  " (these are not files) and $currentDir (this may be empty)
-    # Then remove the leading whitespace, lines only containing $currentDir and leading $currentDir from lines
-    # Lines without a / in them now are files, not folder so filter them out
-    # Then lines with a / in them, substitute the first occurence of / to the end of line, with just a slash
-    # Then remove dupicates
-    # Lastly for every line we add a line with the description "Directory" dialog --menu requires this
+    # This is a highly optimized way of doing this,
+    # If you can improve upon the speed, pray tell!
+    # Reads the zip file directly every run in the while loop
+    # this was faster than storing the output and reading it back
+    # filter out only direcotires in $currentDir and put them in an array
+    # Every time a "Directory" element will be added, dialog --menu needs
+    # a description
     #
-    # Then do more or less the same for currentDirFiles, but there are some differences.
+    # Then do another array for "Files"
     _infobox "Loading."
     readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}" |
-      grep "^  ${currentDir}" |
-      sed -e "s/^[[:space:]]*//;/^${currentDir//\//\\/}$/d;s|^${currentDir}||" |
-      grep "/" |
-      sed 's/\/.*$/\//' |
-      uniq |
+      grep -x "^  ${currentDir}.*/" |
+      sed -e "s|^[[:space:]]*${currentDir}||" |
       while read -r line; do echo -e "${line}\nDirectory"; done)"
 
     _infobox "Loading.."
-    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}"  |
-      grep "^  ${currentDir}" |
-      sed -e "s/^[[:space:]]*//;/^${currentDir//\//\\/}$/d;s|^${currentDir}||" |
-      grep -v "/" |
+    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}" |
+      grep -x "^  ${currentDir}[^[:space:]][^/]*" |
+      sed -e "s|^[[:space:]]*${currentDir}||" |
       while read -r line; do echo -e "${line}\nFile"; done)"
 
     _infobox "Loading..."
