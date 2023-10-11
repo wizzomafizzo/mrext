@@ -931,7 +931,7 @@ _browseZip() {
     # Then do another array for "Files"
     _infobox "Loading."
     readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}" |
-      grep -x "^  ${currentDir}.*/" |
+      grep -x "^  ${currentDir}[^/]*/$" |
       sed -e "s|^[[:space:]]*${currentDir}||" |
       while read -r line; do echo -e "${line}\nDirectory"; done)"
 
