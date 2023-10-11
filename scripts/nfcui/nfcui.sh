@@ -552,6 +552,7 @@ _commandPalette() {
   menuOptions=(
     "Pick"      "Pick a game, core or arcade file (supports .zip files)"
     "Commands"  "Craft a custom command using the command palette"
+    "MultiGame" "Create a multigame launcher"
     "Input"     "Input text manually (requires a keyboard)"
   )
 
@@ -581,6 +582,26 @@ _commandPalette() {
       text="$(recursion="${recursion}" _craftCommand)"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       echo "${text}"
+      ;;
+    MultiGame)
+      _msgbox "Pick First Game"
+      game="$(_fselect "${basedir}")"
+      gameTitle="$(_inputbox "Enter game title for: ${game}" "Title")"
+      gamesList=( "\"${gameTitle}\"" "\"${game}\"" )
+      while true; do
+        _msgbox "Add additional Game"
+        game="$(_fselect "${basedir}")"
+        gameTitle="$(_inputbox "Enter game title for: ${game}" "Title")"
+        gamesList+=( "\"${gameTitle}\"" "\"${game}\"" )
+        read -rd '' msg <<_EOF_
+Add additioal game?
+Current lineup:
+
+$(printf -- "Title:%s\nGame:%s\n\n" "${gamesList[@]}")
+_EOF_
+        _yesno "${msg}" || break
+      done
+      echo "**command:/media/fat/Scripts/nfcmultigame.sh ${gamesList[*]}"
       ;;
   esac
 
