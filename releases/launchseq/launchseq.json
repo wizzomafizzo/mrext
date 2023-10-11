@@ -1,10 +1,10 @@
 {
   "db_id": "mrext/launchseq",
-  "timestamp": 1695653390,
+  "timestamp": 1697033985,
   "files": {
     "Scripts/launchseq.sh": {
-      "hash": "628957ad83448666a9cf41e6c57ffd11",
-      "size": 2804628,
+      "hash": "b873338676a20235dda81aa707242203",
+      "size": 2685068,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/launchseq.sh"
     }
   },
