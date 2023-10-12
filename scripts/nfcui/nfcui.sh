@@ -572,8 +572,8 @@ _commandPalette() {
       fileSelected="$(_fselect "${basedir}")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       [[ ! -f "${fileSelected//.zip\/*/.zip}" ]] && { _error "No file was selected." ; return ; }
-      fileSelected="${fileSelected//$basedir}"
-      fileSelected="${fileSelected#/}"
+      # shellcheck disable=SC2001
+      fileSelected="$(sed "s|/media/.*/games/||" <<< "${fileSelected}")"
 
       echo "${fileSelected}"
       ;;
@@ -850,9 +850,26 @@ _EOF_
 # Usage: _fselect "${fullPath}"
 # returns the file that is selected including the full path, if full path is used.
 _fselect() {
-  local termh windowh relativeComponents selected fullPath newDir currentDirDirs currentDirFiles
+  local termh windowh relativeComponents selected fullPath newDir currentDirDirs currentDirFiles message
   fullPath="${1}"
-  [[ -f "${fullPath}" ]] && { echo "${fullPath}"; return; }
+  if [[ -f "${fullPath}" ]] && [[ -h "${fullPath}" ]]; then
+      read -rd '' message <<_EOF_
+The following file is a symlink:
+${fullPath}
+The path is $(echo -n "${fullPath}" | wc --bytes) bytes
+
+
+Do you want to use the symlink, or the path to the actual file?
+$(readlink -f "${fullPath}")
+The path is $(echo -n "$(readlink -f "${fullPath}")" | wc --bytes) bytes
+_EOF_
+    _yesno "${message}" \
+    --yes-label "Use Link" --no-label "Use File" && \
+    { readlink -f "${fullPath}"; return; }
+  elif [[ -f "${fullPath}" ]]; then
+    echo "${fullPath}"
+    return
+  fi
   termh="$(tput lines)"
   ((windowh = "${termh}" - 10))
   [[ "${windowh}" -gt "22" ]] && windowh="22"
