@@ -601,7 +601,7 @@ $(printf -- "Title:%s\nGame:%s\n\n" "${gamesList[@]}")
 _EOF_
         _yesno "${msg}" || break
       done
-      echo "**command:/media/fat/Scripts/nfcmultigame.sh ${gamesList[*]}"
+      echo "**command:nfcmulti ${gamesList[*]}"
       ;;
   esac
 
