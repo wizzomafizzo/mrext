@@ -158,6 +158,17 @@ consoles=(
   "ZXNext"            "ZX Spectrum Next"
 )
 
+nfcjokes=(
+"Why did the NFC tag break up with the Wi-Fi router?
+  Because it wanted a closer connection!"
+"What did the smartphone say to the NFC tag?
+  I'm just a tap away!"
+"Why did the smartphone break up with the NFC tag?
+  Because it felt like it didn't have enough range!"
+"Why does the NFC tag need to be scanned to be updated?
+  Because it needs to touch base!"
+)
+
 keycodes=(
   "Esc"              "1"
   "1"                "2"
@@ -530,10 +541,9 @@ _EOF_
       # Yes button (Write to Tag)
       # if allow_commands is not set to yes (default no), and if text either starts with "**command:" or if it contains "||**command:" display an error instead of writing to tag
       if ! grep -q "^allow_commands=yes" "${settings}" && [[ "${text}" =~ (^\\*\\*|\\|\\|\\*\\*)command:* ]]; then
-        _msgbox "You are trying to write a linux command to a physical tag.\nWriting system commands to NFC tags is disabled.\nThis can be enabled in the Settings\n\nOffending command:\n${text}"
-        return
+        _yesno "You are trying to write a linux command to a physical tag.\nWriting system commands to NFC tags is disabled.\nThis can be enabled in the Settings\n\nOffending command:\n${text}" --yes-label "Write Anyway" --no-label "Back" --defaultno || { text="${text}" "${FUNCNAME[0]}" ; return ; }
       fi
-      _writeTag "${text}"
+      _writeTag "${text}" || { text="${text}" "${FUNCNAME[0]}" ; return ; }
       ;;
     2)
       # Help Button (Chain Commands)
@@ -541,7 +551,7 @@ _EOF_
       ;;
     3)
       # Extra button (Write to Map)
-      _writeTextToMap "${text}"
+      _writeTextToMap "${text}" || { text="${text}" "${FUNCNAME[0]}" ; return ; }
       ;;
     1|255)
       return
@@ -843,8 +853,7 @@ A tool for making and working with NFC tags on MiSTer FPGA
 Whats New? Get involved? Need help?
   ${underline}github.com/wizzomafizzo/mrext${noUnderline}
 
-Why did the NFC tag break up with the Wi-Fi router?
-  Because it wanted a closer connection!
+${nfcjokes[$((RANDOM % ${#nfcjokes[@]}))]}
 
 Gaz       ${underline}github.com/symm${noUnderline}
 Wizzo     ${underline}github.com/wizzomafizzo${noUnderline}
@@ -902,19 +911,13 @@ _EOF_
       ".."    "Up one directory"
     )
 
-    # Get all folders in the current dir, and put them into an array Dialog likes,
-    # then do the same for all the files. They are added with full path names
-    # we could remove them here, but feels snappier for the user when we use
-    # bash variable expansion with ##*/ when we expand the array
-    readarray -t currentDirDirs <<< "$(\
-      find "${fullPath}" -mindepth 1 -maxdepth 1 -type d |
-      while read -r line; do echo -e "${line}\nDirectory"; done)"
-    readarray -t currentDirFiles <<< "$(\
-      find "${fullPath}" -mindepth 1 -maxdepth 1 -type f |
-      while read -r line; do echo -e "${line}\nFile"; done)"
+    readarray -t currentDirContents <<< "$( \
+      find "${fullPath}" -mindepth 1 -maxdepth 1 \
+      \( -type d -printf '%P\nDirectory\n' \) \
+      -o \( -type f -printf '%P\nFile\n' \))"
 
-    selected="$(msg="Pick a game to write to NFC Tag" \
-      _menu  --title "${fullPath}" -- "${relativeComponents[@]}" "${currentDirDirs[@]##*/}" "${currentDirFiles[@]##*/}" )"
+    selected="$(msg="Pick a game" \
+      _menu  --title "${fullPath}" -- "${relativeComponents[@]}" "${currentDirContents[@]}" )"
     exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
     case "${selected,,}" in
@@ -1111,7 +1114,6 @@ _Mappings() {
     ;;
   Write)
     # Write to physical tag
-    #_writeTag "${text}"
     text="${text}" _Write
     return
     ;;
@@ -1156,7 +1158,7 @@ _writeTag() {
   local txt
   txt="${1}"
 
-  "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; return; }
+  "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; return 1; }
   # Workaround for -write enabling launching games again
   echo "disable" | socat - "${nfcSocket}"
 
@@ -1345,7 +1347,7 @@ _radiolist() {
 # You can pass additioal arguments to the dialog program
 # Backtitle is already set
 _infobox() {
-  local msg opts
+  local msg opts height width
   msg="${1}"
   shift
   opts=("${@}")
@@ -1353,7 +1355,7 @@ _infobox() {
     --backtitle "${title}" \
     --aspect 0 "${opts[@]}" \
     --infobox "${msg}" \
-    0 0  3>&1 1>&2 2>&3 >"$(tty)" <"$(tty)"
+    "${height:-0}" "${width:-0}"  3>&1 1>&2 2>&3 >"$(tty)" <"$(tty)"
   return "${?}"
 }
 
