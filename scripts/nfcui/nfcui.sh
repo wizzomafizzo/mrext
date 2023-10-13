@@ -435,7 +435,7 @@ _depends() {
     _exit 1
   fi
 
-  [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found\nRead more at ${underline}github.com/wizzomafizzo/mrext${noUnderline}" "1" --colors
+  [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found\n\nRead more at ${underline}github.com/wizzomafizzo/mrext${noUnderline}" "1" --colors
 }
 
 main() {
@@ -464,14 +464,15 @@ _Read() {
   nfcTXT="$(cut -d ',' -f 4 <<< "${nfcSCAN}" )"
   nfcUID="$(cut -d ',' -f 2 <<< "${nfcSCAN}" )"
   read -rd '' message <<_EOF_
-Tag contents: ${nfcTXT}
-Tag UID: ${nfcUID}
+${bold}Tag UID:${unbold} ${nfcUID}
+${bold}Tag contents:${unbold}
+${nfcTXT}
 _EOF_
   [[ -f "${map}" ]] && mappedMatch="$(grep -i "^${nfcUID}" "${map}")"
   [[ -n "${mappedMatch}" ]] && read -rd '' message <<_EOF_
 ${message}
 
-Mapped match by UID:
+${bold}Mapped match by UID:${unbold}
 ${mappedMatch}
 _EOF_
 
@@ -479,10 +480,13 @@ _EOF_
   [[ -n "${matchedEntry}" ]] && read -rd '' message <<_EOF_
 ${message}
 
-Mapped match by match_text:
+${bold}Mapped match by match_text:${unbold}
 ${matchedEntry}
 _EOF_
-  [[ -n "${nfcSCAN}" ]] && _yesno "${message}" --ok-label "OK" --yes-label "OK" --no-label "Re-Map" --cancel-label "Re-Map" --extra-button --extra-label "Clone Tag"
+  [[ -n "${nfcSCAN}" ]] && _yesno "${message}" \
+    --colors --ok-label "OK" --yes-label "OK" \
+    --no-label "Re-Map" --cancel-label "Re-Map" \
+    --extra-button --extra-label "Clone Tag"
   case "${?}" in
     1)
       _writeTextToMap --uid "${nfcUID}" "$(_commandPalette)"
@@ -494,7 +498,7 @@ _EOF_
 }
 
 _Write() {
-  local fileSelected message txtSize text
+  local message txtSize text
   # We can decide text via environment, and we can extend the command via argument
   # but since extending the command is done recursively it inherits the environemnt
   # so we do this check
@@ -516,7 +520,9 @@ ${green}MIFARE Classic 1K  716 bytes storage
 ${yellow}NTAG216    888 bytes storage
 ${red}Text over this size will be colored red.${reset}
 _EOF_
-  _yesno "${message}" --colors --ok-label "Write to Tag" --yes-label "Write to Tag" --extra-button --extra-label "Write to Map" --no-label "Cancel" --help-button --help-label "Chain Commands"
+  _yesno "${message}" --colors --ok-label "Write to Tag" --yes-label "Write to Tag" \
+    --extra-button --extra-label "Write to Map" \
+    --no-label "Cancel" --help-button --help-label "Chain Commands"
   answer="${?}"
   [[ -z "${text}" ]] && { _msgbox "Nothing selected for writing." ; return ; }
   case "${answer}" in
@@ -573,7 +579,7 @@ _commandPalette() {
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       [[ ! -f "${fileSelected//.zip\/*/.zip}" ]] && { _error "No file was selected." ; return ; }
       # shellcheck disable=SC2001
-      fileSelected="$(sed "s|/media/.*/games/||" <<< "${fileSelected}")"
+      fileSelected="$(sed "s#^/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${fileSelected}")"
 
       echo "${fileSelected}"
       ;;
@@ -703,7 +709,7 @@ _serviceSetting() {
 }
 
 _commandSetting() {
-  local menuOptions selected
+  local menuOptions selected helpmsg
   menuOptions=(
     "Enable"   "Enable Linux commands"  "off"
     "Disable"  "Disable Linux commands" "off"
@@ -717,7 +723,14 @@ _commandSetting() {
     menuOptions[5]="on"
   fi
 
-  selected="$(_radiolist -- "${menuOptions[@]}" )"
+  read -rd '' helpmsg <<_EOF_
+This option enables the execution of Linux commands stored on NFC tags. If you disable this option, you will be limited to running Linux commands that are stored in the mappings database.
+
+Running Linux commands stored in NFC tags on your MiSTer FPGA device may pose security risks as it opens the door to potential vulnerabilities and unintended consequences. While this approach offers convenience, it lacks the security safeguards inherent in the Mappings database, which is designed to ensure that only known, verified commands are executed. By relying on NFC tags, unauthorized users could potentially create and execute commands with unverified origins, increasing the risk of malicious actions and compromising the integrity of your MiSTer system. Therefore, using the Mappings database remains the more secure option for safeguarding your device and its functionality.
+_EOF_
+
+  selected="$(_radiolist --help-button -- "${menuOptions[@]}" )"
+  [[ "${?}" -eq 2 ]] && { _msgbox "${helpmsg}" ; "${FUNCNAME[0]}" ; return ; }
   case "${selected}" in
     Enable)
       if grep -q "^allow_commands=" "${settings}"; then
