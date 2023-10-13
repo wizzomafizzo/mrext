@@ -554,7 +554,7 @@ _EOF_
 # Returns a text string
 # Example: text="$(_commandPalette)"
 _commandPalette() {
-  local menuOptions selected recursion
+  local menuOptions selected recursion fileSelected
   menuOptions=(
     "Pick"      "Pick a game, core or arcade file (supports .zip files)"
     "Commands"  "Craft a custom command using the command palette"
@@ -579,7 +579,7 @@ _commandPalette() {
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       [[ ! -f "${fileSelected//.zip\/*/.zip}" ]] && { _error "No file was selected." ; return ; }
       # shellcheck disable=SC2001
-      fileSelected="$(sed "s#^/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${fileSelected}")"
+      fileSelected="$(sed -E "s#/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${fileSelected}")"
 
       echo "${fileSelected}"
       ;;
