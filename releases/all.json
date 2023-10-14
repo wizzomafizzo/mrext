@@ -1,20 +1,20 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1697278940,
+  "timestamp": 1697293256,
   "files": {
     "Scripts/bgm.sh": {
-      "hash": "35ccf93d772cb5c5c9aa9d1102903140",
-      "size": 33657,
+      "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
+      "size": 32636,
       "url": "https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh"
     },
     "Scripts/favorites.sh": {
-      "hash": "6072eb64a1aa716fddcab879a6120703",
-      "size": 36767,
+      "hash": "34a605d3ca1dfeeaa33b40171964a870",
+      "size": 35535,
       "url": "https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh"
     },
     "Scripts/gamesmenu.sh": {
-      "hash": "581b30c0b852e5689f88d3208428061f",
-      "size": 14131,
+      "hash": "cd5654427a4303964786c25e0ac1b7b4",
+      "size": 13693,
       "url": "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"
     },
     "Scripts/lastplayed.sh": {
