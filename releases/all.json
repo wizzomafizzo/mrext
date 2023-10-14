@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1697091022,
+  "timestamp": 1697278940,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "35ccf93d772cb5c5c9aa9d1102903140",
@@ -33,8 +33,8 @@
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"
     },
     "Scripts/nfcui.sh": {
-      "hash": "fb8ec7ac8d36814d76485f23aabd4e54",
-      "size": 42977,
+      "hash": "e3c59d334fc5dbdd2d5a09b43099173d",
+      "size": 44701,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfcui.sh"
     },
     "Scripts/playlog.sh": {

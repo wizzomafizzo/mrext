@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/nfc",
-  "timestamp": 1697033489,
+  "timestamp": 1697091022,
   "files": {
     "Scripts/nfc.sh": {
       "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
@@ -8,8 +8,8 @@
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"
     },
     "Scripts/nfcui.sh": {
-      "hash": "8633503cdd32bcc81b76a61cf89238b5",
-      "size": 44381,
+      "hash": "fb8ec7ac8d36814d76485f23aabd4e54",
+      "size": 42977,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfcui.sh"
     }
   },
