@@ -595,7 +595,7 @@ _commandPalette() {
       ;;
     Commands)
       text="$(recursion="${recursion}" _craftCommand)"
-      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       echo "${text}"
       ;;
   esac
@@ -620,22 +620,23 @@ _craftCommand(){
       console="$(_menu \
         --backtitle "${title}" \
         -- "${consoles[@]}" )"
-      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return 1
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       command="${command}:${console}"
       ;;
     ini)
       ini="$(_radiolist -- \
         1 one off 2 two off 3 three off 4 four off )"
-      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       command="${command}:${ini}"
       ;;
     get)
       http="$(_inputbox "Enter URL" "https://")"
-      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       command="${command}:${http}"
       ;;
     key)
       key="$(_menu -- "${keycodes[@]}")"
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       for ((i=0; i<${#keycodes[@]}; i++)); do
         if [[ "${keycodes[$i]}" == "${key}" ]]; then
           index=$((i + 1))
@@ -650,7 +651,7 @@ _craftCommand(){
     coinp1 | coinp2)
       while true; do
         coin="$(_inputbox "Enter number" "1")"
-        exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+        exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
         [[ "${coin}" == ?(-)+([0-9]) ]] && break
         _error "${coin} is not a number"
       done
@@ -659,7 +660,7 @@ _craftCommand(){
     command)
       while true; do
         linuxcmd="$(_inputbox "Enter Linux command" "reboot" || return )"
-        exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+        exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
         command -v "${linuxcmd%% *}" >/dev/null && break
         _error "${linuxcmd%% *} from ${linuxcmd} does not seam to be a valid command"
       done
@@ -1218,7 +1219,7 @@ _readTag() {
   currentScan="$(echo "status" | socat - "${nfcSocket}")"
   if [[ ! "${scanSuccess}" ]]; then
     _yesno "Tag not read" --yes-label "Retry" && _readTag
-    return
+    return 1
   fi
   #TODO determin if we need a message here saying the scan was successful
   [[ -n "${currentScan}" ]] && echo "${currentScan}"
