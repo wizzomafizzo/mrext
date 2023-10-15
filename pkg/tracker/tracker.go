@@ -3,6 +3,7 @@ package tracker
 import (
 	"fmt"
 	"github.com/wizzomafizzo/mrext/pkg/metadata"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -82,6 +83,7 @@ type Tracker struct {
 	ActiveSystemName string
 	ActiveGame       string
 	ActiveGameName   string
+	ActiveGamePath   string
 	Events           []EventAction
 	CoreTimes        map[string]CoreTime
 	GameTimes        map[string]GameTime
@@ -148,6 +150,7 @@ func NewTracker(logger *service.Logger, cfg *config.UserConfig, db Db) (*Tracker
 		ActiveSystemName: "",
 		ActiveGame:       "",
 		ActiveGameName:   "",
+		ActiveGamePath:   "",
 		Events:           []EventAction{},
 		CoreTimes:        map[string]CoreTime{},
 		GameTimes:        map[string]GameTime{},
@@ -164,15 +167,26 @@ func (tr *Tracker) ReloadNameMap() {
 	tr.NameMap = nameMap
 }
 
-func (tr *Tracker) LookupName(name string) NameMapping {
+func (tr *Tracker) LookupName(name string, game string) NameMapping {
 	for _, mapping := range tr.NameMap {
 		if len(mapping.CoreName) != len(name) {
 			continue
 		}
 
-		if strings.EqualFold(mapping.CoreName, name) {
-			return mapping
+		if !strings.EqualFold(mapping.CoreName, name) {
+			continue
 		}
+
+		sys, err := games.BestSystemMatch(tr.Config, game)
+		if err != nil {
+			continue
+		}
+
+		if sys.Id != mapping.System {
+			continue
+		}
+
+		return mapping
 	}
 
 	return NameMapping{}
@@ -316,7 +330,7 @@ func (tr *Tracker) LoadCore() {
 			return
 		}
 
-		result := tr.LookupName(coreName)
+		result := tr.LookupName(coreName, tr.ActiveGamePath)
 		if result != (NameMapping{}) {
 			tr.ActiveSystem = result.System
 			tr.ActiveSystemName = result.Name
@@ -325,6 +339,9 @@ func (tr *Tracker) LoadCore() {
 				tr.ActiveGame = coreName
 				tr.ActiveGameName = result.ArcadeName
 				tr.addEvent(EventActionGameStart, coreName)
+			} else if result.System == "" {
+				tr.ActiveSystem = coreName
+				tr.ActiveSystemName = coreName
 			}
 		} else {
 			tr.ActiveSystem = ""
@@ -385,7 +402,7 @@ func (tr *Tracker) loadGame() {
 
 	path := mister.ResolvePath(activeGame)
 	filename := filepath.Base(path)
-	name := strings.TrimSuffix(filename, filepath.Ext(filename))
+	name := utils.RemoveFileExt(filename)
 
 	if filepath.Ext(strings.ToLower(filename)) == ".mgl" {
 		mgl, err := mister.ReadMgl(path)
@@ -413,8 +430,22 @@ func (tr *Tracker) loadGame() {
 		tr.stopGame()
 
 		tr.ActiveGame = id
-		name = strings.TrimSuffix(name, filepath.Ext(name))
 		tr.ActiveGameName = name
+		tr.ActiveGamePath = path
+
+		result := tr.LookupName(tr.ActiveCore, path)
+		if result != (NameMapping{}) {
+			tr.ActiveSystem = result.System
+			tr.ActiveSystemName = result.Name
+
+			if result.System == ArcadeSystem {
+				tr.ActiveGame = tr.ActiveCore
+				tr.ActiveGameName = result.ArcadeName
+			}
+		} else {
+			tr.ActiveSystem = ""
+			tr.ActiveSystemName = ""
+		}
 
 		if _, ok := tr.GameTimes[id]; !ok {
 			gt, err := tr.Db.GetGame(id)

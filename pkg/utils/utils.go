@@ -315,3 +315,11 @@ func Reverse[S ~[]E, E any](s S) {
 		s[i], s[j] = s[j], s[i]
 	}
 }
+
+func RemoveFileExt(s string) string {
+	parts := strings.Split(s, ".")
+	if len(parts) > 1 {
+		return strings.Join(parts[:len(parts)-1], ".")
+	}
+	return s
+}
