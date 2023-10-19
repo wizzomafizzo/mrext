@@ -117,7 +117,7 @@ consoles=(
   "Orao"              "Orao"
   "Oric"              "Oric"
   "ao486"             "PC (486SX)"
-  "OCXT"              "PC/XT"
+  "PCXT"              "PC/XT"
   "PDP1"              "PDP-1"
   "PMD85"             "PMD 85-2A"
   "PSX"               "Playstation"
