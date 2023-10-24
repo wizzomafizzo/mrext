@@ -84,6 +84,8 @@ Instantly launch a random game in your collection from the Scripts menu.
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"><img src="docs/images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/random.md"><img src="docs/images/readme.svg" alt="Readme Random" title="Readme Random" width="140"></a>
 
+<img src="docs/images/search.gif" align="right" width="35%" />
+
 ## Search
 Search for and launch games from your collection. Searching is *fast* and great for discovering games.
 
