@@ -873,7 +873,7 @@ _EOF_
 # Usage: _fselect "${fullPath}"
 # returns the file that is selected including the full path, if full path is used.
 _fselect() {
-  local termh windowh relativeComponents selected fullPath newDir currentDirDirs currentDirFiles message
+  local termh windowh relativeComponents selected fullPath newDir
   fullPath="${1}"
   if [[ -f "${fullPath}" ]] && [[ -h "${fullPath}" ]]; then
       read -rd '' message <<_EOF_
@@ -945,37 +945,31 @@ _EOF_
 # Usage: _browseZip "file.zip"
 # returns a file path of a file inside the zip file
 _browseZip() {
-  local zipFile currentDir relativeComponents currentDirDirs currentDirFiles
+  local zipFile currentDir relativeComponents currentDirDirs currentDirFiles tmpFile
   zipFile="${1}"
   currentDir=""
 
   relativeComponents=(
     ".." "Up one directory"
   )
+  tmpFile=$(mktemp)
+  _infobox "Loading."
+  zip -sf "${zipFile}" > "${tmpFile}"
+
   while true; do
 
-    # This is a highly optimized way of doing this,
-    # If you can improve upon the speed, pray tell!
-    # Reads the zip file directly every run in the while loop
-    # this was faster than storing the output and reading it back
-    # filter out only direcotires in $currentDir and put them in an array
-    # Every time a "Directory" element will be added, dialog --menu needs
-    # a description
-    #
-    # Then do another array for "Files"
-    _infobox "Loading."
-    readarray -t currentDirDirs <<< "$(zip -sf "${zipFile}" |
-      grep -x "^  ${currentDir}[^/]*/$" |
-      sed -e "s|^[[:space:]]*${currentDir}||" |
-      while read -r line; do echo -e "${line}\nDirectory"; done)"
+    readarray -t currentDirDirs <<< "$( \
+      grep -x "^  ${currentDir}[^/]*/$"  "${tmpFile}" |
+      while read -r line; do
+        echo -e "${line#  "${currentDir}"}\nDirectory"
+      done )"
 
-    _infobox "Loading.."
-    readarray -t currentDirFiles <<< "$(zip -sf "${zipFile}" |
-      grep -x "^  ${currentDir}[^[:space:]][^/]*" |
-      sed -e "s|^[[:space:]]*${currentDir}||" |
-      while read -r line; do echo -e "${line}\nFile"; done)"
+    readarray -t currentDirFiles <<< "$( \
+      grep -x "^  ${currentDir}[^[:space:]][^/]*" "${tmpFile}" |
+      while read -r line; do
+        echo -e "${line#  "${currentDir}"}\nFile"
+      done )"
 
-    _infobox "Loading..."
     [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
     [[ "${#currentDirFiles[@]}" -le "1" ]] && unset currentDirFiles
 
@@ -999,6 +993,7 @@ _browseZip() {
       ;;
     esac
   done
+  rm "${tmpFile}"
 }
 
 # Map or remap filepath or command for a given NFC tag (written to local database)
