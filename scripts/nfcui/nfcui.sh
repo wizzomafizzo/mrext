@@ -958,7 +958,7 @@ _browseZip() {
     ".." "Up one directory"
   )
   tmpFile="$(mktemp -t "$(basename "${zipFile}").XXXXXXXXXX")"
-  trap 'rm "${tmpFile}; _exit' SIGINT # Trap Ctrl+C (SIGINT) to clean up tmp file
+  trap 'rm "${tmpFile}"; _exit' SIGINT # Trap Ctrl+C (SIGINT) to clean up tmp file
   _infobox "Loading."
   zip -sf "${zipFile}" > "${tmpFile}"
 
@@ -968,7 +968,7 @@ _browseZip() {
       grep -x "^  ${currentDir}[^/]*/$"  "${tmpFile}" |
       while read -r line; do
         line="${line#  }"
-        echo -e "${line#$currentDir}\nDirectory"
+        echo -e "${line#"$currentDir"}\nDirectory"
       done )"
     [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
 
@@ -976,7 +976,7 @@ _browseZip() {
       grep -x "^  ${currentDir}[^[:space:]][^/]*" "${tmpFile}" |
       while read -r line; do
         line="${line#  }"
-        echo -e "${line#$currentDir}\nFile"
+        echo -e "${line#"$currentDir"}\nFile"
       done )"
     [[ "${#currentDirFiles[@]}" -le "1" ]] && unset currentDirFiles
 
