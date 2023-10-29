@@ -930,7 +930,12 @@ _EOF_
       _fselect "${fullPath%/*}"
       ;;
     *.zip)
-      echo "${fullPath}/${selected}/$(_browseZip "${fullPath}/${selected}")"
+      zippedPath="$(_browseZip "${fullPath}/${selected}")"
+      if [[ -n "${zippedPath}" ]]; then
+        echo "${fullPath}/${selected}/${zippedPath}"
+      else
+        _fselect "${fullPath}"
+      fi
       ;;
     *)
       _fselect "${fullPath}/${selected}"
@@ -952,7 +957,8 @@ _browseZip() {
   relativeComponents=(
     ".." "Up one directory"
   )
-  tmpFile=$(mktemp)
+  tmpFile="$(mktemp -t "$(basename "${zipFile}").XXXXXXXXXX")"
+  trap 'rm "${tmpFile}; _exit' SIGINT # Trap Ctrl+C (SIGINT) to clean up tmp file
   _infobox "Loading."
   zip -sf "${zipFile}" > "${tmpFile}"
 
@@ -961,21 +967,22 @@ _browseZip() {
     readarray -t currentDirDirs <<< "$( \
       grep -x "^  ${currentDir}[^/]*/$"  "${tmpFile}" |
       while read -r line; do
-        echo -e "${line#  "${currentDir}"}\nDirectory"
+        line="${line#  }"
+        echo -e "${line#$currentDir}\nDirectory"
       done )"
+    [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
 
     readarray -t currentDirFiles <<< "$( \
       grep -x "^  ${currentDir}[^[:space:]][^/]*" "${tmpFile}" |
       while read -r line; do
-        echo -e "${line#  "${currentDir}"}\nFile"
+        line="${line#  }"
+        echo -e "${line#$currentDir}\nFile"
       done )"
-
-    [[ "${#currentDirDirs[@]}" -le "1" ]] && unset currentDirDirs
     [[ "${#currentDirFiles[@]}" -le "1" ]] && unset currentDirFiles
 
     selected="$(msg="${currentDir}" _menu --backtitle "${title}" \
       --title "${zipFile}" -- "${relativeComponents[@]}" "${currentDirDirs[@]}" "${currentDirFiles[@]}")"
-    exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+    exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { rm "${tmpFile}" ; return "${exitcode}" ; }
 
     case "${selected,,}" in
     "..")
