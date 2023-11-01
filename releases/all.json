@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1697293256,
+  "timestamp": 1698822657,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
@@ -8,8 +8,8 @@
       "url": "https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh"
     },
     "Scripts/favorites.sh": {
-      "hash": "34a605d3ca1dfeeaa33b40171964a870",
-      "size": 35535,
+      "hash": "b4aafba85dbfdcd61ab8f3979852f16f",
+      "size": 35543,
       "url": "https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh"
     },
     "Scripts/gamesmenu.sh": {
@@ -18,44 +18,44 @@
       "url": "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"
     },
     "Scripts/lastplayed.sh": {
-      "hash": "1880573c192ae8e295ee000522fb16a1",
-      "size": 3263208,
+      "hash": "d80e24f269fc76c18cf9bae2f7d21ae2",
+      "size": 3419000,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh"
     },
     "Scripts/launchsync.sh": {
-      "hash": "0b63aa6f87a4378a3ee9722881cd873a",
-      "size": 4171812,
+      "hash": "92ea6ef423ae617393f242bac37d5acd",
+      "size": 4388700,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh"
     },
     "Scripts/nfc.sh": {
-      "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
-      "size": 5589692,
+      "hash": "538c6144df1c09b150088ce7c7d6600e",
+      "size": 5844664,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"
     },
     "Scripts/nfcui.sh": {
-      "hash": "e3c59d334fc5dbdd2d5a09b43099173d",
-      "size": 44701,
+      "hash": "c5d2c9e5b39520a21d0f8b874ca9046c",
+      "size": 44686,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfcui.sh"
     },
     "Scripts/playlog.sh": {
-      "hash": "4bf45aced44231ac4604b25c3287f062",
-      "size": 7131340,
+      "hash": "7a25dae01160c882fd4e1430896c7024",
+      "size": 7420856,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"
     },
     "Scripts/random.sh": {
-      "hash": "37e0738cdd96bdbf80d6bf9961a060be",
-      "size": 2868564,
+      "hash": "c2a838c74ae97786431d9aa169cc6fa1",
+      "size": 2998872,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"
     },
     "Scripts/remote.sh": {
-      "hash": "95ee190e609fae234d6a69d4ce31c4cf",
-      "size": 7486048,
+      "hash": "4e9214afa4719d19b0481b6f9ac3602e",
+      "size": 7835876,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh",
       "reboot": true
     },
     "Scripts/search.sh": {
-      "hash": "262d239817926fd670a72334e8108bd1",
-      "size": 3806804,
+      "hash": "aac4c2662ccf46bbc71bc56e9688b67e",
+      "size": 3965576,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh"
     }
   },

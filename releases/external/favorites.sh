@@ -164,7 +164,7 @@ MGL_MAP = (
     ("PSX", "_Console/PSX", (({".cue", ".chd"}, 1, "s", 1),)),
     ("PocketChallengeV2", "_Console/WonderSwan", (({".pc2"}, 1, "f", 1),)),
     ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
-    ("Saturn", "_Console/Saturn", (({".cue"}, 1, "s", 0),)),
+    ("Saturn", "_Console/Saturn", (({".cue", ".chd"}, 1, "s", 0),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 1),)),
     ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
