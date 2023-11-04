@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1698822657,
+  "timestamp": 1699105388,
   "files": {
     "Scripts/bgm.sh": {
       "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
@@ -18,18 +18,18 @@
       "url": "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"
     },
     "Scripts/lastplayed.sh": {
-      "hash": "d80e24f269fc76c18cf9bae2f7d21ae2",
-      "size": 3419000,
+      "hash": "1880573c192ae8e295ee000522fb16a1",
+      "size": 3263208,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh"
     },
     "Scripts/launchsync.sh": {
-      "hash": "92ea6ef423ae617393f242bac37d5acd",
-      "size": 4388700,
+      "hash": "0b63aa6f87a4378a3ee9722881cd873a",
+      "size": 4171812,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh"
     },
     "Scripts/nfc.sh": {
-      "hash": "538c6144df1c09b150088ce7c7d6600e",
-      "size": 5844664,
+      "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
+      "size": 5589692,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"
     },
     "Scripts/nfcui.sh": {
@@ -38,24 +38,24 @@
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/nfcui.sh"
     },
     "Scripts/playlog.sh": {
-      "hash": "7a25dae01160c882fd4e1430896c7024",
-      "size": 7420856,
+      "hash": "4bf45aced44231ac4604b25c3287f062",
+      "size": 7131340,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"
     },
     "Scripts/random.sh": {
-      "hash": "c2a838c74ae97786431d9aa169cc6fa1",
-      "size": 2998872,
+      "hash": "37e0738cdd96bdbf80d6bf9961a060be",
+      "size": 2868564,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"
     },
     "Scripts/remote.sh": {
-      "hash": "4e9214afa4719d19b0481b6f9ac3602e",
-      "size": 7835876,
+      "hash": "95ee190e609fae234d6a69d4ce31c4cf",
+      "size": 7486048,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh",
       "reboot": true
     },
     "Scripts/search.sh": {
-      "hash": "aac4c2662ccf46bbc71bc56e9688b67e",
-      "size": 3965576,
+      "hash": "262d239817926fd670a72334e8108bd1",
+      "size": 3806804,
       "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh"
     }
   },
