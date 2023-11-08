@@ -5,6 +5,8 @@ All hardware required is inexpensive, easily available and quick to set up.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
+[Create your own DIY NFC scanner](diyscanner.md)
+
 <!-- TOC -->
 * [Thanks to](#thanks-to)
 * [Card labels](#card-labels)
