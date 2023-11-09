@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"flag"
 
 	gc "github.com/rthornton128/goncurses"
 
@@ -141,7 +142,7 @@ func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	return nil
 }
 
-func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.Index, query string) (err error) {
+func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.Index, query string, launchGame bool) (err error) {
 	stdscr.Erase()
 	stdscr.NoutRefresh()
 	_ = gc.Update()
@@ -159,10 +160,10 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			return err
 		}
 
-		return searchWindow(cfg, stdscr, ic, text)
+		return searchWindow(cfg, stdscr, ic, text, launchGame)
 	} else if button == 1 {
 		if len(text) == 0 {
-			return searchWindow(cfg, stdscr, ic, "")
+			return searchWindow(cfg, stdscr, ic, "", launchGame)
 		}
 
 		index, ic := getIndex(ic)
@@ -176,7 +177,7 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			if err := curses.InfoBox(stdscr, "", "No results found.", false, true); err != nil {
 				log.Fatal(err)
 			}
-			return searchWindow(cfg, stdscr, ic, text)
+			return searchWindow(cfg, stdscr, ic, text, launchGame)
 		}
 
 		var names []string
@@ -193,9 +194,18 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 		stdscr.NoutRefresh()
 		_ = gc.Update()
 
+		var titleLabel, launchLabel string
+
+		if launchGame {
+			titleLabel = "Launch Game"
+			launchLabel = "Launch"
+		} else {
+			titleLabel = "Pick Game"
+			launchLabel = "Select"
+		}
 		button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
-			Title:         "Launch Game",
-			Buttons:       []string{"PgUp", "PgDn", "Launch", "Options", "Cancel"},
+			Title:				 titleLabel,
+			Buttons:			 []string{"PgUp", "PgDn", launchLabel, "Options", "Cancel"},
 			DefaultButton: 2,
 			ShowTotal:     true,
 			Width:         70,
@@ -208,26 +218,36 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 		if button == 2 {
 			game := items[selected]
 
-			system, err := games.GetSystem(game.System)
-			if err != nil {
-				log.Fatal(err)
-			}
+			if launchGame {
+				system, err := games.GetSystem(game.System)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			err = mister.LaunchGame(cfg, *system, game.Path)
-			if err != nil {
-				log.Fatal(err)
+				err = mister.LaunchGame(cfg, *system, game.Path)
+				if err != nil {
+					log.Fatal(err)
+				} else {
+					return nil
+				}
 			} else {
-				return nil
+				gc.End()
+				fmt.Fprintln(os.Stderr, game.Path)
+				os.Exit(0)
 			}
 		}
 
-		return searchWindow(cfg, stdscr, ic, text)
+		return searchWindow(cfg, stdscr, ic, text, launchGame)
 	} else {
 		return nil
 	}
 }
 
 func main() {
+	printPtr := flag.Bool("print", false, "Print game path to stderr instead of launching the game")
+	flag.Parse()
+	var launchGame bool = !*printPtr
+
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
 		fmt.Println("Error loading config file:", err)
@@ -248,7 +268,7 @@ func main() {
 	}
 
 	ic := newIndexChannel()
-	err = searchWindow(cfg, stdscr, ic, "")
+	err = searchWindow(cfg, stdscr, ic, "", launchGame)
 	if err != nil {
 		log.Fatal(err)
 	}

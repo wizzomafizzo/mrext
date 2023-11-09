@@ -564,10 +564,11 @@ _EOF_
 # Returns a text string
 # Example: text="$(_commandPalette)"
 _commandPalette() {
-  local menuOptions selected recursion fileSelected
+  local menuOptions selected recursion fileSelected gamePath
   menuOptions=(
     "Pick"      "Pick a game, core or arcade file (supports .zip files)"
     "Commands"  "Craft a custom command using the command palette"
+    "Search"    "Search for a game"
     "Input"     "Input text manually (requires a keyboard)"
   )
 
@@ -597,6 +598,11 @@ _commandPalette() {
       text="$(recursion="${recursion}" _craftCommand)"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       echo "${text}"
+      ;;
+    Search)
+      gamePath="$(search.sh -print 2>&1 >"$(tty)")"
+      exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
+      echo "${gamePath}"
       ;;
   esac
 
