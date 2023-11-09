@@ -13,7 +13,7 @@ FILES = {
     "lastplayed": ["lastplayed.sh"],
     "launchseq": ["launchseq.sh"],
     "launchsync": ["launchsync.sh"],
-    "nfc": ["nfc.sh", "scripts/nfcui/nfcui.sh"],
+    "nfc": ["nfc.sh", "nfcui.sh"],
     "playlog": ["playlog.sh"],
     "random": ["random.sh"],
     "remote": ["remote.sh"],
