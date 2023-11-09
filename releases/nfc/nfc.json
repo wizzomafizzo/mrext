@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/nfc",
-    "timestamp": 1699541754,
+    "timestamp": 1699543061,
     "files": {
         "Scripts/nfc.sh": {
             "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
@@ -9,8 +9,8 @@
             "reboot": false
         },
         "Scripts/nfcui.sh": {
-            "hash": "471a7bc80fe085f380f94d97c294aa0b",
-            "size": 44913,
+            "hash": "e3c59d334fc5dbdd2d5a09b43099173d",
+            "size": 44701,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfcui.sh",
             "reboot": false
         }

@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1699541754,
+    "timestamp": 1699543061,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1880573c192ae8e295ee000522fb16a1",
@@ -27,8 +27,8 @@
             "reboot": false
         },
         "Scripts/nfcui.sh": {
-            "hash": "471a7bc80fe085f380f94d97c294aa0b",
-            "size": 44913,
+            "hash": "e3c59d334fc5dbdd2d5a09b43099173d",
+            "size": 44701,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfcui.sh",
             "reboot": false
         },
