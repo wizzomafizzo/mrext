@@ -3,7 +3,7 @@
 
 title="MiSTer NFC"
 scriptdir="$(dirname "$(readlink -f "${0}")")"
-version="0.1"
+version="0.2"
 fullFileBrowser="false"
 basedir="/media/fat"
 nfcCommand="${scriptdir}/nfc.sh"
