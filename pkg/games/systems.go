@@ -933,7 +933,7 @@ var Systems = map[string]System{
 		Slots: []Slot{
 			{
 				Label: "Disk",
-				Exts:  []string{".cue"}, // TODO: .chd support later
+				Exts:  []string{".cue", ".chd"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "s",

@@ -890,7 +890,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| Disk | .cue | 1 | s | 0 |
+| Disk | .cue, .chd | 1 | s | 0 |
 
 [Back to top](#systems)
 
