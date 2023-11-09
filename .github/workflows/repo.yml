@@ -1,0 +1,42 @@
+name: Repo database creation
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions: write-all
+jobs:
+  n64-dev:
+    runs-on: ubuntu-latest
+    env:
+      DB_ID: mrext/all
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get latest mrext release
+        id: mrextreleaseinfo
+        uses: cardinalby/git-get-release-action@v1
+        with:
+          latest: true
+          repo: wizzomafizzo/mrext
+      - name: Download release files
+        run: |
+          DL_URL=https://github.com/wizzomafizzo/mrext/releases/download/${{ steps.mrextreleaseinfo.outputs.tag_name }}
+          mkdir -p _bin/releases
+          curl -L ${DL_URL}/lastplayed.sh -o _bin/releases/lastplayed.sh
+          curl -L ${DL_URL}/launchseq.sh -o _bin/releases/launchseq.sh
+          curl -L ${DL_URL}/launchsync.sh -o _bin/releases/launchsync.sh
+          curl -L ${DL_URL}/nfc.sh -o _bin/releases/nfc.sh
+          curl -L ${DL_URL}/nfcui.sh -o _bin/releases/nfcui.sh
+          curl -L ${DL_URL}/playlog.sh -o _bin/releases/playlog.sh
+          curl -L ${DL_URL}/random.sh -o _bin/releases/random.sh
+          curl -L ${DL_URL}/remote.sh -o _bin/releases/remote.sh
+          curl -L ${DL_URL}/search.sh -o _bin/releases/search.sh
+      - name: Create databases
+        run: |
+          cp scripts/generate_repo.py .
+          python generate_repo.py ${{ steps.mrextreleaseinfo.outputs.tag_name }}
+      - name: Commit databases
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: releases/* -f -A
