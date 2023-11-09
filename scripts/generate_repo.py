@@ -81,7 +81,7 @@ def create_app_db(app: str, tag: str) -> RepoDb:
         md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
 
         file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=None, overwrite=False, reboot=reboot
+            hash=md5, size=size, url=None, overwrite=None, reboot=reboot
         )
 
         files[key] = file_entry
@@ -115,7 +115,7 @@ def create_all_db(tag: str) -> RepoDb:
             md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
 
             file_entry = RepoDbFilesItem(
-                hash=md5, size=size, url=None, overwrite=False, reboot=reboot
+                hash=md5, size=size, url=None, overwrite=None, reboot=reboot
             )
 
             files[key] = file_entry
@@ -128,7 +128,7 @@ def create_all_db(tag: str) -> RepoDb:
         url = EXTERNAL_URL.format(os.path.basename(local_path))
 
         file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=url, overwrite=False, reboot=False
+            hash=md5, size=size, url=url, overwrite=None, reboot=False
         )
 
         files[key] = file_entry

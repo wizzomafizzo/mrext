@@ -6,7 +6,7 @@ on:
 
 permissions: write-all
 jobs:
-  n64-dev:
+  mrext-repo:
     runs-on: ubuntu-latest
     env:
       DB_ID: mrext/all
