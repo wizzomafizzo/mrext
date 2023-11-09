@@ -1,11 +1,10 @@
 {
     "db_id": "mrext/remote",
-    "timestamp": 1699519565,
+    "timestamp": 1699519874,
     "files": {
         "Scripts/remote.sh": {
             "hash": "95ee190e609fae234d6a69d4ce31c4cf",
             "size": 7486048,
-            "overwrite": false,
             "reboot": true
         }
     },

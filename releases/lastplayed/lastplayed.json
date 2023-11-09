@@ -1,11 +1,10 @@
 {
     "db_id": "mrext/lastplayed",
-    "timestamp": 1699519565,
+    "timestamp": 1699519874,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1880573c192ae8e295ee000522fb16a1",
             "size": 3263208,
-            "overwrite": false,
             "reboot": false
         }
     },

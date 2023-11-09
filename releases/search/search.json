@@ -1,11 +1,10 @@
 {
     "db_id": "mrext/search",
-    "timestamp": 1699519565,
+    "timestamp": 1699519874,
     "files": {
         "Scripts/search.sh": {
             "hash": "262d239817926fd670a72334e8108bd1",
             "size": 3806804,
-            "overwrite": false,
             "reboot": false
         }
     },

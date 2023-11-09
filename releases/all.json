@@ -1,80 +1,68 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1699519565,
+    "timestamp": 1699519874,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1880573c192ae8e295ee000522fb16a1",
             "size": 3263208,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/launchseq.sh": {
             "hash": "b873338676a20235dda81aa707242203",
             "size": 2685068,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/launchsync.sh": {
             "hash": "0b63aa6f87a4378a3ee9722881cd873a",
             "size": 4171812,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/nfc.sh": {
             "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
             "size": 5589692,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/nfcui.sh": {
             "hash": "3be6ba02dca533c4bd5c4d97e952e8bb",
             "size": 44913,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/playlog.sh": {
             "hash": "4bf45aced44231ac4604b25c3287f062",
             "size": 7131340,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/random.sh": {
             "hash": "37e0738cdd96bdbf80d6bf9961a060be",
             "size": 2868564,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/remote.sh": {
             "hash": "95ee190e609fae234d6a69d4ce31c4cf",
             "size": 7486048,
-            "overwrite": false,
             "reboot": true
         },
         "Scripts/search.sh": {
             "hash": "262d239817926fd670a72334e8108bd1",
             "size": 3806804,
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/bgm.sh": {
             "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
             "size": 32636,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/bgm.sh",
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/favorites.sh": {
             "hash": "b4aafba85dbfdcd61ab8f3979852f16f",
             "size": 35543,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/favorites.sh",
-            "overwrite": false,
             "reboot": false
         },
         "Scripts/gamesmenu.sh": {
             "hash": "cd5654427a4303964786c25e0ac1b7b4",
             "size": 13693,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/gamesmenu.sh",
-            "overwrite": false,
             "reboot": false
         }
     },

@@ -1,11 +1,10 @@
 {
     "db_id": "mrext/random",
-    "timestamp": 1699519565,
+    "timestamp": 1699519874,
     "files": {
         "Scripts/random.sh": {
             "hash": "37e0738cdd96bdbf80d6bf9961a060be",
             "size": 2868564,
-            "overwrite": false,
             "reboot": false
         }
     },
