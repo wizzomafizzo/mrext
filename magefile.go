@@ -5,8 +5,8 @@ package main
 
 import (
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload"
 	"io"
 	"net/http"
 	"os"
@@ -14,9 +14,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"time"
-
-	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -329,73 +326,6 @@ func getFileSize(path string) (int64, error) {
 	return size, nil
 }
 
-func UpdateAllDb() {
-	dbFile := updateDb{}
-	dbFile.DbId = "mrext/all"
-	dbFile.Timestamp = time.Now().Unix()
-	dbFile.Files = make(map[string]updateDbFile)
-	dbFile.Folders = map[string]updateDbFolder{
-		"Scripts": {},
-	}
-
-	for _, app := range apps {
-		if app.releaseId == "" || !app.inAll {
-			continue
-		}
-
-		releaseBin := filepath.Join(binReleasesDir, app.bin)
-		files := append(app.releaseFiles, releaseBin)
-
-		for _, f := range files {
-			hash, err := getMd5Hash(f)
-			if err != nil {
-				fmt.Println("Error getting hash for", app.name, err)
-				os.Exit(1)
-			}
-
-			size, err := getFileSize(f)
-			if err != nil {
-				fmt.Println("Error getting size for", app.name, err)
-				os.Exit(1)
-			}
-
-			dbFile.Files["Scripts/"+filepath.Base(f)] = updateDbFile{
-				Hash:   hash,
-				Size:   size,
-				Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, filepath.Base(f)),
-				Reboot: app.reboot,
-			}
-		}
-	}
-
-	for _, app := range externalApps {
-		releaseBin := filepath.Join(releasesDir, "external", app.bin)
-
-		hash, err := getMd5Hash(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting hash for", app.name, err)
-			os.Exit(1)
-		}
-
-		size, err := getFileSize(releaseBin)
-		if err != nil {
-			fmt.Println("Error getting size for", app.name, err)
-			os.Exit(1)
-		}
-
-		dbFile.Files["Scripts/"+app.bin] = updateDbFile{
-			Hash: hash,
-			Size: size,
-			Url:  app.url,
-		}
-	}
-
-	dbFileJson, _ := json.MarshalIndent(dbFile, "", "  ")
-	dbFp, _ := os.Create(filepath.Join(releasesDir, "all.json"))
-	_, _ = dbFp.Write(dbFileJson)
-	_ = dbFp.Close()
-}
-
 func Release(name string) {
 	a := getApp(name)
 	if a == nil {
@@ -441,44 +371,6 @@ func Release(name string) {
 			os.Exit(1)
 		}
 	}
-
-	if a.releaseId != "" {
-		files := append(a.releaseFiles, releaseBin)
-		dbFile := updateDb{
-			DbId:      a.releaseId,
-			Timestamp: time.Now().Unix(),
-			Files:     map[string]updateDbFile{},
-			Folders: map[string]updateDbFolder{
-				"Scripts": {},
-			},
-		}
-
-		for _, f := range files {
-			hash, err := getMd5Hash(f)
-			if err != nil {
-				fmt.Println("Error getting hash", a.name, err)
-				os.Exit(1)
-			}
-
-			size, err := getFileSize(f)
-			if err != nil {
-				fmt.Println("Error getting size", a.name, err)
-				os.Exit(1)
-			}
-
-			dbFile.Files["Scripts/"+filepath.Base(f)] = updateDbFile{
-				Hash:   hash,
-				Size:   size,
-				Url:    fmt.Sprintf("%s/%s", releaseUrlPrefix, filepath.Base(f)),
-				Reboot: a.reboot,
-			}
-		}
-
-		dbFileJson, _ := json.MarshalIndent(dbFile, "", "  ")
-		dbFp, _ := os.Create(filepath.Join(rd, a.name+".json"))
-		_, _ = dbFp.Write(dbFileJson)
-		_ = dbFp.Close()
-	}
 }
 
 func PrepRelease() {
@@ -491,7 +383,6 @@ func PrepRelease() {
 			Release(app.name)
 		}
 	}
-	UpdateAllDb()
 }
 
 func MakeKernelImage() {

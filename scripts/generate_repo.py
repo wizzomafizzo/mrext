@@ -29,7 +29,7 @@ EXTERNAL_FILES = [
 DB_ID = "mrext/{}"
 RELEASES_FOLDER = "releases"
 DL_FOLDER = "_bin/releases"
-DL_URL = "https://github.com/wizzomafizzo/mrext/releases/download/{}/"
+DL_URL = "https://github.com/wizzomafizzo/mrext/releases/download/{}"
 EXTERNAL_URL = "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/{}"
 
 
@@ -79,9 +79,10 @@ def create_app_db(app: str, tag: str) -> RepoDb:
         key = "Scripts/{}".format(os.path.basename(local_path))
         size = os.stat(local_path).st_size
         md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
+        url = "{}/{}".format(DL_URL.format(tag), os.path.basename(local_path))
 
         file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=None, overwrite=None, reboot=reboot
+            hash=md5, size=size, url=url, overwrite=None, reboot=reboot
         )
 
         files[key] = file_entry
@@ -91,7 +92,7 @@ def create_app_db(app: str, tag: str) -> RepoDb:
         timestamp=int(time.time()),
         files=files,
         folders=folders,
-        base_files_url=DL_URL.format(tag),
+        base_files_url=None,
     )
 
 
@@ -113,9 +114,10 @@ def create_all_db(tag: str) -> RepoDb:
             key = "Scripts/{}".format(os.path.basename(local_path))
             size = os.stat(local_path).st_size
             md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
+            url = "{}/{}".format(DL_URL.format(tag), os.path.basename(local_path))
 
             file_entry = RepoDbFilesItem(
-                hash=md5, size=size, url=None, overwrite=None, reboot=reboot
+                hash=md5, size=size, url=url, overwrite=None, reboot=reboot
             )
 
             files[key] = file_entry
@@ -138,7 +140,7 @@ def create_all_db(tag: str) -> RepoDb:
         timestamp=int(time.time()),
         files=files,
         folders=folders,
-        base_files_url=DL_URL.format(tag),
+        base_files_url=None,
     )
 
 
