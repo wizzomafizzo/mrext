@@ -1,50 +1,59 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1699519874,
+    "timestamp": 1699541754,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1880573c192ae8e295ee000522fb16a1",
             "size": 3263208,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/lastplayed.sh",
             "reboot": false
         },
         "Scripts/launchseq.sh": {
             "hash": "b873338676a20235dda81aa707242203",
             "size": 2685068,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/launchseq.sh",
             "reboot": false
         },
         "Scripts/launchsync.sh": {
             "hash": "0b63aa6f87a4378a3ee9722881cd873a",
             "size": 4171812,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/launchsync.sh",
             "reboot": false
         },
         "Scripts/nfc.sh": {
             "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
             "size": 5589692,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfc.sh",
             "reboot": false
         },
         "Scripts/nfcui.sh": {
-            "hash": "3be6ba02dca533c4bd5c4d97e952e8bb",
+            "hash": "471a7bc80fe085f380f94d97c294aa0b",
             "size": 44913,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfcui.sh",
             "reboot": false
         },
         "Scripts/playlog.sh": {
             "hash": "4bf45aced44231ac4604b25c3287f062",
             "size": 7131340,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/playlog.sh",
             "reboot": false
         },
         "Scripts/random.sh": {
             "hash": "37e0738cdd96bdbf80d6bf9961a060be",
             "size": 2868564,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/random.sh",
             "reboot": false
         },
         "Scripts/remote.sh": {
             "hash": "95ee190e609fae234d6a69d4ce31c4cf",
             "size": 7486048,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/remote.sh",
             "reboot": true
         },
         "Scripts/search.sh": {
             "hash": "262d239817926fd670a72334e8108bd1",
             "size": 3806804,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/search.sh",
             "reboot": false
         },
         "Scripts/bgm.sh": {
@@ -68,6 +77,5 @@
     },
     "folders": {
         "Scripts/": {}
-    },
-    "base_files_url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/"
+    }
 }
