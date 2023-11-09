@@ -1,14 +1,16 @@
 {
-  "db_id": "mrext/launchseq",
-  "timestamp": 1697033985,
-  "files": {
-    "Scripts/launchseq.sh": {
-      "hash": "b873338676a20235dda81aa707242203",
-      "size": 2685068,
-      "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/launchseq.sh"
-    }
-  },
-  "folders": {
-    "Scripts": {}
-  }
+    "db_id": "mrext/launchseq",
+    "timestamp": 1699519565,
+    "files": {
+        "Scripts/launchseq.sh": {
+            "hash": "b873338676a20235dda81aa707242203",
+            "size": 2685068,
+            "overwrite": false,
+            "reboot": false
+        }
+    },
+    "folders": {
+        "Scripts/": {}
+    },
+    "base_files_url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/"
 }

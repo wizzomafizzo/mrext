@@ -1,14 +1,16 @@
 {
-  "db_id": "mrext/random",
-  "timestamp": 1697033304,
-  "files": {
-    "Scripts/random.sh": {
-      "hash": "37e0738cdd96bdbf80d6bf9961a060be",
-      "size": 2868564,
-      "url": "https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"
-    }
-  },
-  "folders": {
-    "Scripts": {}
-  }
+    "db_id": "mrext/random",
+    "timestamp": 1699519565,
+    "files": {
+        "Scripts/random.sh": {
+            "hash": "37e0738cdd96bdbf80d6bf9961a060be",
+            "size": 2868564,
+            "overwrite": false,
+            "reboot": false
+        }
+    },
+    "folders": {
+        "Scripts/": {}
+    },
+    "base_files_url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/"
 }
