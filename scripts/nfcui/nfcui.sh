@@ -9,9 +9,10 @@ basedir="/media/fat"
 searchCommand="${scriptdir}/search.sh"
 nfcCommand="${scriptdir}/nfc.sh"
 settings="${scriptdir}/nfc.ini"
-map="/media/fat/nfc.csv"
+map="${basedir}/nfc.csv"
 #For debugging purpouse
-[[ -d "/media/fat" ]] || map="${scriptdir}/nfc.csv"
+[[ -d "${basedir}" ]] || map="${scriptdir}/nfc.csv"
+[[ -d "${basedir}" ]] && PATH="${basedir}/linux:${basedir}/Scripts:${PATH}"
 mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
 case "${nfcStatus}" in
@@ -41,7 +42,7 @@ else
   nfcReadingStatus="false"
 fi
 # Match MiSTer theme
-[[ -f "/media/fat/Scripts/.dialogrc" ]] && export DIALOGRC="/media/fat/Scripts/.dialogrc"
+[[ -f "${basedir}/Scripts/.dialogrc" ]] && export DIALOGRC="${basedir}/Scripts/.dialogrc"
 #dialog escape codes, requires --colors
 # shellcheck disable=SC2034
 black="\Z0" red="\Z1" green="\Z2" yellow="\Z3" blue="\Z4" magenta="\Z5" cyan="\Z6" white="\Z7" bold="\Zb" unbold="\ZB" reverse="\Zr" unreverse="\ZR" underline="\Zu" noUnderline="\ZU" reset="\Zn"
@@ -448,6 +449,8 @@ _depends() {
   fi
 
   [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found\n\nRead more at ${underline}github.com/wizzomafizzo/mrext${noUnderline}" "1" --colors
+
+  [[ -x "$(command -v rg)" ]] &&  grep() { rg "${@}"; }
 }
 
 main() {
@@ -993,10 +996,9 @@ _browseZip() {
 
     case "${selected,,}" in
     "..")
-      currentDir="${currentDir%/}"
-      [[ "${currentDir}" != *"/"* ]] && currentDir=""
-      currentDir="${currentDir%/*}"
-      [[ -n ${currentDir} ]] && currentDir="${currentDir}/"
+      [[ -z "${currentDir}" ]] && break
+      [[ "${currentDir%/}" != *"/"* ]] && currentDir=""
+      [[ -n "${currentDir}" ]] && currentDir="${currentDir%/*/}/"
       ;;
     */)
       currentDir="${currentDir}${selected}"
