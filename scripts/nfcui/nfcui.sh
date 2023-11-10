@@ -6,6 +6,7 @@ scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.2"
 fullFileBrowser="false"
 basedir="/media/fat"
+searchCommand="${scriptdir}/search.sh"
 nfcCommand="${scriptdir}/nfc.sh"
 settings="${scriptdir}/nfc.ini"
 map="/media/fat/nfc.csv"
@@ -600,7 +601,7 @@ _commandPalette() {
       echo "${text}"
       ;;
     Search)
-      gamePath="$(search.sh -print 2>&1 >"$(tty)")"
+      gamePath="$("${searchCommand}" -print 2>&1 >"$(tty)")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       echo "${gamePath}"
       ;;
