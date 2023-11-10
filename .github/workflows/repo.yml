@@ -19,6 +19,7 @@ jobs:
         with:
           latest: true
           repo: wizzomafizzo/mrext
+          ref: main
       - name: Download release files
         run: |
           DL_URL=https://github.com/wizzomafizzo/mrext/releases/download/${{ steps.mrextreleaseinfo.outputs.tag_name }}
