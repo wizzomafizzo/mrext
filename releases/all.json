@@ -1,59 +1,59 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1699543061,
+    "timestamp": 1699618140,
     "files": {
         "Scripts/lastplayed.sh": {
-            "hash": "1880573c192ae8e295ee000522fb16a1",
-            "size": 3263208,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/lastplayed.sh",
+            "hash": "07e7443148dff94f04d26555b25ddc72",
+            "size": 3419176,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/lastplayed.sh",
             "reboot": false
         },
         "Scripts/launchseq.sh": {
-            "hash": "b873338676a20235dda81aa707242203",
-            "size": 2685068,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/launchseq.sh",
+            "hash": "354526fc8bd3244f86718b52a606a530",
+            "size": 2804596,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/launchseq.sh",
             "reboot": false
         },
         "Scripts/launchsync.sh": {
-            "hash": "0b63aa6f87a4378a3ee9722881cd873a",
-            "size": 4171812,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/launchsync.sh",
+            "hash": "88b1bb18323f6a9f4978bdf9ca305490",
+            "size": 4388724,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/launchsync.sh",
             "reboot": false
         },
         "Scripts/nfc.sh": {
-            "hash": "5242f6b3a9fb6e4dea1917429b7903a8",
-            "size": 5589692,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfc.sh",
+            "hash": "907d95a7b1c661cdc23cf24365ef06e0",
+            "size": 5846048,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/nfc.sh",
             "reboot": false
         },
         "Scripts/nfcui.sh": {
-            "hash": "e3c59d334fc5dbdd2d5a09b43099173d",
-            "size": 44701,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/nfcui.sh",
+            "hash": "bd632fa91be8beb8c4b576f568001f00",
+            "size": 44961,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/nfcui.sh",
             "reboot": false
         },
         "Scripts/playlog.sh": {
-            "hash": "4bf45aced44231ac4604b25c3287f062",
-            "size": 7131340,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/playlog.sh",
+            "hash": "1033a3a711b57afde522752e576c40d1",
+            "size": 7421148,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/playlog.sh",
             "reboot": false
         },
         "Scripts/random.sh": {
-            "hash": "37e0738cdd96bdbf80d6bf9961a060be",
-            "size": 2868564,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/random.sh",
+            "hash": "4a534c5e8437ca193e7520d8af3f9bb4",
+            "size": 2998904,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/random.sh",
             "reboot": false
         },
         "Scripts/remote.sh": {
-            "hash": "95ee190e609fae234d6a69d4ce31c4cf",
-            "size": 7486048,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/remote.sh",
+            "hash": "cc4bf4373e2a00fb7404b3392b37517b",
+            "size": 7836112,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/remote.sh",
             "reboot": true
         },
         "Scripts/search.sh": {
-            "hash": "262d239817926fd670a72334e8108bd1",
-            "size": 3806804,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231014-1/search.sh",
+            "hash": "094b4463ab8401923d551b627bd9e1fa",
+            "size": 3985412,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/search.sh",
             "reboot": false
         },
         "Scripts/bgm.sh": {
