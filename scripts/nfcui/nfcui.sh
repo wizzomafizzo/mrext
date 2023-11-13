@@ -34,19 +34,58 @@ case "${nfcStatus}" in
 esac
 nfcSocket="UNIX-CONNECT:/tmp/nfc.sock"
 if [[ -S "${nfcSocket#*:}" ]]; then
-  nfcReadingStatus="$(echo "status" | socat - "${nfcSocket}")"
+  nfcReadingStatus="$(socat - "${nfcSocket}" <<< "status" )"
   nfcReadingStatus="$(cut -d ',' -f 3 <<< "${nfcReadingStatus}")"
   # Disable reading for the duration of the script
   # we trap the EXIT signal and execute the _exit() function to turn it on again
-  echo "disable" | socat - "${nfcSocket}"
+  socat - "${nfcSocket}" <<< "disable"
 else
   nfcReadingStatus="false"
 fi
 # Match MiSTer theme
-[[ -f "${sdroot}/Scripts/.dialogrc" ]] && export DIALOGRC="${sdroot}/Scripts/.dialogrc"
+[[ -f "${scriptdir}/.dialogrc" ]] && export DIALOGRC="${scriptdir}/.dialogrc"
 #dialog escape codes, requires --colors
 # shellcheck disable=SC2034
 black="\Z0" red="\Z1" green="\Z2" yellow="\Z3" blue="\Z4" magenta="\Z5" cyan="\Z6" white="\Z7" bold="\Zb" unbold="\ZB" reverse="\Zr" unreverse="\ZR" underline="\Zu" noUnderline="\ZU" reset="\Zn"
+
+declare -A ansiEscape=(
+  ["BLACK"]="0"
+  ["RED"]="1"
+  ["GREEN"]="2"
+  ["YELLOW"]="3"
+  ["BLUE"]="4"
+  ["MAGENTA"]="5"
+  ["CYAN"]="6"
+  ["WHITE"]="7"
+  ["DEFAULT"]="9"
+)
+dialog_color_fg="0"
+dialog_color_bg="7"
+[[ -f "${DIALOGRC}" ]] && {
+  dialog_color_fg="$(grep "dialog_color" "${DIALOGRC}")"
+  dialog_color_fg="${dialog_color_fg#*(}"
+  dialog_color_fg="${dialog_color_fg%%,*}"
+  dialog_color_bg="$(grep "dialog_color" "${DIALOGRC}")"
+  dialog_color_bg="${dialog_color_bg#*,}"
+  dialog_color_bg="${dialog_color_bg%,*}"
+}
+
+animations=(
+  "← ↑ → ↓"
+  "- \\ | /"
+  "^ > v <"
+)
+
+[[ "${TERM}" != "linux" ]] && animations=(
+  #UTF8 Animations:
+  "⠁ ⠂ ⠄ ⡀ ⢀ ⠠ ⠐ ⠈"
+  "▖ ▘ ▝ ▗"
+  "◴ ◷ ◶ ◵"
+  "◐ ◓ ◑ ◒"
+  "▗ ▐ ▖ ▘ ▝ ▗ ▙ ▄ ▞ ▟"
+  "⣷ ⣯ ⣟ ⡿ ⢿ ⣻ ⣽ ⣾"
+  "◜ ◠ ◝ ◞ ◡ ◟"
+)
 
 cmdPalette=(
   "system"  "Launch a system"
@@ -521,7 +560,7 @@ _Write() {
   # but since extending the command is done recursively it inherits the environemnt
   # so we do this check
   if [[ -z "${text}" ]] || [[ -n "${1}" ]]; then
-    text="${1}$(_commandPalette)"
+    text="${1}$(msg="${text:-$1}" _commandPalette)"
   fi
   [[ "${?}" -eq 1 || "${?}" -eq 255 ]] && return
   txtSize="$(echo -n "${text}" | wc --bytes)"
@@ -587,7 +626,7 @@ _commandPalette() {
 
   case "${selected}" in
     Input)
-      inputText="$( _inputbox "Replace match text" "${match_text}")"
+      inputText="$( _inputbox "Custom command:" "${match_text}")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
 
       echo "${inputText}"
@@ -1244,18 +1283,52 @@ _numberedArray() {
   done
 }
 
+# Address an array with wrapping indices
+# Usage: _wraparoundArray <index> element1 element2 ...
+# Returns: the specified element
+_wraparoundArray() {
+    local index="${1}"
+    shift
+    local -a array=("${@}")
+    local length="${#array[@]}"
+    [[ "${length}" -eq 0 ]] && return 1
+
+    # Calculate the effective index by handling wrapping
+    local effective_index=$(( (index % length + length) % length ))
+
+    echo "${array[effective_index]}"
+}
+
 # Write text string to physical NFC tag
 # Usage: _writeTag "Text"
 _writeTag() {
-  local txt
+  local txt exitcode animation hz seconds timestep msg row col
   txt="${1}"
+  seconds="10"
+  hz="2"
+  timestep="$(bc <<< "scale=1; 1/${hz}")"; timestep=$(printf "%.1f" "${timestep}")
+  read -r -a animation <<< "${animations[$((RANDOM % ${#animations[@]}))]}"
+  [[ -z "${txt}" ]] && { _error "Trying to write an empty tag"; return 1; }
 
-  _infobox "Present NFC tag to begin writing..."
-  "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; return 1; }
-  # Workaround for -write enabling launching games again
-  echo "disable" | socat - "${nfcSocket}"
+  msg="Present NFC tag to begin writing..."
+  row=$(($(tput lines) / 2 + ($(tput lines) % 2)))
+  col=$(($(tput cols)/ 2 - (${#msg}/2) ))
+  _infobox "${msg}\n\n"
+  for ((i="$((seconds*hz))"; i>=1; i--)); do
+    echo -ne "\e[${row};${col}H\e[?25l" >"$(tty)"
+    printf "\e[3%s;4%sm%s" "${ansiEscape[$dialog_color_fg]}" "${ansiEscape[$dialog_color_bg]}" "$(_wraparoundArray "${i}" "${animation[@]}")  $((i/hz))s   " > "$(tty)"
+    timeout "${timestep}s" "${nfcCommand}" -write "${txt}"
+    exitcode="${?}"
+    # Workaround for -write enabling launching games again
+    socat - "${nfcSocket}" <<< "disable" 2>/dev/null
+    [[ "${exitcode}" -ne 124 ]] && break
+  done
 
-  _msgbox "${txt} \n successfully written to NFC tag"
+  case "${exitcode}" in
+    0) _msgbox "${txt}\n\nSuccessfully written to NFC tag"; return ;;
+    124) _msgbox "${txt}\n\nFailed to write tag due to a timeout."; return 1;;
+    *) _error "${txt}\n\nUnable to write the NFC Tag"; return 1 ;;
+  esac
 }
 
 # Write text string to NFC map (overrides physical NFC Tag contents)
@@ -1298,17 +1371,27 @@ _writeTextToMap() {
 # Usage: _readTag
 # Returns: "Unix epoch time","UID","core launch status","text"
 _readTag() {
-  local lastScanTime currentScan currentScanTime scanSuccess
-  lastScanTime="$(echo "status" | socat - "${nfcSocket}" | cut -d ',' -f 1)"
-  _infobox "Scan NFC Tag to continue...\n\nPress any key to go back"
+  local lastScanTime currentScan currentScanTime scanSuccess animation timestep hz i msg row col
+  i=0
+  hz="2"
+  timestep="$(bc <<< "scale=1; 1/${hz}")"; timestep=$(printf "%.1f" "${timestep}")
+  read -r -a animation <<< "${animations[$((RANDOM % ${#animations[@]}))]}"
+  lastScanTime="$(socat - "${nfcSocket}" <<< "status" 2>/dev/null)"
+  lastScanTime="${lastScanTime%%,*}"
+  msg="Scan NFC Tag to continue...   "
+  row=$(($(tput lines) / 2 - 1 + ($(tput lines) % 2)))
+  col=$(($(tput cols)/ 2 + (${#msg}/2 - 1 ) ))
+  _infobox "${msg}\n\nPress any key to go back" --no-collapse
   while true; do
-    currentScan="$(echo "status" | socat - "${nfcSocket}" 2>/dev/null)"
-    currentScanTime="$(cut -d ',' -f 1 <<< "${currentScan}")"
+    echo -ne "\e[${row};${col}H\e[?25l" >"$(tty)"
+    printf "\e[3%s;4%sm%s" "${ansiEscape[$dialog_color_fg]}" "${ansiEscape[$dialog_color_bg]}" "$(_wraparoundArray "${i}" "${animation[@]}")" > "$(tty)"
+    ((i++))
+    currentScan="$(socat - "${nfcSocket}" <<< "status" 2>/dev/null)"
+    currentScanTime="${currentScan%%,*}"
     [[ "${lastScanTime}" != "${currentScanTime}" ]] && { scanSuccess="true" ; break; }
-    sleep 1
-    read -t 1 -n 1 -r  && return 1
+    read -t "${timestep}" -n 1 -r -s && return 1
   done
-  currentScan="$(echo "status" | socat - "${nfcSocket}")"
+  currentScan="$(socat - "${nfcSocket}" <<< "status")"
   if [[ ! "${scanSuccess}" ]]; then
     _yesno "Tag not read" --yes-label "Retry" && _readTag
     return 1
@@ -1514,7 +1597,7 @@ _error() {
 
 _exit() {
   clear
-  "${nfcReadingStatus}" && echo "enable" | socat - "${nfcSocket}"
+  "${nfcReadingStatus}" && socat - "${nfcSocket}" <<< "enable"
   exit "${1:-0}"
 }
 trap _exit EXIT
