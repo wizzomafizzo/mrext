@@ -8,6 +8,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"strings"
 	"sync"
 	"time"
@@ -657,6 +659,16 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 		}
 	}
 
+
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGTERM)
+	go func() {
+		for {
+			<-signalChannel
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	var pnd nfc.Device
 	var err error
 
@@ -726,6 +738,8 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 	_, _ = fmt.Fprintln(os.Stderr, "Successfully wrote to card")
 
 	restartService()
+	signal.Stop(signalChannel)
+	signal.Reset(syscall.SIGTERM)
 	os.Exit(0)
 }
 
