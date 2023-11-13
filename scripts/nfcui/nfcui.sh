@@ -169,6 +169,8 @@ nfcjokes=(
   Because it felt like it didn't have enough range!"
 "Why does the NFC tag need to be scanned to be updated?
   Because it needs to touch base!"
+"What did the NFC reader say to the card?
+  Tag! You're it!"
 )
 
 keycodes=(
@@ -1170,6 +1172,7 @@ _writeTag() {
   local txt
   txt="${1}"
 
+  _infobox "Present NFC tag to begin writing..."
   "${nfcCommand}" -write "${txt}" || { _error "Unable to write the NFC Tag"; return 1; }
   # Workaround for -write enabling launching games again
   echo "disable" | socat - "${nfcSocket}"
