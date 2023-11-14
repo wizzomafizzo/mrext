@@ -103,21 +103,33 @@ check if it shows as connected in the log view.
 If you are using a PN532 NFC module connected with a USB to TTL cable, then the following config may be needed 
 in `nfc.ini` in the `Scripts` folder:
 
+```ini
+[nfc]
+probe_device=yes
+allow_commands=no
 ```
+
+Create this file if it doesn't exist.
+
+If nfc.sh is unable to auto detect your device it may be necessary to manually configure the connection string:
+
+```ini
 [nfc]
 connection_string="pn532_uart:/dev/ttyUSB0"
 allow_commands=no
 ```
 
-Create this file if it doesn't exist. Be aware the `ttyUSB0` part may be different if you have other devices connected
-such as tty2oled.
+Be aware the ttyUSB0 part may be different if you have other devices connected such as tty2oled. For a list of possible devices try:
+
+`ls /dev/serial/by-id` or `ls /dev |grep ttyUSB`
 
 ## Configuration
 
 The NFC script supports a `nfc.ini` file in the `Scripts` folder. This file can be used to configure the NFC service.
 
 If one doesn't exist, create a new one. This example has all the default values:
-```
+
+```ini
 [nfc]
 connection_string=""
 allow_commands=no
@@ -139,6 +151,10 @@ disabled and only works from the `nfc.csv` file described below.
 ### disable_sounds
 
 Disables the success and fail sounds played when a tag is scanned.
+
+### probe_device
+
+Enables auto detection of a serial based reader device
 
 ## Setting up tags
 
@@ -326,7 +342,7 @@ You can get the UID of a tag by checking the output in the `nfc` Script display 
 The NFC script currently supports writing to NTAG tags through the command line option `-write <text>`.
 
 For example, from the console or SSH:
-```
+```bash
 /media/fat/Scripts/nfc.sh -write "_Console/SNES"
 ```
 This will write the text `_Console/SNES` to the next detected tag.
@@ -340,7 +356,7 @@ file `/tmp/NFCSCAN`. The contents of the file is in the format `<uid>,<text>`.
 
 You can monitor the file for changes to detect when a tag is scanned with the `inotifywait` command that is
 shipped on the MiSTer Linux image. For example:
-```
+```bash
 while inotifywait -e modify /tmp/NFCSCAN; do
     echo "Tag scanned"
 done
