@@ -43,6 +43,7 @@ type NfcConfig struct {
 	ConnectionString string `ini:"connection_string,omitempty"`
 	AllowCommands    bool   `ini:"allow_commands,omitempty"`
 	DisableSounds    bool   `ini:"disable_sounds,omitempty"`
+	ProbeDevice      bool   `ini:"probe_device,omitempty"`
 }
 
 type SystemsConfig struct {

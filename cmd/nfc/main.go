@@ -12,11 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wizzomafizzo/mrext/pkg/input"
-
 	"github.com/fsnotify/fsnotify"
 	gc "github.com/rthornton128/goncurses"
 	"github.com/wizzomafizzo/mrext/pkg/curses"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -353,20 +352,9 @@ func startService(cfg *config.UserConfig) (func() error, error) {
 		var err error
 
 	reconnect:
-		tries := 0
-		for {
-			// TODO: don't show every failed attempt error, tidy the log
-			pnd, err = nfc.Open(cfg.Nfc.ConnectionString)
-			if err != nil {
-				logger.Error("could not open device: %s", err)
-				if tries >= connectMaxTries {
-					logger.Error("giving up, exiting")
-					return
-				}
-			} else {
-				break
-			}
-			tries++
+		pnd, err = openDeviceWithRetries(cfg.Nfc)
+		if err != nil {
+			return
 		}
 
 		defer func(pnd nfc.Device) {
@@ -570,7 +558,70 @@ func addToStartup() error {
 	return nil
 }
 
-func handleWriteCommand(textToWrite string, svc *service.Service, connectionString string) {
+func openDeviceWithRetries(config config.NfcConfig) (nfc.Device, error) {
+	var connectionString = config.ConnectionString
+	if connectionString == "" && config.ProbeDevice == true {
+		connectionString = detectConnectionString()
+	}
+
+	tries := 0
+	for {
+		pnd, err := nfc.Open(connectionString)
+		if err == nil {
+			logger.Info("successful connect after %d tries", tries)
+			return pnd, err
+		}
+
+		if tries >= connectMaxTries {
+			logger.Error("could not open device after %d tries: %s", connectMaxTries, err)
+			return pnd, err
+		}
+
+		tries++
+	}
+}
+
+func detectConnectionString() string {
+	logger.Info("attempting to probe for NFC device")
+	devices, _ := getSerialDeviceList()
+
+	for _, device := range devices {
+		connectionString := "pn532_uart:" + device
+		pnd, err := nfc.Open(connectionString)
+		logger.Info("trying %s", connectionString)
+		if err == nil {
+			logger.Info("success using serial: %s", connectionString)
+			pnd.Close()
+			return connectionString
+		}
+	}
+
+	return ""
+}
+
+func getSerialDeviceList() ([]string, error) {
+	path := "/dev/serial/by-id/"
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	files, err := f.Readdir(0)
+	if err != nil {
+		return nil, err
+	}
+
+	var devices []string
+
+	for _, v := range files {
+		if !v.IsDir() {
+			devices = append(devices, path+v.Name())
+		}
+	}
+
+	return devices, nil
+}
+
+func handleWriteCommand(textToWrite string, svc *service.Service, config config.NfcConfig) {
 	serviceRunning := svc.Running()
 	if serviceRunning {
 		err := svc.Stop()
@@ -609,22 +660,14 @@ func handleWriteCommand(textToWrite string, svc *service.Service, connectionStri
 	var pnd nfc.Device
 	var err error
 
-	tries := 0
-	for {
-		pnd, err = nfc.Open(connectionString)
-		if err != nil {
-			logger.Error("could not open device: %s", err)
-			if tries >= connectMaxTries {
-				logger.Error("giving up, exiting")
-				_, _ = fmt.Fprintln(os.Stderr, "Could not open device:", err)
-				restartService()
-				os.Exit(1)
-			}
-		} else {
-			break
-		}
-		tries++
+	pnd, err = openDeviceWithRetries(config)
+	if err != nil {
+		logger.Error("giving up, exiting")
+		_, _ = fmt.Fprintln(os.Stderr, "Could not open device:", err)
+		restartService()
+		os.Exit(1)
 	}
+
 	defer func(pnd nfc.Device) {
 		err := pnd.Close()
 		if err != nil {
@@ -712,7 +755,7 @@ func main() {
 	}
 
 	if *writeOpt != "" {
-		handleWriteCommand(*writeOpt, svc, cfg.Nfc.ConnectionString)
+		handleWriteCommand(*writeOpt, svc, cfg.Nfc)
 	}
 
 	svc.ServiceHandler(svcOpt)
