@@ -690,6 +690,7 @@ _Settings() {
     "Commands"    "Toggles the ability to run Linux commands from NFC tags"
     "Sounds"      "Toggles sounds played when a tag is scanned"
     "Connection"  "Hardware configuration for certain NFC readers"
+    "Probe"       "Auto detection of a serial based reader device"
   )
 
   while true; do
@@ -700,6 +701,7 @@ _Settings() {
       Commands) _commandSetting ;;
       Sounds) _soundSetting ;;
       Connection) _connectionSetting ;;
+      Probe) _probeSetting ;;
     esac
   done
 }
@@ -851,6 +853,40 @@ _connectionSetting() {
         sed -i "s/^connection_string=.*/connection_string=\"${customString}\"/" "${settings}"
       else
         echo "connection_string=\"${customString}\"" >> "${settings}"
+      fi
+      ;;
+  esac
+}
+
+_probeSetting() {
+  local menuOptions selected
+  menuOptions=(
+    "Enable"   "Enable detection of a serial based reader device"   "off"
+    "Disable"  "Disable detection of a serial based reader device"  "off"
+  )
+
+  [[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
+
+  if grep -q "^probe_device=yes" "${settings}"; then
+    menuOptions[2]="on"
+  else
+    menuOptions[5]="on"
+  fi
+
+  selected="$(_radiolist -- "${menuOptions[@]}" )"
+  case "${selected}" in
+    Enable)
+      if grep -q "^probe_device=" "${settings}"; then
+        sed -i "s/^probe_device=.*/probe_device=yes/" "${settings}"
+      else
+        echo "probe_device=yes" >> "${settings}"
+      fi
+      ;;
+    Disable)
+      if grep -q "^probe_device=" "${settings}"; then
+        sed -i "s/^probe_device=.*/probe_device=no/" "${settings}"
+      else
+        echo "probe_device=no" >> "${settings}"
       fi
       ;;
   esac
