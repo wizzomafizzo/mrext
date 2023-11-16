@@ -608,6 +608,7 @@ _commandPalette() {
     Search)
       gamePath="$("${searchCommand}" -print 2>&1 >"$(tty)")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
+      gamePath="$(sed -E "s#/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${gamePath}")"
       echo "${gamePath}"
       ;;
   esac
