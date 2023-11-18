@@ -5,14 +5,15 @@ title="MiSTer NFC"
 scriptdir="$(dirname "$(readlink -f "${0}")")"
 version="0.2"
 fullFileBrowser="false"
-basedir="/media/fat"
+basedir="/media"
+sdroot="${basedir}/fat"
 searchCommand="${scriptdir}/search.sh"
 nfcCommand="${scriptdir}/nfc.sh"
 settings="${scriptdir}/nfc.ini"
-map="${basedir}/nfc.csv"
+map="${sdroot}/nfc.csv"
 #For debugging purpouse
-[[ -d "${basedir}" ]] || map="${scriptdir}/nfc.csv"
-[[ -d "${basedir}" ]] && PATH="${basedir}/linux:${basedir}/Scripts:${PATH}"
+[[ -d "${sdroot}" ]] || map="${scriptdir}/nfc.csv"
+[[ -d "${sdroot}" ]] && PATH="${sdroot}/linux:${sdroot}/Scripts:${PATH}"
 mapHeader="match_uid,match_text,text"
 nfcStatus="$("${nfcCommand}" --service status)"
 case "${nfcStatus}" in
@@ -42,7 +43,7 @@ else
   nfcReadingStatus="false"
 fi
 # Match MiSTer theme
-[[ -f "${basedir}/Scripts/.dialogrc" ]] && export DIALOGRC="${basedir}/Scripts/.dialogrc"
+[[ -f "${sdroot}/Scripts/.dialogrc" ]] && export DIALOGRC="${sdroot}/Scripts/.dialogrc"
 #dialog escape codes, requires --colors
 # shellcheck disable=SC2034
 black="\Z0" red="\Z1" green="\Z2" yellow="\Z3" blue="\Z4" magenta="\Z5" cyan="\Z6" white="\Z7" bold="\Zb" unbold="\ZB" reverse="\Zr" unreverse="\ZR" underline="\Zu" noUnderline="\ZU" reset="\Zn"
@@ -452,7 +453,7 @@ _depends() {
 
   [[ -x "${nfcCommand}" ]] || _error "${nfcCommand} not found\n\nRead more at ${underline}github.com/wizzomafizzo/mrext${noUnderline}" "1" --colors
 
-  [[ -x "$(command -v rg)" ]] &&  grep() { rg "${@}"; }
+  [[ -x "$(command -v rg)" ]] && grep() { rg "${@}"; }
 }
 
 main() {
@@ -592,11 +593,11 @@ _commandPalette() {
       echo "${inputText}"
       ;;
     Pick)
-      fileSelected="$(_fselect "${basedir}")"
+      fileSelected="$(_fselect "$(_gameLocation)")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
       [[ ! -f "${fileSelected//.zip\/*/.zip}" ]] && { _error "No file was selected." ; return ; }
       # shellcheck disable=SC2001
-      fileSelected="$(sed -E "s#/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${fileSelected}")"
+      fileSelected="$(sed -E "s#/media/(usb[0-7]|fat|network)(/cifs)?(/games)?/##i" <<< "${fileSelected}")"
 
       echo "${fileSelected}"
       ;;
@@ -608,7 +609,8 @@ _commandPalette() {
     Search)
       gamePath="$("${searchCommand}" -print 2>&1 >"$(tty)")"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
-      gamePath="$(sed -E "s#/media/(usb[0-7]|fat)(/cifs)?(/games)?/##i" <<< "${gamePath}")"
+      gamePath="$(sed -E "s#/media/(usb[0-7]|fat|network)(/cifs)?(/games)?/##i" <<< "${gamePath}")"
+      [[ -z "${gamePath}" ]] && { "${FUNCNAME[0]}" ; return ; }
       echo "${gamePath}"
       ;;
   esac
@@ -1013,6 +1015,42 @@ _browseZip() {
     esac
   done
   rm "${tmpFile}"
+}
+
+# Search for game folders, and list them
+# Usage: _gameLocation
+# Returns: path to selected folder
+_gameLocation() {
+  local gameLocations tag location item selected exitcode dir
+  readarray -t gameLocations <<< "$( \
+    find "${basedir}" -maxdepth 3 -type d -iregex '.*/\(usb[0-7]\|fat\|network\)\(/cifs\)?\(/games\|/_Arcade\)' |
+      while read -r line; do
+        tag="${line#"$basedir/"}"
+        location="${tag%/*}"
+        location="${location#/}"
+        location="${location/fat\/cifs/Network}"
+        location="${location/fat/SD Card}"
+        item="${tag##*/} (${location%/*})"
+        echo -e "${tag}\n${item#_}"
+      done )"
+  gameLocations=(
+    "goto"  "Go to directory (keyboard required)"
+    "fat"   "${underline}${bold}SD Card${reset}"
+    "${gameLocations[@]}"
+  )
+
+  selected="$(_menu --default-item "fat" --colors -- "${gameLocations[@]}")"
+  exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && return "${exitcode}"
+
+  case "${selected}" in
+    "goto")
+      dir="$(_inputbox "Input a directory to go to" "${sdroot}")"
+      echo "${dir%/}"
+      ;;
+    *)
+      echo "${basedir}/${selected}"
+      ;;
+  esac
 }
 
 # Map or remap filepath or command for a given NFC tag (written to local database)
