@@ -734,7 +734,11 @@ func main() {
 	writeOpt := flag.String("write", "", "write text to tag")
 	flag.Parse()
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
+		Nfc: config.NfcConfig{
+			ProbeDevice: true,
+		},
+	})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		fmt.Println("Error loading config:", err)
