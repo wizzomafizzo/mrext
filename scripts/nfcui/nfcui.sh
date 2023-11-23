@@ -870,10 +870,13 @@ _probeSetting() {
 
   [[ -f "${settings}" ]] || echo "[nfc]" > "${settings}" || { _error "Can't create settings file" ; return 1 ; }
 
-  if grep -q "^probe_device=yes" "${settings}"; then
-    menuOptions[2]="on"
+  # Check if probe_device is set to "no" in the settings
+  if grep -q "^probe_device=no" "${settings}"; then
+    # If probe_device is "no", set the corresponding radio button to "on"
+    menuOptions[5]="on" # Disable option is selected
   else
-    menuOptions[5]="on"
+    # If probe_device is not "no", set the corresponding radio button to "on"
+    menuOptions[2]="on" # Enable option is selected by default
   fi
 
   selected="$(_radiolist -- "${menuOptions[@]}" )"
