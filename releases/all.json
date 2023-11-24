@@ -1,59 +1,59 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1699618140,
+    "timestamp": 1700795578,
     "files": {
         "Scripts/lastplayed.sh": {
-            "hash": "07e7443148dff94f04d26555b25ddc72",
-            "size": 3419176,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/lastplayed.sh",
+            "hash": "bf6d307aef1c80e43198836cdda0d17d",
+            "size": 3419204,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/lastplayed.sh",
             "reboot": false
         },
         "Scripts/launchseq.sh": {
-            "hash": "354526fc8bd3244f86718b52a606a530",
+            "hash": "59ed9a6dabb6a99031db7398bf0fd6a4",
             "size": 2804596,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/launchseq.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/launchseq.sh",
             "reboot": false
         },
         "Scripts/launchsync.sh": {
-            "hash": "88b1bb18323f6a9f4978bdf9ca305490",
-            "size": 4388724,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/launchsync.sh",
+            "hash": "d8e7028b1acd94afdf93880999bb8ae4",
+            "size": 4388520,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/launchsync.sh",
             "reboot": false
         },
         "Scripts/nfc.sh": {
-            "hash": "907d95a7b1c661cdc23cf24365ef06e0",
-            "size": 5846048,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/nfc.sh",
+            "hash": "d324897b7eb8baa5411a659c00385452",
+            "size": 5848124,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/nfc.sh",
             "reboot": false
         },
         "Scripts/nfcui.sh": {
-            "hash": "bd632fa91be8beb8c4b576f568001f00",
-            "size": 44961,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/nfcui.sh",
+            "hash": "065efc478ed10e19d4f57a7a2611b8e0",
+            "size": 47828,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/nfcui.sh",
             "reboot": false
         },
         "Scripts/playlog.sh": {
-            "hash": "1033a3a711b57afde522752e576c40d1",
-            "size": 7421148,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/playlog.sh",
+            "hash": "deb46fb6dc754916836010089d21253e",
+            "size": 7421648,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/playlog.sh",
             "reboot": false
         },
         "Scripts/random.sh": {
-            "hash": "4a534c5e8437ca193e7520d8af3f9bb4",
+            "hash": "283f0c467895c332debb9552cea3b56a",
             "size": 2998904,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/random.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/random.sh",
             "reboot": false
         },
         "Scripts/remote.sh": {
-            "hash": "cc4bf4373e2a00fb7404b3392b37517b",
-            "size": 7836112,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/remote.sh",
+            "hash": "eff78b025aa9413e9e9fd97d815a06f0",
+            "size": 7836436,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/remote.sh",
             "reboot": true
         },
         "Scripts/search.sh": {
-            "hash": "094b4463ab8401923d551b627bd9e1fa",
-            "size": 3985412,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231110-1/search.sh",
+            "hash": "f4772ae6114aa76d7b5b5bbcb782df72",
+            "size": 3985788,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231124-1/search.sh",
             "reboot": false
         },
         "Scripts/bgm.sh": {
