@@ -4,7 +4,7 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
-[Remote](#remote) • [NFC](#nfc) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
+[Remote](#remote) • [NFC](#nfc) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search) • [PocketBackup](#pocketbackup)
 
 [Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md)
 
@@ -91,6 +91,12 @@ Search for and launch games from your collection. Searching is *fast* and great 
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh"><img src="docs/images/download.svg" alt="Download Search" title="Download Search" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md"><img src="docs/images/readme.svg" alt="Readme Search" title="Readme Search" width="140"></a>
+
+## PocketBackup
+Backup your Analogue Pocket saves, settings and screenshots to your MiSTer.
+
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/pocketbackup.sh"><img src="docs/images/download.svg" alt="Download PocketBackup" title="Download PocketBackup" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/pocketbackup.md"><img src="docs/images/readme.svg" alt="Readme PocketBackup" title="Readme PocketBackup" width="140"></a>
 
 ## Other Projects
 

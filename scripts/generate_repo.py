@@ -8,7 +8,7 @@ import time
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional
 
-APPS = ["lastplayed", "launchseq", "launchsync", "nfc", "playlog", "random", "remote", "search"]
+APPS = ["lastplayed", "launchseq", "launchsync", "nfc", "playlog", "random", "remote", "search", "pocketbackup"]
 FILES = {
     "lastplayed": ["lastplayed.sh"],
     "launchseq": ["launchseq.sh"],
@@ -18,6 +18,7 @@ FILES = {
     "random": ["random.sh"],
     "remote": ["remote.sh"],
     "search": ["search.sh"],
+    "pocketbackup": ["pocketbackup.sh"],
 }
 REBOOT = ["remote"]
 EXTERNAL_FILES = [
