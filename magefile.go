@@ -178,6 +178,13 @@ var externalApps = []externalApp{
 	},
 }
 
+var scriptApps = []externalApp{
+	{
+		name: "pocketbackup",
+		bin:  "pocketbackup.sh",
+	},
+}
+
 func getApp(name string) *app {
 	for _, a := range apps {
 		if a.name == name {
@@ -382,6 +389,10 @@ func PrepRelease() {
 			fmt.Println("Preparing release:", app.name)
 			Release(app.name)
 		}
+	}
+	for _, app := range scriptApps {
+		fmt.Println("Preparing release:", app.name)
+		sh.Copy(filepath.Join(binReleasesDir, app.bin), filepath.Join(cwd, "scripts", app.name, app.bin))
 	}
 }
 
