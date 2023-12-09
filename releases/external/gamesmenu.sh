@@ -20,32 +20,56 @@ MENU_CACHE = {}
 
 # (<games folder name>, <rbf>, (<file extensions>[], <delay>, <type>, <index>)[])[]
 MGL_MAP = (
-    # ("ATARI2600", "_Console/Atari7800", (({".a78", ".a26", ".bin"}, 1, "f", 1),)),
-    ("ATARI7800", "_Console/Atari7800", (({".a78", ".a26", ".bin"}, 1, "f", 1),)),
+    ("Amiga", "_Computer/Minimig", (({".adf"}, 1, "f", 0),)),
+    ("Arcadia", "_Console/Arcadia", (({".bin"}, 1, "f", 1),)),
+    ("AVision", "_Console/AdventureVision", (({".bin"}, 1, "f", 1),)),
+    ("Astrocade", "_Console/Astrocade", (({".bin"}, 1, "f", 1),)),
+    ("ATARI2600", "_Console/Atari7800", (({".a78", ".a26", ".bin"}, 1, "f", 1),)),
+    (
+        "ATARI5200",
+        "_Console/Atari5200",
+        (({".car", ".a52", ".bin", ".rom"}, 1, "s", 1),),
+    ),
     ("AtariLynx", "_Console/AtariLynx", (({".lnx"}, 1, "f", 0),)),
     ("C64", "_Computer/C64", (({".prg", ".crt", ".reu", ".tap"}, 1, "f", 1),)),
+    ("ChannelF", "_Console/ChannelF", (({".rom", ".bin"}, 1, "f", 1),)),
     (
         "Coleco",
         "_Console/ColecoVision",
         (({".col", ".bin", ".rom", ".sg"}, 1, "f", 0),),
     ),
-    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb", ".gbc"}, 1, "f", 1),)),
-    ("GAMEBOY", "_Console/Gameboy", (({".gb", ".gbc"}, 1, "f", 1),)),
+    ("CreatiVision", "_Console/CreatiVision", (({".rom", ".bin"}, 1, "f", 1),)),
+    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb",".gbc"}, 1, "f", 1),)),
+    ("GAMEBOY", "_Console/Gameboy", (({".gb"}, 1, "f", 1),)),
+    ("GBC", "_Console/Gameboy", (({".gbc"}, 1, "f", 1),)),
+    ("Gamate", "_Console/Gamate", (({".bin"}, 1, "f", 1),)),
+    ("GameNWatch", "_Console/GnW", (({".bin"}, 1, "f", 1),)),
     ("GBA2P", "_Console/GBA2P", (({".gba"}, 1, "f", 0),)),
     ("GBA", "_Console/GBA", (({".gba"}, 1, "f", 0),)),
+    ("GameGear", "_Console/SMS", (({".gg"}, 1, "f", 2),)),
+    ("Genesis", "_Console/Genesis", (({".bin", ".gen", ".md"}, 1, "f", 0),)),
+    (
+        "Intellivision",
+        "_Console/Intellivision",
+        (({".rom", ".int", ".bin"}, 1, "f", 1),),
+    ),
     ("MegaDrive", "_Console/MegaDrive", (({".bin", ".gen", ".md"}, 1, "f", 1),)),
     ("MegaCD", "_Console/MegaCD", (({".cue", ".chd"}, 1, "s", 0),)),
-    (
-        "NEOGEO",
-        "_Console/NeoGeo",
-        (({".neo", ".zip"}, 1, "f", 1), ({".iso", ".bin"}, 1, "s", 1)),
-    ),
+    ("N64", "_Console/N64", (({".n64", ".z64"}, 1, "f", 1),)),
+    ("NeoGeo-CD", "_Console/NeoGeo", (({".cue", ".chd"}, 1, "s", 1),),),
+    ("NeoGeo", "_Console/NeoGeo", (({".neo"}, 1, "f", 1),),),
     ("NES", "_Console/NES", (({".nes", ".fds", ".nsf"}, 1, "f", 0),)),
+    ("ODYSSEY2", "_Console/Odyssey2", (({".bin"}, 1, "f", 1),)),
     ("PSX", "_Console/PSX", (({".cue", ".chd"}, 1, "s", 1),)),
+    ("PocketChallengeV2", "_Console/WonderSwan", (({".pc2"}, 1, "f", 1),)),
+    ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 0),)),
+    ("Saturn", "_Console/Saturn", (({".cue", ".chd"}, 1, "s", 0),)),
+    ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
-    ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),
+    ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1),)),
     ("SNES", "_Console/SNES", (({".sfc", ".smc"}, 2, "f", 0),)),
+    ("SuperVision", "_Console/SuperVision", (({".bin", ".sv"}, 1, "s", 1),)),
     (
         "TGFX16-CD",
         "_Console/TurboGrafx16",
@@ -59,8 +83,10 @@ MGL_MAP = (
             ({".sgx"}, 1, "f", 1),
         ),
     ),
+    ("VC4000", "_Console/VC4000", (({".bin"}, 1, "f", 1),)),
     ("VECTREX", "_Console/Vectrex", (({".ovr", ".vec", ".bin", ".rom"}, 1, "f", 1),)),
-    ("WonderSwan", "_Console/WonderSwan", (({".wsc", ".ws"}, 1, "f", 1),)),
+    ("WonderSwan", "_Console/WonderSwan", (({".ws"}, 1, "f", 1),)),
+    ("WonderSwanColor", "_Console/WonderSwan", (({".wsc"}, 1, "f", 1),)),
 )
 
 # source: https://mister-devel.github.io/MkDocs_MiSTer/cores/paths/#path-priority
@@ -73,6 +99,7 @@ GAMES_FOLDERS = (
     "/media/usb4",
     "/media/usb5",
     "/media/fat/cifs",
+    "/media/fat/games",
 )
 
 
@@ -135,31 +162,21 @@ def get_system_paths():
     systems = {}
 
     def add_system(name, folder):
-        path = os.path.join(folder, name)
         if name in systems:
-            systems[name].append(path)
+            systems[name].append(folder)
         else:
-            systems[name] = [path]
+            systems[name] = [folder]
 
-    def find_folders(path):
+    def check_folder(path):
         if not os.path.exists(path) or not os.path.isdir(path):
             return False
-
-        for folder in os.listdir(path):
-            system = get_system(folder)
-            if os.path.isdir(os.path.join(path, folder)) and system:
-                add_system(system[0], path)
-
         return True
 
-    for games_path in GAMES_FOLDERS:
-        parent = find_folders(games_path)
-        if not parent:
-            break
-
-        for subpath in os.listdir(games_path):
-            if subpath.lower() == "games":
-                find_folders(os.path.join(games_path, subpath))
+    for system in MGL_MAP:
+        for games_path in GAMES_FOLDERS:
+            games_path = os.path.join(games_path, system[0])
+            if check_folder(games_path):
+                add_system(system[0], games_path)
 
     return systems
 

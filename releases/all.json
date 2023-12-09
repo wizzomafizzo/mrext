@@ -75,8 +75,8 @@
             "reboot": false
         },
         "Scripts/gamesmenu.sh": {
-            "hash": "cd5654427a4303964786c25e0ac1b7b4",
-            "size": 13693,
+            "hash": "39a2769370edd6b5c47c370a81f1c57e",
+            "size": 14912,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/gamesmenu.sh",
             "reboot": false
         }
