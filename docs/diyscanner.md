@@ -218,8 +218,7 @@ Congratulations, you did it! Welcome to the world of tapping a thing on another
 thing to make it do a thing.
 
 Please check the [nfc documentation](nfc.md) for configuration
-instructions. This is a PN532 scanner, and needs an option set in the `nfc.ini`
-file. This scanner should also work without configuration on Windows, Mac and
+instructions. This scanner should also work without configuration on Windows, Mac and
 Linux PCs.
 
 There are 2 ways to scan cards with this scanner. If you want to tap the card,

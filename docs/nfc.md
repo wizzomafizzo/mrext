@@ -8,7 +8,7 @@ All hardware required is inexpensive, easily available and quick to set up.
 [Create your own DIY NFC scanner](diyscanner.md)
 
 <!-- TOC -->
-* [Thanks to](#thanks-to)
+* [Credits](#credits)
 * [Card labels](#card-labels)
 * [Hardware required](#hardware-required)
   * [Readers](#readers)
@@ -26,10 +26,13 @@ All hardware required is inexpensive, easily available and quick to set up.
 * [Service socket](#service-socket)
 <!-- TOC -->
 
-## Thanks to
+## Credits
 
-- [symm](https://github.com/symm) - for doing all the actual (hard) work of making the NFC scanners function on MiSTer.
-- [ElRojo](https://github.com/ElRojo/MiSTerRFID) & [javiwwweb](https://github.com/javiwwweb/MisTerRFID) - for project inspiration.
+- [symm](https://github.com/symm) - for doing all the actual work of making the NFC scanners function.
+- [wizzo](https://github.com/wizzomafizzo) - integrating software into MiSTer and telling everyone.
+- [sigboe](https://github.com/sigboe) - creating the nfcui.sh script.
+- [RetroCastle](https://www.aliexpress.com/store/912024455) - making the DIY scanner happen.
+- [ElRojo](https://github.com/ElRojo/MiSTerRFID) & [javiwwweb](https://github.com/javiwwweb/MisTerRFID) - for inspiring this project.
 
 ## Card labels
 
