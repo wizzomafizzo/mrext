@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
 
+import datetime
 import os.path
 import shutil
+from enum import Enum
+from typing import Dict
+import zipfile
 
 # TODO: arcade high scores? dunno if that's a thing on AP
+# TODO: cleanup files deleted on AP
+# TODO: max number of backups or max space usage
+# TODO: restore backup to pocket
+# TODO: optionally copy backups to other locations (cifs)
 
 # backup root location and working directory for operations
-BACKUP_FOLDER = "/media/fat/pocket"
+BACKUP_FOLDER: str = "/media/fat/pocket"
+# storage for previous backups
+SNAPSHOTS_FOLDER: str = os.path.join(BACKUP_FOLDER, "snapshots")
+
 # potential USB mount locations on MiSTer
-USB_MOUNTS = (
+USB_MOUNTS: tuple[str] = (
     "/media/usb0",
     "/media/usb1",
     "/media/usb2",
@@ -17,12 +28,13 @@ USB_MOUNTS = (
     "/media/usb5",
     "/media/usb6",
     "/media/usb7",
+    "/run/media/callan/AP",
 )
 
 # special file telling us it's an AP storage device
-POCKET_JSON = "Analogue_Pocket.json"
+POCKET_JSON: str = "Analogue_Pocket.json"
 # which folders on the AP to backup
-POCKET_BACKUP_FOLDERS = (
+POCKET_BACKUP_FOLDERS: tuple[str] = (
     "Memories",
     "Saves",
     "Settings",
@@ -30,7 +42,7 @@ POCKET_BACKUP_FOLDERS = (
 
 # mapping for AP platform IDs to MiSTer core folder names
 # NOTE: many items on this list may not have save files to sync
-POCKET_CORES_MAP = {
+POCKET_CORES_MAP: Dict[str, tuple[str]] = {
     "2600": ("Atari2600", "ATARI7800"),
     "7800": ("ATARI7800",),
     "amiga": ("Amiga",),
@@ -65,14 +77,16 @@ POCKET_CORES_MAP = {
     "wonderswan": ("WonderSwan", "WonderSwanColor"),
 }
 
-MISTER_CORES_MAP = reverse_dict(CORES_MAP)
+MISTER_CORES_MAP = {v: k for k, v in POCKET_CORES_MAP.items()}
 
 
-def reverse_dict(d):
-    return {v: k for k, v in d.items()}
+class BackupStatus(Enum):
+    NEW = 1
+    UPDATED = 2
+    UNCHANGED = 3
 
 
-def get_pocket_folder():
+def get_pocket_folder() -> str or None:
     for mount in USB_MOUNTS:
         if os.path.exists(os.path.join(mount, POCKET_JSON)):
             return mount
@@ -82,46 +96,79 @@ def get_pocket_folder():
 # recursively copy a folder from the AP to the MiSTer, skipping files that are
 # already up to date based on modification time. returns a generator that yields
 # a dict for each file copied, with the result
-def backup_folder(folder):
-    if not os.path.exists(os.path.join(BACKUP_FOLDER, folder)):
-        os.mkdir(os.path.join(BACKUP_FOLDER, folder))
+def backup_folder(pocket_path: str, folder: str) -> dict:
+    backup_path = os.path.join(BACKUP_FOLDER, folder)
+    if not os.path.exists(backup_path):
+        os.mkdir(backup_path)
 
-    for root, dirs, files in os.walk(os.path.join(pocket_folder, folder)):
+    from_path = os.path.join(pocket_path, folder)
+
+    for root, dirs, files in os.walk(from_path):
+        for dir in dirs:
+            dst = os.path.join(backup_path, os.path.relpath(root, from_path), dir)
+            if not os.path.exists(dst):
+                os.mkdir(dst)
+
         for file in files:
             src = os.path.join(root, file)
-            dst = os.path.join(BACKUP_FOLDER, folder, file)
+            dst = os.path.join(backup_path, os.path.relpath(src, from_path))
+
             if os.path.exists(dst):
                 if os.path.getmtime(src) > os.path.getmtime(dst):
                     shutil.copy2(src, dst)
                     yield {
                         "file": file,
-                        "updated": True,
-                        "new": False,
+                        "status": BackupStatus.UPDATED,
                     }
                 else:
                     yield {
                         "file": file,
-                        "updated": False,
-                        "new": False,
+                        "status": BackupStatus.UNCHANGED,
                     }
             else:
                 shutil.copy2(src, dst)
                 yield {
                     "file": file,
-                    "updated": False,
-                    "new": True,
+                    "status": BackupStatus.NEW,
                 }
+
+
+# create a zip file from all backed up folders and save it to the snapshots
+# folder with a timestamp
+def zip_backup():
+    path = os.path.join(
+        SNAPSHOTS_FOLDER, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip"
+    )
+    if os.path.exists(path):
+        raise Exception("Snapshot already exists: {}".format(path))
+
+    zipf = zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED)
+
+    for folder in POCKET_BACKUP_FOLDERS:
+        for root, dirs, files in os.walk(os.path.join(BACKUP_FOLDER, folder)):
+            for file in files:
+                zipf.write(
+                    os.path.join(root, file),
+                    os.path.relpath(os.path.join(root, file), BACKUP_FOLDER),
+                )
+
+    zipf.close()
 
 
 def setup():
     if not os.path.exists(BACKUP_FOLDER):
         os.mkdir(BACKUP_FOLDER)
 
+    if not os.path.exists(SNAPSHOTS_FOLDER):
+        os.mkdir(SNAPSHOTS_FOLDER)
+
 
 def main():
     pocket_folder = get_pocket_folder()
     if pocket_folder is None:
-        print("Pocket not found, check it's plugged in and USB SD Access is enabled in the Developer menu.")
+        print(
+            "Pocket not found, check it's plugged in and USB SD Access is enabled in the Developer menu."
+        )
         return
     else:
         print("Pocket found at: {}".format(pocket_folder))
@@ -132,17 +179,21 @@ def main():
     for folder in POCKET_BACKUP_FOLDERS:
         print("Backing up {}...".format(folder), end="", flush=True)
 
-        for result in backup_folder(folder):
-            if result["new"]:
-                print("N", end="", flush=True)
-            elif result["updated"]:
-                print("U", end="", flush=True)
+        for result in backup_folder(pocket_folder, folder):
+            if result["status"] == BackupStatus.NEW:
+                print("*", end="", flush=True)
+            elif result["status"] == BackupStatus.UPDATED:
+                print("^", end="", flush=True)
             else:
                 print(".", end="", flush=True)
 
         print("...Done!", flush=True)
 
     print("Backup complete!", flush=True)
+
+    print("Creating backup snapshot...", end="", flush=True)
+    zip_backup()
+    print("...Done!", flush=True)
 
 
 if __name__ == "__main__":
