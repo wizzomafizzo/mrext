@@ -9,14 +9,17 @@ import zipfile
 
 # TODO: arcade high scores? dunno if that's a thing on AP
 # TODO: cleanup files deleted on AP
-# TODO: max number of backups or max space usage
+# TODO: check for max storage limit for snapshots
 # TODO: restore backup to pocket
 # TODO: optionally copy backups to other locations (cifs)
+# TODO: check disk usage on backup locations
 
 # backup root location and working directory for operations
 BACKUP_FOLDER: str = "/media/fat/pocket"
 # storage for previous backups
 SNAPSHOTS_FOLDER: str = os.path.join(BACKUP_FOLDER, "snapshots")
+# total number of snapshots to keep
+SNAPSHOTS_MAX: int = 25
 
 # potential USB mount locations on MiSTer
 USB_MOUNTS: tuple[str] = (
@@ -173,8 +176,9 @@ def main():
     else:
         print("Pocket found at: {}".format(pocket_folder))
 
-    print("Starting backup...")
     setup()
+
+    print("Starting backup...")
 
     for folder in POCKET_BACKUP_FOLDERS:
         print("Backing up {}...".format(folder), end="", flush=True)
@@ -194,6 +198,12 @@ def main():
     print("Creating backup snapshot...", end="", flush=True)
     zip_backup()
     print("...Done!", flush=True)
+    
+    # count snapshots and delete oldest if we're over the limit
+    snapshots = os.listdir(SNAPSHOTS_FOLDER)
+    if len(snapshots) > SNAPSHOTS_MAX:
+        snapshots.sort()
+        os.remove(os.path.join(SNAPSHOTS_FOLDER, snapshots[0]))
 
 
 if __name__ == "__main__":
