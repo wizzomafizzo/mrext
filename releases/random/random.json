@@ -1,12 +1,15 @@
 {
     "db_id": "mrext/random",
-    "timestamp": 1701568561,
+    "timestamp": 1702596889,
     "files": {
         "Scripts/random.sh": {
             "hash": "8f60b82496315195450611a540d7b4e3",
             "size": 2998896,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/random.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "random"
+            ]
         }
     },
     "folders": {

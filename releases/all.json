@@ -1,84 +1,123 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1701568561,
+    "timestamp": 1702596889,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "c7653d79ef28c6ce8f0c6ea606c76fe2",
             "size": 3419204,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/lastplayed.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "lastplayed"
+            ]
         },
         "Scripts/launchseq.sh": {
             "hash": "44e428b5d925c569066034307524bdd9",
             "size": 2804596,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/launchseq.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "launchseq"
+            ]
         },
         "Scripts/launchsync.sh": {
             "hash": "c6e608f8e113f104bef20d5bcdfcd0fb",
             "size": 4388520,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/launchsync.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "launchsync"
+            ]
         },
         "Scripts/nfc.sh": {
             "hash": "365bf5012d2a617d45021193a7c214a9",
             "size": 5848124,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/nfc.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "nfc"
+            ]
         },
         "Scripts/nfcui.sh": {
             "hash": "065efc478ed10e19d4f57a7a2611b8e0",
             "size": 47828,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/nfcui.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "nfcui"
+            ]
         },
         "Scripts/playlog.sh": {
             "hash": "f96d3e8549ac3e85638a5224caa621e0",
             "size": 7421648,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/playlog.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "playlog"
+            ]
         },
         "Scripts/random.sh": {
             "hash": "8f60b82496315195450611a540d7b4e3",
             "size": 2998896,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/random.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "random"
+            ]
         },
         "Scripts/remote.sh": {
             "hash": "bb98072d54c7317453ef5cf1d57017af",
             "size": 7836436,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/remote.sh",
-            "reboot": true
+            "reboot": true,
+            "tags": [
+                "remote"
+            ]
         },
         "Scripts/search.sh": {
             "hash": "12bcc4113cf87ec102cf53f32572dda8",
             "size": 3985788,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/search.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "search"
+            ]
         },
         "Scripts/pocketbackup.sh": {
             "hash": "a3017b81e773a637421a48a937d48cbf",
             "size": 1889,
             "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231203-1/pocketbackup.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "pocketbackup"
+            ]
         },
         "Scripts/bgm.sh": {
             "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
             "size": 32636,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/bgm.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "bgm"
+            ]
         },
         "Scripts/favorites.sh": {
             "hash": "b4aafba85dbfdcd61ab8f3979852f16f",
             "size": 35543,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/favorites.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "favorites"
+            ]
         },
         "Scripts/gamesmenu.sh": {
             "hash": "39a2769370edd6b5c47c370a81f1c57e",
             "size": 14912,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/gamesmenu.sh",
-            "reboot": false
+            "reboot": false,
+            "tags": [
+                "gamesmenu"
+            ]
         }
     },
     "folders": {
