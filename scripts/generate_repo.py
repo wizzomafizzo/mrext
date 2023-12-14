@@ -5,8 +5,9 @@ import json
 import hashlib
 import sys
 import time
+from pathlib import Path
 from zipfile import ZipFile
-from typing import TypedDict, Union, Optional
+from typing import TypedDict, Union, Optional, List
 
 APPS = ["lastplayed", "launchseq", "launchsync", "nfc", "playlog", "random", "remote", "search", "pocketbackup"]
 FILES = {
@@ -40,6 +41,7 @@ class RepoDbFilesItem(TypedDict):
     url: Optional[str]
     overwrite: Optional[bool]
     reboot: Optional[bool]
+    tags: List[str]
 
 
 RepoDbFiles = dict[str, RepoDbFilesItem]
@@ -83,7 +85,7 @@ def create_app_db(app: str, tag: str) -> RepoDb:
         url = "{}/{}".format(DL_URL.format(tag), os.path.basename(local_path))
 
         file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=url, overwrite=None, reboot=reboot
+            hash=md5, size=size, url=url, overwrite=None, reboot=reboot, tags=[Path(local_path).stem]
         )
 
         files[key] = file_entry
@@ -118,7 +120,7 @@ def create_all_db(tag: str) -> RepoDb:
             url = "{}/{}".format(DL_URL.format(tag), os.path.basename(local_path))
 
             file_entry = RepoDbFilesItem(
-                hash=md5, size=size, url=url, overwrite=None, reboot=reboot
+                hash=md5, size=size, url=url, overwrite=None, reboot=reboot, tags=[Path(local_path).stem]
             )
 
             files[key] = file_entry
@@ -131,7 +133,7 @@ def create_all_db(tag: str) -> RepoDb:
         url = EXTERNAL_URL.format(os.path.basename(local_path))
 
         file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=url, overwrite=None, reboot=False
+            hash=md5, size=size, url=url, overwrite=None, reboot=False, tags=[Path(local_path).stem]
         )
 
         files[key] = file_entry
