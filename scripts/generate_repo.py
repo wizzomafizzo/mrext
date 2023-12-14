@@ -120,7 +120,7 @@ def create_all_db(tag: str) -> RepoDb:
             url = "{}/{}".format(DL_URL.format(tag), os.path.basename(local_path))
 
             file_entry = RepoDbFilesItem(
-                hash=md5, size=size, url=url, overwrite=None, reboot=reboot
+                hash=md5, size=size, url=url, overwrite=None, reboot=reboot, tags=[Path(local_path).stem]
             )
 
             files[key] = file_entry
