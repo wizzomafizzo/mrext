@@ -33,6 +33,7 @@ jobs:
           curl -L ${DL_URL}/random.sh -o _bin/releases/random.sh
           curl -L ${DL_URL}/remote.sh -o _bin/releases/remote.sh
           curl -L ${DL_URL}/search.sh -o _bin/releases/search.sh
+          curl -L ${DL_URL}/pocketbackup.sh -o _bin/releases/pocketbackup.sh
       - name: Create databases
         run: |
           cp scripts/generate_repo.py .
