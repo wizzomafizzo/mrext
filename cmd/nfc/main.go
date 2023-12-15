@@ -8,8 +8,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -656,6 +658,17 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 			}
 		}
 	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	cancelled := make(chan bool, 1)
+
+	go func() {
+		<-sigs
+		cancelled <- true
+		restartService()
+		os.Exit(0)
+	}()
 
 	var pnd nfc.Device
 	var err error
