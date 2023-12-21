@@ -148,6 +148,10 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
 
   An RSS reader for MiSTer. Display the latest core updates right on your wallpaper.
 
+- [Wallpaper Collection](https://github.com/RGarciaLago/Wallpaper_Collection)
+
+  Great curated collection of wallpapers for MiSTer with a downloader compatible repo.
+
 ### Ports
 
 - [MiSTer Basilisk II](https://github.com/bbond007/MiSTer_BasiliskII)
