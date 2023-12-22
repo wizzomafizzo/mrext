@@ -220,6 +220,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/games/launch", games.LaunchGame(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
+	sub.HandleFunc("/games/view", games.ListGamesFolder(logger)).Methods("POST")
 
 	sub.HandleFunc("/l/{data:.*}", games.LaunchToken(logger, cfg, kbd)).Methods("GET")
 

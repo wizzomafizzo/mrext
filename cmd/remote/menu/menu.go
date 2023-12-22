@@ -126,10 +126,14 @@ func getFileType(file os.DirEntry) string {
 		return "mgl"
 	}
 
+	if strings.HasSuffix(lower, ".zip") {
+		return "zip"
+	}
+
 	return "unknown"
 }
 
-func getFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
+func GetFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	name := file.Name()
 	filetype := getFileType(file)
 
@@ -212,7 +216,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 		for _, file := range files {
 			name := file.Name()
 
-			formatted, filetype, version := getFilenameInfo(file)
+			formatted, filetype, version := GetFilenameInfo(file)
 
 			info, err := file.Info()
 			if err != nil {
