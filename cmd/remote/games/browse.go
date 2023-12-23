@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -80,42 +79,9 @@ type fileEntry struct {
 	modTime time.Time
 }
 
-type ZipCache struct {
-	mu  sync.Mutex
-	Map map[string][]string
-}
-
-func (zc *ZipCache) Get(path string) ([]string, bool) {
-	zc.mu.Lock()
-	defer zc.mu.Unlock()
-
-	if zc.Map == nil {
-		zc.Map = make(map[string][]string)
-	}
-
-	paths, ok := zc.Map[path]
-	return paths, ok
-}
-
-func (zc *ZipCache) Set(path string, files []string) {
-	zc.mu.Lock()
-	defer zc.mu.Unlock()
-
-	if zc.Map == nil {
-		zc.Map = make(map[string][]string)
-	}
-
-	zc.Map[path] = files
-}
-
-var zipCache = &ZipCache{}
-
 func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
-	system, err := games.BestSystemMatch(&config.UserConfig{}, path)
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("system: %s", system.Id)
+	systems := games.FolderToSystems(&config.UserConfig{}, path+"/")
+	logger.Info("systems: %s", systems)
 
 	inZip := false
 	zipIndex := -1
@@ -135,49 +101,40 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 		zipFile := strings.Join(parts[:zipIndex+1], "/")
 		zipPath := strings.Join(parts[zipIndex+1:], "/")
 
-		paths, ok := zipCache.Get(zipFile)
-		if ok {
-			logger.Info("found cached zip paths")
-			for _, ps := range paths {
-				if !strings.HasPrefix(path, zipPath) {
-					continue
-				}
+		paths, err := utils.ListZip(zipFile)
+		if err != nil {
+			return nil, err
+		}
 
-				if strings.Count(path, "/") > strings.Count(zipPath, "/") {
-					continue
-				}
+		if len(paths) == 0 {
+			return nil, nil
+		}
 
-				files = append(files, fileEntry{
-					path:    ps,
-					name:    filepath.Base(ps),
-					isDir:   false,
-					modTime: time.Time{},
-				})
+		for _, zipItem := range paths {
+			if !strings.HasPrefix(zipItem, zipPath) {
+				continue
 			}
-		} else {
-			logger.Info("no cached zip paths found")
-			zipFiles, err := utils.ListZip(zipFile)
-			if err != nil {
-				return nil, err
+
+			isDir := false
+			if strings.HasSuffix(zipItem, "/") {
+				isDir = true
+				zipItem = strings.TrimSuffix(zipItem, "/")
 			}
-			zipCache.Set(zipFile, zipFiles)
 
-			for _, ps := range zipFiles {
-				if !strings.HasPrefix(ps, zipPath) {
-					continue
-				}
-
-				if strings.Count(ps, "/") > strings.Count(zipPath, "/") {
-					continue
-				}
-
-				files = append(files, fileEntry{
-					path:    ps,
-					name:    filepath.Base(ps),
-					isDir:   false,
-					modTime: time.Time{},
-				})
+			if zipItem == zipPath {
+				continue
 			}
+
+			if strings.Count(strings.TrimPrefix(zipItem, zipPath+"/"), "/") != 0 {
+				continue
+			}
+
+			files = append(files, fileEntry{
+				path:    filepath.Join(zipFile, zipItem),
+				name:    filepath.Base(zipItem),
+				isDir:   isDir,
+				modTime: time.Time{},
+			})
 		}
 	} else {
 		fsFiles, err := os.ReadDir(path)
@@ -207,9 +164,11 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 		validFiletypes = append(validFiletypes, ".zip")
 	}
 
-	for _, slot := range system.Slots {
-		for _, filetype := range slot.Exts {
-			validFiletypes = append(validFiletypes, filetype)
+	for _, system := range systems {
+		for _, slot := range system.Slots {
+			for _, filetype := range slot.Exts {
+				validFiletypes = append(validFiletypes, filetype)
+			}
 		}
 	}
 	logger.Info("valid filetypes: %s", validFiletypes)
@@ -224,9 +183,18 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 		}
 
 		var next *string
+		filetype := "game"
+
 		if file.isDir {
 			nextPath := filepath.Join(path, file.name)
 			next = &nextPath
+			filetype = "folder"
+		}
+
+		if strings.ToLower(filepath.Ext(file.name)) == ".zip" {
+			nextPath := filepath.Join(path, file.name)
+			next = &nextPath
+			filetype = "zip"
 		}
 
 		items = append(items, menu.Item{
@@ -238,6 +206,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 			Next:      next,
 			Modified:  file.modTime,
 			Size:      file.size,
+			Type:      filetype,
 		})
 	}
 

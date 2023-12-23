@@ -51,11 +51,6 @@ func FindFile(path string) (string, error) {
 
 // FolderToSystems returns what systems a path could be for.
 func FolderToSystems(cfg *config.UserConfig, path string) []System {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil
-	}
-
 	path = strings.ToLower(path)
 	validGamesFolder := false
 	gamesFolder := ""
@@ -83,7 +78,7 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 		}
 	}
 
-	if info.IsDir() {
+	if strings.HasSuffix(path, "/") {
 		return validSystems
 	}
 
