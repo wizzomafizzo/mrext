@@ -260,6 +260,10 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")
 	sub.HandleFunc("/settings/system/generate-mac", settings.HandleGenerateMac(logger)).Methods("GET")
 
+	sub.HandleFunc("/nfc/status", games.NfcStatus(logger)).Methods("GET")
+	sub.HandleFunc("/nfc/write", games.NfcWrite(logger)).Methods("POST")
+	sub.HandleFunc("/nfc/cancel", games.NfcCancel(logger)).Methods("POST")
+
 	sub.HandleFunc("/sysinfo", settings.HandleSystemInfo(logger, cfg, appVersion)).Methods("GET")
 }
 
