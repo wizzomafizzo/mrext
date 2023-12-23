@@ -30,6 +30,7 @@ type Item struct {
 	Modified  time.Time  `json:"modified"`
 	Version   *time.Time `json:"version,omitempty"`
 	Size      int64      `json:"size"`
+	InZip     bool       `json:"inZip"`
 }
 
 type ListMenuPayload struct {

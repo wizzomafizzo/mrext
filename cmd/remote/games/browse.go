@@ -207,6 +207,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 			Modified:  file.modTime,
 			Size:      file.size,
 			Type:      filetype,
+			InZip:     inZip,
 		})
 	}
 
