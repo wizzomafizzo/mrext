@@ -18,19 +18,26 @@ import (
 // TODO: should be in config
 const namesTxtPath = "/media/fat/names.txt"
 
+type MenuSystem struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
+}
+
 type Item struct {
-	Name      string     `json:"name"`
-	NamesTxt  *string    `json:"namesTxt,omitempty"`
-	Path      string     `json:"path"`
-	Parent    string     `json:"parent"`
-	Filename  string     `json:"filename"`
-	Extension string     `json:"extension"`
-	Next      *string    `json:"next,omitempty"`
-	Type      string     `json:"type"`
-	Modified  time.Time  `json:"modified"`
-	Version   *time.Time `json:"version,omitempty"`
-	Size      int64      `json:"size"`
-	InZip     bool       `json:"inZip"`
+	Name      string      `json:"name"`
+	NamesTxt  *string     `json:"namesTxt,omitempty"`
+	Path      string      `json:"path"`
+	Parent    string      `json:"parent"`
+	Filename  string      `json:"filename"`
+	Extension string      `json:"extension"`
+	Next      *string     `json:"next,omitempty"`
+	Type      string      `json:"type"`
+	Modified  time.Time   `json:"modified"`
+	Version   *time.Time  `json:"version,omitempty"`
+	Size      int64       `json:"size"`
+	InZip     bool        `json:"inZip"`
+	System    *MenuSystem `json:"system,omitempty"`
 }
 
 type ListMenuPayload struct {

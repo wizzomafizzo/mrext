@@ -184,11 +184,21 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 
 		var next *string
 		filetype := "game"
+		var system *menu.MenuSystem
 
 		if file.isDir {
 			nextPath := filepath.Join(path, file.name)
 			next = &nextPath
 			filetype = "folder"
+		} else {
+			match, err := games.BestSystemMatch(&config.UserConfig{}, file.path)
+			if err == nil {
+				system = &menu.MenuSystem{
+					Id:       match.Id,
+					Name:     match.Name,
+					Category: match.Category,
+				}
+			}
 		}
 
 		if strings.ToLower(filepath.Ext(file.name)) == ".zip" {
@@ -208,6 +218,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 			Size:      file.size,
 			Type:      filetype,
 			InZip:     inZip,
+			System:    system,
 		})
 	}
 
