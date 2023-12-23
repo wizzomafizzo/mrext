@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	appVersion = "0.2.5"
+	appVersion = "0.3.0"
 	appName    = "remote"
 	appPort    = 8182
 )
@@ -220,6 +220,7 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/games/launch", games.LaunchGame(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
+	sub.HandleFunc("/games/view", games.ListGamesFolder(logger)).Methods("POST")
 
 	sub.HandleFunc("/l/{data:.*}", games.LaunchToken(logger, cfg, kbd)).Methods("GET")
 
@@ -258,6 +259,10 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/remote/logo", settings.HandleLogoFile(logger, client, cfg)).Methods("GET")
 	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")
 	sub.HandleFunc("/settings/system/generate-mac", settings.HandleGenerateMac(logger)).Methods("GET")
+
+	sub.HandleFunc("/nfc/status", games.NfcStatus(logger)).Methods("GET")
+	sub.HandleFunc("/nfc/write", games.NfcWrite(logger)).Methods("POST")
+	sub.HandleFunc("/nfc/cancel", games.NfcCancel(logger)).Methods("POST")
 
 	sub.HandleFunc("/sysinfo", settings.HandleSystemInfo(logger, cfg, appVersion)).Methods("GET")
 }

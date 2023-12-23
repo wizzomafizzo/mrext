@@ -78,6 +78,10 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 		}
 	}
 
+	if strings.HasSuffix(path, "/") {
+		return validSystems
+	}
+
 	var matchedExtensions []System
 	for _, system := range validSystems {
 		if MatchSystemFile(system, path) {

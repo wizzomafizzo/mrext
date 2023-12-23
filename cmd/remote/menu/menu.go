@@ -18,18 +18,26 @@ import (
 // TODO: should be in config
 const namesTxtPath = "/media/fat/names.txt"
 
+type MenuSystem struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
+}
+
 type Item struct {
-	Name      string     `json:"name"`
-	NamesTxt  *string    `json:"namesTxt,omitempty"`
-	Path      string     `json:"path"`
-	Parent    string     `json:"parent"`
-	Filename  string     `json:"filename"`
-	Extension string     `json:"extension"`
-	Next      *string    `json:"next,omitempty"`
-	Type      string     `json:"type"`
-	Modified  time.Time  `json:"modified"`
-	Version   *time.Time `json:"version,omitempty"`
-	Size      int64      `json:"size"`
+	Name      string      `json:"name"`
+	NamesTxt  *string     `json:"namesTxt,omitempty"`
+	Path      string      `json:"path"`
+	Parent    string      `json:"parent"`
+	Filename  string      `json:"filename"`
+	Extension string      `json:"extension"`
+	Next      *string     `json:"next,omitempty"`
+	Type      string      `json:"type"`
+	Modified  time.Time   `json:"modified"`
+	Version   *time.Time  `json:"version,omitempty"`
+	Size      int64       `json:"size"`
+	InZip     bool        `json:"inZip"`
+	System    *MenuSystem `json:"system,omitempty"`
 }
 
 type ListMenuPayload struct {
@@ -126,10 +134,14 @@ func getFileType(file os.DirEntry) string {
 		return "mgl"
 	}
 
+	if strings.HasSuffix(lower, ".zip") {
+		return "zip"
+	}
+
 	return "unknown"
 }
 
-func getFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
+func GetFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	name := file.Name()
 	filetype := getFileType(file)
 
@@ -212,7 +224,7 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 		for _, file := range files {
 			name := file.Name()
 
-			formatted, filetype, version := getFilenameInfo(file)
+			formatted, filetype, version := GetFilenameInfo(file)
 
 			info, err := file.Info()
 			if err != nil {
