@@ -8,8 +8,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -657,6 +659,17 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 		}
 	}
 
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	cancelled := make(chan bool, 1)
+
+	go func() {
+		<-sigs
+		cancelled <- true
+		restartService()
+		os.Exit(0)
+	}()
+
 	var pnd nfc.Device
 	var err error
 
@@ -676,18 +689,30 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 		logger.Info("closed nfc device")
 	}(pnd)
 
-	count, target, err := pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+	var count int
+	var target nfc.Target
+	tries := 6 // ~30 seconds
 
-	if err != nil {
-		logger.Error("could not poll: %s", err)
-		_, _ = fmt.Fprintln(os.Stderr, "Could not poll:", err)
-		restartService()
-		os.Exit(1)
+	for tries > 0 {
+		count, target, err = pnd.InitiatorPollTarget(supportedCardTypes, timesToPoll, periodBetweenPolls)
+
+		if err != nil && err.Error() != "timeout" {
+			logger.Error("could not poll: %s", err)
+			_, _ = fmt.Fprintln(os.Stderr, "Could not poll:", err)
+			restartService()
+			os.Exit(1)
+		}
+
+		if count > 0 {
+			break
+		}
+
+		tries--
 	}
 
 	if count == 0 {
-		logger.Error("could not find a card")
-		_, _ = fmt.Fprintln(os.Stderr, "Could not find a card")
+		logger.Error("could not detect a card")
+		_, _ = fmt.Fprintln(os.Stderr, "Could not detect a card")
 		restartService()
 		os.Exit(1)
 	}
@@ -696,14 +721,14 @@ func handleWriteCommand(textToWrite string, svc *service.Service, config config.
 	logger.Info("Found card with UID: %s", cardUid)
 
 	cardType := getCardType(target)
-	bytesWritten := []byte{}
+	var bytesWritten []byte
 
 	switch cardType {
 	case TypeMifare:
 		bytesWritten, err = writeMifare(pnd, textToWrite, cardUid)
 		if err != nil {
 			logger.Error("error writing to card: %s", err)
-			fmt.Fprintln(os.Stderr, "Error writing to card:", err)
+			_, _ = fmt.Fprintln(os.Stderr, "Error writing to card:", err)
 			fmt.Println("Mifare cards need to NDEF formatted. If this is a brand new card, please use NFC tools mobile app to write some text (this only needs to be done the first time)")
 			restartService()
 			os.Exit(1)
