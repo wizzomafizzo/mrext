@@ -11,7 +11,6 @@ from typing import Dict, TypedDict
 
 # TODO: arcade high scores? dunno if that's a thing on AP
 # TODO: cleanup files deleted on AP
-# TODO: check for max storage limit for snapshots
 # TODO: restore backup to pocket
 # TODO: optionally copy backups to other locations (cifs)
 # TODO: check disk usage on backup locations
@@ -19,6 +18,7 @@ from typing import Dict, TypedDict
 # TODO: pre-sync saves snapshot?
 
 INI_FILENAME: str = "pocketbackup.ini"
+INI_SECTION: str = "pocketbackup"
 # backup root location and working directory for operations
 BACKUP_FOLDER: str = "/media/fat/pocket"
 # storage for previous backups
@@ -103,9 +103,10 @@ class BackupStatus(Enum):
     NEW = 1
     UPDATED = 2
     UNCHANGED = 3
+    DELETED = 4
 
 
-def get_pocket_folder(mounts: list[str]) -> str or None:
+def get_pocket_mount(mounts: list[str]) -> str or None:
     """Search for the Pocket folder in list of mounts and return the first match."""
     for mount in mounts:
         if os.path.exists(os.path.join(mount, POCKET_JSON)):
@@ -113,29 +114,35 @@ def get_pocket_folder(mounts: list[str]) -> str or None:
     return None
 
 
-def backup_folder(pocket_path: str, folder: str) -> dict:
-    """Copy a folder from the Pocket to the backup location, skipping unchanged files.
+def backup_pocket_folder(pocket_mount: str, pocket_subfolder: str) -> dict:
+    """Copy a folder from the Pocket to the backup location, skipping unchanged files
+    and syncing deletions using the Pocket as the source of truth.
     Returns a generator that yields a dict for each file copied, with the result.
     """
-    backup_path = os.path.join(BACKUP_FOLDER, folder)
-    if not os.path.exists(backup_path):
-        os.mkdir(backup_path)
+    mister_path = os.path.join(BACKUP_FOLDER, pocket_subfolder)
+    if not os.path.exists(mister_path):
+        os.mkdir(mister_path)
 
-    from_path = os.path.join(pocket_path, folder)
+    pocket_path = os.path.join(pocket_mount, pocket_subfolder)
 
-    for root, dirs, files in os.walk(from_path):
-        for dir_ in dirs:
-            dst = os.path.join(backup_path, os.path.relpath(root, from_path), dir_)
-            if not os.path.exists(dst):
-                os.mkdir(dst)
+    for root, dirs, files in os.walk(pocket_path):
+        # create any missing directories
+        for pocket_dir in dirs:
+            relative_root = os.path.relpath(root, pocket_path)
+            mister_dir = os.path.join(mister_path, relative_root, pocket_dir)
 
+            if not os.path.exists(mister_dir):
+                os.mkdir(mister_dir)
+
+        # copy any missing or updated files
         for file in files:
-            src = os.path.join(root, file)
-            dst = os.path.join(backup_path, os.path.relpath(src, from_path))
+            pocket_file = os.path.join(root, file)
+            relative_file = os.path.relpath(pocket_file, pocket_path)
+            mister_file = os.path.join(mister_path, relative_file)
 
-            if os.path.exists(dst):
-                if os.path.getmtime(src) > os.path.getmtime(dst):
-                    shutil.copy2(src, dst)
+            if os.path.exists(mister_file):
+                if os.path.getmtime(pocket_file) > os.path.getmtime(mister_file):
+                    shutil.copy2(pocket_file, mister_file)
                     yield {
                         "file": file,
                         "status": BackupStatus.UPDATED,
@@ -146,17 +153,34 @@ def backup_folder(pocket_path: str, folder: str) -> dict:
                         "status": BackupStatus.UNCHANGED,
                     }
             else:
-                shutil.copy2(src, dst)
+                shutil.copy2(pocket_file, mister_file)
                 yield {
                     "file": file,
                     "status": BackupStatus.NEW,
+                }
+
+        # delete any files that no longer exist on pocket
+        mister_root = os.path.join(mister_path, os.path.relpath(root, pocket_path))
+        for file in os.listdir(mister_root):
+            pocket_file = os.path.join(root, file)
+            mister_file = os.path.join(mister_root, file)
+
+            if not os.path.exists(pocket_file):
+                if os.path.isdir(mister_file):
+                    shutil.rmtree(mister_file)
+                else:
+                    os.remove(mister_file)
+                yield {
+                    "file": file,
+                    "status": BackupStatus.DELETED,
                 }
 
 
 def zip_backup():
     """Create a zip file from all backed up folders and save it to the snapshots folder."""
     path = os.path.join(
-        SNAPSHOTS_FOLDER, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip"
+        SNAPSHOTS_FOLDER,
+        "backup-" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip",
     )
     if os.path.exists(path):
         raise Exception("Snapshot already exists: {}".format(path))
@@ -172,6 +196,15 @@ def zip_backup():
                 )
 
     zipf.close()
+
+
+def cleanup_snapshots():
+    """Delete old snapshots if we're over the limit."""
+    # TODO: this approach won't work with multiple *types* of snapshots eg. backups and saves
+    snapshots = os.listdir(SNAPSHOTS_FOLDER)
+    if len(snapshots) > SNAPSHOTS_MAX:
+        snapshots.sort()
+        os.remove(os.path.join(SNAPSHOTS_FOLDER, snapshots[0]))
 
 
 class Config(TypedDict):
@@ -193,12 +226,12 @@ def get_config() -> Config:
     parser = configparser.ConfigParser()
     parser.read(ini_path)
 
-    if not parser.has_section("pocketbackup"):
+    if not parser.has_section(INI_SECTION):
         return config
 
-    if parser.has_option("pocketbackup", "mounts"):
+    if parser.has_option(INI_SECTION, "mounts"):
         mounts = config["mounts"]
-        for mount in parser.get("pocketbackup", "mounts").split("|"):
+        for mount in parser.get(INI_SECTION, "mounts").split("|"):
             clean = mount.strip()
             if clean != "" and clean not in mounts:
                 mounts.append(clean)
@@ -220,7 +253,7 @@ def main():
     """Main entry point for the script."""
     config = get_config()
 
-    pocket_folder = get_pocket_folder(config["mounts"])
+    pocket_folder = get_pocket_mount(config["mounts"])
     if pocket_folder is None:
         print(
             "Pocket not found, check it's plugged in and USB SD Access is enabled in the Developer menu."
@@ -236,11 +269,13 @@ def main():
     for folder in POCKET_BACKUP_FOLDERS:
         print("Backing up {}...".format(folder), end="", flush=True)
 
-        for result in backup_folder(pocket_folder, folder):
+        for result in backup_pocket_folder(pocket_folder, folder):
             if result["status"] == BackupStatus.NEW:
                 print("*", end="", flush=True)
             elif result["status"] == BackupStatus.UPDATED:
                 print("^", end="", flush=True)
+            elif result["status"] == BackupStatus.DELETED:
+                print("x", end="", flush=True)
             else:
                 print(".", end="", flush=True)
 
@@ -250,13 +285,8 @@ def main():
 
     print("Creating backup snapshot...", end="", flush=True)
     zip_backup()
-    print("...Done!", flush=True)
-
-    # count snapshots and delete oldest if we're over the limit
-    snapshots = os.listdir(SNAPSHOTS_FOLDER)
-    if len(snapshots) > SNAPSHOTS_MAX:
-        snapshots.sort()
-        os.remove(os.path.join(SNAPSHOTS_FOLDER, snapshots[0]))
+    cleanup_snapshots()
+    print("Done!", flush=True)
 
 
 if __name__ == "__main__":
