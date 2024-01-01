@@ -10,13 +10,11 @@ from enum import Enum
 from typing import Dict, TypedDict
 
 # TODO: arcade high scores? dunno if that's a thing on AP
-# TODO: cleanup files deleted on AP
 # TODO: restore backup to pocket
 # TODO: optionally copy backups to other locations (cifs)
 # TODO: check disk usage on backup locations
 # TODO: check for AP firmware updates?
-# TODO: pre-sync saves snapshot?
-# TODO: there are also saves store in the memories/save state folder
+# TODO: there are also saves stored in the memories/save state folder
 # TODO: mister saves/save states on usb/cifs
 # TODO: make snapshots max configurable
 
@@ -56,6 +54,11 @@ POCKET_BACKUP_FOLDERS: list[str] = [
     "Memories",
     "Saves",
     "Settings",
+]
+
+# cores that can be synced between AP and MiSTer (AP platform IDs)
+SYNC_CORES: list[str] = [
+    "gb",
 ]
 
 # mapping for AP platform IDs to MiSTer core folder names
@@ -101,7 +104,7 @@ def reverse_cores_map() -> Dict[str, str]:
     reverse_map: Dict[str, str] = {}
     for platform_id, core_folders in POCKET_CORES_MAP.items():
         for core_folder in core_folders:
-            reverse_map[core_folder] = platform_id
+            reverse_map[core_folder.lower()] = platform_id
     return reverse_map
 
 
