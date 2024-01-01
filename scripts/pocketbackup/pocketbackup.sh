@@ -16,6 +16,9 @@ from typing import Dict, TypedDict
 # TODO: check disk usage on backup locations
 # TODO: check for AP firmware updates?
 # TODO: pre-sync saves snapshot?
+# TODO: there are also saves store in the memories/save state folder
+# TODO: mister saves/save states on usb/cifs
+# TODO: make snapshots max configurable
 
 INI_FILENAME: str = "pocketbackup.ini"
 INI_SECTION: str = "pocketbackup"
@@ -23,8 +26,12 @@ INI_SECTION: str = "pocketbackup"
 BACKUP_FOLDER: str = "/media/fat/pocket"
 # storage for previous backups
 SNAPSHOTS_FOLDER: str = os.path.join(BACKUP_FOLDER, "snapshots")
+# prefix of backup files in snapshots folder
+POCKET_BACKUP_PREFIX: str = "pocket-"
+MISTER_BACKUP_PREFIX: str = "mister-"
+SYNCED_BACKUP_PREFIX: str = "synced-"
 # total number of snapshots to keep
-SNAPSHOTS_MAX: int = 50
+SNAPSHOTS_MAX: int = 5
 
 # potential USB mount locations on MiSTer
 USB_MOUNTS: list[str] = [
@@ -37,6 +44,10 @@ USB_MOUNTS: list[str] = [
     "/media/usb6",
     "/media/usb7",
 ]
+
+# TODO: handle other locations
+MISTER_SAVES_FOLDER: str = "/media/fat/saves"
+MISTER_SAVESTATES_FOLDER: str = "/media/fat/savestates"
 
 # special file telling us it's an AP storage device
 POCKET_JSON: str = "Analogue_Pocket.json"
@@ -176,11 +187,11 @@ def backup_pocket_folder(pocket_mount: str, pocket_subfolder: str) -> dict:
                 }
 
 
-def zip_backup():
+def zip_backup(prefix: str):
     """Create a zip file from all backed up folders and save it to the snapshots folder."""
     path = os.path.join(
         SNAPSHOTS_FOLDER,
-        "backup-" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip",
+        prefix + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip",
     )
     if os.path.exists(path):
         raise Exception("Snapshot already exists: {}".format(path))
@@ -198,13 +209,37 @@ def zip_backup():
     zipf.close()
 
 
+def zip_mister():
+    """Create a zip file of saves and save states on MiSTer."""
+    path = os.path.join(
+        SNAPSHOTS_FOLDER,
+        MISTER_BACKUP_PREFIX + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip",
+    )
+    if os.path.exists(path):
+        raise Exception("Snapshot already exists: {}".format(path))
+
+    zipf = zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED)
+
+    for folder in [MISTER_SAVES_FOLDER, MISTER_SAVESTATES_FOLDER]:
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                zipf.write(
+                    os.path.join(root, file),
+                    os.path.relpath(os.path.join(root, file), os.path.dirname(folder)),
+                )
+
+    zipf.close()
+
+
 def cleanup_snapshots():
     """Delete old snapshots if we're over the limit."""
-    # TODO: this approach won't work with multiple *types* of snapshots eg. backups and saves
     snapshots = os.listdir(SNAPSHOTS_FOLDER)
-    if len(snapshots) > SNAPSHOTS_MAX:
-        snapshots.sort()
-        os.remove(os.path.join(SNAPSHOTS_FOLDER, snapshots[0]))
+    for snapshot_type in [POCKET_BACKUP_PREFIX, MISTER_BACKUP_PREFIX, SYNCED_BACKUP_PREFIX]:
+        files = [s for s in snapshots if s.startswith(snapshot_type) and s.endswith(".zip")]
+        files.sort(reverse=True)
+        if len(files) > SNAPSHOTS_MAX:
+            for snapshot in files[SNAPSHOTS_MAX:]:
+                os.remove(os.path.join(SNAPSHOTS_FOLDER, snapshot))
 
 
 class Config(TypedDict):
@@ -283,8 +318,19 @@ def main():
 
     print("Backup complete!", flush=True)
 
-    print("Creating backup snapshot...", end="", flush=True)
-    zip_backup()
+    print("Creating Pocket snapshot...", end="", flush=True)
+    zip_backup(POCKET_BACKUP_PREFIX)
+    print("Done!", flush=True)
+
+    print("Creating MiSTer snapshot...", end="", flush=True)
+    zip_mister()
+    print("Done!", flush=True)
+
+    # TODO: sync goes here
+
+    # TODO: create merged snapshot here
+
+    print("Cleaning up old snapshots...", end="", flush=True)
     cleanup_snapshots()
     print("Done!", flush=True)
 
