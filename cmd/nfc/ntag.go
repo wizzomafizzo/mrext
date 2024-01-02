@@ -52,6 +52,14 @@ func readNtag(pnd nfc.Device, logger *service.Logger) ([]byte, error) {
 
 		allBlocks = append(allBlocks, blocks...)
 		currentBlock = currentBlock + 4
+
+		if bytes.Contains(allBlocks, NDEF_END) {
+			// Once we find the end of the NDEF text record there is no need to
+			// continue reading the rest of the card.
+			// This should make things "load" quicker
+			logger.Debug("found end of ndef record")
+			break
+		}
 	}
 
 	return allBlocks, nil
