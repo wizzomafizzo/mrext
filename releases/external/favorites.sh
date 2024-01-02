@@ -289,7 +289,11 @@ def get_favorite_target(path: str):
                 if match:
                     return match.group(1)
                 else:
-                    return ""
+                    match = re.search(r'path="(.+)"', f.read())
+                    if match:
+                        return match.group(1)
+                    else:
+                        return ""
         except:
             return ""
     else:
@@ -1184,7 +1188,7 @@ def add_favorite_workflow():
             mgl_def[1],
             mgl_def[2],
             mgl_def[3],
-            ("../../../../.." + item),
+            item,
             setname,
         )
         add_favorite_mgl(item, path, mgl_data)

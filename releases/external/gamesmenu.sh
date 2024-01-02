@@ -39,7 +39,7 @@ MGL_MAP = (
         (({".col", ".bin", ".rom", ".sg"}, 1, "f", 0),),
     ),
     ("CreatiVision", "_Console/CreatiVision", (({".rom", ".bin"}, 1, "f", 1),)),
-    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb",".gbc"}, 1, "f", 1),)),
+    ("GAMEBOY2P", "_Console/Gameboy2P", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("GAMEBOY", "_Console/Gameboy", (({".gb"}, 1, "f", 1),)),
     ("GBC", "_Console/Gameboy", (({".gbc"}, 1, "f", 1),)),
     ("Gamate", "_Console/Gamate", (({".bin"}, 1, "f", 1),)),
@@ -91,15 +91,22 @@ MGL_MAP = (
 
 # source: https://mister-devel.github.io/MkDocs_MiSTer/cores/paths/#path-priority
 GAMES_FOLDERS = (
-    "/media/fat",
+    "/media/usb0/games",
     "/media/usb0",
+    "/media/usb1/games",
     "/media/usb1",
+    "/media/usb2/games",
     "/media/usb2",
+    "/media/usb3/games",
     "/media/usb3",
+    "/media/usb4/games",
     "/media/usb4",
+    "/media/usb5/games",
     "/media/usb5",
+    "/media/fat/cifs/games",
     "/media/fat/cifs",
     "/media/fat/games",
+    "/media/fat",
 )
 
 
@@ -116,7 +123,7 @@ def get_names_replacement(name: str):
                 if system.strip().lower() == name.lower():
                     # remove illegal filename characters
                     replacement = replacement.replace("/", " & ")
-                    for char in '<>:"/\|?*':
+                    for char in '<>:"/\\|?*':
                         if char in replacement:
                             replacement = replacement.replace(char, " ")
                     NAMES_CACHE[name] = replacement
@@ -130,7 +137,7 @@ def folder_name(system_name):
 
 # generate XML contents for MGL file
 def generate_mgl(rbf, delay, type, index, path):
-    mgl = '<mistergamedescription>\n\t<rbf>{}</rbf>\n\t<file delay="{}" type="{}" index="{}" path="../../../..{}"/>\n</mistergamedescription>'
+    mgl = '<mistergamedescription>\n\t<rbf>{}</rbf>\n\t<file delay="{}" type="{}" index="{}" path="{}"/>\n</mistergamedescription>'
     return mgl.format(rbf, delay, type, index, path)
 
 
@@ -140,7 +147,10 @@ def get_mgl_target(path):
         if match:
             return match.group(1)
         else:
-            return ""
+            match = re.search(r'path="(.+)"', f.read())
+            if match:
+                return match.group(1)
+        return ""
 
 
 def get_system(name: str):
@@ -305,11 +315,12 @@ def display_generate_mgls(system_names):
             pct = math.ceil(i / len(systems) * 100)
             display_progress(f"Scanning {get_names_replacement(system_name)} ({folder})", pct)
             for system, path, parent, filename, match in get_system_files(
-                system_name, folder
+                    system_name, folder
             ):
                 mgl_args = to_mgl_args(system, match, path)
                 created = create_mgl_file(system_name, filename, mgl_args, parent)
     display_progress(f"Scanning {get_names_replacement(system_name)} ({folder})", 100)
+
 
 def display_menu(system_paths):
     systems = {}
@@ -320,7 +331,7 @@ def display_menu(system_paths):
         display_name = get_names_replacement(name)
 
         if os.path.exists(
-            os.path.join(GAMES_MENU_PATH, folder_name(display_name))
+                os.path.join(GAMES_MENU_PATH, folder_name(display_name))
         ) or not os.path.exists(GAMES_MENU_PATH):
             selected = True
         else:
