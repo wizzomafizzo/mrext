@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/launchsync",
-    "timestamp": 1703325403,
+    "timestamp": 1704197219,
     "files": {
         "Scripts/launchsync.sh": {
-            "hash": "c6e608f8e113f104bef20d5bcdfcd0fb",
-            "size": 4388520,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20231224-1/launchsync.sh",
+            "hash": "9a854b2828f8069b383ee0efc70cee9c",
+            "size": 4388560,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/launchsync.sh",
             "reboot": false,
             "tags": [
                 "launchsync"
