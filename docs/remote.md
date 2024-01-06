@@ -6,6 +6,8 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 <a href="https://play.google.com/store/apps/details?id=net.mrext.remote"><img src="https://github.com/steverichey/google-play-badge-svg/raw/master/img/en_get.svg" alt="Download Android App" title="Download Android App" width="140"></a>
 
+[Android APK (Sideload)](https://github.com/wizzomafizzo/mrext-client/releases/latest/download/mrext-client.apk)
+
 [API Documentation](remote-api.md)
 
 ## Features
