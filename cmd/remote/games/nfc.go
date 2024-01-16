@@ -2,38 +2,54 @@ package games
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/service"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
-// TODO: is it possible to not rely on a specific path to the nfc app?
-const nfcBin = config.ScriptsFolder + "/nfc.sh"
+type NfcState struct {
+	Available bool   `json:"installed"`
+	Running   bool   `json:"running"`
+	Name      string `json:"name"`
+}
 
-func nfcExists() bool {
-	_, err := os.Stat(nfcBin)
-	return !os.IsNotExist(err)
+func getNfcState() NfcState {
+	state := NfcState{}
+
+	name := "tapto"
+	// TODO: is it possible to not rely on a specific path to the nfc app?
+	binTemplate := config.ScriptsFolder + "/%s.sh"
+	pidTemplate := "/tmp/%s.pid"
+
+	if _, err := os.Stat(fmt.Sprintf(binTemplate, name)); err == nil {
+		state.Available = true
+	} else {
+		name = "nfc"
+		if _, err := os.Stat(fmt.Sprintf(binTemplate, name)); err == nil {
+			state.Available = true
+		} else {
+			return state
+		}
+	}
+
+	state.Name = name
+
+	if _, err := os.Stat(fmt.Sprintf(pidTemplate, name)); err == nil {
+		state.Running = true
+	}
+
+	return state
 }
 
 func NfcStatus(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		payload := struct {
-			Available bool `json:"available"`
-			Running   bool `json:"running"`
-		}{}
+		payload := getNfcState()
 
-		if nfcExists() {
-			payload.Available = true
-		}
-
-		_, err := os.Stat("/tmp/nfc.pid")
-		if err == nil {
-			payload.Running = true
-		}
-
-		err = json.NewEncoder(w).Encode(payload)
+		err := json.NewEncoder(w).Encode(payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("nfc status: encoding response: %s", err)
@@ -55,10 +71,19 @@ func NfcWrite(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		if !nfcExists() {
-			http.Error(w, "nfc script not found", http.StatusInternalServerError)
+		state := getNfcState()
+
+		if !state.Available {
+			http.Error(w, "nfc app not found", http.StatusInternalServerError)
 			return
 		}
+
+		if !state.Running {
+			http.Error(w, "nfc service not running", http.StatusInternalServerError)
+			return
+		}
+
+		nfcBin := fmt.Sprintf(config.ScriptsFolder+"/%s.sh", state.Name)
 
 		cmd := exec.Command(nfcBin, "-write", args.Path)
 		cmd.Env = append(os.Environ(), config.UserAppPathEnv+"="+nfcBin)
@@ -74,10 +99,18 @@ func NfcWrite(logger *service.Logger) http.HandlerFunc {
 
 func NfcCancel(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		if !nfcExists() {
-			http.Error(w, "nfc script not found", http.StatusInternalServerError)
+		state := getNfcState()
+
+		if !state.Available {
+			http.Error(w, "nfc app not found", http.StatusInternalServerError)
 			return
 		}
+
+		if !state.Running {
+			return
+		}
+
+		nfcBin := fmt.Sprintf(config.ScriptsFolder+"/%s.sh", state.Name)
 
 		cmd := exec.Command(nfcBin, "-service", "restart")
 		cmd.Env = append(os.Environ(), config.UserAppPathEnv+"="+nfcBin)
