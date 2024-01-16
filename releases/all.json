@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1704197220,
+    "timestamp": 1705414808,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1f76cf3c3fd93d9da8192f320acfe727",
             "size": 3419404,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/lastplayed.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/lastplayed.sh",
             "reboot": false,
             "tags": [
                 "lastplayed"
@@ -14,7 +14,7 @@
         "Scripts/launchseq.sh": {
             "hash": "4dbcb069c3c2ba578aff7416d89e6255",
             "size": 2804936,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/launchseq.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/launchseq.sh",
             "reboot": false,
             "tags": [
                 "launchseq"
@@ -23,7 +23,7 @@
         "Scripts/launchsync.sh": {
             "hash": "9a854b2828f8069b383ee0efc70cee9c",
             "size": 4388560,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/launchsync.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/launchsync.sh",
             "reboot": false,
             "tags": [
                 "launchsync"
@@ -32,7 +32,7 @@
         "Scripts/nfc.sh": {
             "hash": "9211a953c6f09f938469c884111b88df",
             "size": 5848920,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/nfc.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/nfc.sh",
             "reboot": false,
             "tags": [
                 "nfc"
@@ -41,7 +41,7 @@
         "Scripts/nfcui.sh": {
             "hash": "065efc478ed10e19d4f57a7a2611b8e0",
             "size": 47828,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/nfcui.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/nfcui.sh",
             "reboot": false,
             "tags": [
                 "nfcui"
@@ -50,7 +50,7 @@
         "Scripts/playlog.sh": {
             "hash": "ee90de3dc9946a8f9bcdabacab476afc",
             "size": 7421624,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/playlog.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/playlog.sh",
             "reboot": false,
             "tags": [
                 "playlog"
@@ -59,16 +59,16 @@
         "Scripts/random.sh": {
             "hash": "8c1ff1790edea4640dfaaa7c379fd14c",
             "size": 2998832,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/random.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/random.sh",
             "reboot": false,
             "tags": [
                 "random"
             ]
         },
         "Scripts/remote.sh": {
-            "hash": "5cf2279645ddb243d1b6b10eee2a5639",
-            "size": 7879584,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/remote.sh",
+            "hash": "11d4875d864c7ecd0c825a3250668cd5",
+            "size": 7880476,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/remote.sh",
             "reboot": true,
             "tags": [
                 "remote"
@@ -77,7 +77,7 @@
         "Scripts/search.sh": {
             "hash": "135f4df5bf0c6c25a9d3d620c560cc04",
             "size": 3985660,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/search.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/search.sh",
             "reboot": false,
             "tags": [
                 "search"
@@ -86,7 +86,7 @@
         "Scripts/pocketbackup.sh": {
             "hash": "148e98551ca2bd5401f5b1f5c6082780",
             "size": 10802,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/pocketbackup.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/pocketbackup.sh",
             "reboot": false,
             "tags": [
                 "pocketbackup"

@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/pocketbackup",
-    "timestamp": 1704197220,
+    "timestamp": 1705414808,
     "files": {
         "Scripts/pocketbackup.sh": {
             "hash": "148e98551ca2bd5401f5b1f5c6082780",
             "size": 10802,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/pocketbackup.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/pocketbackup.sh",
             "reboot": false,
             "tags": [
                 "pocketbackup"

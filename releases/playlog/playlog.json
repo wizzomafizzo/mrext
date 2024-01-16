@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/playlog",
-    "timestamp": 1704197219,
+    "timestamp": 1705414808,
     "files": {
         "Scripts/playlog.sh": {
             "hash": "ee90de3dc9946a8f9bcdabacab476afc",
             "size": 7421624,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240102-1/playlog.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/playlog.sh",
             "reboot": false,
             "tags": [
                 "playlog"
