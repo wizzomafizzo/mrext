@@ -2,16 +2,17 @@ package games
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type FolderResult struct {
@@ -81,7 +82,7 @@ type fileEntry struct {
 
 func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 	systems := games.FolderToSystems(&config.UserConfig{}, path+"/")
-	logger.Info("systems: %s", systems)
+	logger.Info("systems: %v", systems)
 
 	inZip := false
 	zipIndex := -1
@@ -166,9 +167,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 
 	for _, system := range systems {
 		for _, slot := range system.Slots {
-			for _, filetype := range slot.Exts {
-				validFiletypes = append(validFiletypes, filetype)
-			}
+			validFiletypes = append(validFiletypes, slot.Exts...)
 		}
 	}
 	logger.Info("valid filetypes: %s", validFiletypes)
@@ -177,6 +176,10 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 
 	for _, file := range files {
 		friendlyName := strings.TrimSuffix(file.name, filepath.Ext(file.name))
+
+		if strings.HasPrefix(file.name, ".") {
+			continue
+		}
 
 		if !file.isDir && !utils.Contains(validFiletypes, filepath.Ext(file.name)) {
 			continue
