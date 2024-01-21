@@ -36,11 +36,12 @@ Control the MiSTer from any device on your network. Remote is a web-based interf
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/remote.md"><img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140"></a>
 
-## NFC
+<img src="https://github.com/wizzomafizzo/tapto/raw/main/assets/images/logo/logo-background.svg" align="right" width="35%" />
+
+## TapTo
 Launch games, cores and dynamic commands using NFC tags or cards. Uses easily available and cheap USB NFC card readers.
 
-<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/nfc.sh"><img src="docs/images/download.svg" alt="Download NFC" title="Download NFC" width="140"></a>
-<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/nfc.md"><img src="docs/images/readme.svg" alt="Readme NFC" title="Readme NFC" width="140"></a>
+<a href="https://github.com/wizzomafizzo/tapto"><img src="docs/images/readme.svg" alt="Readme TapTo" title="Readme TapTo" width="140"></a>
 
 ## BGM
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.

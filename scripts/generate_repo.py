@@ -9,12 +9,11 @@ from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
 
-APPS = ["lastplayed", "launchseq", "launchsync", "nfc", "playlog", "random", "remote", "search", "pocketbackup"]
+APPS = ["lastplayed", "launchseq", "launchsync", "playlog", "random", "remote", "search", "pocketbackup"]
 FILES = {
     "lastplayed": ["lastplayed.sh"],
     "launchseq": ["launchseq.sh"],
     "launchsync": ["launchsync.sh"],
-    "nfc": ["nfc.sh", "nfcui.sh"],
     "playlog": ["playlog.sh"],
     "random": ["random.sh"],
     "remote": ["remote.sh"],
@@ -26,6 +25,8 @@ EXTERNAL_FILES = [
     "releases/external/bgm.sh",
     "releases/external/favorites.sh",
     "releases/external/gamesmenu.sh",
+    "releases/external/tapto.sh",
+    "releases/external/taptui.sh",
 ]
 
 DB_ID = "mrext/{}"

@@ -6,7 +6,6 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
-	_ "github.com/joho/godotenv/autoload"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -98,9 +99,7 @@ var apps = []app{
 		name:         "nfc",
 		path:         filepath.Join(cwd, "cmd", "nfc"),
 		bin:          "nfc.sh",
-		releaseId:    "mrext/nfc",
 		ldFlags:      "-lnfc -lusb -lcurses",
-		inAll:        true,
 		releaseFiles: []string{filepath.Join(cwd, "scripts", "nfcui", "nfcui.sh")},
 	},
 	{
@@ -175,6 +174,16 @@ var externalApps = []externalApp{
 		name: "gamesmenu",
 		url:  "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh",
 		bin:  "gamesmenu.sh",
+	},
+	{
+		name: "tapto",
+		url:  "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
+		bin:  "tapto.sh",
+	},
+	{
+		name: "taptui",
+		url:  "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
+		bin:  "taptui.sh",
 	},
 }
 
