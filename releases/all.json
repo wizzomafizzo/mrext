@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1705414808,
+    "timestamp": 1705843956,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1f76cf3c3fd93d9da8192f320acfe727",
@@ -27,24 +27,6 @@
             "reboot": false,
             "tags": [
                 "launchsync"
-            ]
-        },
-        "Scripts/nfc.sh": {
-            "hash": "9211a953c6f09f938469c884111b88df",
-            "size": 5848920,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/nfc.sh",
-            "reboot": false,
-            "tags": [
-                "nfc"
-            ]
-        },
-        "Scripts/nfcui.sh": {
-            "hash": "065efc478ed10e19d4f57a7a2611b8e0",
-            "size": 47828,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240116-1/nfcui.sh",
-            "reboot": false,
-            "tags": [
-                "nfcui"
             ]
         },
         "Scripts/playlog.sh": {
@@ -117,6 +99,24 @@
             "reboot": false,
             "tags": [
                 "gamesmenu"
+            ]
+        },
+        "Scripts/tapto.sh": {
+            "hash": "af59d71b9e353d111abe3d7d0f94f327",
+            "size": 5772488,
+            "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/tapto.sh",
+            "reboot": false,
+            "tags": [
+                "tapto"
+            ]
+        },
+        "Scripts/taptui.sh": {
+            "hash": "bde8301cde9c7b046b072398c136a7c5",
+            "size": 48543,
+            "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/taptui.sh",
+            "reboot": false,
+            "tags": [
+                "taptui"
             ]
         }
     },
