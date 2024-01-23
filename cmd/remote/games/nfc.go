@@ -20,25 +20,18 @@ type NfcState struct {
 func getNfcState() NfcState {
 	state := NfcState{}
 
-	name := "tapto"
-	// TODO: is it possible to not rely on a specific path to the nfc app?
-	binTemplate := config.ScriptsFolder + "/%s.sh"
-	pidTemplate := "/tmp/%s.pid"
+	bin := config.ScriptsFolder + "/tapto.sh"
+	pid := "/tmp/tapto/tapto.pid"
 
-	if _, err := os.Stat(fmt.Sprintf(binTemplate, name)); err == nil {
+	if _, err := os.Stat(bin); err == nil {
 		state.Available = true
 	} else {
-		name = "nfc"
-		if _, err := os.Stat(fmt.Sprintf(binTemplate, name)); err == nil {
-			state.Available = true
-		} else {
-			return state
-		}
+		return state
 	}
 
-	state.Name = name
+	state.Name = "tapto"
 
-	if _, err := os.Stat(fmt.Sprintf(pidTemplate, name)); err == nil {
+	if _, err := os.Stat(pid); err == nil {
 		state.Running = true
 	}
 
@@ -52,7 +45,7 @@ func NfcStatus(logger *service.Logger) http.HandlerFunc {
 		err := json.NewEncoder(w).Encode(payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("nfc status: encoding response: %s", err)
+			logger.Error("tapto status: encoding response: %s", err)
 			return
 		}
 	}
@@ -67,31 +60,30 @@ func NfcWrite(logger *service.Logger) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&args)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("nfc write: decoding request: %s", err)
+			logger.Error("tapto write: decoding request: %s", err)
 			return
 		}
 
 		state := getNfcState()
 
 		if !state.Available {
-			http.Error(w, "nfc app not found", http.StatusInternalServerError)
+			http.Error(w, "tapto app not found", http.StatusInternalServerError)
 			return
 		}
 
 		if !state.Running {
-			http.Error(w, "nfc service not running", http.StatusInternalServerError)
+			http.Error(w, "tapto service not running", http.StatusInternalServerError)
 			return
 		}
 
 		nfcBin := fmt.Sprintf(config.ScriptsFolder+"/%s.sh", state.Name)
 
 		cmd := exec.Command(nfcBin, "-write", args.Path)
-		cmd.Env = append(os.Environ(), config.UserAppPathEnv+"="+nfcBin)
 		err = cmd.Run()
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("nfc write: run command: %s", err)
+			logger.Error("tapto write: run command: %s", err)
 			return
 		}
 	}
@@ -102,7 +94,7 @@ func NfcCancel(logger *service.Logger) http.HandlerFunc {
 		state := getNfcState()
 
 		if !state.Available {
-			http.Error(w, "nfc app not found", http.StatusInternalServerError)
+			http.Error(w, "tapto app not found", http.StatusInternalServerError)
 			return
 		}
 
@@ -113,12 +105,11 @@ func NfcCancel(logger *service.Logger) http.HandlerFunc {
 		nfcBin := fmt.Sprintf(config.ScriptsFolder+"/%s.sh", state.Name)
 
 		cmd := exec.Command(nfcBin, "-service", "restart")
-		cmd.Env = append(os.Environ(), config.UserAppPathEnv+"="+nfcBin)
 		err := cmd.Run()
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("nfc cancel: run command: %s", err)
+			logger.Error("tapto cancel: run command: %s", err)
 			return
 		}
 	}
