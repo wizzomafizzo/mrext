@@ -5,6 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
+	"net/http"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -18,13 +26,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
-	"io/fs"
-	"net/http"
-	"os"
-	"path"
-	"strconv"
-	"strings"
-	"time"
 
 	gc "github.com/rthornton128/goncurses"
 
@@ -36,7 +37,7 @@ import (
 )
 
 const (
-	appVersion = "0.3.1"
+	appVersion = "0.3.2"
 	appName    = "remote"
 	appPort    = 8182
 )
