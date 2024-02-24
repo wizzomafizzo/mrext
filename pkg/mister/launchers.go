@@ -2,8 +2,6 @@ package mister
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/input"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	s "strings"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -587,7 +588,7 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 				return fmt.Errorf("ini id out of range: %d", id)
 			}
 
-			return SetActiveIni(id)
+			return SetActiveIni(id, true)
 		case "get":
 			go func() {
 				_, _ = http.Get(args)
