@@ -2,10 +2,11 @@ package mister
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
 	"os"
 	"path/filepath"
 	"syscall"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 func mapSharedMem(address int64) (*[]byte, *os.File, error) {
@@ -71,7 +72,7 @@ func GetActiveIni() (int, error) {
 	}
 }
 
-func SetActiveIni(ini int) error {
+func SetActiveIni(ini int, relaunchCore bool) error {
 	if ini < 1 || ini > 4 {
 		return fmt.Errorf("ini number out of range: %d", ini)
 	}
@@ -90,6 +91,10 @@ func SetActiveIni(ini int) error {
 	err = unmapSharedMem(mem, file)
 	if err != nil {
 		return err
+	}
+
+	if !relaunchCore {
+		return nil
 	}
 
 	coreName, err := GetActiveCoreName()

@@ -2,12 +2,13 @@ package settings
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/service"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 const (
@@ -158,9 +159,7 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 		}
 
 		inisList := make([]mister.MisterIni, 0)
-		for _, ini := range inis {
-			inisList = append(inisList, ini)
-		}
+		inisList = append(inisList, inis...)
 
 		iniResponse := IniResponse{
 			Active: activeIni,
@@ -210,7 +209,7 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		err = mister.SetActiveIni(args.Ini)
+		err = mister.SetActiveIni(args.Ini, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("set active mister.ini: %s", err)

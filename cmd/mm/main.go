@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/libp2p/zeroconf/v2"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/libp2p/zeroconf/v2"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/input"
@@ -135,7 +136,7 @@ func main() {
 		}
 		fmt.Printf("active ini: %d\n", n)
 	} else if *setIni != -1 {
-		err := mister.SetActiveIni(*setIni)
+		err := mister.SetActiveIni(*setIni, true)
 		if err != nil {
 			fmt.Printf("error setting ini: %s\n", err)
 			os.Exit(1)
