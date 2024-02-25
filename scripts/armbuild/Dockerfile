@@ -40,3 +40,4 @@ RUN cd /home/build && \
 ENV PATH="${PATH}:/home/build/go/bin"
 
 WORKDIR /build
+RUN git config --global --add safe.directory /build

@@ -2,14 +2,15 @@ package tracker
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/metadata"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/metadata"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -22,6 +23,7 @@ const (
 	EventActionCoreStop
 	EventActionGameStart
 	EventActionGameStop
+	EventActionMenuNavigation
 )
 
 const ArcadeSystem = "Arcade"
@@ -247,7 +249,9 @@ func (tr *Tracker) addEvent(action int, target string) {
 		ev.TargetPath = targetTime.Path
 	}
 
-	tr.Events = append(tr.Events, ev)
+	if action != EventActionMenuNavigation {
+		tr.Events = append(tr.Events, ev)
+	}
 	err := tr.Db.AddEvent(ev)
 	if err != nil {
 		tr.Logger.Error("error saving event: %s", err)
@@ -297,6 +301,21 @@ func (tr *Tracker) stopCore() bool {
 	} else {
 		return false
 	}
+}
+
+// trackMenu check where we are in the menu and update the websocket
+func (tr *Tracker) trackMenu() {
+	data1, err1 := os.ReadFile(config.FullPathFile)
+	fullPath := string(data1)
+	data2, err2 := os.ReadFile(config.CurrentPathFile)
+	currentPath := string(data2)
+
+	if err1 != nil || err2 != nil {
+		tr.Logger.Error("error reading menu status files: %s %s", err1, err2)
+		return
+	}
+
+	tr.addEvent(EventActionMenuNavigation, fullPath+currentPath)
 }
 
 // LoadCore loads the current running core and set it as active.

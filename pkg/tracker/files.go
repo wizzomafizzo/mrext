@@ -81,7 +81,9 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					if event.Name == config.CoreNameFile {
+					if event.Name == config.CurrentPathFile {
+						tr.trackMenu()
+					} else if event.Name == config.CoreNameFile {
 						tr.LoadCore()
 					} else if event.Name == config.ActiveGameFile {
 						tr.loadGame()
@@ -112,6 +114,11 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 	}
 
 	err = watcher.Add(config.ActiveGameFile)
+	if err != nil {
+		return nil, err
+	}
+
+	err = watcher.Add(config.CurrentPathFile)
 	if err != nil {
 		return nil, err
 	}
