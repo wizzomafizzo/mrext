@@ -315,7 +315,7 @@ func (tr *Tracker) trackMenu() {
 		return
 	}
 
-	tr.addEvent(EventActionMenuNavigation, fullPath+currentPath)
+	tr.addEvent(EventActionMenuNavigation, fullPath+":"+currentPath)
 }
 
 // LoadCore loads the current running core and set it as active.
