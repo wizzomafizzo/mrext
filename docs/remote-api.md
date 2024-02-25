@@ -1649,12 +1649,12 @@ This field is blank if no game is running.
 
 #### Menu status
 
-Format: `menu:{system}/{name}`
+Format: `menuNavigation:{folder}/{menuItem}`
 
 | Attribute | Type   | Description |
 |-----------|---------|------------------|
-| `system`  | string | System ID of currently running core. |
-| `name`    | string | Filename of currently running game. |
+| `folder`  | string | The folder you are currently browsing, _arcade or _console for rbg, /games/genesis when browsing roms in the genesis core |
+| `menuItem`| string | The actual name of the mra or rbf file or rom file you are browsing |
 
 ### Events
 
