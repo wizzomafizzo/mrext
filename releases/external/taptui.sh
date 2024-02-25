@@ -658,7 +658,7 @@ _craftCommand(){
       ;;
     ini)
       ini="$(_radiolist -- \
-        1 one off 2 two off 3 three off 4 four off )"
+        1 one on 2 two off 3 three off 4 four off )"
       exitcode="${?}"; [[ "${exitcode}" -ge 1 ]] && { "${FUNCNAME[0]}" ; return ; }
       command="${command}:${ini}"
       ;;
