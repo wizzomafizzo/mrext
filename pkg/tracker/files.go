@@ -118,9 +118,12 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 		return nil, err
 	}
 
-	err = watcher.Add(config.CurrentPathFile)
-	if err != nil {
-		return nil, err
+	_, fileExistsError := os.Stat(config.CurrentPathFile)
+	if fileExistsError == nil {
+		err = watcher.Add(config.CurrentPathFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return watcher, nil
