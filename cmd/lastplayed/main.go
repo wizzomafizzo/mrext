@@ -3,18 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/tracker"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 const (
@@ -307,7 +308,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !mister.RecentsOptionEnabled() {
+	recents, err := mister.RecentsOptionEnabled()
+	if err != nil {
+		logger.Error("error checking recents option: %s", err)
+		fmt.Println("Could not read the MiSTer.ini file. Make sure the \"recents\" option is enabled if lastplayed doesn't work.")
+	} else if recents {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
 		fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")
