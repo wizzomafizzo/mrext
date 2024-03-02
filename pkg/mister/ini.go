@@ -2,11 +2,12 @@ package mister
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
-	"gopkg.in/ini.v1"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"gopkg.in/ini.v1"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
@@ -340,23 +341,23 @@ func (mi *MisterIni) RemoveKey(key string) error {
 	return mi.SetKey(key, "")
 }
 
-func RecentsOptionEnabled() bool {
+func RecentsOptionEnabled() (bool, error) {
 	iniFile, err := GetActiveMisterIni()
 	if err != nil {
-		return false
+		return false, nil
 	}
 
 	err = iniFile.Load()
 	if err != nil {
-		return false
+		return false, fmt.Errorf("error loading ini file: %s", err)
 	}
 
 	val, err := iniFile.GetKey(KeyRecents)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("error getting recents key: %s", err)
 	}
 
-	return val == "1"
+	return val == "1", nil
 }
 
 func GetInisWithout(key string, value string) ([]MisterIni, error) {
