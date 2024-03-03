@@ -153,11 +153,27 @@ func hookAmiga(_ *config.UserConfig, system System, path string) (string, error)
 	return "\t<setname>Amiga</setname>\n", nil
 }
 
+func hookNeoGeo(_ *config.UserConfig, _ System, path string) (string, error) {
+	// neogeo core allows launching zips and folders
+	if strings.HasSuffix(strings.ToLower(path), ".zip") || filepath.Ext(path) == "" {
+		return fmt.Sprintf(
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			1,
+			"f",
+			1,
+			path,
+		), nil
+	}
+
+	return "", nil
+}
+
 var systemHooks = map[string]func(*config.UserConfig, System, string) (string, error){
 	"FDS":             hookFDS,
 	"WonderSwanColor": hookWSC,
 	"ao486":           hookAo486,
 	"Amiga":           hookAmiga,
+	"NeoGeo":          hookNeoGeo,
 }
 
 func RunSystemHook(cfg *config.UserConfig, system System, path string) (string, error) {
