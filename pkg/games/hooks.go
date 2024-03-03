@@ -72,10 +72,15 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 
 	var mgl string
 
+	if !strings.HasSuffix(strings.ToLower(path), ".vhd") {
+		return "", nil
+	}
+
+	dir := filepath.Dir(path)
+	filename := filepath.Base(path)
+
 	// exception for Top 300 pack which uses 2 disks
 	if strings.HasSuffix(path, "IDE 0-1 Top 300 DOS Games.vhd") {
-		dir := filepath.Dir(path)
-
 		mgl += fmt.Sprintf(
 			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
 			mglDef.Delay,
@@ -95,6 +100,25 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 		mgl += "\t<reset delay=\"1\"/>\n"
 
 		return mgl, nil
+	}
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+
+	// if there's an iso in the same folder, mount it too
+	for _, file := range files {
+		if strings.HasSuffix(strings.ToLower(file.Name()), ".iso") && file.Name() != filename {
+			mgl += fmt.Sprintf(
+				"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+				mglDef.Delay,
+				mglDef.Method,
+				4,
+				filepath.Join(dir, file.Name()),
+			)
+			break
+		}
 	}
 
 	mgl += fmt.Sprintf(
