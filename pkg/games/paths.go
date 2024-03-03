@@ -2,10 +2,11 @@ package games
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 func GetGamesFolders(cfg *config.UserConfig) []string {
@@ -17,9 +18,7 @@ func GetGamesFolders(cfg *config.UserConfig) []string {
 		}
 		folders = append(folders, folder)
 	}
-	for _, folder := range config.GamesFolders {
-		folders = append(folders, folder)
-	}
+	folders = append(folders, config.GamesFolders...)
 	return folders
 }
 
@@ -87,6 +86,11 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 		if MatchSystemFile(system, path) {
 			matchedExtensions = append(matchedExtensions, system)
 		}
+	}
+
+	if len(matchedExtensions) == 0 {
+		// fall back to just the folder match
+		return validSystems
 	}
 
 	return matchedExtensions

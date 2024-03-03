@@ -1,5 +1,10 @@
 package games
 
+import (
+	"fmt"
+	s "strings"
+)
+
 const (
 	CategoryArcade              = "Arcade"
 	CategoryConsole             = "Console"
@@ -90,6 +95,24 @@ var CoreGroups = map[string][]System{
 	}},
 	"SNES":   {Systems["SNES"], Systems["SNESMusic"]},
 	"TGFX16": {Systems["TurboGrafx16"], Systems["SuperGrafx"]},
+}
+
+func PathToMglDef(system System, path string) (*MglParams, error) {
+	var mglDef *MglParams
+
+	for _, ft := range system.Slots {
+		for _, ext := range ft.Exts {
+			if s.HasSuffix(s.ToLower(path), ext) {
+				mglDef = ft.Mgl
+			}
+		}
+	}
+
+	if mglDef == nil {
+		return mglDef, fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
+	}
+
+	return mglDef, nil
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?
@@ -877,7 +900,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
-					Index:  2,
+					Index:  0,
 				},
 			},
 		},
@@ -1310,15 +1333,15 @@ var Systems = map[string]System{
 					Index:  0,
 				},
 			},
-			{
-				Label: "Floppy B:",
-				Exts:  []string{".img", ".ima", ".vfd"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "s",
-					Index:  1,
-				},
-			},
+			// {
+			// 	Label: "Floppy B:",
+			// 	Exts:  []string{".img", ".ima", ".vfd"},
+			// 	Mgl: &MglParams{
+			// 		Delay:  1,
+			// 		Method: "s",
+			// 		Index:  1,
+			// 	},
+			// },
 			{
 				Label: "IDE 0-0",
 				Exts:  []string{".vhd"},
@@ -1328,33 +1351,33 @@ var Systems = map[string]System{
 					Index:  2,
 				},
 			},
-			{
-				Label: "IDE 0-1",
-				Exts:  []string{".vhd"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "s",
-					Index:  3,
-				},
-			},
-			{
-				Label: "IDE 1-0",
-				Exts:  []string{".vhd", ".iso", ".cue", ".chd"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "s",
-					Index:  4,
-				},
-			},
-			{
-				Label: "IDE 1-1",
-				Exts:  []string{".vhd", ".iso", ".cue", ".chd"},
-				Mgl: &MglParams{
-					Delay:  1,
-					Method: "s",
-					Index:  5,
-				},
-			},
+			// {
+			// 	Label: "IDE 0-1",
+			// 	Exts:  []string{".vhd"},
+			// 	Mgl: &MglParams{
+			// 		Delay:  1,
+			// 		Method: "s",
+			// 		Index:  3,
+			// 	},
+			// },
+			// {
+			// 	Label: "IDE 1-0",
+			// 	Exts:  []string{".vhd", ".iso", ".cue", ".chd"},
+			// 	Mgl: &MglParams{
+			// 		Delay:  1,
+			// 		Method: "s",
+			// 		Index:  4,
+			// 	},
+			// },
+			// {
+			// 	Label: "IDE 1-1",
+			// 	Exts:  []string{".vhd", ".iso", ".cue", ".chd"},
+			// 	Mgl: &MglParams{
+			// 		Delay:  1,
+			// 		Method: "s",
+			// 		Index:  5,
+			// 	},
+			// },
 		},
 	},
 	"Apogee": {
