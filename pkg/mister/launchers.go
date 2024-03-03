@@ -19,6 +19,8 @@ import (
 )
 
 func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (string, error) {
+	fmt.Println("ORIG:", system.Id, system.Rbf, path)
+
 	// override the system rbf with the user specified one
 	for _, setCore := range cfg.Systems.SetCore {
 		parts := s.SplitN(setCore, ":", 2)
@@ -32,17 +34,23 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (str
 		}
 	}
 
+	fmt.Println("NEW:", system.Id, system.Rbf, path)
+
 	if path == "" {
 		if system.SetName == "" {
-			return fmt.Sprintf(
+			mgl := fmt.Sprintf(
 				"<mistergamedescription>\n\t<rbf>%s</rbf>\n</mistergamedescription>\n",
 				system.Rbf,
-			), nil
+			)
+			fmt.Println("MGL (NO PATH):", mgl)
+			return mgl, nil
 		} else {
-			return fmt.Sprintf(
+			mgl := fmt.Sprintf(
 				"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<setname>%s</setname>\n</mistergamedescription>\n",
 				system.Rbf, system.SetName,
-			), nil
+			)
+			fmt.Println("MGL (NO PATH, SETNAME):", mgl)
+			return mgl, nil
 		}
 	}
 
@@ -61,16 +69,19 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (str
 	}
 
 	if system.SetName == "" {
-		// TODO: generate this from xml
-		return fmt.Sprintf(
+		mgl := fmt.Sprintf(
 			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n</mistergamedescription>\n",
 			system.Rbf, mglDef.Delay, mglDef.Method, mglDef.Index, path,
-		), nil
+		)
+		fmt.Println("MGL:", mgl)
+		return mgl, nil
 	} else {
-		return fmt.Sprintf(
+		mgl := fmt.Sprintf(
 			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<setname>%s</setname>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n</mistergamedescription>\n",
 			system.Rbf, system.SetName, mglDef.Delay, mglDef.Method, mglDef.Index, path,
-		), nil
+		)
+		fmt.Println("MGL (SETNAME):", mgl)
+		return mgl, nil
 	}
 }
 
@@ -112,6 +123,11 @@ func launchFile(path string) error {
 }
 
 func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) error {
+	err := games.RunSystemPreHook(cfg, *system)
+	if err != nil {
+		return err
+	}
+
 	mgl, err := GenerateMgl(cfg, system, path)
 	if err != nil {
 		return err

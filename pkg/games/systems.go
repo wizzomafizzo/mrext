@@ -877,7 +877,7 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
-					Index:  2,
+					Index:  0,
 				},
 			},
 		},
