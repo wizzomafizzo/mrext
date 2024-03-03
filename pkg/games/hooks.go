@@ -1,14 +1,16 @@
 package games
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func CopySetnameBios(cfg *config.UserConfig, origSystem System, newSystem System, name string) error {
+func copySetnameBios(cfg *config.UserConfig, origSystem System, newSystem System, name string) error {
 	var biosPath string
 
 	for _, folder := range GetActiveSystemPaths(cfg, []System{origSystem}) {
@@ -39,47 +41,85 @@ func CopySetnameBios(cfg *config.UserConfig, origSystem System, newSystem System
 	return utils.CopyFile(biosPath, filepath.Join(newFolder, name))
 }
 
-func PreHookFDS(cfg *config.UserConfig) error {
+func hookFDS(cfg *config.UserConfig, system System, _ string) (string, error) {
 	nesSystem, err := GetSystem("NES")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fdsSystem, err := GetSystem("FDS")
-	if err != nil {
-		return err
-	}
-
-	return CopySetnameBios(cfg, *nesSystem, *fdsSystem, "boot0.rom")
+	return "", copySetnameBios(cfg, *nesSystem, system, "boot0.rom")
 }
 
-func PreHookWSC(cfg *config.UserConfig) error {
+func hookWSC(cfg *config.UserConfig, system System, _ string) (string, error) {
 	wsSystem, err := GetSystem("WonderSwan")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	wscSystem, err := GetSystem("WonderSwanColor")
+	err = copySetnameBios(cfg, *wsSystem, system, "boot.rom")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	err = CopySetnameBios(cfg, *wsSystem, *wscSystem, "boot.rom")
-	if err != nil {
-		return err
-	}
-
-	return CopySetnameBios(cfg, *wsSystem, *wscSystem, "boot1.rom")
+	return "", copySetnameBios(cfg, *wsSystem, system, "boot1.rom")
 }
 
-var SystemPreHooks = map[string]func(*config.UserConfig) error{
-	"FDS":             PreHookFDS,
-	"WonderSwanColor": PreHookWSC,
+func hookAo486(_ *config.UserConfig, system System, path string) (string, error) {
+	mglDef, err := PathToMglDef(system, path)
+	if err != nil {
+		return "", err
+	}
+
+	var mgl string
+
+	// exception for Top 300 pack which uses 2 disks
+	if strings.HasSuffix(path, "IDE 0-1 Top 300 DOS Games.vhd") {
+		dir := filepath.Dir(path)
+
+		mgl += fmt.Sprintf(
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			mglDef.Delay,
+			mglDef.Method,
+			mglDef.Index,
+			filepath.Join(dir, "IDE 0-0 BOOT-DOS98.vhd"),
+		)
+
+		mgl += fmt.Sprintf(
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			mglDef.Delay,
+			mglDef.Method,
+			mglDef.Index+1,
+			path,
+		)
+
+		mgl += "\t<reset delay=\"1\"/>\n"
+
+		return mgl, nil
+	}
+
+	mgl += fmt.Sprintf(
+		"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+		mglDef.Delay,
+		mglDef.Method,
+		mglDef.Index,
+		path,
+	)
+
+	mgl += "\t<reset delay=\"1\"/>\n"
+
+	return mgl, nil
 }
 
-func RunSystemPreHook(cfg *config.UserConfig, system System) error {
-	if hook, ok := SystemPreHooks[system.Id]; ok {
-		return hook(cfg)
+var systemHooks = map[string]func(*config.UserConfig, System, string) (string, error){
+	"FDS":             hookFDS,
+	"WonderSwanColor": hookWSC,
+	"ao486":           hookAo486,
+}
+
+func RunSystemHook(cfg *config.UserConfig, system System, path string) (string, error) {
+	if hook, ok := systemHooks[system.Id]; ok {
+		return hook(cfg, system, path)
 	}
-	return nil
+
+	return "", nil
 }

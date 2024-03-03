@@ -18,9 +18,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
-func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (string, error) {
-	fmt.Println("ORIG:", system.Id, system.Rbf, path)
-
+func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, override string) (string, error) {
 	// override the system rbf with the user specified one
 	for _, setCore := range cfg.Systems.SetCore {
 		parts := s.SplitN(setCore, ":", 2)
@@ -34,55 +32,32 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string) (str
 		}
 	}
 
-	fmt.Println("NEW:", system.Id, system.Rbf, path)
+	mgl := fmt.Sprintf("<mistergamedescription>\n\t<rbf>%s</rbf>\n", system.Rbf)
+
+	if system.SetName != "" {
+		mgl += fmt.Sprintf("\t<setname>%s</setname>\n", system.SetName)
+	}
 
 	if path == "" {
-		if system.SetName == "" {
-			mgl := fmt.Sprintf(
-				"<mistergamedescription>\n\t<rbf>%s</rbf>\n</mistergamedescription>\n",
-				system.Rbf,
-			)
-			fmt.Println("MGL (NO PATH):", mgl)
-			return mgl, nil
-		} else {
-			mgl := fmt.Sprintf(
-				"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<setname>%s</setname>\n</mistergamedescription>\n",
-				system.Rbf, system.SetName,
-			)
-			fmt.Println("MGL (NO PATH, SETNAME):", mgl)
-			return mgl, nil
-		}
-	}
-
-	var mglDef *games.MglParams
-
-	for _, ft := range system.Slots {
-		for _, ext := range ft.Exts {
-			if s.HasSuffix(s.ToLower(path), ext) {
-				mglDef = ft.Mgl
-			}
-		}
-	}
-
-	if mglDef == nil {
-		return "", fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
-	}
-
-	if system.SetName == "" {
-		mgl := fmt.Sprintf(
-			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n</mistergamedescription>\n",
-			system.Rbf, mglDef.Delay, mglDef.Method, mglDef.Index, path,
-		)
-		fmt.Println("MGL:", mgl)
+		mgl += "</mistergamedescription>"
+		fmt.Println("CORE ONLY:", mgl)
 		return mgl, nil
-	} else {
-		mgl := fmt.Sprintf(
-			"<mistergamedescription>\n\t<rbf>%s</rbf>\n\t<setname>%s</setname>\n\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n</mistergamedescription>\n",
-			system.Rbf, system.SetName, mglDef.Delay, mglDef.Method, mglDef.Index, path,
-		)
-		fmt.Println("MGL (SETNAME):", mgl)
+	} else if override != "" {
+		mgl += override
+		mgl += "</mistergamedescription>"
+		fmt.Println("OVERRIDE:", mgl)
 		return mgl, nil
 	}
+
+	mglDef, err := games.PathToMglDef(*system, path)
+	if err != nil {
+		return "", err
+	}
+
+	mgl += fmt.Sprintf("<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n", mglDef.Delay, mglDef.Method, mglDef.Index, path)
+	mgl += "</mistergamedescription>"
+	fmt.Println("AUTO:", mgl)
+	return mgl, nil
 }
 
 // TODO: move to utils?
@@ -106,7 +81,6 @@ func launchFile(path string) error {
 		return fmt.Errorf("command interface not accessible: %s", err)
 	}
 
-	// TODO: clean up
 	if !(s.HasSuffix(s.ToLower(path), ".mgl") || s.HasSuffix(s.ToLower(path), ".mra") || s.HasSuffix(s.ToLower(path), ".rbf")) {
 		return fmt.Errorf("not a valid launch file: %s", path)
 	}
@@ -123,12 +97,12 @@ func launchFile(path string) error {
 }
 
 func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) error {
-	err := games.RunSystemPreHook(cfg, *system)
+	override, err := games.RunSystemHook(cfg, *system, path)
 	if err != nil {
 		return err
 	}
 
-	mgl, err := GenerateMgl(cfg, system, path)
+	mgl, err := GenerateMgl(cfg, system, path, override)
 	if err != nil {
 		return err
 	}
@@ -300,7 +274,12 @@ func CreateLauncher(cfg *config.UserConfig, system *games.System, gameFile strin
 	} else {
 		mglPath := GetLauncherFilename(system, folder, name)
 
-		mgl, err := GenerateMgl(cfg, system, gameFile)
+		override, err := games.RunSystemHook(cfg, *system, gameFile)
+		if err != nil {
+			return "", err
+		}
+
+		mgl, err := GenerateMgl(cfg, system, gameFile, override)
 		if err != nil {
 			return "", err
 		}
@@ -396,11 +375,20 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 	switch ext {
 	case ".mra":
 		err = launchFile(path)
+		if err != nil {
+			return err
+		}
 	case ".mgl":
 		err = launchFile(path)
+		if err != nil {
+			return err
+		}
 		isGame = true
 	case ".rbf":
 		err = launchFile(path)
+		if err != nil {
+			return err
+		}
 	default:
 		system, err := games.BestSystemMatch(cfg, path)
 		if err != nil {
@@ -408,11 +396,10 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 		}
 
 		err = launchTempMgl(cfg, &system, path)
+		if err != nil {
+			return err
+		}
 		isGame = true
-	}
-
-	if err != nil {
-		return err
 	}
 
 	if ActiveGameEnabled() && isGame {
