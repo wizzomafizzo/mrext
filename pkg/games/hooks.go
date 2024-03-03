@@ -134,10 +134,30 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 	return mgl, nil
 }
 
+func hookAmiga(_ *config.UserConfig, system System, path string) (string, error) {
+	if !strings.HasSuffix(strings.ToLower(filepath.Dir(path)), "listings/games.txt") && !strings.HasSuffix(strings.ToLower(filepath.Dir(path)), "listings/demos.txt") {
+		return "", nil
+	}
+
+	gameName := filepath.Base(path)
+	sharedPath, err := filepath.Abs(filepath.Join(filepath.Dir(path), "..", "..", "shared"))
+	if err != nil {
+		return "", err
+	}
+
+	bootFile := filepath.Join(sharedPath, "ags_boot")
+	if err := os.WriteFile(bootFile, []byte(gameName+"\n"), 0644); err != nil {
+		return "", err
+	}
+
+	return "\t<setname>Amiga</setname>\n", nil
+}
+
 var systemHooks = map[string]func(*config.UserConfig, System, string) (string, error){
 	"FDS":             hookFDS,
 	"WonderSwanColor": hookWSC,
 	"ao486":           hookAo486,
+	"Amiga":           hookAmiga,
 }
 
 func RunSystemHook(cfg *config.UserConfig, system System, path string) (string, error) {

@@ -341,34 +341,6 @@ func LaunchMenu() error {
 
 // LaunchGenericFile Given a generic file path, launch it using the correct method, if possible.
 func LaunchGenericFile(cfg *config.UserConfig, path string) error {
-	// TODO: move this to a common function, and the one in launchtoken
-	inZip := false
-	parts := s.Split(path, "/")
-	for i, part := range parts {
-		if s.HasSuffix(s.ToLower(part), ".zip") {
-			zipPath := filepath.Join(parts[:i+1]...)
-			if path[0] == '/' {
-				zipPath = "/" + zipPath
-			}
-			if _, err := os.Stat(zipPath); err != nil {
-				return fmt.Errorf("containing zip file not found for %s: %s", path, zipPath)
-			}
-			inZip = true
-			break
-		}
-	}
-
-	if !inZip {
-		file, err := os.Stat(path)
-		if err != nil {
-			return fmt.Errorf("path is not accessible: %s", err)
-		}
-
-		if file.IsDir() {
-			return fmt.Errorf("path is a directory")
-		}
-	}
-
 	var err error
 	isGame := false
 	ext := s.ToLower(filepath.Ext(path))

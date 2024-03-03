@@ -88,6 +88,11 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 		}
 	}
 
+	if len(matchedExtensions) == 0 {
+		// fall back to just the folder match
+		return validSystems
+	}
+
 	return matchedExtensions
 }
 
