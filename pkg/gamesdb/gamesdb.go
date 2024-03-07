@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	BucketNames = "names"
+	BucketNames       = "names"
+	indexedSystemsKey = "meta:indexedSystems"
 )
 
 // Return the key for a name in the names index.
@@ -63,6 +64,40 @@ func openNames() (*bolt.DB, error) {
 	return open(&bolt.Options{
 		NoSync:         true,
 		NoFreelistSync: true,
+	})
+}
+
+func readIndexedSystems(db *bolt.DB) ([]string, error) {
+	var systems []string
+
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BucketNames))
+		v := b.Get([]byte(indexedSystemsKey))
+		if v != nil {
+			systems = strings.Split(string(v), ",")
+		}
+		return nil
+	})
+
+	return systems, err
+}
+
+func writeIndexedSystems(db *bolt.DB, systems []string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BucketNames))
+		v := b.Get([]byte(indexedSystemsKey))
+		if v == nil {
+			v = []byte(strings.Join(systems, ","))
+			return b.Put([]byte(indexedSystemsKey), v)
+		} else {
+			existing := strings.Split(string(v), ",")
+			for _, s := range systems {
+				if !utils.Contains(existing, s) {
+					existing = append(existing, s)
+				}
+			}
+			return b.Put([]byte(indexedSystemsKey), []byte(strings.Join(existing, ",")))
+		}
 	})
 }
 
@@ -172,6 +207,11 @@ func NewNamesIndex(
 		return status.Files, fmt.Errorf("error updating names index: %s", err)
 	}
 
+	err = writeIndexedSystems(db, utils.AlphaMapKeys(systemPaths))
+	if err != nil {
+		return status.Files, fmt.Errorf("error writing indexed systems: %s", err)
+	}
+
 	err = db.Sync()
 	if err != nil {
 		return status.Files, fmt.Errorf("error syncing database: %s", err)
@@ -276,7 +316,8 @@ func SearchNamesRegexp(systems []games.System, query string) ([]SearchResult, er
 	})
 }
 
-func SystemNamesIndexed(system games.System) bool {
+// Return true if a specific system is indexed in the gamesdb
+func SystemIndexed(system games.System) bool {
 	if !DbExists() {
 		return false
 	}
@@ -287,29 +328,30 @@ func SystemNamesIndexed(system games.System) bool {
 	}
 	defer db.Close()
 
-	var exists bool
-	err = db.View(func(tx *bolt.Tx) error {
-		bn := tx.Bucket([]byte(BucketNames))
-		c := bn.Cursor()
-
-		pre := []byte(system.Id + ":")
-		nameIdx := bytes.Index(pre, []byte(":"))
-
-		for k, _ := c.Seek(pre); k != nil && bytes.HasPrefix(k, pre); k, _ = c.Next() {
-			keyName := string(k[nameIdx+1:])
-
-			if len(keyName) > 0 {
-				exists = true
-				break
-			}
-		}
-
-		return nil
-	})
-
+	systems, err := readIndexedSystems(db)
 	if err != nil {
 		return false
 	}
 
-	return exists
+	return utils.Contains(systems, system.Id)
+}
+
+// Return all systems indexed in the gamesdb
+func IndexedSystems() ([]string, error) {
+	if !DbExists() {
+		return nil, fmt.Errorf("gamesdb does not exist")
+	}
+
+	db, err := open(&bolt.Options{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	systems, err := readIndexedSystems(db)
+	if err != nil {
+		return nil, err
+	}
+
+	return systems, nil
 }

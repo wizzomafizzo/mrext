@@ -219,7 +219,7 @@ func makeIndex(cfg *config.UserConfig, syncs []syncFile) error {
 	var systems []games.System
 	for _, sync := range syncs {
 		for _, game := range sync.games {
-			if !gamesdb.SystemNamesIndexed(*game.system) {
+			if !gamesdb.SystemIndexed(*game.system) {
 				systems = append(systems, *game.system)
 			}
 		}

@@ -9,12 +9,11 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
 	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 )
 
 const pageSize = 500
@@ -43,7 +42,7 @@ type Index struct {
 func GetIndexingStatus() string {
 	status := "indexStatus:"
 
-	if txtindex.Exists() {
+	if gamesdb.DbExists() {
 		status += "y,"
 	} else {
 		status += "n,"
@@ -76,80 +75,34 @@ func (s *Index) GenerateIndex(logger *service.Logger, cfg *config.UserConfig) {
 	websocket.Broadcast(logger, GetIndexingStatus())
 
 	go func() {
-		systemPaths := make(map[string][]string)
-		var keys []string
-		allFiles := make([][2]string, 0)
-		var err error
+		defer s.mu.Unlock()
 
-		for _, path := range games.GetAllSystemPaths(cfg) {
-			systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
-			logger.Info("index: found path %s: %s", path.System.Name, path.Path)
-		}
-
-		if len(systemPaths) == 0 {
-			logger.Error("index: no paths found")
-			goto finish
-		}
-
-		s.TotalSteps = 0
-		s.CurrentStep = 1
-		for _, syss := range systemPaths {
-			s.TotalSteps += len(syss)
-		}
-
-		s.TotalSteps += 3
-		s.CurrentStep = 2
-		websocket.Broadcast(logger, GetIndexingStatus())
-
-		keys = utils.AlphaMapKeys(systemPaths)
-		for _, systemId := range keys {
-			for _, path := range systemPaths[systemId] {
-				system, err := games.GetSystem(systemId)
+		_, err := gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
+			s.TotalSteps = status.Total
+			s.CurrentStep = status.Step
+			if status.Step == 1 {
+				s.CurrentDesc = "Finding games folders..."
+			} else if status.Step == status.Total {
+				s.CurrentDesc = "Writing database... (" + fmt.Sprint(status.Files) + " games)"
+			} else {
+				system, err := games.GetSystem(status.SystemId)
 				if err != nil {
-					logger.Error("index: invalid system: %s (%s)", err, systemId)
-					s.CurrentStep++
-					continue
-				}
-
-				s.CurrentDesc = system.Name
-				s.CurrentStep++
-				websocket.Broadcast(logger, GetIndexingStatus())
-
-				files, err := games.GetFiles(systemId, path)
-				if err != nil {
-					logger.Error("index: getting files for %s (%s): %s", systemId, path, err)
-					continue
-				}
-
-				logger.Info("index: found %d files for %s: %s", len(files), systemId, path)
-
-				for j := range files {
-					allFiles = append(allFiles, [2]string{systemId, files[j]})
+					s.CurrentDesc = "Indexing " + status.SystemId + "..."
+				} else {
+					s.CurrentDesc = "Indexing " + system.Name + "..."
 				}
 			}
-		}
-
-		if len(allFiles) == 0 {
-			logger.Error("index: no files found")
-			goto finish
-		}
-		logger.Info("index: found %d files for all systems", len(allFiles))
-
-		s.CurrentDesc = "Writing to database"
-		websocket.Broadcast(logger, GetIndexingStatus())
-		err = txtindex.Generate(allFiles, config.SearchDbFile)
+			websocket.Broadcast(logger, GetIndexingStatus())
+		})
 		if err != nil {
-			logger.Error("index: generating index: %s", err)
-			goto finish
+			logger.Error("generate index: indexing: %s", err)
 		}
 
-	finish:
 		s.Indexing = false
 		s.TotalSteps = 0
 		s.CurrentStep = 0
 		s.CurrentDesc = ""
 		websocket.Broadcast(logger, GetIndexingStatus())
-		s.mu.Unlock()
 	}()
 }
 
@@ -176,18 +129,17 @@ type listSystemsPayload struct {
 
 func ListSystems(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		index, err := txtindex.Open(config.SearchDbFile)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("search games: reading index: %s", err)
-			return
-		}
-
 		payload := listSystemsPayload{
 			Systems: make([]listSystemsPayloadSystem, 0),
 		}
 
-		for _, system := range index.Systems() {
+		indexed, err := gamesdb.IndexedSystems()
+		if err != nil {
+			logger.Error("list systems: getting indexed systems: %s", err)
+			indexed = []string{}
+		}
+
+		for _, system := range indexed {
 			id := system
 			sysDef, ok := games.Systems[id]
 			if !ok {
@@ -208,7 +160,7 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 		err = json.NewEncoder(w).Encode(payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("search games: encoding response: %s", err)
+			logger.Error("list systems: encoding response: %s", err)
 			return
 		}
 	}
@@ -228,24 +180,28 @@ func Search(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		index, err := txtindex.Open(config.SearchDbFile)
+		var results = make([]SearchResultGame, 0)
+		var search []gamesdb.SearchResult
+
+		if args.System == "all" || args.System == "" {
+			search, err = gamesdb.SearchNamesWords(games.AllSystems(), args.Query)
+		} else {
+			system, errSys := games.GetSystem(args.System)
+			if errSys != nil {
+				http.Error(w, errSys.Error(), http.StatusBadRequest)
+				logger.Error("search games: getting system: %s", err)
+				return
+			}
+			search, err = gamesdb.SearchNamesWords([]games.System{*system}, args.Query)
+		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("search games: reading index: %s", err)
+			logger.Error("search games: searching: %s", err)
 			return
 		}
 
-		var results = make([]SearchResultGame, 0)
-		var search []txtindex.SearchResult
-
-		if args.System == "all" || args.System == "" {
-			search = index.SearchAllByWords(args.Query)
-		} else {
-			search = index.SearchSystemByWords(args.System, args.Query)
-		}
-
 		for _, result := range search {
-			system, err := games.GetSystem(result.System)
+			system, err := games.GetSystem(result.SystemId)
 			if err != nil {
 				continue
 			}
