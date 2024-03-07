@@ -1,19 +1,20 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"log"
 	"os"
 	"strings"
-	"flag"
+
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 
 	gc "github.com/rthornton128/goncurses"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/txtindex"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -23,34 +24,12 @@ import (
 
 const appName = "search"
 
-// Create a channel that will be used to pass the index around. This is so
-// the index file can be loaded in the background on startup.
-func newIndexChannel() chan txtindex.Index {
-	ic := make(chan txtindex.Index, 1)
-	go func() {
-		index, err := txtindex.Open(config.SearchDbFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ic <- index
-	}()
-	return ic
-}
-
-func getIndex(ic chan txtindex.Index) (txtindex.Index, chan txtindex.Index) {
-	index := <-ic
-	ic <- index
-	return index, ic
-}
-
 func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	win, err := curses.NewWindow(stdscr, 4, 75, "", -1)
 	if err != nil {
 		return err
 	}
-	defer func(win *gc.Window) {
-		_ = win.Delete()
-	}(win)
+	defer win.Delete()
 
 	_, width := win.MaxYX()
 
@@ -71,59 +50,82 @@ func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 		win.MovePrint(1, 2, strings.Repeat(" ", width-4))
 	}
 
-	win.MovePrint(1, 2, "Finding games folders...")
-	drawProgressBar(1, 100)
-	win.NoutRefresh()
-	_ = gc.Update()
-
-	systemPaths := make(map[string][]string)
-
-	for _, path := range games.GetSystemPaths(cfg, games.AllSystems()) {
-		systemPaths[path.System.Id] = append(systemPaths[path.System.Id], path.Path)
+	status := struct {
+		Step        int
+		Total       int
+		SystemName  string
+		DisplayText string
+		Complete    bool
+		Error       error
+	}{
+		Step:        1,
+		Total:       100,
+		DisplayText: "Finding games folders...",
 	}
 
-	totalSteps := 0
-	for _, systems := range systemPaths {
-		totalSteps += len(systems)
-	}
-	totalSteps += 3
-	currentStep := 2
+	go func() {
+		_, err = gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(is gamesdb.IndexStatus) {
+			systemName := is.SystemId
+			system, err := games.GetSystem(is.SystemId)
+			if err == nil {
+				systemName = system.Name
+			}
 
-	files, _ := games.GetAllFiles(systemPaths, func(system string, path string) {
+			text := fmt.Sprintf("Indexing %s...", systemName)
+			if is.Step == 1 {
+				text = "Finding games folders..."
+			} else if is.Step == is.Total {
+				text = "Writing database to disk..."
+			}
+
+			status.Step = is.Step
+			status.Total = is.Total
+			status.SystemName = systemName
+			status.DisplayText = text
+		})
+
+		status.Error = err
+		status.Complete = true
+	}()
+
+	spinnerSeq := []string{"|", "/", "-", "\\"}
+	spinnerCount := 0
+
+	for {
+		if status.Complete || status.Error != nil {
+			break
+		}
+
 		clearText()
-		win.MovePrint(1, 2, fmt.Sprintf("Scanning %s: %s", system, path))
-		drawProgressBar(currentStep, totalSteps)
-		currentStep++
+
+		spinnerCount++
+		if spinnerCount == len(spinnerSeq) {
+			spinnerCount = 0
+		}
+
+		win.MovePrint(1, width-3, spinnerSeq[spinnerCount])
+
+		win.MovePrint(1, 2, status.DisplayText)
+		drawProgressBar(status.Step, status.Total)
+
 		win.NoutRefresh()
 		_ = gc.Update()
-	})
-
-	clearText()
-	win.MovePrint(1, 2, "Generating index files...")
-	drawProgressBar(currentStep, totalSteps)
-	win.NoutRefresh()
-	_ = gc.Update()
-
-	if err := txtindex.Generate(files, config.SearchDbFile); err != nil {
-		log.Fatal(err)
+		gc.Nap(100)
 	}
 
-	return nil
+	return status.Error
 }
 
 func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
-	options := [][2]string{
-		{"Rescan games...", ""},
-	}
-
-	button, selected, err := curses.KeyValueListPicker(stdscr, curses.ListPickerOpts{
+	button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
 		Title:         "Options",
 		Buttons:       []string{"Select", "Back"},
 		DefaultButton: 0,
+		ActionButton:  0,
 		ShowTotal:     false,
 		Width:         70,
 		Height:        18,
-	}, options)
+	}, []string{"Update games database..."})
 
 	if err != nil {
 		return err
@@ -142,7 +144,7 @@ func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	return nil
 }
 
-func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.Index, query string, launchGame bool) (err error) {
+func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, query string, launchGame bool) (err error) {
 	stdscr.Erase()
 	stdscr.NoutRefresh()
 	_ = gc.Update()
@@ -160,30 +162,38 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			return err
 		}
 
-		return searchWindow(cfg, stdscr, ic, text, launchGame)
+		return searchWindow(cfg, stdscr, text, launchGame)
 	} else if button == 1 {
 		if len(text) == 0 {
-			return searchWindow(cfg, stdscr, ic, "", launchGame)
+			return searchWindow(cfg, stdscr, "", launchGame)
 		}
 
-		index, ic := getIndex(ic)
 		if err := curses.InfoBox(stdscr, "", "Searching...", false, false); err != nil {
 			log.Fatal(err)
 		}
 
-		results := index.SearchAllByWords(text)
+		results, err := gamesdb.SearchNamesWords(games.AllSystems(), text)
+		if err != nil {
+			return err
+		}
 
 		if len(results) == 0 {
 			if err := curses.InfoBox(stdscr, "", "No results found.", false, true); err != nil {
 				log.Fatal(err)
 			}
-			return searchWindow(cfg, stdscr, ic, text, launchGame)
+			return searchWindow(cfg, stdscr, text, launchGame)
 		}
 
 		var names []string
-		var items []txtindex.SearchResult
+		var items []gamesdb.SearchResult
 		for _, result := range results {
-			display := fmt.Sprintf("[%s] %s", result.System, result.Name)
+			systemName := result.SystemId
+			system, err := games.GetSystem(result.SystemId)
+			if err == nil {
+				systemName = system.Name
+			}
+
+			display := fmt.Sprintf("[%s] %s", systemName, result.Name)
 			if !utils.Contains(names, display) {
 				names = append(names, display)
 				items = append(items, result)
@@ -204,9 +214,10 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			launchLabel = "Select"
 		}
 		button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
-			Title:				 titleLabel,
-			Buttons:			 []string{"PgUp", "PgDn", launchLabel, "Options", "Cancel"},
+			Title:         titleLabel,
+			Buttons:       []string{"PgUp", "PgDn", launchLabel, "Cancel"},
 			DefaultButton: 2,
+			ActionButton:  2,
 			ShowTotal:     true,
 			Width:         70,
 			Height:        18,
@@ -219,7 +230,7 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			game := items[selected]
 
 			if launchGame {
-				system, err := games.GetSystem(game.System)
+				system, err := games.GetSystem(game.SystemId)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -237,7 +248,7 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, ic chan txtindex.In
 			}
 		}
 
-		return searchWindow(cfg, stdscr, ic, text, launchGame)
+		return searchWindow(cfg, stdscr, text, launchGame)
 	} else {
 		return nil
 	}
@@ -260,15 +271,14 @@ func main() {
 	}
 	defer gc.End()
 
-	if !txtindex.Exists() {
+	if !gamesdb.DbExists() {
 		err := generateIndexWindow(cfg, stdscr)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	ic := newIndexChannel()
-	err = searchWindow(cfg, stdscr, ic, "", launchGame)
+	err = searchWindow(cfg, stdscr, "", launchGame)
 	if err != nil {
 		log.Fatal(err)
 	}

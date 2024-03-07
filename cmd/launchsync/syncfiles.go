@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"io"
 	"io/fs"
 	"net/http"
@@ -12,10 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+
 	"gopkg.in/ini.v1"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/txtindex"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -82,26 +83,26 @@ func readSectionName(sectionName string) (name string, path string, err error) {
 	return name, path, nil
 }
 
-func readSyncFile(path string) (*syncFile, error) {
+func readSyncFile(path string) (syncFile, error) {
 	var sf syncFile
 
 	cfg, err := ini.ShadowLoad(path)
 	if err != nil {
-		return nil, err
+		return sf, err
 	}
 
 	sf.path = path
 
 	sf.name = cfg.Section("DEFAULT").Key("name").String()
 	if sf.name == "" {
-		return nil, fmt.Errorf("missing name field")
+		return sf, fmt.Errorf("missing name field")
 	}
 
 	sf.folder = filepath.Join(filepath.Dir(path), "_"+utils.StripBadFileChars(sf.name))
 
 	sf.author = cfg.Section("DEFAULT").Key("author").String()
 	if sf.author == "" {
-		return nil, fmt.Errorf("missing author field")
+		return sf, fmt.Errorf("missing author field")
 	}
 
 	sf.url = cfg.Section("DEFAULT").Key("url").String()
@@ -112,11 +113,11 @@ func readSyncFile(path string) (*syncFile, error) {
 		if err != nil {
 			sf.updated, err = updated.TimeFormat("2006-01-02 15:04")
 			if err != nil {
-				return nil, fmt.Errorf("invalid updated date/time: %s", err)
+				return sf, fmt.Errorf("invalid updated date/time: %s", err)
 			}
 		}
 	} else if sf.url != "" {
-		return nil, fmt.Errorf("updated field is required with a url")
+		return sf, fmt.Errorf("updated field is required with a url")
 	}
 
 	for _, section := range cfg.Sections() {
@@ -130,17 +131,17 @@ func readSyncFile(path string) (*syncFile, error) {
 
 		game.name, game.folder, err = readSectionName(game.id)
 		if err != nil {
-			return nil, err
+			return sf, err
 		}
 
 		if game.name == "" {
-			return nil, fmt.Errorf("missing name in %s", game.id)
+			return sf, fmt.Errorf("missing name in %s", game.id)
 		}
 
 		systemName := section.Key("system").String()
 		system, err := games.LookupSystem(systemName)
 		if err != nil {
-			return nil, fmt.Errorf("invalid system in %s: %s", game.id, err)
+			return sf, fmt.Errorf("invalid system in %s: %s", game.id, err)
 		} else {
 			game.system = system
 		}
@@ -149,36 +150,36 @@ func readSyncFile(path string) (*syncFile, error) {
 		game.matches = append(game.matches, matches...)
 
 		if len(game.matches) == 0 {
-			return nil, fmt.Errorf("missing matches in %s", game.id)
+			return sf, fmt.Errorf("missing matches in %s", game.id)
 		}
 
 		sf.games = append(sf.games, game)
 	}
 
-	return &sf, nil
+	return sf, nil
 }
 
 // Update a sync file in place if it has been updated online.
-func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
+func updateSyncFile(sync syncFile) (syncFile, bool, error) {
 	if sync.url == "" {
 		return sync, false, nil
 	}
 
 	resp, err := http.Get(sync.url)
 	if err != nil {
-		return nil, false, err
+		return sync, false, err
 	}
 	defer func(b io.ReadCloser) {
 		_ = b.Close()
 	}(resp.Body)
 
 	if resp.StatusCode != 200 {
-		return nil, false, fmt.Errorf("failed to download %s: %s", sync.url, resp.Status)
+		return sync, false, fmt.Errorf("failed to download %s: %s", sync.url, resp.Status)
 	}
 
 	fp, err := os.CreateTemp("", "launchsync-")
 	if err != nil {
-		return nil, false, err
+		return sync, false, err
 	}
 	defer func(fp *os.File) {
 		_ = fp.Close()
@@ -189,13 +190,13 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 
 	_, err = io.Copy(fp, resp.Body)
 	if err != nil {
-		return nil, false, err
+		return sync, false, err
 	}
 	_ = fp.Close()
 
 	newSync, err := readSyncFile(fp.Name())
 	if err != nil {
-		return nil, false, err
+		return sync, false, err
 	}
 
 	if newSync.updated.After(sync.updated) {
@@ -204,7 +205,7 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 
 		err := utils.MoveFile(fp.Name(), sync.path)
 		if err != nil {
-			return nil, false, err
+			return sync, false, err
 		}
 
 		return newSync, true, nil
@@ -213,47 +214,30 @@ func updateSyncFile(sync *syncFile) (*syncFile, bool, error) {
 	}
 }
 
-func makeIndex(cfg *config.UserConfig, syncs []*syncFile) (txtindex.Index, error) {
-	var index txtindex.Index
-	indexFile := filepath.Join(os.TempDir(), "launchsync-index.tar")
-
-	// Restrict index to necessary systems
+func makeIndex(cfg *config.UserConfig, syncs []syncFile) error {
+	// restrict index to necessary systems
 	var systems []games.System
 	for _, sync := range syncs {
 		for _, game := range sync.games {
-			systems = append(systems, *game.system)
+			if !gamesdb.SystemIndexed(*game.system) {
+				systems = append(systems, *game.system)
+			}
 		}
 	}
 
-	systemPaths := games.GetSystemPaths(cfg, systems)
-
-	systemFiles := make([][2]string, 0)
-	for _, path := range systemPaths {
-		files, err := games.GetFiles(path.System.Id, path.Path)
-		if err != nil {
-			return index, err
-		}
-
-		for _, file := range files {
-			systemFiles = append(systemFiles, [2]string{path.System.Id, file})
-		}
+	if len(systems) == 0 {
+		return nil
 	}
 
-	err := txtindex.Generate(systemFiles, indexFile)
+	_, err := gamesdb.NewNamesIndex(cfg, systems, func(status gamesdb.IndexStatus) {})
 	if err != nil {
-		return index, err
+		return err
 	}
 
-	index, err = txtindex.Open(indexFile)
-	if err != nil {
-		return index, err
-	}
-	_ = os.Remove(indexFile)
-
-	return index, nil
+	return nil
 }
 
-func checkForChanges(sync *syncFile) (*syncFile, bool, error) {
+func checkForChanges(sync syncFile) (syncFile, bool, error) {
 	newSync, updated, err := updateSyncFile(sync)
 	if err != nil {
 		return sync, false, err
@@ -314,11 +298,12 @@ func notFoundFilename(folder string, game syncFileGame) string {
 	return filepath.Join(folder, game.folder, game.name+" [NOT FOUND].mgl")
 }
 
-func tryLinkGame(cfg *config.UserConfig, sync *syncFile, game syncFileGame, index txtindex.Index) (string, bool, error) {
-	var match txtindex.SearchResult
+func tryLinkGame(cfg *config.UserConfig, sync syncFile, game syncFileGame) (string, bool, error) {
+	var match gamesdb.SearchResult
 
 	for _, m := range game.matches {
-		var results []txtindex.SearchResult
+		var results []gamesdb.SearchResult
+		var err error
 
 		if m == "" {
 			continue
@@ -329,10 +314,16 @@ func tryLinkGame(cfg *config.UserConfig, sync *syncFile, game syncFileGame, inde
 			if m[1:] == "" {
 				continue
 			}
-			results = index.SearchSystemByNameRe(game.system.Id, "(?i)"+m[1:])
+			results, err = gamesdb.SearchNamesRegexp([]games.System{*game.system}, "(?i)"+m[1:])
+			if err != nil {
+				return "", false, err
+			}
 		} else {
 			// partial match
-			results = index.SearchSystemByName(game.system.Id, m)
+			results, err = gamesdb.SearchNamesPartial([]games.System{*game.system}, m)
+			if err != nil {
+				return "", false, err
+			}
 		}
 
 		if len(results) > 0 {

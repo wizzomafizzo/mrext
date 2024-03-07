@@ -40,12 +40,10 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 
 	if path == "" {
 		mgl += "</mistergamedescription>"
-		fmt.Println("CORE ONLY:", mgl)
 		return mgl, nil
 	} else if override != "" {
 		mgl += override
 		mgl += "</mistergamedescription>"
-		fmt.Println("OVERRIDE:", mgl)
 		return mgl, nil
 	}
 
@@ -56,7 +54,6 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 
 	mgl += fmt.Sprintf("<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n", mglDef.Delay, mglDef.Method, mglDef.Index, path)
 	mgl += "</mistergamedescription>"
-	fmt.Println("AUTO:", mgl)
 	return mgl, nil
 }
 

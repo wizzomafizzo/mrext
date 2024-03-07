@@ -103,16 +103,12 @@ func PathToMglDef(system System, path string) (*MglParams, error) {
 	for _, ft := range system.Slots {
 		for _, ext := range ft.Exts {
 			if s.HasSuffix(s.ToLower(path), ext) {
-				mglDef = ft.Mgl
+				return ft.Mgl, nil
 			}
 		}
 	}
 
-	if mglDef == nil {
-		return mglDef, fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
-	}
-
-	return mglDef, nil
+	return mglDef, fmt.Errorf("system has no matching mgl args: %s, %s", system.Id, path)
 }
 
 // FIXME: launch game > launch new game same system > not working? should it?

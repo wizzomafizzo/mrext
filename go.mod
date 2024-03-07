@@ -10,10 +10,7 @@ require github.com/rthornton128/goncurses v0.0.0-20220628231859-fd57939296e5
 
 require golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 
-require (
-	github.com/stretchr/testify v1.8.1 // indirect
-	gopkg.in/ini.v1 v1.67.0
-)
+require gopkg.in/ini.v1 v1.67.0
 
 require github.com/fsnotify/fsnotify v1.6.0
 
@@ -40,7 +37,9 @@ require (
 	github.com/libp2p/zeroconf/v2 v2.2.0
 	github.com/rs/cors v1.8.2
 	github.com/txn2/txeh v1.4.0
+	go.etcd.io/bbolt v1.3.9
 	golang.org/x/image v0.9.0
-	golang.org/x/sys v0.11.0
+	golang.org/x/sync v0.6.0
+	golang.org/x/sys v0.18.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

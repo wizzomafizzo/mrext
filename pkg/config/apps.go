@@ -18,3 +18,5 @@ const ArcadeDBFile = MrextConfigFolder + "/ArcadeDatabase.csv"
 
 const NfcDatabaseFile = SdFolder + "/nfc.csv"
 const NfcLastScanFile = TempFolder + "/NFCSCAN"
+
+const GamesDb = ScriptsConfigFolder + "/mrext/games.db"

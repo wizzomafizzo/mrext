@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
@@ -52,7 +54,7 @@ func testSyncFile(cfg *config.UserConfig, path string) {
 	}
 
 	fmt.Print("Building games index... ")
-	index, err := makeIndex(cfg, []*syncFile{sf})
+	err = makeIndex(cfg, []syncFile{sf})
 	if err != nil {
 		fmt.Printf("error generating index: %s\n", err)
 		os.Exit(1)
@@ -76,7 +78,11 @@ func testSyncFile(cfg *config.UserConfig, path string) {
 
 		for _, match := range game.matches {
 			fmt.Printf("- %s\n", match[4:])
-			results := index.SearchSystemByNameRe(game.system.Id, match)
+			results, err := gamesdb.SearchNamesRegexp([]games.System{*game.system}, match)
+			if err != nil {
+				fmt.Printf("  error: %s\n", err)
+				continue
+			}
 			for i := 0; i < 5 && i < len(results); i++ {
 				if i == 0 {
 					fmt.Printf(" *%s\n", results[i].Path)
@@ -86,6 +92,26 @@ func testSyncFile(cfg *config.UserConfig, path string) {
 			}
 		}
 	}
+}
+
+func findSyncFiles(verbose *bool, update *bool) []syncFile {
+	menuFolders := mister.GetMenuFolders(config.SdFolder)
+	menuFolders = append(menuFolders, config.SdFolder)
+	syncFiles := getSyncFiles(menuFolders)
+	var syncs []syncFile
+
+	for _, path := range syncFiles {
+		sf, err := readSyncFile(path)
+		if err != nil {
+			if *verbose || !*update {
+				fmt.Printf("Error reading %s: %s\n", path, err)
+			}
+			continue
+		}
+		syncs = append(syncs, sf)
+	}
+
+	return syncs
 }
 
 func main() {
@@ -108,21 +134,7 @@ func main() {
 	if *verbose || !*update {
 		fmt.Print("Searching for sync files... ")
 	}
-	menuFolders := mister.GetMenuFolders(config.SdFolder)
-	menuFolders = append(menuFolders, config.SdFolder)
-	syncFiles := getSyncFiles(menuFolders)
-	var syncs []*syncFile
-
-	for _, path := range syncFiles {
-		sf, err := readSyncFile(path)
-		if err != nil {
-			if *verbose || !*update {
-				fmt.Printf("Error reading %s: %s\n", path, err)
-			}
-			continue
-		}
-		syncs = append(syncs, sf)
-	}
+	syncs := findSyncFiles(verbose, update)
 
 	if len(syncs) == 0 {
 		if *verbose || !*update {
@@ -161,7 +173,7 @@ func main() {
 	if *verbose || !*update {
 		fmt.Print("Building games index... ")
 	}
-	index, err := makeIndex(cfg, syncs)
+	err = makeIndex(cfg, syncs)
 	if err != nil {
 		if *verbose || !*update {
 			fmt.Printf("error generating index: %s\n", err)
@@ -195,7 +207,7 @@ func main() {
 			if *verbose || !*update {
 				fmt.Print("- " + game.name + "... ")
 			}
-			file, found, err := tryLinkGame(cfg, sync, game, index)
+			file, found, err := tryLinkGame(cfg, sync, game)
 			if *verbose || !*update {
 				if err != nil {
 					fmt.Printf("error: %s\n", err)
