@@ -3,14 +3,15 @@ package games
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"os"
+	"path/filepath"
+
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
-	"net/http"
-	"os"
-	"path/filepath"
 )
 
 type fakeDb struct {
@@ -36,8 +37,9 @@ func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
 	case tracker.EventActionGameStop:
 		websocket.Broadcast(f.logger, "gameRunning:")
 		SendAnnounceGame(f.cfg, f.logger, &ev)
+	case tracker.EventActionMenuNavigation:
+		websocket.Broadcast(f.logger, "menuNavigation:"+ev.Target)
 	}
-
 	return nil
 }
 

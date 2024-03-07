@@ -1606,8 +1606,7 @@ Example response:
 
 ## WebSocket
 
-Remote's WebSocket interface is available on the `/ws` endpoint. It's used for monitoring game and core status of the
-MiSTer, search indexing status, and a more granular lower latency keyboard input method.
+Remote's WebSocket interface is available on the `/ws` endpoint. It's used for monitoring game and core and current menu status of the MiSTer, search indexing status, and a more granular lower latency keyboard input method.
 
 Multiple WebSocket connections are supported.
 
@@ -1647,6 +1646,15 @@ Format: `gameRunning:{system}/{name}`
 | `name`    | string | Filename of currently running game. |
 
 This field is blank if no game is running.
+
+#### Menu status
+
+Format: `menuNavigation:{folder}/{menuItem}`
+
+| Attribute | Type   | Description |
+|-----------|---------|------------------|
+| `folder`  | string | The folder you are currently browsing, _arcade or _console for rbg, /games/genesis when browsing roms in the genesis core |
+| `menuItem`| string | The actual name of the mra or rbf file or rom file you are browsing |
 
 ### Events
 
