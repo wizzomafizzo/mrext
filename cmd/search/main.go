@@ -81,18 +81,15 @@ func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 }
 
 func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
-	options := [][2]string{
-		{"Rescan games...", ""},
-	}
-
-	button, selected, err := curses.KeyValueListPicker(stdscr, curses.ListPickerOpts{
+	button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
 		Title:         "Options",
 		Buttons:       []string{"Select", "Back"},
 		DefaultButton: 0,
+		ActionButton:  0,
 		ShowTotal:     false,
 		Width:         70,
 		Height:        18,
-	}, options)
+	}, []string{"Update games database"})
 
 	if err != nil {
 		return err
@@ -182,8 +179,9 @@ func searchWindow(cfg *config.UserConfig, stdscr *gc.Window, query string, launc
 		}
 		button, selected, err := curses.ListPicker(stdscr, curses.ListPickerOpts{
 			Title:         titleLabel,
-			Buttons:       []string{"PgUp", "PgDn", launchLabel, "Options", "Cancel"},
+			Buttons:       []string{"PgUp", "PgDn", launchLabel, "Cancel"},
 			DefaultButton: 2,
+			ActionButton:  2,
 			ShowTotal:     true,
 			Width:         70,
 			Height:        18,

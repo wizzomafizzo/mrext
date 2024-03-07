@@ -12,6 +12,7 @@ type ListPickerOpts struct {
 	Title         string
 	Buttons       []string
 	DefaultButton int
+	ActionButton  int
 	ShowTotal     bool
 	Width         int
 	Height        int
@@ -137,9 +138,6 @@ func ListPicker(stdscr *gc.Window, opts ListPickerOpts, items []string) (int, in
 		// location indicators
 		if opts.ShowTotal {
 			totalStatus := fmt.Sprintf("%*d/%d", len(fmt.Sprint(len(items))), selectedItem+1, len(items))
-			if err != nil {
-				return -1, -1, err
-			}
 			win.MovePrint(0, 2, totalStatus)
 		}
 
@@ -192,7 +190,7 @@ func ListPicker(stdscr *gc.Window, opts ListPickerOpts, items []string) (int, in
 		case gc.KEY_PAGEDOWN:
 			pageDown()
 		case gc.KEY_ENTER, 10, 13:
-			if selectedButton == 2 {
+			if selectedButton == opts.ActionButton {
 				return selectedButton, selectedItem, nil
 			} else if opts.Buttons[selectedButton] == pgUpName {
 				pageUp()
