@@ -2015,8 +2015,17 @@ var Systems = map[string]System{
 		Rbf:          "_Computer/PCXT",
 		Slots: []Slot{
 			{
-				Label: "FDD Image",
-				Exts:  []string{".img", ".ima"},
+				Label: "Floppy A:",
+				Exts:  []string{".img", ".ima", ".vfd"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
+					Index:  0,
+				},
+			},
+			{
+				Label: "Floppy B:",
+				Exts:  []string{".img", ".ima", ".vfd"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "s",
@@ -2024,12 +2033,21 @@ var Systems = map[string]System{
 				},
 			},
 			{
-				Label: "HDD Image",
-				Exts:  []string{".img"},
+				Label: "IDE 0-0",
+				Exts:  []string{".vhd"},
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "s",
-					Index:  0,
+					Index:  2,
+				},
+			},
+			{
+				Label: "IDE 0-1",
+				Exts:  []string{".vhd"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
+					Index:  3,
 				},
 			},
 		},
