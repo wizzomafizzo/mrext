@@ -200,6 +200,7 @@ func searchNamesGeneric(
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
 	var results []SearchResult
 
@@ -273,4 +274,42 @@ func SearchNamesRegexp(systems []games.System, query string) ([]SearchResult, er
 
 		return r.MatchString(keyName)
 	})
+}
+
+func SystemNamesIndexed(system games.System) bool {
+	if !DbExists() {
+		return false
+	}
+
+	db, err := open(&bolt.Options{ReadOnly: true})
+	if err != nil {
+		return false
+	}
+	defer db.Close()
+
+	var exists bool
+	err = db.View(func(tx *bolt.Tx) error {
+		bn := tx.Bucket([]byte(BucketNames))
+		c := bn.Cursor()
+
+		pre := []byte(system.Id + ":")
+		nameIdx := bytes.Index(pre, []byte(":"))
+
+		for k, _ := c.Seek(pre); k != nil && bytes.HasPrefix(k, pre); k, _ = c.Next() {
+			keyName := string(k[nameIdx+1:])
+
+			if len(keyName) > 0 {
+				exists = true
+				break
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return false
+	}
+
+	return exists
 }
