@@ -205,7 +205,7 @@ func main() {
 			fmt.Printf("%s=%s\n", key, value)
 		}
 	} else if *genDb {
-		count, err := gamesdb.NewNamesIndex(selectedSystems, func(status gamesdb.IndexStatus) {
+		count, err := gamesdb.NewNamesIndex(&config.UserConfig{}, selectedSystems, func(status gamesdb.IndexStatus) {
 			if status.Step == 1 {
 				fmt.Printf("searching games paths for %d systems\n", status.Total-2)
 			} else if status.Step == status.Total {

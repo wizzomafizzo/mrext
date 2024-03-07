@@ -107,6 +107,7 @@ type IndexStatus struct {
 //
 // Returns the total number of files indexed.
 func NewNamesIndex(
+	cfg *config.UserConfig,
 	systems []games.System,
 	update func(IndexStatus),
 ) (int, error) {
@@ -123,7 +124,7 @@ func NewNamesIndex(
 
 	update(status)
 	systemPaths := make(map[string][]string, 0)
-	for _, v := range games.GetSystemPaths(&config.UserConfig{}, systems) {
+	for _, v := range games.GetSystemPaths(cfg, systems) {
 		systemPaths[v.System.Id] = append(systemPaths[v.System.Id], v.Path)
 	}
 
