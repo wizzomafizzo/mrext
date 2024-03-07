@@ -754,8 +754,10 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| FDD Image | .img, .ima | 1 | s | 1 |
-| HDD Image | .img | 1 | s | 0 |
+| Floppy A: | .img, .ima, .vfd | 1 | s | 0 |
+| Floppy B: | .img, .ima, .vfd | 1 | s | 1 |
+| IDE 0-0 | .vhd | 1 | s | 2 |
+| IDE 0-1 | .vhd | 1 | s | 3 |
 
 [Back to top](#systems)
 
