@@ -29,9 +29,7 @@ func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 	if err != nil {
 		return err
 	}
-	defer func(win *gc.Window) {
-		_ = win.Delete()
-	}(win)
+	defer win.Delete()
 
 	_, width := win.MaxYX()
 
@@ -52,32 +50,70 @@ func generateIndexWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 		win.MovePrint(1, 2, strings.Repeat(" ", width-4))
 	}
 
-	_, err = gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(is gamesdb.IndexStatus) {
-		clearText()
-
-		systemName := is.SystemId
-		system, err := games.GetSystem(is.SystemId)
-		if err == nil {
-			systemName = system.Name
-		}
-
-		text := fmt.Sprintf("Indexing %s...", systemName)
-		if is.Step == 1 {
-			text = "Finding games folders..."
-		} else if is.Step == is.Total {
-			text = "Writing database to disk..."
-		}
-
-		win.MovePrint(1, 2, text)
-		drawProgressBar(is.Step, is.Total)
-		win.NoutRefresh()
-		_ = gc.Update()
-	})
-	if err != nil {
-		return err
+	status := struct {
+		Step        int
+		Total       int
+		SystemName  string
+		DisplayText string
+		Complete    bool
+		Error       error
+	}{
+		Step:        1,
+		Total:       100,
+		DisplayText: "Finding games folders...",
 	}
 
-	return nil
+	go func() {
+		_, err = gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(is gamesdb.IndexStatus) {
+			systemName := is.SystemId
+			system, err := games.GetSystem(is.SystemId)
+			if err == nil {
+				systemName = system.Name
+			}
+
+			text := fmt.Sprintf("Indexing %s...", systemName)
+			if is.Step == 1 {
+				text = "Finding games folders..."
+			} else if is.Step == is.Total {
+				text = "Writing database to disk..."
+			}
+
+			status.Step = is.Step
+			status.Total = is.Total
+			status.SystemName = systemName
+			status.DisplayText = text
+		})
+
+		status.Error = err
+		status.Complete = true
+	}()
+
+	spinnerSeq := []string{"|", "/", "-", "\\"}
+	spinnerCount := 0
+
+	for {
+		if status.Complete || status.Error != nil {
+			break
+		}
+
+		clearText()
+
+		spinnerCount++
+		if spinnerCount == len(spinnerSeq) {
+			spinnerCount = 0
+		}
+
+		win.MovePrint(1, width-3, spinnerSeq[spinnerCount])
+
+		win.MovePrint(1, 2, status.DisplayText)
+		drawProgressBar(status.Step, status.Total)
+
+		win.NoutRefresh()
+		_ = gc.Update()
+		gc.Nap(100)
+	}
+
+	return status.Error
 }
 
 func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
@@ -89,7 +125,7 @@ func mainOptionsWindow(cfg *config.UserConfig, stdscr *gc.Window) error {
 		ShowTotal:     false,
 		Width:         70,
 		Height:        18,
-	}, []string{"Update games database"})
+	}, []string{"Update games database..."})
 
 	if err != nil {
 		return err

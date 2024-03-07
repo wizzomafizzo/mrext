@@ -12,7 +12,6 @@ type Coords struct {
 }
 
 type SetupWindowError struct {
-	error
 	Ctx error
 }
 

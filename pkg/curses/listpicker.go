@@ -153,6 +153,8 @@ func ListPicker(stdscr *gc.Window, opts ListPickerOpts, items []string) (int, in
 			win.MoveAddChar(height-3, width-3, gc.ACS_HLINE)
 		}
 
+		win.Move(viewStart+selectedItem+1, width-3)
+
 		win.NoutRefresh()
 		gc.Update()
 
