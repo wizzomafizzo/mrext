@@ -13,6 +13,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 )
 
@@ -93,6 +94,8 @@ func main() {
 	setBgMode := flag.String("set-bg-mode", "", "set menu background mode")
 	testMdns := flag.Bool("test-mdns", false, "test mDNS service")
 	getUboot := flag.Bool("get-uboot", false, "get uboot params")
+	genDb := flag.Bool("generate-db", false, "generate database")
+	searchDb := flag.String("search-db", "", "search database")
 	flag.Parse()
 
 	start := time.Now()
@@ -200,6 +203,38 @@ func main() {
 		}
 		for key, value := range params {
 			fmt.Printf("%s=%s\n", key, value)
+		}
+	} else if *genDb {
+		count, err := gamesdb.NewNamesIndex(selectedSystems, func(status gamesdb.IndexStatus) {
+			if status.Step == 1 {
+				fmt.Printf("searching games paths for %d systems\n", status.Total-2)
+			} else if status.Step == status.Total {
+				fmt.Printf("generating database for %d games\n", status.Files)
+			} else {
+				fmt.Printf(
+					"indexing system %s: %d/%d (%d)\n",
+					status.SystemId,
+					status.Step,
+					status.Total,
+					status.Files,
+				)
+			}
+		})
+		if err != nil {
+			fmt.Printf("error generating database: %s\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("indexed %d games\n", count)
+	} else if *searchDb != "" {
+		files, err := gamesdb.SearchNamesWords(selectedSystems, *searchDb)
+		if err != nil {
+			fmt.Printf("error searching database: %s\n", err)
+			os.Exit(1)
+		}
+
+		for _, file := range files {
+			fmt.Printf("%s\n", file.Path)
 		}
 	} else {
 		flag.Usage()
