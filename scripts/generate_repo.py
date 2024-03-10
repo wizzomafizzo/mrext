@@ -5,6 +5,7 @@ import json
 import hashlib
 import sys
 import time
+import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
@@ -25,8 +26,8 @@ EXTERNAL_FILES = [
     "releases/external/bgm.sh",
     "releases/external/favorites.sh",
     "releases/external/gamesmenu.sh",
-    "releases/external/tapto.sh",
-    "releases/external/taptui.sh",
+    "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
+    "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
 ]
 
 DB_ID = "mrext/{}"
@@ -127,11 +128,18 @@ def create_all_db(tag: str) -> RepoDb:
             files[key] = file_entry
 
     for file in EXTERNAL_FILES:
+        if file.startswith("https://"):
+            dl_to = os.path.join(DL_FOLDER, os.path.basename(file))
+            urllib.request.urlretrieve(file, dl_to)
+            url = file
+            file = dl_to
+        else:
+            url = EXTERNAL_URL.format(os.path.basename(file))
+        
         local_path = file
         key = "Scripts/{}".format(os.path.basename(local_path))
         size = os.stat(local_path).st_size
         md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
-        url = EXTERNAL_URL.format(os.path.basename(local_path))
 
         file_entry = RepoDbFilesItem(
             hash=md5, size=size, url=url, overwrite=None, reboot=False, tags=[Path(local_path).stem]
