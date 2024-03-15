@@ -4,6 +4,8 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
+<a href="https://apps.apple.com/au/app/wizzo-remote/id6462999902"><img src="https://github.com/wizzomafizzo/mrext/assets/442478/2fa137a2-7b37-4c70-9495-960032ee8590" alt="Download iOS App" title="Download iOS App" width="140"></a>
+
 <a href="https://play.google.com/store/apps/details?id=net.mrext.remote"><img src="https://github.com/steverichey/google-play-badge-svg/raw/master/img/en_get.svg" alt="Download Android App" title="Download Android App" width="140"></a>
 
 [Android APK (Sideload)](https://github.com/wizzomafizzo/mrext-client/releases/latest/download/mrext-client.apk)
