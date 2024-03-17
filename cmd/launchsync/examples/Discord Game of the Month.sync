@@ -107,6 +107,6 @@ system = Amiga
 match = Indiana Jones & the Fate of Atlantis
 
 [2024-03 Ys I & II]
-system = TurboGrafx-16 CD
+system = TurboGrafx16CD
 match = ~^Ys Book I & II (USA)$
 match = Ys Book I & I
