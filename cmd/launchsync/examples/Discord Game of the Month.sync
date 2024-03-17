@@ -1,7 +1,7 @@
 name = Discord Game of the Month
 author = MiSTer Discord Community
 url = https://github.com/wizzomafizzo/mrext/raw/main/cmd/launchsync/examples/Discord Game of the Month.sync
-updated = 2023-08-31 00:00
+updated = 2024-03-16 00:00
 
 [2022-04 Crystalis]
 system = NES
@@ -81,3 +81,32 @@ match = Castlevania - Aria of Sorrow
 system = NES
 match = Mr. Gimmick
 match = Gimmick
+
+[2023-09 DuckTales]
+system = NES
+match = ~^DuckTales (USA)$
+match = DuckTales
+
+[2023-10 Castlevania: Symphony of the Night]
+system = PSX
+match = ~^Castlevania - Symphony of the Night (USA)$
+match = Castlevania - Symphony of the Night
+
+[2023-11 Secret of Evermore]
+system = SNES
+match = ~^Secret of Evermore (USA)$
+match = Secret of Evermor
+
+[2023-12 Super Mario RPG: Legend of the Seven Stars]
+system = SNES
+match = ~^Super Mario RPG - Legend of the Seven Stars (USA)$
+match = Super Mario RPG - Legend of the Seven Stars
+
+[2024-02 Indiana Jones & the Fate of Atlantis]
+system = Amiga
+match = Indiana Jones & the Fate of Atlantis
+
+[2024-03 Ys I & II]
+system = TurboGrafx16CD
+match = ~^Ys Book I & II (USA)$
+match = Ys Book I & I
