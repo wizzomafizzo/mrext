@@ -35,7 +35,7 @@ func DbExists() bool {
 // Open the gamesdb with the given options. If the database does not exist it
 // will be created and the buckets will be initialized.
 func open(options *bolt.Options) (*bolt.DB, error) {
-	err := os.MkdirAll(filepath.Base(config.GamesDb), 0755)
+	err := os.MkdirAll(filepath.Dir(config.GamesDb), 0755)
 	if err != nil {
 		return nil, err
 	}
