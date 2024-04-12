@@ -109,7 +109,7 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 
 	// if there's an iso in the same folder, mount it too
 	for _, file := range files {
-		if strings.HasSuffix(strings.ToLower(file.Name()), ".iso") && file.Name() != filename {
+		if (strings.HasSuffix(strings.ToLower(file.Name()), ".iso") || strings.HasSuffix(strings.ToLower(file.Name()), ".chd")) && file.Name() != filename {
 			mgl += fmt.Sprintf(
 				"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
 				mglDef.Delay,
