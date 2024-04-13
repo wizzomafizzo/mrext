@@ -107,6 +107,20 @@ func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
 		return systems[0], nil
 	}
 
+	// check for system matches by file extension if possible
+	if filepath.Ext(path) != "" {
+		filtered := []System{}
+		for _, system := range systems {
+			if MatchSystemFile(system, path) {
+				filtered = append(filtered, system)
+			}
+		}
+
+		if len(filtered) > 0 {
+			systems = filtered
+		}
+	}
+
 	// prefer the system with a setname
 	for _, system := range systems {
 		if system.SetName != "" {
