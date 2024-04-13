@@ -16,6 +16,7 @@ RUN apt-get install build-essential git curl wget -y && \
 
 # install mplayer dependencies
 RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
+RUN apt-get install -y gnutls-dev openssl libssh2-1-dev libc-ares-dev
 
 # install libnfc dependencies
 RUN apt-get install -y libusb-dev libtool autoconf automake
