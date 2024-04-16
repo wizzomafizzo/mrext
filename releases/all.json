@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1710430920,
+    "timestamp": 1713266353,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "1f76cf3c3fd93d9da8192f320acfe727",
@@ -102,8 +102,8 @@
             ]
         },
         "Scripts/tapto.sh": {
-            "hash": "b6380ecc18cbcf6106e1402052c101fc",
-            "size": 5803772,
+            "hash": "651c16fdb7cfbb1ea204ed4894ca8f0d",
+            "size": 7194240,
             "url": "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
             "reboot": false,
             "tags": [
@@ -111,8 +111,8 @@
             ]
         },
         "Scripts/taptui.sh": {
-            "hash": "f924a5a3353f1af359bdb5712f52fcc9",
-            "size": 52008,
+            "hash": "a28e384e5ddf0baa9b64c9a795a50a4a",
+            "size": 59554,
             "url": "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
             "reboot": false,
             "tags": [
