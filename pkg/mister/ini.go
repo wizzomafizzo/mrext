@@ -344,7 +344,7 @@ func (mi *MisterIni) RemoveKey(key string) error {
 func RecentsOptionEnabled() (bool, error) {
 	iniFile, err := GetActiveMisterIni()
 	if err != nil {
-		return false, nil
+		return true, nil
 	}
 
 	err = iniFile.Load()
