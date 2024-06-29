@@ -1,65 +1,65 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1716302149,
+    "timestamp": 1719667414,
     "files": {
         "Scripts/lastplayed.sh": {
-            "hash": "1f76cf3c3fd93d9da8192f320acfe727",
-            "size": 3419404,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/lastplayed.sh",
+            "hash": "f445618e0de3ec6095fa3447170e32aa",
+            "size": 3435904,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/lastplayed.sh",
             "reboot": false,
             "tags": [
                 "lastplayed"
             ]
         },
         "Scripts/launchseq.sh": {
-            "hash": "4dbcb069c3c2ba578aff7416d89e6255",
-            "size": 2804936,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/launchseq.sh",
+            "hash": "a8bf22a8c270b7d7d5d61007215cfcf5",
+            "size": 2853208,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/launchseq.sh",
             "reboot": false,
             "tags": [
                 "launchseq"
             ]
         },
         "Scripts/launchsync.sh": {
-            "hash": "9a854b2828f8069b383ee0efc70cee9c",
-            "size": 4388560,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/launchsync.sh",
+            "hash": "79dd283205bc541108ad9ab5ec0d8515",
+            "size": 4445140,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/launchsync.sh",
             "reboot": false,
             "tags": [
                 "launchsync"
             ]
         },
         "Scripts/playlog.sh": {
-            "hash": "ee90de3dc9946a8f9bcdabacab476afc",
-            "size": 7421624,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/playlog.sh",
+            "hash": "96b336487544fc4b700d25d97320b795",
+            "size": 7436300,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/playlog.sh",
             "reboot": false,
             "tags": [
                 "playlog"
             ]
         },
         "Scripts/random.sh": {
-            "hash": "8c1ff1790edea4640dfaaa7c379fd14c",
-            "size": 2998832,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/random.sh",
+            "hash": "af5d1de53148a29aa45037592f7e4b29",
+            "size": 3045708,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/random.sh",
             "reboot": false,
             "tags": [
                 "random"
             ]
         },
         "Scripts/remote.sh": {
-            "hash": "be44b94abdb418e0434d164332a9d9c6",
-            "size": 7879660,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/remote.sh",
+            "hash": "80a51512449dedc935a42e5b5fc98abb",
+            "size": 7939456,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/remote.sh",
             "reboot": true,
             "tags": [
                 "remote"
             ]
         },
         "Scripts/search.sh": {
-            "hash": "135f4df5bf0c6c25a9d3d620c560cc04",
-            "size": 3985660,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/search.sh",
+            "hash": "48995f717ac03b9550703a16ab9a4696",
+            "size": 4010488,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/search.sh",
             "reboot": false,
             "tags": [
                 "search"
@@ -68,7 +68,7 @@
         "Scripts/pocketbackup.sh": {
             "hash": "148e98551ca2bd5401f5b1f5c6082780",
             "size": 10802,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240124-1/pocketbackup.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20240629-1/pocketbackup.sh",
             "reboot": false,
             "tags": [
                 "pocketbackup"
