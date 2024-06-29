@@ -39,47 +39,55 @@ Control the MiSTer from any device on your network. Remote is a web-based interf
 <img src="https://github.com/wizzomafizzo/tapto/raw/main/assets/images/logo/logo-background.svg" align="right" width="35%" />
 
 ## TapTo
+
 Launch games, cores and dynamic commands using NFC tags or cards. Uses easily available and cheap USB NFC card readers.
 
 <a href="https://github.com/wizzomafizzo/tapto"><img src="docs/images/readme.svg" alt="Readme TapTo" title="Readme TapTo" width="140"></a>
 
 ## BGM
+
 Play your own music in the MiSTer menu. BGM is a highly configurable background music player that automatically pauses when you're playing games. Supports many common audio formats including internet radio streams.
 
 <a href="https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh"><img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140"></a>
 <a href="https://github.com/wizzomafizzo/MiSTer_BGM"><img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140"></a>
 
 ## Favorites
+
 Create and manage shortcuts for your favorite games. Favorites allows you to pick any game or core from your system and automatically generate a shortcut to it in the MiSTer menu.
 
 <a href="https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh"><img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140"></a>
 <a href="https://github.com/wizzomafizzo/MiSTer_Favorites"><img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140"></a>
 
 ## GamesMenu
+
 Browse your entire collection from the main MiSTer menu. GamesMenu indexes all your games and generates a set of shortcuts in the menu mirroring your folder layout.
 
 <a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
 <a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
 
 ## LaunchSync
+
 Create shareable and subscribable game playlists. LaunchSync automatically generates working menu shortcuts from custom playlist files, with the ability to keep them up-to-date with the author's live version.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh"><img src="docs/images/download.svg" alt="Download LaunchSync" title="Download LaunchSync" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/launchsync.md"><img src="docs/images/readme.svg" alt="Readme LaunchSync" title="Readme LaunchSync" width="140"></a>
 
 ## LastPlayed
+
 Automatically generate dynamic shortcuts in the MiSTer menu.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh"><img src="docs/images/download.svg" alt="Download LastPlayed" title="Download LastPlayed" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/lastplayed.md"><img src="docs/images/readme.svg" alt="Readme LastPlayed" title="Readme LastPlayed" width="140"></a>
 
 ## PlayLog
+
 Track and report on what games you've been playing on your MiSTer.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"><img src="docs/images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/playlog.md"><img src="docs/images/readme.svg" alt="Readme PlayLog" title="Readme PlayLog" width="140"></a>
 
 ## Random
+
 Instantly launch a random game in your collection from the Scripts menu.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh"><img src="docs/images/download.svg" alt="Download Random" title="Download Random" width="140"></a>
@@ -88,16 +96,11 @@ Instantly launch a random game in your collection from the Scripts menu.
 <img src="docs/images/search.gif" align="right" width="35%" />
 
 ## Search
-Search for and launch games from your collection. Searching is *fast* and great for discovering games.
+
+Search for and launch games from your collection. Searching is _fast_ and great for discovering games.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh"><img src="docs/images/download.svg" alt="Download Search" title="Download Search" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/search.md"><img src="docs/images/readme.svg" alt="Readme Search" title="Readme Search" width="140"></a>
-
-## PocketBackup
-Backup your Analogue Pocket saves, settings and screenshots to your MiSTer.
-
-<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/pocketbackup.sh"><img src="docs/images/download.svg" alt="Download PocketBackup" title="Download PocketBackup" width="140"></a>
-<a href="https://github.com/wizzomafizzo/mrext/tree/main/docs/pocketbackup.md"><img src="docs/images/readme.svg" alt="Readme PocketBackup" title="Readme PocketBackup" width="140"></a>
 
 ## Other Projects
 
@@ -120,7 +123,7 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
   Adds high quality MiSTer-themed boot screens to cores which support loadable boot roms.
 
 - [mistercon](https://github.com/tatsutron/mistercon)
-    
+
   A MiSTer frontend for Android. Browse your collection and launch games from your phone.
 
 - [VIDEO PRESETS by Robby](https://github.com/RGarciaLago/VIDEO_PRESETS_by_Robby)
@@ -224,7 +227,7 @@ Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if you'
   Update script for Flynn's Top 300 pack on the AO486 core.
 
 - [Update All](https://github.com/theypsilon/Update_All_MiSTer)
-  
+
   If you're reading this, you already use it. Don't forget to check the advanced options.
 
 - [Update tty2xxx](https://github.com/ojaksch/MiSTer_update_tty2xxx)
