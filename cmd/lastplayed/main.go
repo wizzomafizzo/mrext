@@ -312,7 +312,7 @@ func main() {
 	if err != nil {
 		logger.Error("error checking recents option: %s", err)
 		fmt.Println("Could not read the MiSTer.ini file. Make sure the \"recents\" option is enabled if lastplayed doesn't work.")
-	} else if recents {
+	} else if !recents {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
 		fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")

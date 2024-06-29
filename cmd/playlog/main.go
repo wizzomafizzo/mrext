@@ -122,7 +122,7 @@ func main() {
 	if err != nil {
 		logger.Error("error checking recents option: %s", err)
 		fmt.Println("Could not read the MiSTer.ini file. Make sure the \"recents\" option is enabled if playlog doesn't work.")
-	} else if recents {
+	} else if !recents {
 		logger.Error("recents option not enabled, exiting...")
 		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
 		os.Exit(1)
