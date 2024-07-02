@@ -51,6 +51,8 @@ var GamesFolders = []string{
 	"/media/usb4",
 	"/media/usb5/games",
 	"/media/usb5",
+	"/media/network/games",
+	"/media/network",
 	"/media/fat/cifs/games",
 	"/media/fat/cifs",
 	"/media/fat/games",
