@@ -108,10 +108,10 @@ func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) er
 	if err != nil {
 		return err
 	} else {
-		go func() {
-			time.Sleep(5 * time.Second)
-			_ = os.Remove(tmpFile)
-		}()
+		// go func() {
+		// 	time.Sleep(5 * time.Second)
+		// 	_ = os.Remove(tmpFile)
+		// }()
 	}
 
 	return launchFile(tmpFile)
