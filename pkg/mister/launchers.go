@@ -2,7 +2,6 @@ package mister
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -57,9 +56,8 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 	return mgl, nil
 }
 
-// TODO: move to utils?
-func writeTempFile(content string, ext string) (string, error) {
-	tmpFile, err := ioutil.TempFile("", "*."+ext)
+func writeTempFile(content string) (string, error) {
+	tmpFile, err := os.Open(config.LastLaunchFile)
 	if err != nil {
 		return "", err
 	}
@@ -104,14 +102,9 @@ func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) er
 		return err
 	}
 
-	tmpFile, err := writeTempFile(mgl, "mgl")
+	tmpFile, err := writeTempFile(mgl)
 	if err != nil {
 		return err
-	} else {
-		// go func() {
-		// 	time.Sleep(5 * time.Second)
-		// 	_ = os.Remove(tmpFile)
-		// }()
 	}
 
 	return launchFile(tmpFile)
@@ -125,7 +118,7 @@ func LaunchShortCore(path string) error {
 		path,
 	)
 
-	tmpFile, err := writeTempFile(mgl, "mgl")
+	tmpFile, err := writeTempFile(mgl)
 	if err != nil {
 		return err
 	}
