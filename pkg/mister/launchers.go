@@ -57,7 +57,7 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 }
 
 func writeTempFile(content string) (string, error) {
-	tmpFile, err := os.Open(config.LastLaunchFile)
+	tmpFile, err := os.Create(config.LastLaunchFile)
 	if err != nil {
 		return "", err
 	}
