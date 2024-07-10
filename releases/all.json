@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1720543684,
+    "timestamp": 1720589607,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "f445618e0de3ec6095fa3447170e32aa",
@@ -102,8 +102,8 @@
             ]
         },
         "Scripts/tapto.sh": {
-            "hash": "204731b87026e6b91da52f5bdcb434cc",
-            "size": 8981216,
+            "hash": "acddf3c0ae476167548ed223380638b7",
+            "size": 8883628,
             "url": "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
             "reboot": false,
             "tags": [
