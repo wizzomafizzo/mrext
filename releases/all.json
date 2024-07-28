@@ -100,27 +100,49 @@
             "tags": [
                 "gamesmenu"
             ]
-        },
-        "Scripts/tapto.sh": {
-            "hash": "acddf3c0ae476167548ed223380638b7",
-            "size": 8883628,
-            "url": "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
-            "reboot": false,
-            "tags": [
-                "tapto"
-            ]
-        },
-        "Scripts/taptui.sh": {
-            "hash": "3e8575b68724079046eb3387305593e4",
-            "size": 78812,
-            "url": "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
-            "reboot": false,
-            "tags": [
-                "taptui"
-            ]
         }
     },
     "folders": {
         "Scripts/": {}
+    },
+    "zips": {
+        "tapto": {
+            "contents_file": {
+                "hash": "4075e2ab4a7d8be56c59503e90a347f9",
+                "size": 3869313,
+                "url": "https://github.com/wizzomafizzo/tapto/releases/download/v1.5.1/tapto-mister_arm-1.5.1.zip"
+            },
+            "description": "Extracting TapTo release",
+            "internal_summary": {
+                "files": {
+                    "Scripts/tapto.sh": {
+                        "hash": "e774c55ffc4575b987c3204132b828c6",
+                        "size": 8877828,
+                        "reboot": true,
+                        "tags": [
+                            "tapto"
+                        ],
+                        "zip_id": "tapto",
+                        "zip_path": "tapto.sh"
+                    },
+                    "Scripts/taptui.sh": {
+                        "hash": "3e8575b68724079046eb3387305593e4",
+                        "size": 78812,
+                        "reboot": true,
+                        "tags": [
+                            "tapto"
+                        ],
+                        "zip_id": "tapto",
+                        "zip_path": "taptui.sh"
+                    }
+                },
+                "folders": {
+                    "Scripts/": {
+                        "zip_id": "tapto"
+                    }
+                }
+            },
+            "kind": "extract_single_files"
+        }
     }
 }
