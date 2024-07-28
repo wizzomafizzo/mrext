@@ -26,8 +26,8 @@ EXTERNAL_FILES = [
     "releases/external/bgm.sh",
     "releases/external/favorites.sh",
     "releases/external/gamesmenu.sh",
-    "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
-    "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
+    # "https://github.com/wizzomafizzo/tapto/releases/latest/download/tapto.sh",
+    # "https://github.com/wizzomafizzo/tapto/releases/latest/download/taptui.sh",
 ]
 
 DB_ID = "mrext/{}"
