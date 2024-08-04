@@ -143,10 +143,10 @@ func LaunchGame(cfg *config.UserConfig, system games.System, path string) error 
 			SetActiveGame(path)
 		}
 	default:
-		rbfs := games.SystemsWithRbf()
-		if _, ok := rbfs[system.Id]; ok {
-			system.Rbf = rbfs[system.Id].MglName
-		}
+		// rbfs := games.SystemsWithRbf()
+		// if _, ok := rbfs[system.Id]; ok {
+		// 	system.Rbf = rbfs[system.Id].MglName
+		// }
 
 		err := launchTempMgl(cfg, &system, path)
 		if err != nil {
