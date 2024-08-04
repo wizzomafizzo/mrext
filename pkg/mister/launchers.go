@@ -56,7 +56,7 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 		return "", err
 	}
 
-	mgl += fmt.Sprintf("<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n", mglDef.Delay, mglDef.Method, mglDef.Index, path)
+	mgl += fmt.Sprintf("<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n", mglDef.Delay, mglDef.Method, mglDef.Index, path)
 	mgl += "</mistergamedescription>"
 	return mgl, nil
 }
