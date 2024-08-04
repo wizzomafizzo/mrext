@@ -34,7 +34,12 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 	mgl := fmt.Sprintf("<mistergamedescription>\n\t<rbf>%s</rbf>\n", system.Rbf)
 
 	if system.SetName != "" {
-		mgl += fmt.Sprintf("\t<setname>%s</setname>\n", system.SetName)
+		sameDir := ""
+		if system.SetNameSameDir {
+			sameDir = " same_dir=\"1\""
+		}
+
+		mgl += fmt.Sprintf("\t<setname%s>%s</setname>\n", sameDir, system.SetName)
 	}
 
 	if path == "" {
@@ -143,11 +148,6 @@ func LaunchGame(cfg *config.UserConfig, system games.System, path string) error 
 			SetActiveGame(path)
 		}
 	default:
-		// rbfs := games.SystemsWithRbf()
-		// if _, ok := rbfs[system.Id]; ok {
-		// 	system.Rbf = rbfs[system.Id].MglName
-		// }
-
 		err := launchTempMgl(cfg, &system, path)
 		if err != nil {
 			return err

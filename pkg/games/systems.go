@@ -60,16 +60,17 @@ type Slot struct {
 }
 
 type System struct {
-	Id           string
-	Name         string // US
-	Category     string
-	ReleaseDate  string // US
-	Manufacturer string
-	Alias        []string
-	SetName      string
-	Folder       []string
-	Rbf          string
-	Slots        []Slot
+	Id             string
+	Name           string // US
+	Category       string
+	ReleaseDate    string // US
+	Manufacturer   string
+	Alias          []string
+	SetName        string
+	SetNameSameDir bool
+	Folder         []string
+	Rbf            string
+	Slots          []Slot
 }
 
 // CoreGroups is a list of common MiSTer aliases that map back to a system.
