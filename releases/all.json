@@ -86,35 +86,29 @@
   "zips": {
     "tapto": {
       "contents_file": {
-        "hash": "4075e2ab4a7d8be56c59503e90a347f9",
-        "size": 3869313,
-        "url": "https://github.com/wizzomafizzo/tapto/releases/download/v1.5.1/tapto-mister_arm-1.5.1.zip"
+      "hash": "9a01a7c461c04ab28e5d98330926b08e",
+        "size": 3859864,
+        "url": "https://github.com/wizzomafizzo/tapto/releases/download/v2.0.0/tapto-mister_arm-2.0.0.zip"
       },
       "description": "Extracting TapTo release",
       "internal_summary": {
-        "files": {
-          "Scripts/tapto.sh": {
-            "hash": "e774c55ffc4575b987c3204132b828c6",
-            "size": 8877828,
-            "reboot": true,
-            "tags": ["tapto"],
-            "zip_id": "tapto",
-            "zip_path": "tapto.sh"
+          "files": {
+              "Scripts/tapto.sh": {
+                  "hash": "d17bd55ce15754c1dea184bbd390d400",
+                  "size": 8958388,
+                  "reboot": true,
+                  "tags": [
+                      "tapto"
+                  ],
+                  "zip_id": "tapto",
+                  "zip_path": "tapto.sh"
+              }
           },
-          "Scripts/taptui.sh": {
-            "hash": "3e8575b68724079046eb3387305593e4",
-            "size": 78812,
-            "reboot": true,
-            "tags": ["tapto"],
-            "zip_id": "tapto",
-            "zip_path": "taptui.sh"
+          "folders": {
+              "Scripts/": {
+                  "zip_id": "tapto"
+              }
           }
-        },
-        "folders": {
-          "Scripts/": {
-            "zip_id": "tapto"
-          }
-        }
       },
       "kind": "extract_single_files"
     }
