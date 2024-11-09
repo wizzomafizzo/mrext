@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1726303510,
+  "timestamp": 1731121661,
   "files": {
     "Scripts/lastplayed.sh": {
       "hash": "f445618e0de3ec6095fa3447170e32aa",
@@ -86,16 +86,16 @@
   "zips": {
     "tapto": {
       "contents_file": {
-      "hash": "9a01a7c461c04ab28e5d98330926b08e",
-        "size": 3859864,
-        "url": "https://github.com/wizzomafizzo/tapto/releases/download/v2.0.0/tapto-mister_arm-2.0.0.zip"
+      "hash": "40e285b18061097a9332f2faae92d701",
+        "size": 3862327,
+        "url": "https://github.com/wizzomafizzo/tapto/releases/download/v2.0.1/tapto-mister_arm-2.0.1.zip"
       },
       "description": "Extracting TapTo release",
       "internal_summary": {
           "files": {
               "Scripts/tapto.sh": {
-                  "hash": "d17bd55ce15754c1dea184bbd390d400",
-                  "size": 8958388,
+                  "hash": "6112462d97797044a2912e11ccb2d5ff",
+                  "size": 8966580,
                   "reboot": true,
                   "tags": [
                       "tapto"
