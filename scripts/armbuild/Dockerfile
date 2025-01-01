@@ -16,18 +16,7 @@ RUN apt-get install build-essential git curl wget -y && \
 
 # install mplayer dependencies
 RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
-RUN apt-get install -y gnutls-dev openssl libssh2-1-dev libc-ares-dev
-
-# install libnfc dependencies
-RUN apt-get install -y libusb-dev libtool autoconf automake
-# install custom version of libnfc
-RUN mkdir /internal && cd /internal && \
-    git clone --depth 1 https://github.com/sam1902/libnfc && \
-    cd libnfc && \
-    autoreconf -vis && \
-    ./configure && \
-    make -j "$(nproc)" && \
-    make install
+RUN apt-get install -y gnutls-bin gnutls-dev libssl-dev openssl libssh2-1-dev libc-ares-dev
 
 # drop permissions on output files
 RUN useradd -m -u 1000 build

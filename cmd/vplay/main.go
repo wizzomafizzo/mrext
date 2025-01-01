@@ -121,7 +121,7 @@ func cleanupRemotePlay() error {
 }
 
 func runMplayer(path string) error {
-	cmd := exec.Command(filepath.Join(playerDir, "mplayer"), path)
+	cmd := exec.Command(filepath.Join("nice", "-n", "-20", playerDir, "mplayer"), path)
 	cmd.Env = append(os.Environ(), "LD_LIBRARY_PATH="+playerDir)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
