@@ -82,7 +82,7 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 	// exception for Top 300 pack which uses 2 disks
 	if strings.HasSuffix(path, "IDE 0-1 Top 300 DOS Games.vhd") {
 		mgl += fmt.Sprintf(
-			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n",
 			mglDef.Delay,
 			mglDef.Method,
 			mglDef.Index,
@@ -90,7 +90,7 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 		)
 
 		mgl += fmt.Sprintf(
-			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n",
 			mglDef.Delay,
 			mglDef.Method,
 			mglDef.Index+1,
@@ -111,7 +111,7 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 	for _, file := range files {
 		if (strings.HasSuffix(strings.ToLower(file.Name()), ".iso") || strings.HasSuffix(strings.ToLower(file.Name()), ".chd")) && file.Name() != filename {
 			mgl += fmt.Sprintf(
-				"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+				"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n",
 				mglDef.Delay,
 				mglDef.Method,
 				4,
@@ -122,7 +122,7 @@ func hookAo486(_ *config.UserConfig, system System, path string) (string, error)
 	}
 
 	mgl += fmt.Sprintf(
-		"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+		"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n",
 		mglDef.Delay,
 		mglDef.Method,
 		mglDef.Index,
@@ -157,7 +157,7 @@ func hookNeoGeo(_ *config.UserConfig, _ System, path string) (string, error) {
 	// neogeo core allows launching zips and folders
 	if strings.HasSuffix(strings.ToLower(path), ".zip") || filepath.Ext(path) == "" {
 		return fmt.Sprintf(
-			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"%s\"/>\n",
+			"\t<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n",
 			1,
 			"f",
 			1,
