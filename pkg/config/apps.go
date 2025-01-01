@@ -21,4 +21,4 @@ const NfcLastScanFile = TempFolder + "/NFCSCAN"
 
 const GamesDb = ScriptsConfigFolder + "/mrext/games.db"
 
-const LastLaunchFile = TempFolder + "/LASTLAUNCH.mgl"
+const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
