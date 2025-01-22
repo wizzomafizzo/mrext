@@ -686,12 +686,12 @@ var Systems = map[string]System{
 		},
 	},
 	"NeoGeoCD": {
-		Id:           "NeoGeo",
+		Id:           "NeoGeoCD",
 		Name:         "Neo Geo CD",
 		Category:     CategoryConsole,
 		Manufacturer: ManufacturerSNK,
 		ReleaseDate:  "1994-09-09",
-		Folder:       []string{"NeoGeo-CD", "NEOGEO"},
+		Folder:       []string{"NeoGeo-CD"},
 		Rbf:          "_Console/NeoGeo",
 		Slots: []Slot{
 			{
@@ -1220,6 +1220,28 @@ var Systems = map[string]System{
 		ReleaseDate:  "1985-07-23",
 		Folder:       []string{"Amiga"},
 		Alias:        []string{"Minimig"},
+		Rbf:          "_Computer/Minimig",
+		Slots: []Slot{
+			{
+				Label: "df0",
+				Exts:  []string{".adf"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  0,
+				},
+			},
+		},
+	},
+	"AmigaCD32": {
+		// TODO: This core has 2 .adf drives and 4 .hdf drives. No CONF_STR.
+		Id:           "AmigaCD32",
+		Name:         "Amiga CD32",
+		Category:     CategoryConsole,
+		Manufacturer: ManufacturerCommodore,
+		ReleaseDate:  "1985-07-23",
+		Folder:       []string{"AmigaCD32"},
+		Alias:        []string{"AmigaCD32"},
 		Rbf:          "_Computer/Minimig",
 		Slots: []Slot{
 			{
