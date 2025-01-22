@@ -1245,12 +1245,12 @@ var Systems = map[string]System{
 		Rbf:          "_Computer/Minimig",
 		Slots: []Slot{
 			{
-				Label: "df0",
-				Exts:  []string{".adf"},
+				Label: "CD Image",
+				Exts:  []string{".cue", ".chd"},
 				Mgl: &MglParams{
 					Delay:  1,
-					Method: "f",
-					Index:  0,
+					Method: "s",
+					Index:  1,
 				},
 			},
 		},
