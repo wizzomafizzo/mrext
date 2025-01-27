@@ -22,6 +22,7 @@ var idMap = map[string]string{
 	"Nintendo64":     "n64",
 	"MasterSystem":   "sms",
 	"Sega32X":        "s32x",
+	"SuperGameboy":   "sgb",
 	"TurboGrafx16":   "tgfx16",
 	"TurboGrafx16CD": "tgfx16cd",
 }
