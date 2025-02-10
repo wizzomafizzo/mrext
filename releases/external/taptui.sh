@@ -118,6 +118,7 @@ consoles=(
   "GameboyColor"      "Gameboy Color"
   "Genesis"           "Genesis"
   "Sega32X"           "Genesis 32X"
+  "Groovy"            "Groovy"
   "Intellivision"     "Intellivision"
   "Interact"          "Interact"
   "Jupiter"           "Jupiter Ace"
