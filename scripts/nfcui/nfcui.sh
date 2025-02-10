@@ -100,6 +100,7 @@ consoles=(
   "GameboyColor"      "Gameboy Color"
   "Genesis"           "Genesis"
   "Sega32X"           "Genesis 32X"
+  "Groovy"            "Groovy"
   "Intellivision"     "Intellivision"
   "Interact"          "Interact"
   "Jupiter"           "Jupiter Ace"
@@ -159,6 +160,7 @@ consoles=(
   "X68000"            "X68000"
   "ZXSpectrum"        "ZX Spectrum"
   "ZXNext"            "ZX Spectrum Next"
+  "Genesis"           "Genesis"
 )
 
 nfcjokes=(

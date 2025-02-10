@@ -2710,6 +2710,26 @@ var Systems = map[string]System{
 			},
 		},
 	},
+	"Groovy": {
+		Id:          "Groovy",
+		Name:        "Groovy",
+		Category:    CategoryOther,
+		ReleaseDate: "2024-03-02",
+		Alias:       []string{"Groovy"},
+		Folder:      []string{"Groovy"},
+		Rbf:         "_Utility/Groovy",
+		Slots: []Slot{
+			{
+				Label: "GMC",
+				Exts:  []string{".gmc"},
+				Mgl: &MglParams{
+					Delay:  3,
+					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
 	// TODO: Life
 	//       Has loadable files, but no folder?
 	// TODO: ScummVM

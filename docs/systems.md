@@ -10,7 +10,7 @@ This is a list of all systems supported by the MiSTer Extensions scripts. Please
 **Computers:** [Amiga](#amiga), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
 
 
-**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8)
+**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8), [Groovy](#groovy)
 
 
 ## Core Groups
@@ -503,6 +503,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .32x | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## Groovy
+
+**ID**: Groovy  | **Folders**: Groovy | **RBF**: _Utility/Groovy
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .gmc | 2 | f | 1 |
 
 [Back to top](#systems)
 
