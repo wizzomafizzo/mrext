@@ -45,6 +45,7 @@ const (
 	ManufacturerJupiter         = "Jupiter"
 	ManufacturerVideoTechnology = "Video Technology"
 	ManufacturerMicrosoft       = "Microsoft"
+	ManufacturerPhilips         = "Philips"
 )
 
 type MglParams struct {
@@ -289,6 +290,24 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
+	"CDI": {
+		Id:           "CDI",
+		Name:         "CD-I",
+		Category:     CategoryConsole,
+		Manufacturer: ManufacturerPhilips,
+		Folder:       []string{"CD-i"},
+		Rbf:          "_Console/CDi",
+		Slots: []Slot{
+			{
+				Exts: []string{".cue", ".chd"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
 					Index:  1,
 				},
 			},
@@ -597,6 +616,24 @@ var Systems = map[string]System{
 				Mgl: &MglParams{
 					Delay:  1,
 					Method: "f",
+					Index:  1,
+				},
+			},
+		},
+	},
+	"Jaguar": {
+		Id:           "Jaguar",
+		Name:         "Jaguar",
+		Category:     CategoryConsole,
+		Manufacturer: ManufacturerAtari,
+		Folder:       []string{"Jaguar"},
+		Rbf:          "_Console/Jaguar",
+		Slots: []Slot{
+			{
+				Exts: []string{".jag", ".j64", ".rom", ".bin"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
 					Index:  1,
 				},
 			},
@@ -1212,7 +1249,6 @@ var Systems = map[string]System{
 	// TODO: Altair8800
 	//       Has a folder but roms are built in.
 	"Amiga": {
-		// TODO: This core has 2 .adf drives and 4 .hdf drives. No CONF_STR.
 		Id:           "Amiga",
 		Name:         "Amiga",
 		Category:     CategoryComputer,
@@ -1234,7 +1270,6 @@ var Systems = map[string]System{
 		},
 	},
 	"AmigaCD32": {
-		// TODO: This core has 2 .adf drives and 4 .hdf drives. No CONF_STR.
 		Id:           "AmigaCD32",
 		Name:         "Amiga CD32",
 		Category:     CategoryConsole,
@@ -1962,6 +1997,44 @@ var Systems = map[string]System{
 					Delay:  1,
 					Method: "s",
 					Index:  1,
+				},
+			},
+		},
+	},
+	"MSX1": {
+		Id:           "MSX1",
+		Name:         "MSX1",
+		Category:     CategoryComputer,
+		Manufacturer: ManufacturerMicrosoft,
+		ReleaseDate:  "1983-06-01",
+		Folder:       []string{"MSX1"},
+		Rbf:          "_Computer/MSX1",
+		Slots: []Slot{
+			{
+				Label: "Drive A:",
+				Exts:  []string{".dsk"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
+					Index:  1,
+				},
+			},
+			{
+				Label: "SLOT A",
+				Exts:  []string{".rom"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  2,
+				},
+			},
+			{
+				Label: "SLOT B",
+				Exts:  []string{".rom"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "f",
+					Index:  3,
 				},
 			},
 		},
