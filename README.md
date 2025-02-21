@@ -4,7 +4,7 @@ Extensions and utilities to make your [MiSTer](https://github.com/MiSTer-devel/M
 
 Make sure to check the linked documentation for each script you use. Most are simple and work out-of-the-box, but some require manual setup before they do anything useful.
 
-[Remote](#remote) • [TapTo](#tapto) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search) • [PocketBackup](#pocketbackup)
+[Remote](#remote) • [BGM](#bgm) • [Favorites](#favorites) • [GamesMenu](#gamesmenu) • [LastPlayed](#lastplayed) • [LaunchSync](#launchsync) • [PlayLog](#playlog) • [Random](#random) • [Search](#search)
 
 [Supported Systems](docs/systems.md) • [Developer Guide](docs/dev.md)
 
@@ -37,12 +37,6 @@ Control the MiSTer from any device on your network. Remote is a web-based interf
 <a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/remote.md"><img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140"></a>
 
 <img src="https://github.com/wizzomafizzo/tapto/raw/main/assets/images/logo/logo-background.svg" align="right" width="35%" />
-
-## TapTo
-
-Launch games, cores and dynamic commands using NFC tags or cards. Uses easily available and cheap USB NFC card readers.
-
-<a href="https://github.com/wizzomafizzo/tapto"><img src="docs/images/readme.svg" alt="Readme TapTo" title="Readme TapTo" width="140"></a>
 
 ## BGM
 
