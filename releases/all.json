@@ -86,16 +86,16 @@
   "zips": {
         "tapto": {
             "contents_file": {
-                "hash": "3a6bbdd8170ac36e57db2dd336d8e170",
-                "size": 7034953,
-                "url": "https://github.com/ZaparooProject/zaparoo-core/releases/download/v2.1.1/zaparoo-mister_arm-2.1.1.zip"
+                "hash": "decc9490b4a5f6c3cd7c49998175e2b2",
+                "size": 7318305,
+                "url": "https://github.com/ZaparooProject/zaparoo-core/releases/download/v2.2.0/zaparoo-mister_arm-2.2.0.zip"
             },
             "description": "Extracting Zaparoo release",
             "internal_summary": {
                 "files": {
                     "Scripts/zaparoo.sh": {
-                        "hash": "8b0254d622318461f07780cf5773a774",
-                        "size": 13379784,
+                        "hash": "d3fcd2f9199faaec40a0de1f8257cd8c",
+                        "size": 14243112,
                         "reboot": true,
                         "tags": [
                             "tapto"
