@@ -1,6 +1,6 @@
 {
   "db_id": "mrext/all",
-  "timestamp": 1750848882,
+  "timestamp": 1751799988,
   "files": {
     "Scripts/lastplayed.sh": {
       "hash": "f445618e0de3ec6095fa3447170e32aa",
@@ -86,16 +86,16 @@
   "zips": {
         "tapto": {
             "contents_file": {
-                "hash": "fc6633ec3e714691f5902179818e3c22",
-                "size": 11631394,
-                "url": "https://github.com/ZaparooProject/zaparoo-core/releases/download/v2.4.0/zaparoo-mister_arm-2.4.0.zip"
+                "hash": "ed78fc1d1a6b94d346f1aea7aeb96042",
+                "size": 11911760,
+                "url": "https://github.com/ZaparooProject/zaparoo-core/releases/download/v2.5.0/zaparoo-mister_arm-2.5.0.zip"
             },
             "description": "Extracting Zaparoo release",
             "internal_summary": {
                 "files": {
                     "Scripts/zaparoo.sh": {
-                        "hash": "2a3bcac3eef827903558bb9290217ef8",
-                        "size": 24783252,
+                        "hash": "91674dfe1582db5bb90e34cd070f4346",
+                        "size": 25520524,
                         "reboot": true,
                         "tags": [
                             "tapto"
