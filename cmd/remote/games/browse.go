@@ -175,7 +175,13 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 	items := make([]menu.Item, 0)
 
 	for _, file := range files {
-		friendlyName := strings.TrimSuffix(file.name, filepath.Ext(file.name))
+
+		var friendlyName string
+		if file.isDir {
+			friendlyName = file.name
+		} else {
+			friendlyName = strings.TrimSuffix(file.name, filepath.Ext(file.name))
+		}
 
 		if strings.HasPrefix(file.name, ".") {
 			continue
