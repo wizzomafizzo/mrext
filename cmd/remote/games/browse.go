@@ -181,7 +181,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 			continue
 		}
 
-		if !file.isDir && !utils.Contains(validFiletypes, filepath.Ext(file.name)) {
+		if !file.isDir && !utils.ContainsFold(validFiletypes, filepath.Ext(file.name)) {
 			continue
 		}
 

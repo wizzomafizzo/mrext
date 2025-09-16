@@ -121,6 +121,16 @@ func Contains[T comparable](xs []T, x T) bool {
 	return false
 }
 
+// ContainsFold returns true if slice of strings contains value (case insensitive).
+func ContainsFold(xs []string, x string) bool {
+	for _, v := range xs {
+		if strings.EqualFold(v, x) {
+			return true
+		}
+	}
+	return false
+}
+
 // RandomElem picks and returns a random element from a slice.
 func RandomElem[T any](xs []T) (T, error) {
 	var item T
