@@ -126,6 +126,25 @@ func TestContains(t *testing.T) {
 	}
 }
 
+func TestContainsFold(t *testing.T) {
+	var tests = []struct {
+		xs   []string
+		x    string
+		want bool
+	}{
+		{[]string{}, "Game", false},
+		{[]string{"Game"}, "Game", true},
+		{[]string{"Game"}, "NewGame", false},
+		{[]string{"Umbrella", "Ball"}, "Ball", true},
+		{[]string{"Frog", "Lamp"}, "Fruit", false},
+	}
+	for _, tt := range tests {
+		if got := ContainsFold(tt.xs, tt.x); got != tt.want {
+			t.Errorf("ContainsFold(%s, %s) = %v, want %v", tt.xs, tt.x, got, tt.want)
+		}
+	}
+}
+
 func TestRandomElem(t *testing.T) {
 	t1 := []string{}
 	if el, err := RandomElem(t1); err == nil {
