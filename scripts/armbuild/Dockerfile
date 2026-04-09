@@ -1,5 +1,5 @@
 # glibc in this version matches mister
-FROM arm32v7/debian:bookworm
+FROM arm32v7/debian:bullseye
 
 RUN apt-get update -y && apt-get upgrade -y
 
@@ -13,7 +13,7 @@ RUN apt-get install -y ca-certificates openssl && \
 RUN apt-get install build-essential git curl wget -y && \
     apt-get install golang-doc golang-go golang-src golang -y && \
     apt-get install libsqlite3-dev libncurses-dev linux-source -y
-
+    
 # install mplayer dependencies
 RUN apt-get install -y libasound2-dev libasound2 liblapack-dev liblapack3
 RUN apt-get install -y gnutls-bin gnutls-dev libssl-dev openssl libssh2-1-dev libc-ares-dev
