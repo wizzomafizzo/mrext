@@ -46,6 +46,8 @@ const (
 	ManufacturerVideoTechnology = "Video Technology"
 	ManufacturerMicrosoft       = "Microsoft"
 	ManufacturerPhilips         = "Philips"
+	ManufacturerPanasonic       = "Panasonic"
+
 )
 
 type MglParams struct {
@@ -122,6 +124,27 @@ func PathToMglDef(system System, path string) (*MglParams, error) {
 
 var Systems = map[string]System{
 	// Consoles
+	"3DO": {
+		Id:           "3DO",
+		Name:         "3DO Interactive Multiplayer",
+		Category:     CategoryConsole,
+		Manufacturer: ManufacturerPanasonic,
+		ReleaseDate:  "1993-10-04",
+		Alias:        []string{"3DO", "3DO M2"},
+		Folder:       []string{"3DO"},
+		Rbf:          "_Console/3DO",
+		Slots: []Slot{
+			{
+				Label: "Disc",
+				Exts:  []string{".cue", ".chd"},
+				Mgl: &MglParams{
+					Delay:  1,
+					Method: "s",
+					Index:  1,
+				},
+			},
+		},
+	},
 	"AdventureVision": {
 		Id:           "AdventureVision",
 		Name:         "Adventure Vision",
