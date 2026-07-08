@@ -36,6 +36,37 @@ function buttonName(button: number): string | null {
   return null;
 }
 
+// map a browser KeyboardEvent.code to its Linux/uinput key code, for forwarding
+// physical keystrokes to the core while captured
+const keyCodeMap: { [code: string]: number } = {
+  Escape: 1,
+  Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5, Digit5: 6,
+  Digit6: 7, Digit7: 8, Digit8: 9, Digit9: 10, Digit0: 11,
+  Minus: 12, Equal: 13, Backspace: 14, Tab: 15,
+  KeyQ: 16, KeyW: 17, KeyE: 18, KeyR: 19, KeyT: 20, KeyY: 21,
+  KeyU: 22, KeyI: 23, KeyO: 24, KeyP: 25,
+  BracketLeft: 26, BracketRight: 27, Enter: 28, ControlLeft: 29,
+  KeyA: 30, KeyS: 31, KeyD: 32, KeyF: 33, KeyG: 34, KeyH: 35,
+  KeyJ: 36, KeyK: 37, KeyL: 38, Semicolon: 39, Quote: 40,
+  Backquote: 41, ShiftLeft: 42, Backslash: 43,
+  KeyZ: 44, KeyX: 45, KeyC: 46, KeyV: 47, KeyB: 48, KeyN: 49,
+  KeyM: 50, Comma: 51, Period: 52, Slash: 53, ShiftRight: 54,
+  NumpadMultiply: 55, AltLeft: 56, Space: 57, CapsLock: 58,
+  F1: 59, F2: 60, F3: 61, F4: 62, F5: 63, F6: 64, F7: 65,
+  F8: 66, F9: 67, F10: 68, NumLock: 69, ScrollLock: 70,
+  Numpad7: 71, Numpad8: 72, Numpad9: 73, NumpadSubtract: 74,
+  Numpad4: 75, Numpad5: 76, Numpad6: 77, NumpadAdd: 78,
+  Numpad1: 79, Numpad2: 80, Numpad3: 81, Numpad0: 82, NumpadDecimal: 83,
+  F11: 87, F12: 88,
+  NumpadEnter: 96, ControlRight: 97, NumpadDivide: 98, AltRight: 100,
+  Home: 102, ArrowUp: 103, PageUp: 104, ArrowLeft: 105,
+  ArrowRight: 106, End: 107, ArrowDown: 108, PageDown: 109,
+  Insert: 110, Delete: 111, MetaLeft: 125, MetaRight: 126,
+};
+
+// modifier key codes (ctrl/shift/alt/meta), used to send a clean Escape
+const modifierCodes = new Set<number>([29, 42, 54, 56, 97, 100, 125, 126]);
+
 interface MousePadProps {
   open: boolean;
   onClose: () => void;
@@ -83,6 +114,9 @@ export default function MousePad(props: MousePadProps) {
   // down while captured (so we can release them if the lock is lost)
   const capturedRef = useRef<boolean>(false);
   const heldButtonsRef = useRef<Set<number>>(new Set());
+  // key codes currently held down while captured, so they can be released if
+  // capture ends with a key still pressed
+  const pressedKeysRef = useRef<Set<number>>(new Set());
 
   // keep the latest mode/sensitivity readable from pointer handlers
   const modeRef = useRef<MouseMode>(mode);
@@ -122,6 +156,28 @@ export default function MousePad(props: MousePadProps) {
     heldButtonsRef.current.clear();
   };
 
+  // release any keys passed through while captured
+  const releaseKeys = () => {
+    pressedKeysRef.current.forEach((code) => {
+      sendRef.current(`kbdRawUp:${code}`);
+    });
+    pressedKeysRef.current.clear();
+  };
+
+  // send a clean Escape to the core. The physical Esc key can't be used while
+  // pointer-locked (the browser reserves it to exit capture), so this is
+  // triggered by Alt+`. Any held modifiers are lifted around it so the core
+  // sees a bare Escape, then re-pressed.
+  const sendEscToCore = () => {
+    const heldMods = Array.from(pressedKeysRef.current).filter((c) =>
+      modifierCodes.has(c)
+    );
+    heldMods.forEach((c) => sendRef.current(`kbdRawUp:${c}`));
+    sendRef.current("kbdRawDown:1");
+    sendRef.current("kbdRawUp:1");
+    heldMods.forEach((c) => sendRef.current(`kbdRawDown:${c}`));
+  };
+
   // release any held button and reset transient state
   const releaseAll = () => {
     clearHoldTimer();
@@ -138,6 +194,7 @@ export default function MousePad(props: MousePadProps) {
       sendRef.current("mouseBtn:left_up");
     }
     releasePassthrough();
+    releaseKeys();
     if (typeof document !== "undefined" && document.pointerLockElement) {
       document.exitPointerLock();
     }
@@ -179,6 +236,7 @@ export default function MousePad(props: MousePadProps) {
       setCaptured(locked);
       if (!locked) {
         releasePassthrough();
+        releaseKeys();
       }
     };
     document.addEventListener("pointerlockchange", onChange);
@@ -224,6 +282,63 @@ export default function MousePad(props: MousePadProps) {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("mouseup", onUp);
       document.removeEventListener("contextmenu", onContext);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captured]);
+
+  // while captured, forward physical key presses to the core. Plain Esc exits
+  // capture (browser pointer-lock behaviour), so Alt+` is provided to send an
+  // Escape to the core instead.
+  useEffect(() => {
+    if (!captured) {
+      return;
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Alt + ` sends an Escape to the core
+      if (e.altKey && e.code === "Backquote") {
+        e.preventDefault();
+        sendEscToCore();
+        return;
+      }
+      // leave Esc to the browser (it exits capture); never forward it
+      if (e.code === "Escape") {
+        return;
+      }
+      const code = keyCodeMap[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      if (e.repeat) {
+        return;
+      }
+      if (!pressedKeysRef.current.has(code)) {
+        pressedKeysRef.current.add(code);
+        sendRef.current(`kbdRawDown:${code}`);
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Escape") {
+        return;
+      }
+      const code = keyCodeMap[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      if (pressedKeysRef.current.has(code)) {
+        pressedKeysRef.current.delete(code);
+        sendRef.current(`kbdRawUp:${code}`);
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("keyup", onKeyUp, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captured]);
@@ -523,10 +638,13 @@ export default function MousePad(props: MousePadProps) {
             {captured ? (
               <>
                 <LockIcon color="primary" />
-                <Typography variant="subtitle1">Mouse captured</Typography>
+                <Typography variant="subtitle1">
+                  Mouse &amp; keyboard captured
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Move the mouse to move the cursor. Left, right and middle
-                  clicks and dragging all work like a real mouse.
+                  Move the mouse and type to control the core. Clicks, dragging
+                  and key presses all pass through like a real mouse and
+                  keyboard. Alt + ` sends an Escape to the core.
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Press Esc to release
@@ -547,7 +665,9 @@ export default function MousePad(props: MousePadProps) {
               disabled={captured}
               onClick={requestCapture}
             >
-              {captured ? "Captured — press Esc to release" : "Capture Mouse"}
+              {captured
+                ? "Captured — press Esc to release"
+                : "Capture Mouse & Keyboard"}
             </Button>
           )}
 
