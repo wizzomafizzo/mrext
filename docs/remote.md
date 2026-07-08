@@ -20,6 +20,7 @@ Remote is a web-based interface with a stack of modern features to manage all as
 * Control MiSTer directly with a virtual remote control interface
   * Includes all common media keys and hotkeys
   * Full on-screen keyboard and keypad
+  * Virtual mouse trackpad with clicks, drag and desktop mouse capture
 * Launch cores and game shortcuts with an in-app version of the MiSTer menu
   * Move, rename and delete anything in the menu
 * Search and launch your entire game collection

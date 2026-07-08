@@ -41,6 +41,11 @@
     * [Controls (keyboard)](#controls-keyboard)
       * [Send named keyboard key or combo](#send-named-keyboard-key-or-combo)
       * [Send raw keyboard key](#send-raw-keyboard-key)
+    * [Controls (mouse)](#controls-mouse)
+      * [Get current screen resolution](#get-current-screen-resolution)
+      * [Move mouse (relative)](#move-mouse-relative)
+      * [Move mouse (absolute position)](#move-mouse-absolute-position)
+      * [Send mouse button](#send-mouse-button)
     * [Menu](#menu)
       * [List menu folder](#list-menu-folder)
       * [Create menu folder](#create-menu-folder)
@@ -76,6 +81,9 @@
       * [Send raw keyboard key](#send-raw-keyboard-key-1)
       * [Send raw keyboard key down](#send-raw-keyboard-key-down)
       * [Send raw keyboard key up](#send-raw-keyboard-key-up)
+      * [Move mouse (relative)](#move-mouse-relative-1)
+      * [Move mouse (absolute position)](#move-mouse-absolute-position-1)
+      * [Send mouse button](#send-mouse-button-1)
 <!-- TOC -->
 
 ## REST
