@@ -11,6 +11,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import PanToolIcon from "@mui/icons-material/PanTool";
+import LockIcon from "@mui/icons-material/Lock";
 
 import { MouseButtons } from "../lib/models";
 
@@ -27,6 +28,14 @@ const doubleTapDist = 24;
 // how long to hold still before a press becomes a click-and-hold drag
 const holdToDragDelay = 400;
 
+// map a DOM mouse button number to its name
+function buttonName(button: number): string | null {
+  if (button === 0) return "left";
+  if (button === 1) return "middle";
+  if (button === 2) return "right";
+  return null;
+}
+
 interface MousePadProps {
   open: boolean;
   onClose: () => void;
@@ -42,6 +51,16 @@ export default function MousePad(props: MousePadProps) {
   const [dragLock, setDragLock] = useState<boolean>(false);
   // held: left button currently down by any means (lock or long-press gesture)
   const [held, setHeld] = useState<boolean>(false);
+  // captured: pointer lock is active (desktop mouse capture)
+  const [captured, setCaptured] = useState<boolean>(false);
+  // whether the browser supports pointer lock at all
+  const [canCapture] = useState<boolean>(
+    () =>
+      typeof document !== "undefined" &&
+      "pointerLockElement" in document &&
+      typeof HTMLElement !== "undefined" &&
+      "requestPointerLock" in HTMLElement.prototype
+  );
 
   const padRef = useRef<HTMLDivElement | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -60,6 +79,10 @@ export default function MousePad(props: MousePadProps) {
   // pressActiveRef is true between pointer down and up (finger/button down);
   // when false, a pointer move is a hover (mouse over the pad, no button)
   const pressActiveRef = useRef<boolean>(false);
+  // pointer-lock state readable from handlers, and the physical buttons held
+  // down while captured (so we can release them if the lock is lost)
+  const capturedRef = useRef<boolean>(false);
+  const heldButtonsRef = useRef<Set<number>>(new Set());
 
   // keep the latest mode/sensitivity readable from pointer handlers
   const modeRef = useRef<MouseMode>(mode);
@@ -88,6 +111,17 @@ export default function MousePad(props: MousePadProps) {
     }
   };
 
+  // release any physical buttons passed through while captured
+  const releasePassthrough = () => {
+    heldButtonsRef.current.forEach((b) => {
+      const name = buttonName(b);
+      if (name) {
+        sendRef.current(`mouseBtn:${name}_up`);
+      }
+    });
+    heldButtonsRef.current.clear();
+  };
+
   // release any held button and reset transient state
   const releaseAll = () => {
     clearHoldTimer();
@@ -103,9 +137,14 @@ export default function MousePad(props: MousePadProps) {
     if (dragLockRef.current || gestureHeldRef.current) {
       sendRef.current("mouseBtn:left_up");
     }
+    releasePassthrough();
+    if (typeof document !== "undefined" && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
     dragLockRef.current = false;
     gestureHeldRef.current = false;
     pressActiveRef.current = false;
+    capturedRef.current = false;
     lastTapTimeRef.current = null;
     lastTapPosRef.current = null;
     lastPointRef.current = null;
@@ -117,6 +156,7 @@ export default function MousePad(props: MousePadProps) {
       releaseAll();
       setDragLock(false);
       setHeld(false);
+      setCaptured(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -128,6 +168,65 @@ export default function MousePad(props: MousePadProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // track pointer-lock engage/release (Esc releases it via the browser)
+  useEffect(() => {
+    const onChange = () => {
+      const locked =
+        typeof document !== "undefined" &&
+        document.pointerLockElement === padRef.current;
+      capturedRef.current = locked;
+      setCaptured(locked);
+      if (!locked) {
+        releasePassthrough();
+      }
+    };
+    document.addEventListener("pointerlockchange", onChange);
+    return () => document.removeEventListener("pointerlockchange", onChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // while captured, pass the physical mouse straight through: relative movement
+  // and raw button down/up, so clicks, double-clicks and drags all behave like
+  // a real mouse
+  useEffect(() => {
+    if (!captured) {
+      return;
+    }
+
+    const onMove = (e: MouseEvent) => {
+      pendingRef.current.dx += e.movementX * sensitivityRef.current;
+      pendingRef.current.dy += e.movementY * sensitivityRef.current;
+      scheduleFlush();
+    };
+    const onDown = (e: MouseEvent) => {
+      const name = buttonName(e.button);
+      if (!name) return;
+      e.preventDefault();
+      heldButtonsRef.current.add(e.button);
+      sendRef.current(`mouseBtn:${name}_down`);
+    };
+    const onUp = (e: MouseEvent) => {
+      const name = buttonName(e.button);
+      if (!name) return;
+      e.preventDefault();
+      heldButtonsRef.current.delete(e.button);
+      sendRef.current(`mouseBtn:${name}_up`);
+    };
+    const onContext = (e: Event) => e.preventDefault();
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("contextmenu", onContext);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("contextmenu", onContext);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captured]);
 
   const flushMove = () => {
     rafRef.current = null;
@@ -143,6 +242,21 @@ export default function MousePad(props: MousePadProps) {
   const scheduleFlush = () => {
     if (rafRef.current === null) {
       rafRef.current = window.requestAnimationFrame(flushMove);
+    }
+  };
+
+  const requestCapture = () => {
+    const pad = padRef.current;
+    if (!pad || typeof pad.requestPointerLock !== "function") {
+      return;
+    }
+    const req = pad.requestPointerLock() as unknown as
+      | Promise<void>
+      | undefined;
+    if (req && typeof req.catch === "function") {
+      req.catch(() => {
+        /* lock can fail if not from a user gesture; ignore */
+      });
     }
   };
 
@@ -172,6 +286,7 @@ export default function MousePad(props: MousePadProps) {
   // establish a baseline when the pointer enters (e.g. a mouse hovering in) so
   // the first move doesn't jump; a real press re-baselines in handlePointerDown
   const handlePointerEnter = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (capturedRef.current) return;
     if (!pressActiveRef.current) {
       lastPointRef.current = { x: e.clientX, y: e.clientY };
     }
@@ -179,12 +294,14 @@ export default function MousePad(props: MousePadProps) {
 
   // stop hover tracking when the pointer leaves the pad (a press keeps capture)
   const handlePointerLeave = () => {
+    if (capturedRef.current) return;
     if (!pressActiveRef.current) {
       lastPointRef.current = null;
     }
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (capturedRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     pressActiveRef.current = true;
     lastPointRef.current = { x: e.clientX, y: e.clientY };
@@ -209,6 +326,7 @@ export default function MousePad(props: MousePadProps) {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (capturedRef.current) return;
     const last = lastPointRef.current;
     lastPointRef.current = { x: e.clientX, y: e.clientY };
     if (!last) {
@@ -239,6 +357,7 @@ export default function MousePad(props: MousePadProps) {
   };
 
   const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (capturedRef.current) return;
     if (!pressActiveRef.current) {
       return;
     }
@@ -333,8 +452,21 @@ export default function MousePad(props: MousePadProps) {
     padHint = "Move over the pad to move · tap = click · hold = drag";
   }
 
+  const padActive = held || captured;
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog
+      open={open}
+      onClose={(_, reason) => {
+        // while the mouse is captured, Esc releases the pointer lock — don't
+        // let it also close the dialog
+        if (reason === "escapeKeyDown" && capturedRef.current) {
+          return;
+        }
+        onClose();
+      }}
+      fullWidth
+    >
       <DialogContent>
         <Stack spacing={2}>
           <ToggleButtonGroup
@@ -343,6 +475,7 @@ export default function MousePad(props: MousePadProps) {
             exclusive
             fullWidth
             size="small"
+            disabled={captured}
             onChange={(_, value) => {
               if (value !== null) {
                 setMode(value as MouseMode);
@@ -364,24 +497,52 @@ export default function MousePad(props: MousePadProps) {
             sx={{
               height: "40vh",
               minHeight: 200,
-              border: held ? 2 : 1,
-              borderColor: held ? "primary.main" : "divider",
+              border: padActive ? 2 : 1,
+              borderColor: padActive ? "primary.main" : "divider",
               borderRadius: 2,
-              bgcolor: held ? "action.selected" : "action.hover",
+              bgcolor: padActive ? "action.selected" : "action.hover",
               display: "flex",
+              flexDirection: "column",
+              gap: 1,
               alignItems: "center",
               justifyContent: "center",
               textAlign: "center",
               px: 2,
               touchAction: "none",
               userSelect: "none",
-              cursor: mode === "absolute" ? "crosshair" : "move",
+              cursor: captured ? "none" : mode === "absolute" ? "crosshair" : "move",
             }}
           >
-            <Typography variant="body2" color="text.secondary">
-              {padHint}
-            </Typography>
+            {captured ? (
+              <>
+                <LockIcon color="primary" />
+                <Typography variant="subtitle1">Mouse captured</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Move the mouse to move the cursor. Left, right and middle
+                  clicks and dragging all work like a real mouse.
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Press Esc to release
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {padHint}
+              </Typography>
+            )}
           </Box>
+
+          {canCapture && mode === "relative" && (
+            <Button
+              variant="outlined"
+              sx={{ width: "100%" }}
+              startIcon={<LockIcon />}
+              disabled={captured}
+              onClick={requestCapture}
+            >
+              {captured ? "Captured — press Esc to release" : "Capture Mouse"}
+            </Button>
+          )}
 
           {mode === "relative" && (
             <Box sx={{ px: 1 }}>
@@ -409,6 +570,7 @@ export default function MousePad(props: MousePadProps) {
             color={dragLock ? "warning" : "primary"}
             sx={{ width: "100%" }}
             startIcon={<PanToolIcon />}
+            disabled={captured}
             onClick={toggleDragLock}
           >
             {dragLock ? "Release" : "Click & Hold"}
@@ -420,6 +582,7 @@ export default function MousePad(props: MousePadProps) {
                 <Button
                   variant="outlined"
                   sx={{ width: "100%" }}
+                  disabled={captured}
                   onClick={() => clickButton(b.button)}
                 >
                   {b.label}
