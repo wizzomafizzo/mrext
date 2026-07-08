@@ -20,6 +20,7 @@
 package control
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 	"github.com/bendahl/uinput"
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
@@ -121,6 +123,130 @@ func SendKeyboard(kbd input.Keyboard, key string) error {
 		return wrapKeyboard("send computer OSD key", kbd.ComputerOSD())
 	default:
 		return fmt.Errorf("unknown key: %s", key)
+	}
+}
+
+type ScreenResponse struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+func HandleScreen(logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		width, height, err := mister.GetScreenResolution()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to read screen resolution: %s", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(ScreenResponse{
+			Width:  width,
+			Height: height,
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to encode screen response: %s", err)
+			return
+		}
+	}
+}
+
+type MouseMoveArgs struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+func SendMouseMove(mouse input.Mouse, x int, y int) error {
+	return mouse.Move(int32(x), int32(y))
+}
+
+func HandleMouseMove(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args MouseMoveArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("invalid mouse move request: %s", err)
+			return
+		}
+
+		err = SendMouseMove(mouse, args.X, args.Y)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to move mouse: %s", err)
+			return
+		}
+	}
+}
+
+func SendMousePosition(mouse input.Mouse, x int, y int) error {
+	width, height, err := mister.GetScreenResolution()
+	if err != nil {
+		return fmt.Errorf("failed to read screen resolution: %s", err)
+	}
+
+	return mouse.MoveTo(x, y, width, height)
+}
+
+func HandleMousePosition(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args MouseMoveArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("invalid mouse position request: %s", err)
+			return
+		}
+
+		err = SendMousePosition(mouse, args.X, args.Y)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to set mouse position: %s", err)
+			return
+		}
+	}
+}
+
+func SendMouseButton(mouse input.Mouse, button string) error {
+	switch button {
+	case "click", "left":
+		return mouse.LeftClick()
+	case "double_click", "double":
+		return mouse.DoubleClick()
+	case "right":
+		return mouse.RightClick()
+	case "middle":
+		return mouse.MiddleClick()
+	case "left_down":
+		return mouse.LeftDown()
+	case "left_up":
+		return mouse.LeftUp()
+	case "right_down":
+		return mouse.RightDown()
+	case "right_up":
+		return mouse.RightUp()
+	case "middle_down":
+		return mouse.MiddleDown()
+	case "middle_up":
+		return mouse.MiddleUp()
+	default:
+		return fmt.Errorf("unknown mouse button: %s", button)
+	}
+}
+
+func HandleMouseButton(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		button := vars["button"]
+
+		err := SendMouseButton(mouse, button)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to send mouse button: %s", err)
+			return
+		}
 	}
 }
 
