@@ -8,6 +8,12 @@ import (
 
 const doubleClickDelay = 100 * time.Millisecond
 
+// clickHoldTime is how long a button is held down during a click. uinput's own
+// click sends the press and release back-to-back with no gap, which is too fast
+// for MiSTer cores that poll the mouse (e.g. classic Mac) to reliably register,
+// so we hold the button briefly like the keyboard does for key presses.
+const clickHoldTime = 60 * time.Millisecond
+
 // AbsMax is the maximum value of the virtual touchpad's axes. Absolute
 // positions are given as per-mille (0-1000) of the screen and scaled into
 // this range, so positioning is independent of the actual screen resolution.
@@ -74,25 +80,35 @@ func (m *Mouse) MoveToPermille(x int, y int) error {
 	return m.Abs.MoveTo(absX, absY)
 }
 
+// click presses a button, holds it briefly so the core can register it, then
+// releases it.
+func click(press func() error, release func() error) error {
+	if err := press(); err != nil {
+		return err
+	}
+	time.Sleep(clickHoldTime)
+	return release()
+}
+
 func (m *Mouse) LeftClick() error {
-	return m.Rel.LeftClick()
+	return click(m.Rel.LeftPress, m.Rel.LeftRelease)
 }
 
 func (m *Mouse) DoubleClick() error {
-	err := m.Rel.LeftClick()
+	err := m.LeftClick()
 	if err != nil {
 		return err
 	}
 	time.Sleep(doubleClickDelay)
-	return m.Rel.LeftClick()
+	return m.LeftClick()
 }
 
 func (m *Mouse) RightClick() error {
-	return m.Rel.RightClick()
+	return click(m.Rel.RightPress, m.Rel.RightRelease)
 }
 
 func (m *Mouse) MiddleClick() error {
-	return m.Rel.MiddleClick()
+	return click(m.Rel.MiddlePress, m.Rel.MiddleRelease)
 }
 
 func (m *Mouse) LeftDown() error {
