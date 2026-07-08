@@ -57,6 +57,9 @@ export default function MousePad(props: MousePadProps) {
   // readable synchronously from pointer handlers
   const dragLockRef = useRef<boolean>(false);
   const gestureHeldRef = useRef<boolean>(false);
+  // pressActiveRef is true between pointer down and up (finger/button down);
+  // when false, a pointer move is a hover (mouse over the pad, no button)
+  const pressActiveRef = useRef<boolean>(false);
 
   // keep the latest mode/sensitivity readable from pointer handlers
   const modeRef = useRef<MouseMode>(mode);
@@ -102,6 +105,7 @@ export default function MousePad(props: MousePadProps) {
     }
     dragLockRef.current = false;
     gestureHeldRef.current = false;
+    pressActiveRef.current = false;
     lastTapTimeRef.current = null;
     lastTapPosRef.current = null;
     lastPointRef.current = null;
@@ -165,8 +169,24 @@ export default function MousePad(props: MousePadProps) {
     sendMessage(`mousePos:${x},${y}`);
   };
 
+  // establish a baseline when the pointer enters (e.g. a mouse hovering in) so
+  // the first move doesn't jump; a real press re-baselines in handlePointerDown
+  const handlePointerEnter = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pressActiveRef.current) {
+      lastPointRef.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  // stop hover tracking when the pointer leaves the pad (a press keeps capture)
+  const handlePointerLeave = () => {
+    if (!pressActiveRef.current) {
+      lastPointRef.current = null;
+    }
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    pressActiveRef.current = true;
     lastPointRef.current = { x: e.clientX, y: e.clientY };
     movedRef.current = 0;
     downTimeRef.current = e.timeStamp;
@@ -190,37 +210,40 @@ export default function MousePad(props: MousePadProps) {
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const last = lastPointRef.current;
+    lastPointRef.current = { x: e.clientX, y: e.clientY };
     if (!last) {
+      // first sample after entering/leaving: just set the baseline
       return;
     }
 
     const rawDx = e.clientX - last.x;
     const rawDy = e.clientY - last.y;
-    movedRef.current += Math.abs(rawDx) + Math.abs(rawDy);
 
-    // moving before the long-press fires means this is an ordinary move/drag,
-    // not a press-and-hold, so cancel the pending hold (both modes)
-    if (holdTimerRef.current !== null && movedRef.current >= tapThreshold) {
-      clearHoldTimer();
+    // tap / long-press bookkeeping only applies while actually pressing; a
+    // hover move (mouse over the pad, no button) just moves the cursor
+    if (pressActiveRef.current) {
+      movedRef.current += Math.abs(rawDx) + Math.abs(rawDy);
+      if (holdTimerRef.current !== null && movedRef.current >= tapThreshold) {
+        clearHoldTimer();
+      }
     }
 
     if (modeRef.current === "absolute") {
       sendAbsolute(e.clientX, e.clientY);
-      lastPointRef.current = { x: e.clientX, y: e.clientY };
       return;
     }
 
     pendingRef.current.dx += rawDx * sensitivityRef.current;
     pendingRef.current.dy += rawDy * sensitivityRef.current;
-    lastPointRef.current = { x: e.clientX, y: e.clientY };
     scheduleFlush();
   };
 
   const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (lastPointRef.current === null) {
+    if (!pressActiveRef.current) {
       return;
     }
-    lastPointRef.current = null;
+    pressActiveRef.current = false;
+    // keep lastPointRef so a hovering mouse keeps moving the cursor after a click
 
     clearHoldTimer();
 
@@ -302,12 +325,12 @@ export default function MousePad(props: MousePadProps) {
   let padHint: string;
   if (held) {
     padHint = dragLock
-      ? "Left button held — drag to move, then tap Release"
-      : "Left button held — drag to move, lift to release";
+      ? "Left button held — move to drag, then tap Release"
+      : "Left button held — move to drag, lift to release";
   } else if (mode === "absolute") {
-    padHint = "Drag to position · tap to click · press & hold to drag";
+    padHint = "Move over the pad to position · tap to click";
   } else {
-    padHint = "Tap = click · double-tap = double-click · press & hold = drag";
+    padHint = "Move over the pad to move · tap = click · hold = drag";
   }
 
   return (
@@ -332,6 +355,8 @@ export default function MousePad(props: MousePadProps) {
 
           <Box
             ref={padRef}
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerEnd}
