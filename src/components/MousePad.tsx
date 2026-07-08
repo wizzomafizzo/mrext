@@ -295,10 +295,12 @@ export default function MousePad(props: MousePadProps) {
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Alt + ` sends an Escape to the core
+      // Alt + ` sends an Escape to the core (once per press, not on auto-repeat)
       if (e.altKey && e.code === "Backquote") {
         e.preventDefault();
-        sendEscToCore();
+        if (!e.repeat) {
+          sendEscToCore();
+        }
         return;
       }
       // leave Esc to the browser (it exits capture); never forward it
