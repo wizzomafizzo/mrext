@@ -11,8 +11,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 
-import { ControlApi } from "../lib/api";
-import { MouseButtons, ScreenResponse } from "../lib/models";
+import { MouseButtons } from "../lib/models";
 
 type MouseMode = "relative" | "absolute";
 
@@ -20,6 +19,10 @@ type MouseMode = "relative" | "absolute";
 const tapThreshold = 10;
 // maximum duration (ms) of a tap
 const tapDuration = 300;
+// max time (ms) between two taps to register as a double-tap
+const doubleTapWindow = 250;
+// max distance (px) between two taps to register as a double-tap
+const doubleTapDist = 24;
 
 interface MousePadProps {
   open: boolean;
@@ -32,8 +35,6 @@ export default function MousePad(props: MousePadProps) {
 
   const [mode, setMode] = useState<MouseMode>("relative");
   const [sensitivity, setSensitivity] = useState<number>(1.5);
-  const [screen, setScreen] = useState<ScreenResponse | null>(null);
-  const [screenError, setScreenError] = useState<boolean>(false);
 
   const padRef = useRef<HTMLDivElement | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -41,6 +42,9 @@ export default function MousePad(props: MousePadProps) {
   const downTimeRef = useRef<number>(0);
   const pendingRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const rafRef = useRef<number | null>(null);
+  const lastTapTimeRef = useRef<number | null>(null);
+  const lastTapPosRef = useRef<{ x: number; y: number } | null>(null);
+  const clickTimerRef = useRef<number | null>(null);
 
   // keep the latest mode/sensitivity readable from pointer handlers
   const modeRef = useRef<MouseMode>(mode);
@@ -52,40 +56,20 @@ export default function MousePad(props: MousePadProps) {
     sensitivityRef.current = sensitivity;
   }, [sensitivity]);
 
-  // the screen resolution is needed to map the pad onto absolute coordinates
+  // cancel any queued movement frame and pending tap when the dialog closes
   useEffect(() => {
     if (!open) {
-      return;
-    }
-
-    let cancelled = false;
-    const api = new ControlApi();
-    api
-      .getScreen()
-      .then((res) => {
-        if (!cancelled) {
-          setScreen(res);
-          setScreenError(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setScreen(null);
-          setScreenError(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  // cancel any queued movement frame when the dialog closes
-  useEffect(() => {
-    if (!open && rafRef.current !== null) {
-      window.cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      pendingRef.current = { dx: 0, dy: 0 };
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+        pendingRef.current = { dx: 0, dy: 0 };
+      }
+      if (clickTimerRef.current !== null) {
+        window.clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
+      lastTapTimeRef.current = null;
+      lastTapPosRef.current = null;
     }
   }, [open]);
 
@@ -108,7 +92,7 @@ export default function MousePad(props: MousePadProps) {
 
   const sendAbsolute = (clientX: number, clientY: number) => {
     const pad = padRef.current;
-    if (!pad || !screen) {
+    if (!pad) {
       return;
     }
 
@@ -122,8 +106,10 @@ export default function MousePad(props: MousePadProps) {
     fx = Math.min(1, Math.max(0, fx));
     fy = Math.min(1, Math.max(0, fy));
 
-    const x = Math.round(fx * (screen.width - 1));
-    const y = Math.round(fy * (screen.height - 1));
+    // send position as per-mille (0-1000) of the screen; the server maps it
+    // onto the pointer range, so it's independent of the video resolution
+    const x = Math.round(fx * 1000);
+    const y = Math.round(fy * 1000);
     sendMessage(`mousePos:${x},${y}`);
   };
 
@@ -167,10 +153,38 @@ export default function MousePad(props: MousePadProps) {
     const duration = e.timeStamp - downTimeRef.current;
     const wasTap = movedRef.current < tapThreshold && duration < tapDuration;
     lastPointRef.current = null;
+    if (!wasTap) {
+      return;
+    }
 
-    // a quick tap in trackpad mode acts as a left click
-    if (wasTap && modeRef.current === "relative") {
-      sendMessage("mouseBtn:click");
+    // a quick tap acts as a left click; two quick taps as a double click,
+    // in both trackpad and absolute modes
+    const pos = { x: e.clientX, y: e.clientY };
+    const prevTime = lastTapTimeRef.current;
+    const prevPos = lastTapPosRef.current;
+    const isDoubleTap =
+      prevTime !== null &&
+      prevPos !== null &&
+      e.timeStamp - prevTime < doubleTapWindow &&
+      Math.abs(pos.x - prevPos.x) + Math.abs(pos.y - prevPos.y) < doubleTapDist;
+
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
+    if (isDoubleTap) {
+      lastTapTimeRef.current = null;
+      lastTapPosRef.current = null;
+      sendMessage("mouseBtn:double_click");
+    } else {
+      // defer the single click briefly so a following tap can upgrade it
+      lastTapTimeRef.current = e.timeStamp;
+      lastTapPosRef.current = pos;
+      clickTimerRef.current = window.setTimeout(() => {
+        clickTimerRef.current = null;
+        sendMessage("mouseBtn:click");
+      }, doubleTapWindow);
     }
   };
 
@@ -185,18 +199,10 @@ export default function MousePad(props: MousePadProps) {
     { label: "Middle Click", button: "middle" },
   ];
 
-  let padHint: string;
-  if (mode === "absolute") {
-    if (screenError) {
-      padHint = "Screen resolution unavailable";
-    } else if (screen) {
-      padHint = `Tap or drag to position · ${screen.width}×${screen.height}`;
-    } else {
-      padHint = "Reading screen resolution…";
-    }
-  } else {
-    padHint = "Drag to move · tap to click";
-  }
+  const padHint =
+    mode === "absolute"
+      ? "Drag to position · tap/double-tap to click"
+      : "Drag to move · tap to click · double-tap to double-click";
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
