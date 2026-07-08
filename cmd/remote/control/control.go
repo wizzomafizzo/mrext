@@ -181,13 +181,11 @@ func HandleMouseMove(mouse input.Mouse, logger *service.Logger) http.HandlerFunc
 	}
 }
 
+// SendMousePosition moves the cursor to an absolute position given as
+// per-mille (0-1000) of the screen along each axis, independent of the current
+// video resolution.
 func SendMousePosition(mouse input.Mouse, x int, y int) error {
-	width, height, err := mister.GetScreenResolution()
-	if err != nil {
-		return fmt.Errorf("failed to read screen resolution: %s", err)
-	}
-
-	return mouse.MoveTo(x, y, width, height)
+	return mouse.MoveToPermille(x, y)
 }
 
 func HandleMousePosition(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {

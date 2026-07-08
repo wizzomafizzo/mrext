@@ -976,9 +976,14 @@ treat `/controls/mouse/position` as best-effort.
 
 #### Get current screen resolution
 
-Returns the active screen resolution reported by the MiSTer framebuffer, which
-matches the current video output. Use this to determine the coordinate space
-for absolute mouse positioning.
+Returns the resolution of the MiSTer's Linux framebuffer, which reflects the
+HDMI **output** resolution produced by the scaler (e.g. the `video_mode` set in
+`MiSTer.ini`).
+
+*Note: this is the video output resolution, not the running core's internal
+render resolution. The core's native resolution is only available inside the
+FPGA and is not exposed to userspace, so it cannot be read here. Absolute mouse
+positioning does not use this value (see below).*
 
 ```plaintext
 GET /controls/screen
@@ -1027,9 +1032,11 @@ curl --request POST --url "http://mister:8182/api/controls/mouse/move" --data '{
 
 #### Move mouse (absolute position)
 
-Moves the mouse cursor to an absolute screen position, given as pixel
-coordinates within the current screen resolution (see
-`GET /controls/screen`). The origin `0,0` is the top-left corner.
+Moves the mouse cursor to an absolute screen position, given as **per-mille**
+(`0`–`1000`) of the screen along each axis, where `0,0` is the top-left corner
+and `1000,1000` is the bottom-right. This is resolution-independent: send where
+to point as a fraction of the screen and it is mapped onto the pointer range.
+Values outside `0`–`1000` are clamped.
 
 ```plaintext
 POST /controls/mouse/position
@@ -1037,19 +1044,17 @@ POST /controls/mouse/position
 
 Arguments (JSON):
 
-| Attribute | Type   | Required | Description                            |
-|-----------|--------|----------|----------------------------------------|
-| `x`       | number | Yes      | Horizontal position in pixels.         |
-| `y`       | number | Yes      | Vertical position in pixels.           |
+| Attribute | Type   | Required | Description                                   |
+|-----------|--------|----------|-----------------------------------------------|
+| `x`       | number | Yes      | Horizontal position, per-mille (`0`–`1000`).  |
+| `y`       | number | Yes      | Vertical position, per-mille (`0`–`1000`).    |
 
 On success, returns `200`.
-
-If the position is outside the current screen resolution, returns `500`.
 
 Example request:
 
 ```shell
-curl --request POST --url "http://mister:8182/api/controls/mouse/position" --data '{"x":960,"y":540}'
+curl --request POST --url "http://mister:8182/api/controls/mouse/position" --data '{"x":500,"y":500}'
 ```
 
 #### Send mouse button
@@ -1852,16 +1857,16 @@ Format: `mouseMove:{x},{y}`
 
 #### Move mouse (absolute position)
 
-Moves the mouse cursor to an absolute screen position, in pixels within the
-current screen resolution. See the `/controls/screen` REST method for the
-coordinate space.
+Moves the mouse cursor to an absolute screen position, given as per-mille
+(`0`–`1000`) of the screen along each axis. Resolution-independent; see the
+`/controls/mouse/position` REST method.
 
 Format: `mousePos:{x},{y}`
 
-| Attribute | Type   | Description                    |
-|-----------|--------|--------------------------------|
-| `x`       | number | Horizontal position in pixels. |
-| `y`       | number | Vertical position in pixels.   |
+| Attribute | Type   | Description                                  |
+|-----------|--------|----------------------------------------------|
+| `x`       | number | Horizontal position, per-mille (`0`–`1000`). |
+| `y`       | number | Vertical position, per-mille (`0`–`1000`).   |
 
 #### Send mouse button
 

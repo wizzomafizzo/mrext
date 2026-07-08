@@ -1,7 +1,6 @@
 package input
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/bendahl/uinput"
@@ -10,8 +9,8 @@ import (
 const doubleClickDelay = 100 * time.Millisecond
 
 // AbsMax is the maximum value of the virtual touchpad's axes. Absolute
-// positions are scaled from screen pixel coordinates to this range, so the
-// touchpad device doesn't need to be recreated when the resolution changes.
+// positions are given as per-mille (0-1000) of the screen and scaled into
+// this range, so positioning is independent of the actual screen resolution.
 const AbsMax = 1023
 
 type Mouse struct {
@@ -54,19 +53,23 @@ func (m *Mouse) Move(x int32, y int32) error {
 	return m.Rel.Move(x, y)
 }
 
-// MoveTo moves the mouse cursor to an absolute screen position, where x and y
-// are pixel coordinates within a width x height screen resolution.
-func (m *Mouse) MoveTo(x int, y int, width int, height int) error {
-	if width <= 1 || height <= 1 {
-		return fmt.Errorf("invalid screen resolution: %dx%d", width, height)
+// MoveToPermille moves the mouse cursor to an absolute position given as
+// per-mille (0-1000) of the screen along each axis. This is independent of the
+// screen resolution: the caller sends where on the screen to point as a
+// fraction, and it maps onto the touchpad's absolute range.
+func (m *Mouse) MoveToPermille(x int, y int) error {
+	clamp := func(v int) int {
+		if v < 0 {
+			return 0
+		}
+		if v > 1000 {
+			return 1000
+		}
+		return v
 	}
 
-	if x < 0 || x >= width || y < 0 || y >= height {
-		return fmt.Errorf("position out of bounds: %d,%d", x, y)
-	}
-
-	absX := int32(x * AbsMax / (width - 1))
-	absY := int32(y * AbsMax / (height - 1))
+	absX := int32(clamp(x) * AbsMax / 1000)
+	absY := int32(clamp(y) * AbsMax / 1000)
 
 	return m.Abs.MoveTo(absX, absY)
 }
