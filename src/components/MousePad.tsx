@@ -10,6 +10,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
+import PanToolIcon from "@mui/icons-material/PanTool";
 
 import { MouseButtons } from "../lib/models";
 
@@ -23,6 +24,8 @@ const tapDuration = 300;
 const doubleTapWindow = 250;
 // max distance (px) between two taps to register as a double-tap
 const doubleTapDist = 24;
+// how long to hold still before a press becomes a click-and-hold drag
+const holdToDragDelay = 400;
 
 interface MousePadProps {
   open: boolean;
@@ -35,6 +38,10 @@ export default function MousePad(props: MousePadProps) {
 
   const [mode, setMode] = useState<MouseMode>("relative");
   const [sensitivity, setSensitivity] = useState<number>(1.5);
+  // dragLock: left button held down via the Hold button, until toggled off
+  const [dragLock, setDragLock] = useState<boolean>(false);
+  // held: left button currently down by any means (lock or long-press gesture)
+  const [held, setHeld] = useState<boolean>(false);
 
   const padRef = useRef<HTMLDivElement | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -45,6 +52,11 @@ export default function MousePad(props: MousePadProps) {
   const lastTapTimeRef = useRef<number | null>(null);
   const lastTapPosRef = useRef<{ x: number; y: number } | null>(null);
   const clickTimerRef = useRef<number | null>(null);
+  const holdTimerRef = useRef<number | null>(null);
+  // dragLockRef / gestureHeldRef mirror the two ways the button can be held,
+  // readable synchronously from pointer handlers
+  const dragLockRef = useRef<boolean>(false);
+  const gestureHeldRef = useRef<boolean>(false);
 
   // keep the latest mode/sensitivity readable from pointer handlers
   const modeRef = useRef<MouseMode>(mode);
@@ -56,22 +68,62 @@ export default function MousePad(props: MousePadProps) {
     sensitivityRef.current = sensitivity;
   }, [sensitivity]);
 
-  // cancel any queued movement frame and pending tap when the dialog closes
+  // always-current sendMessage for use in cleanup closures
+  const sendRef = useRef(sendMessage);
+  useEffect(() => {
+    sendRef.current = sendMessage;
+  }, [sendMessage]);
+
+  const syncHeld = () => {
+    setHeld(dragLockRef.current || gestureHeldRef.current);
+  };
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  // release any held button and reset transient state
+  const releaseAll = () => {
+    clearHoldTimer();
+    if (rafRef.current !== null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      pendingRef.current = { dx: 0, dy: 0 };
+    }
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    if (dragLockRef.current || gestureHeldRef.current) {
+      sendRef.current("mouseBtn:left_up");
+    }
+    dragLockRef.current = false;
+    gestureHeldRef.current = false;
+    lastTapTimeRef.current = null;
+    lastTapPosRef.current = null;
+    lastPointRef.current = null;
+  };
+
+  // release everything when the dialog closes
   useEffect(() => {
     if (!open) {
-      if (rafRef.current !== null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-        pendingRef.current = { dx: 0, dy: 0 };
-      }
-      if (clickTimerRef.current !== null) {
-        window.clearTimeout(clickTimerRef.current);
-        clickTimerRef.current = null;
-      }
-      lastTapTimeRef.current = null;
-      lastTapPosRef.current = null;
+      releaseAll();
+      setDragLock(false);
+      setHeld(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // release everything if the component unmounts while a button is held
+  useEffect(() => {
+    return () => {
+      releaseAll();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const flushMove = () => {
     rafRef.current = null;
@@ -122,6 +174,18 @@ export default function MousePad(props: MousePadProps) {
     if (modeRef.current === "absolute") {
       sendAbsolute(e.clientX, e.clientY);
     }
+
+    // start long-press-to-drag detection (unless the drag-lock already holds
+    // the button down)
+    clearHoldTimer();
+    if (!dragLockRef.current) {
+      holdTimerRef.current = window.setTimeout(() => {
+        holdTimerRef.current = null;
+        gestureHeldRef.current = true;
+        syncHeld();
+        sendMessage("mouseBtn:left_down");
+      }, holdToDragDelay);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -130,15 +194,22 @@ export default function MousePad(props: MousePadProps) {
       return;
     }
 
+    const rawDx = e.clientX - last.x;
+    const rawDy = e.clientY - last.y;
+    movedRef.current += Math.abs(rawDx) + Math.abs(rawDy);
+
+    // moving before the long-press fires means this is an ordinary move/drag,
+    // not a press-and-hold, so cancel the pending hold (both modes)
+    if (holdTimerRef.current !== null && movedRef.current >= tapThreshold) {
+      clearHoldTimer();
+    }
+
     if (modeRef.current === "absolute") {
       sendAbsolute(e.clientX, e.clientY);
       lastPointRef.current = { x: e.clientX, y: e.clientY };
       return;
     }
 
-    const rawDx = e.clientX - last.x;
-    const rawDy = e.clientY - last.y;
-    movedRef.current += Math.abs(rawDx) + Math.abs(rawDy);
     pendingRef.current.dx += rawDx * sensitivityRef.current;
     pendingRef.current.dy += rawDy * sensitivityRef.current;
     lastPointRef.current = { x: e.clientX, y: e.clientY };
@@ -149,16 +220,30 @@ export default function MousePad(props: MousePadProps) {
     if (lastPointRef.current === null) {
       return;
     }
+    lastPointRef.current = null;
+
+    clearHoldTimer();
+
+    // finished a long-press drag: release the button now
+    if (gestureHeldRef.current) {
+      gestureHeldRef.current = false;
+      syncHeld();
+      sendMessage("mouseBtn:left_up");
+      return;
+    }
+
+    // while the drag-lock holds the button, the pad only drags — no clicks
+    if (dragLockRef.current) {
+      return;
+    }
 
     const duration = e.timeStamp - downTimeRef.current;
     const wasTap = movedRef.current < tapThreshold && duration < tapDuration;
-    lastPointRef.current = null;
     if (!wasTap) {
       return;
     }
 
-    // a quick tap acts as a left click; two quick taps as a double click,
-    // in both trackpad and absolute modes
+    // a quick tap acts as a left click; two quick taps as a double click
     const pos = { x: e.clientX, y: e.clientY };
     const prevTime = lastTapTimeRef.current;
     const prevPos = lastTapPosRef.current;
@@ -188,6 +273,21 @@ export default function MousePad(props: MousePadProps) {
     }
   };
 
+  const toggleDragLock = () => {
+    if (dragLockRef.current) {
+      dragLockRef.current = false;
+      setDragLock(false);
+      syncHeld();
+      sendMessage("mouseBtn:left_up");
+    } else {
+      clearHoldTimer();
+      dragLockRef.current = true;
+      setDragLock(true);
+      syncHeld();
+      sendMessage("mouseBtn:left_down");
+    }
+  };
+
   const clickButton = (button: MouseButtons) => {
     sendMessage(`mouseBtn:${button}`);
   };
@@ -199,10 +299,16 @@ export default function MousePad(props: MousePadProps) {
     { label: "Middle Click", button: "middle" },
   ];
 
-  const padHint =
-    mode === "absolute"
-      ? "Drag to position · tap/double-tap to click"
-      : "Drag to move · tap to click · double-tap to double-click";
+  let padHint: string;
+  if (held) {
+    padHint = dragLock
+      ? "Left button held — drag to move, then tap Release"
+      : "Left button held — drag to move, lift to release";
+  } else if (mode === "absolute") {
+    padHint = "Drag to position · tap to click · press & hold to drag";
+  } else {
+    padHint = "Tap = click · double-tap = double-click · press & hold = drag";
+  }
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
@@ -233,10 +339,10 @@ export default function MousePad(props: MousePadProps) {
             sx={{
               height: "40vh",
               minHeight: 200,
-              border: 1,
-              borderColor: "divider",
+              border: held ? 2 : 1,
+              borderColor: held ? "primary.main" : "divider",
               borderRadius: 2,
-              bgcolor: "action.hover",
+              bgcolor: held ? "action.selected" : "action.hover",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -272,6 +378,16 @@ export default function MousePad(props: MousePadProps) {
               />
             </Box>
           )}
+
+          <Button
+            variant={dragLock ? "contained" : "outlined"}
+            color={dragLock ? "warning" : "primary"}
+            sx={{ width: "100%" }}
+            startIcon={<PanToolIcon />}
+            onClick={toggleDragLock}
+          >
+            {dragLock ? "Release" : "Click & Hold"}
+          </Button>
 
           <Grid container spacing={1}>
             {buttons.map((b) => (
