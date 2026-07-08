@@ -308,6 +308,13 @@ export default function MousePad(props: MousePadProps) {
     movedRef.current = 0;
     downTimeRef.current = e.timeStamp;
 
+    // cancel any pending single-click so this press can still complete a
+    // double-tap instead of the deferred click firing mid-press
+    if (clickTimerRef.current !== null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
     if (modeRef.current === "absolute") {
       sendAbsolute(e.clientX, e.clientY);
     }
