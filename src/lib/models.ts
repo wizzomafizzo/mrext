@@ -108,6 +108,23 @@ export type KeyboardCodes =
   | "exit_console"
   | "computer_osd";
 
+export type MouseButtons =
+  | "click"
+  | "double_click"
+  | "right"
+  | "middle"
+  | "left_down"
+  | "left_up"
+  | "right_down"
+  | "right_up"
+  | "middle_down"
+  | "middle_up";
+
+export interface ScreenResponse {
+  width: number;
+  height: number;
+}
+
 export interface CreateLauncherRequest {
   gamePath: string;
   folder: string;

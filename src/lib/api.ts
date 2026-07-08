@@ -10,6 +10,8 @@ import {
   ViewMenu,
   CreateLauncherRequest,
   KeyboardCodes,
+  MouseButtons,
+  ScreenResponse,
   ListInisPayload,
   SysInfoResponse,
   PeersResponse,
@@ -177,6 +179,22 @@ export class ControlApi {
 
   async sendRawKeyboard(key: number) {
     await axios.post(`/controls/keyboard-raw/${key}`);
+  }
+
+  async getScreen(): Promise<ScreenResponse> {
+    return (await axios.get<ScreenResponse>(`/controls/screen`)).data;
+  }
+
+  async moveMouse(x: number, y: number) {
+    await axios.post(`/controls/mouse/move`, { x, y });
+  }
+
+  async setMousePosition(x: number, y: number) {
+    await axios.post(`/controls/mouse/position`, { x, y });
+  }
+
+  async sendMouseButton(button: MouseButtons) {
+    await axios.post(`/controls/mouse/${button}`);
   }
 
   // menu
