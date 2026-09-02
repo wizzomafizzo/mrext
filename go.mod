@@ -27,6 +27,7 @@ require (
 require golang.org/x/term v0.9.0
 
 require (
+	github.com/ZaparooProject/zaparoo-core/mister v0.1.0
 	github.com/bendahl/uinput v1.6.0
 	github.com/c-seeger/mac-gen-go v0.0.0-20210816124238-465118e656da
 	github.com/clausecker/nfc/v2 v2.1.4

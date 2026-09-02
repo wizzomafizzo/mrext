@@ -35,8 +35,10 @@ func GetGroup(groupId string) (System, error) {
 
 	merged = CoreGroups[groupId][0]
 	merged.Slots = make([]Slot, 0)
-	for _, s := range CoreGroups[groupId] {
-		merged.Slots = append(merged.Slots, s.Slots...)
+	merged.extensions = make([]string, 0)
+	for _, system := range CoreGroups[groupId] {
+		merged.Slots = append(merged.Slots, system.Slots...)
+		merged.extensions = append(merged.extensions, system.extensions...)
 	}
 
 	return merged, nil
@@ -70,9 +72,20 @@ func MatchSystemFile(system System, path string) bool {
 		return false
 	}
 
-	for _, args := range system.Slots {
-		for _, ext := range args.Exts {
-			if strings.HasSuffix(strings.ToLower(path), ext) {
+	lowerPath := strings.ToLower(path)
+	if len(system.extensions) > 0 {
+		for _, ext := range system.extensions {
+			if strings.HasSuffix(lowerPath, ext) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Preserve compatibility for callers constructing System values manually.
+	for _, slot := range system.Slots {
+		for _, ext := range slot.Exts {
+			if strings.HasSuffix(lowerPath, ext) {
 				return true
 			}
 		}

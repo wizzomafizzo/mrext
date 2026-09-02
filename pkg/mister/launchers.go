@@ -10,6 +10,7 @@ import (
 	s "strings"
 	"time"
 
+	mglgen "github.com/ZaparooProject/zaparoo-core/mister/mgl"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 
@@ -18,47 +19,22 @@ import (
 )
 
 func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, override string) (string, error) {
-	// override the system rbf with the user specified one
+	if system == nil {
+		return "", fmt.Errorf("no system supplied for MGL generation")
+	}
+
+	core := games.CatalogCore(*system)
+
+	// Preserve legacy per-system RBF overrides.
 	for _, setCore := range cfg.Systems.SetCore {
 		parts := s.SplitN(setCore, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		if s.EqualFold(parts[0], system.Id) {
-			system.Rbf = parts[1]
+		if len(parts) == 2 && s.EqualFold(parts[0], system.Id) {
+			core.RBF = parts[1]
 			break
 		}
 	}
 
-	mgl := fmt.Sprintf("<mistergamedescription>\n\t<rbf>%s</rbf>\n", system.Rbf)
-
-	if system.SetName != "" {
-		sameDir := ""
-		if system.SetNameSameDir {
-			sameDir = " same_dir=\"1\""
-		}
-
-		mgl += fmt.Sprintf("\t<setname%s>%s</setname>\n", sameDir, system.SetName)
-	}
-
-	if path == "" {
-		mgl += "</mistergamedescription>"
-		return mgl, nil
-	} else if override != "" {
-		mgl += override
-		mgl += "</mistergamedescription>"
-		return mgl, nil
-	}
-
-	mglDef, err := games.PathToMglDef(*system, path)
-	if err != nil {
-		return "", err
-	}
-
-	mgl += fmt.Sprintf("<file delay=\"%d\" type=\"%s\" index=\"%d\" path=\"../../../../..%s\"/>\n", mglDef.Delay, mglDef.Method, mglDef.Index, path)
-	mgl += "</mistergamedescription>"
-	return mgl, nil
+	return mglgen.Generate(&core, core.RBF, path, override)
 }
 
 func writeTempFile(content string) (string, error) {

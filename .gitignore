@@ -19,5 +19,7 @@ scripts/armbuild/_build
 scripts/kernelbuild/_build
 cmd/vplay/_player/*
 !cmd/vplay/_player/README
+pkg/games/system_metadata.json
+pkg/games/system_metadata.gen.json
 .DS_Store
 .pi/

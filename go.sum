@@ -1,5 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
+github.com/ZaparooProject/zaparoo-core/mister v0.1.0 h1:DVzwnt4TOupYLH7lNATGIYijCoeGGMJa3Hzevx205Ak=
+github.com/ZaparooProject/zaparoo-core/mister v0.1.0/go.mod h1:c/P1hPgNCEGpzNyviQ4GHXDMPWUi2sdm1WLTZbBeJV4=
 github.com/bendahl/uinput v1.6.0 h1:fM6r3OSC17rHh758mizKjSBuqi+XinhiGd4N3pWvZiI=
 github.com/bendahl/uinput v1.6.0/go.mod h1:Np7w3DINc9wB83p12fTAM3DPPhFnAKP0WTXRqCQJ6Z8=
 github.com/c-seeger/mac-gen-go v0.0.0-20210816124238-465118e656da h1:LhZuiBcV8qvFrofoB73fjmsHkbODSyQVIPm22EtGHlY=

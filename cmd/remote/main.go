@@ -356,7 +356,8 @@ func main() {
 			gc.End()
 			logger.Error("adding startup: %s", err)
 
-			if errors.As(err, &curses.SetupWindowError{}) {
+			var setupErr *curses.SetupWindowError
+			if errors.As(err, &setupErr) {
 				interactive = false
 			} else {
 				fmt.Println("Error adding to startup:", err)
@@ -370,7 +371,8 @@ func main() {
 			gc.End()
 			logger.Error("displaying service info: %s", err)
 
-			if errors.As(err, &curses.SetupWindowError{}) {
+			var setupErr *curses.SetupWindowError
+			if errors.As(err, &setupErr) {
 				interactive = false
 			} else {
 				fmt.Println("Error displaying service info:", err)

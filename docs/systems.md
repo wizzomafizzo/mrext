@@ -4,13 +4,13 @@
 
 This is a list of all systems supported by the MiSTer Extensions scripts. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if a system is missing or not working.
 
-**Consoles:** [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [CD-I](#cd-i), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Jaguar](#jaguar), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [Mega Duck](#mega-duck), [NES](#nes), [NES Music](#nes-music), [Neo Geo CD](#neo-geo-cd), [Neo Geo MVS/AES](#neo-geo-mvsaes), [Nintendo 64](#nintendo-64), [Playstation](#playstation), [Pocket Challenge V2](#pocket-challenge-v2), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Saturn](#saturn), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [WonderSwan](#wonderswan), [WonderSwan Color](#wonderswan-color)
+**Consoles:** [3DO](#3do), [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [CD-i](#cd-i), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Game Gear (2 Player)](#game-gear-2-player), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Jaguar](#jaguar), [Jaguar CD](#jaguar-cd), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [Mega Duck](#mega-duck), [NES](#nes), [NES Music](#nes-music), [Neo Geo](#neo-geo), [Neo Geo CD](#neo-geo-cd), [Nintendo 64](#nintendo-64), [Playstation](#playstation), [Pocket Challenge V2](#pocket-challenge-v2), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Saturn](#saturn), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [Virtual Boy](#virtual-boy), [WonderSwan](#wonderswan), [WonderSwan Color](#wonderswan-color)
 
 
-**Computers:** [Amiga](#amiga), [Amiga CD32](#amiga-cd32), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIe](#apple-iie), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [MSX1](#msx1), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
+**Computers:** [Amiga](#amiga), [Amiga CD32](#amiga-cd32), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIGS](#apple-iigs), [Apple IIe](#apple-iie), [Apple Lisa](#apple-lisa), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [MSX1](#msx1), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
 
 
-**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8), [Groovy](#groovy)
+**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8), [Groovy](#groovy), [Mega VGM Drive](#mega-vgm-drive), [Neo Geo Pocket](#neo-geo-pocket), [Neo Geo Pocket Color](#neo-geo-pocket-color), [OpenBOR](#openbor), [PICO-8](#pico-8)
 
 
 ## Core Groups
@@ -21,10 +21,22 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Atari7800 | [Atari 7800](#atari-7800), [Atari 2600](#atari-2600) |
 | Coleco | [ColecoVision](#colecovision), [SG-1000](#sg-1000) |
 | Gameboy | [Gameboy](#gameboy), [Gameboy Color](#gameboy-color) |
+| Jaguar | [Jaguar](#jaguar), [Jaguar CD](#jaguar-cd) |
 | NES | [NES](#nes), [NES Music](#nes-music), [Famicom Disk System](#famicom-disk-system) |
 | SMS | [Master System](#master-system), [Game Gear](#game-gear), [SG-1000](#sg-1000) |
 | SNES | [SNES](#snes), [SNES Music](#snes-music) |
 | TGFX16 | [TurboGrafx-16](#turbografx-16), [SuperGrafx](#supergrafx) |
+
+## 3DO
+
+**ID**: 3DO  | **Folders**: 3DO | **RBF**: _Console/3DO
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .iso, .cue, .chd | 1 | s | 0 |
+
+[Back to top](#systems)
 
 ## Adventure Vision
 
@@ -50,12 +62,12 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Amiga CD32
 
-**ID**: AmigaCD32  | **Aliases**: AmigaCD32  | **Folders**: AmigaCD32 | **RBF**: _Computer/Minimig
+**ID**: AmigaCD32  | **Folders**: AmigaCD32 | **RBF**: _Computer/Minimig
 
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| CD Image | .cue, .chd | 1 | s | 1 |
+| CD Image | .cue, .chd, .iso | 1 | s | 1 |
 
 [Back to top](#systems)
 
@@ -70,6 +82,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | B: | .dsk | 1 | s | 1 |
 | Expansion | .e?? | 1 | f | 3 |
 | Tape | .cdt | 1 | f | 4 |
+| Snapshot | .sna | 1 | f | 6 |
 
 [Back to top](#systems)
 
@@ -107,6 +120,19 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Apple IIGS
+
+**ID**: AppleIIGS  | **Aliases**: Apple-IIGS, Apple IIGS  | **Folders**: Apple-IIgs | **RBF**: _Computer/Apple-IIgs
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| Hard Disk | .hdv, .po, .2mg | 1 | s | 0 |
+| 3.5-inch Floppy | .woz | 1 | s | 2 |
+| 5.25-inch Floppy | .dsk, .do, .nib | 1 | s | 3 |
+
+[Back to top](#systems)
+
 ## Apple IIe
 
 **ID**: AppleII  | **Aliases**: Apple-II  | **Folders**: Apple-II | **RBF**: _Computer/Apple-II
@@ -119,9 +145,20 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Apple Lisa
+
+**ID**: AppleLisa  | **Aliases**: Apple-Lisa  | **Folders**: LISA | **RBF**: _Computer/Apple-Lisa
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| Hard Disk | .img, .vhd | 2 | s | 0 |
+
+[Back to top](#systems)
+
 ## Arcade
 
-**ID**: Arcade  | **Folders**: _Arcade | **RBF**: 
+**ID**: Arcade  | **Aliases**: MAME  | **Folders**: _Arcade | **RBF**:
 
 
 | Label | Files | Delay | Type | Index |
@@ -258,9 +295,9 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
-## CD-I
+## CD-i
 
-**ID**: CDI  | **Folders**: CD-i | **RBF**: _Console/CDi
+**ID**: CDI  | **Aliases**: CD-i  | **Folders**: CD-i | **RBF**: _Console/CDi
 
 
 | Label | Files | Delay | Type | Index |
@@ -451,6 +488,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Game Gear (2 Player)
+
+**ID**: GameGear2P  | **Folders**: GameGear2P | **RBF**: _Console/GameGear2P
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .gg | 1 | f | 2 |
+
+[Back to top](#systems)
+
 ## Gameboy
 
 **ID**: Gameboy  | **Aliases**: GB  | **Folders**: GAMEBOY | **RBF**: _Console/Gameboy
@@ -530,7 +578,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 ## Groovy
 
-**ID**: Groovy  | **Aliases**: Groovy  | **Folders**: Groovy | **RBF**: _Utility/Groovy
+**ID**: Groovy  | **Folders**: Groovy | **RBF**: _Utility/Groovy
 
 
 | Label | Files | Delay | Type | Index |
@@ -546,7 +594,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| - | .int, .bin | 1 | f | 1 |
+| - | .rom, .int, .bin | 1 | f | 1 |
 
 [Back to top](#systems)
 
@@ -568,7 +616,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| - | .jag, .j64, .rom, .bin | 1 | s | 1 |
+| - | .jag, .j64, .rom, .bin | 1 | f | 0 |
+
+[Back to top](#systems)
+
+## Jaguar CD
+
+**ID**: JaguarCD  | **Folders**: Jaguar | **RBF**: _Console/Jaguar
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .cdi | 1 | s | 1 |
 
 [Back to top](#systems)
 
@@ -700,6 +759,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Mega VGM Drive
+
+**ID**: MegaVGMDrive  | **Folders**: MegaVGMDrive | **RBF**: _Custom Cores/Cores/VGM_MD_MiSTer
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| VGM | .vgm | 1 | f | 1 |
+
+[Back to top](#systems)
+
 ## MultiComp
 
 **ID**: MultiComp  | **Folders**: MultiComp | **RBF**: _Computer/MultiComp
@@ -733,18 +803,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
-## Neo Geo CD
-
-**ID**: NeoGeoCD  | **Folders**: NeoGeo-CD | **RBF**: _Console/NeoGeo
-
-
-| Label | Files | Delay | Type | Index |
-| --- | --- | --- | --- | --- |
-| CD Image | .cue, .chd | 1 | s | 1 |
-
-[Back to top](#systems)
-
-## Neo Geo MVS/AES
+## Neo Geo
 
 **ID**: NeoGeo  | **Folders**: NEOGEO | **RBF**: _Console/NeoGeo
 
@@ -755,6 +814,39 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
+## Neo Geo CD
+
+**ID**: NeoGeoCD  | **Folders**: NeoGeo-CD, NEOGEO | **RBF**: _Console/NeoGeo
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| CD Image | .cue, .chd | 1 | s | 1 |
+
+[Back to top](#systems)
+
+## Neo Geo Pocket
+
+**ID**: NeoGeoPocket  | **Folders**: NGP | **RBF**: _Arcade/JTNGP
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| ROM | .ngp | 2 | f | 1 |
+
+[Back to top](#systems)
+
+## Neo Geo Pocket Color
+
+**ID**: NeoGeoPocketColor  | **Folders**: NGPC | **RBF**: _Arcade/JTNGPC
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| ROM | .ngc | 2 | f | 1 |
+
+[Back to top](#systems)
+
 ## Nintendo 64
 
 **ID**: Nintendo64  | **Aliases**: N64  | **Folders**: N64 | **RBF**: _Console/N64
@@ -762,7 +854,18 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| - | .n64, .z64 | 1 | f | 1 |
+| - | .n64, .z64, .v64 | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## OpenBOR
+
+**ID**: OpenBOR  | **Folders**: OpenBOR | **RBF**: _Other/OpenBOR_4086
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| PAK | .pak | 2 | s | 0 |
 
 [Back to top](#systems)
 
@@ -822,6 +925,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .pdp, .rim, .bin | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## PICO-8
+
+**ID**: Pico8  | **Folders**: PICO-8 | **RBF**: _Other/PICO-8
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| Cart | .p8, .p8.png | 2 | s | 0 |
 
 [Back to top](#systems)
 
@@ -945,7 +1059,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
-| Disk | .cue, .chd | 1 | s | 0 |
+| Disk | .cue, .chd | 2 | s | 0 |
 
 [Back to top](#systems)
 
@@ -1193,6 +1307,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | - | .vec, .bin, .rom | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## Virtual Boy
+
+**ID**: VirtualBoy  | **Folders**: VirtualBoy | **RBF**: _Console/VirtualBoy
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| - | .vb | 1 | f | 1 |
 
 [Back to top](#systems)
 

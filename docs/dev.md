@@ -49,7 +49,7 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 
 To start, you can run `go mod download` from the root of the project folder. This will download all dependencies used by the project. Builds automatically do this, but running it now will stop your editor from complaining about missing modules.
 
-All build steps are done with the `mage` command run from the root of the project folder. Run `mage` by itself to see a list of available commands.
+All build steps are done with the `mage` command run from the root of the project folder. Run `mage` by itself to see a list of available commands. Build, test, and systems-documentation targets first generate an ignored metadata asset from a pinned Zaparoo Core Git revision. The first run requires network access and Git; later runs reuse the generated asset and cached checkout. Set `ZAPAROO_CORE_SOURCE` to a local Core checkout when developing metadata changes.
 
 Before building MiSTer binaries, you'll also need to build the Docker image it uses. Just run `mage makeArmImage` to add it to your system.
 
@@ -110,7 +110,7 @@ For showing a GUI/TUI using curses. These should be modular as much as possible 
 
 All functions related to indexing, searching and interacting with game files on a system.
 
-The `systems.go` file is an especially important one, it defines every core on a MiSTer and what its capabilities are. The `systems.md` file in the `docs` folder is generated from this file.
+The `systems.go` file combines the dependency-free MiSTer catalog from `github.com/ZaparooProject/zaparoo-core/mister` with display metadata generated directly from pinned Zaparoo Core source files. Zaparoo owns names, categories, release dates, manufacturers, aliases, scan folders, extensions, RBF paths, setnames, groups, MGL slots, and pure MGL generation. mrext retains stock-filesystem scanning, hooks, legacy JSON structures, and menu output. Run `mage generateSystemMetadata` to refresh the ignored build asset and `mage genSystemsDoc` to regenerate `docs/systems.md`.
 
 #### input
 
