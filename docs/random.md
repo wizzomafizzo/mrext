@@ -11,10 +11,11 @@ Random is a simple application for launching a game at random from your MiSTer's
 
 Download [Random](https://github.com/wizzomafizzo/mrext/releases/latest/download/random.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/random]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/random/random.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/random/random.json
 ```
 
 ## Usage
@@ -29,7 +30,7 @@ Both arguments take a comma-separated list of system IDs from the [supported sys
 
 The `-filter` flag will restrict the systems searched to only those specified. The `-ignore` flag does the opposite. Both flags can be used at the same time if desired.
 
-Example of only Gameboy Advance, PSX and NES being search: `random.sh -filter gba,psx,nes`
+Example of searching only Game Boy Advance, PSX, and NES: `random.sh -filter gba,psx,nes`
 
 Example of Commodore 64 being ignored: `random.sh -filter all -ignore c64`
 

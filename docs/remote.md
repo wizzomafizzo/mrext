@@ -7,12 +7,6 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 
-<a href="https://apps.apple.com/au/app/wizzo-remote/id6462999902"><img src="https://github.com/wizzomafizzo/mrext/assets/442478/2fa137a2-7b37-4c70-9495-960032ee8590" alt="Download iOS App" title="Download iOS App" width="140"></a>
-
-<a href="https://play.google.com/store/apps/details?id=net.mrext.remote"><img src="https://github.com/steverichey/google-play-badge-svg/raw/master/img/en_get.svg" alt="Download Android App" title="Download Android App" width="140"></a>
-
-[Android APK (Sideload)](https://github.com/wizzomafizzo/mrext-client/releases/latest/download/mrext-client.apk)
-
 [API Documentation](remote-api.md)
 
 ## Features
@@ -40,15 +34,16 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 Download [Remote](https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/remote]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/remote/remote.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/remote/remote.json
 ```
 
 Once installed, run `remote` from the MiSTer `Scripts` menu, and a prompt will offer to enable Remote as a startup service.
 
-This service must be running for remote to work, but it has no impact on your MiSTer's performance.
+This service must be running to use Remote's web UI or API.
 
 ## Usage
 

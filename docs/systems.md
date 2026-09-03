@@ -4,13 +4,13 @@
 
 This is a list of all systems supported by the MiSTer Extensions scripts. Please [open an issue](https://github.com/wizzomafizzo/mrext/issues/new) if a system is missing or not working.
 
-**Consoles:** [3DO](#3do), [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [CD-i](#cd-i), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game-&-watch), [Game Gear](#game-gear), [Game Gear (2 Player)](#game-gear-2-player), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Jaguar](#jaguar), [Jaguar CD](#jaguar-cd), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [Mega Duck](#mega-duck), [NES](#nes), [NES Music](#nes-music), [Neo Geo](#neo-geo), [Neo Geo CD](#neo-geo-cd), [Nintendo 64](#nintendo-64), [Playstation](#playstation), [Pocket Challenge V2](#pocket-challenge-v2), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Saturn](#saturn), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [Virtual Boy](#virtual-boy), [WonderSwan](#wonderswan), [WonderSwan Color](#wonderswan-color)
+**Consoles:** [3DO](#3do), [Adventure Vision](#adventure-vision), [Arcadia 2001](#arcadia-2001), [Atari 2600](#atari-2600), [Atari 5200](#atari-5200), [Atari 7800](#atari-7800), [Atari Lynx](#atari-lynx), [Bally Astrocade](#bally-astrocade), [CD-i](#cd-i), [Casio PV-1000](#casio-pv-1000), [Channel F](#channel-f), [ColecoVision](#colecovision), [Famicom Disk System](#famicom-disk-system), [Gamate](#gamate), [Game & Watch](#game--watch), [Game Gear](#game-gear), [Game Gear (2 Player)](#game-gear-2-player), [Gameboy](#gameboy), [Gameboy (2 Player)](#gameboy-2-player), [Gameboy Advance](#gameboy-advance), [Gameboy Advance (2 Player)](#gameboy-advance-2-player), [Gameboy Color](#gameboy-color), [Genesis](#genesis), [Genesis 32X](#genesis-32x), [Intellivision](#intellivision), [Jaguar](#jaguar), [Jaguar CD](#jaguar-cd), [Magnavox Odyssey2](#magnavox-odyssey2), [Master System](#master-system), [Mega Duck](#mega-duck), [NES](#nes), [NES Music](#nes-music), [Neo Geo](#neo-geo), [Neo Geo CD](#neo-geo-cd), [Nintendo 64](#nintendo-64), [Playstation](#playstation), [Pocket Challenge V2](#pocket-challenge-v2), [Pokemon Mini](#pokemon-mini), [SG-1000](#sg-1000), [SNES](#snes), [SNES Music](#snes-music), [Saturn](#saturn), [Sega CD](#sega-cd), [Super Gameboy](#super-gameboy), [SuperGrafx](#supergrafx), [SuperVision](#supervision), [TurboGrafx-16](#turbografx-16), [TurboGrafx-16 CD](#turbografx-16-cd), [VC4000](#vc4000), [VTech CreatiVision](#vtech-creativision), [Vectrex](#vectrex), [Virtual Boy](#virtual-boy), [WonderSwan](#wonderswan), [WonderSwan Color](#wonderswan-color)
 
 
-**Computers:** [Amiga](#amiga), [Amiga CD32](#amiga-cd32), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIGS](#apple-iigs), [Apple IIe](#apple-iie), [Apple Lisa](#apple-lisa), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [MSX1](#msx1), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC (486SX)](#pc-486sx), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next)
+**Computers:** [Amiga](#amiga), [Amiga CD32](#amiga-cd32), [Amstrad CPC](#amstrad-cpc), [Amstrad PCW](#amstrad-pcw), [Apogee BK-01](#apogee-bk-01), [Apple I](#apple-i), [Apple IIGS](#apple-iigs), [Apple IIe](#apple-iie), [Apple Lisa](#apple-lisa), [Atari 800XL](#atari-800xl), [Atom](#atom), [BBC Micro/Master](#bbc-micromaster), [BK0011M](#bk0011m), [Casio PV-2000](#casio-pv-2000), [Commodore 16](#commodore-16), [Commodore 64](#commodore-64), [Commodore PET 2001](#commodore-pet-2001), [Commodore VIC-20](#commodore-vic-20), [EDSAC](#edsac), [Electron](#electron), [Galaksija](#galaksija), [Interact](#interact), [Jupiter Ace](#jupiter-ace), [Laser 350/500/700](#laser-350500700), [Lynx 48/96K](#lynx-4896k), [M5](#m5), [MSX](#msx), [MSX1](#msx1), [Macintosh Plus](#macintosh-plus), [Mattel Aquarius](#mattel-aquarius), [MultiComp](#multicomp), [Orao](#orao), [Oric](#oric), [PC/XT](#pcxt), [PDP-1](#pdp-1), [PMD 85-2A](#pmd-85-2a), [RX-78 Gundam](#rx-78-gundam), [SAM Coupe](#sam-coupe), [SV-328](#sv-328), [Sinclair QL](#sinclair-ql), [Specialist/MX](#specialistmx), [TI-99/4A](#ti-994a), [TRS-80](#trs-80), [TRS-80 CoCo 2](#trs-80-coco-2), [TS-1500](#ts-1500), [TS-Config](#ts-config), [Tandy MC-10](#tandy-mc-10), [Tatung Einstein](#tatung-einstein), [Tutor](#tutor), [UK101](#uk101), [Vector-06C](#vector-06c), [X68000](#x68000), [ZX Spectrum](#zx-spectrum), [ZX Spectrum Next](#zx-spectrum-next), [ao486](#ao486)
 
 
-**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8), [Groovy](#groovy), [Mega VGM Drive](#mega-vgm-drive), [Neo Geo Pocket](#neo-geo-pocket), [Neo Geo Pocket Color](#neo-geo-pocket-color), [OpenBOR](#openbor), [PICO-8](#pico-8)
+**Other:** [Arcade](#arcade), [Arduboy](#arduboy), [CHIP-8](#chip-8), [Groovy](#groovy), [MegaVGMDrive](#megavgmdrive), [Neo Geo Pocket](#neo-geo-pocket), [Neo Geo Pocket Color](#neo-geo-pocket-color), [OpenBOR](#openbor), [PICO-8](#pico-8)
 
 
 ## Core Groups
@@ -759,7 +759,7 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 
 [Back to top](#systems)
 
-## Mega VGM Drive
+## MegaVGMDrive
 
 **ID**: MegaVGMDrive  | **Folders**: MegaVGMDrive | **RBF**: _Custom Cores/Cores/VGM_MD_MiSTer
 
@@ -888,18 +888,6 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | Label | Files | Delay | Type | Index |
 | --- | --- | --- | --- | --- |
 | Drive A: | .dsk | 1 | s | 0 |
-
-[Back to top](#systems)
-
-## PC (486SX)
-
-**ID**: ao486  | **Folders**: AO486 | **RBF**: _Computer/ao486
-
-
-| Label | Files | Delay | Type | Index |
-| --- | --- | --- | --- | --- |
-| Floppy A: | .img, .ima, .vfd | 1 | s | 0 |
-| IDE 0-0 | .vhd | 1 | s | 2 |
 
 [Back to top](#systems)
 
@@ -1381,5 +1369,17 @@ Core groups are aliases to multiple systems. They work as system IDs for all con
 | C: | .vhd | 1 | s | 0 |
 | D: | .vhd | 1 | s | 1 |
 | Tape | .tzx, .csw | 1 | f | 1 |
+
+[Back to top](#systems)
+
+## ao486
+
+**ID**: ao486  | **Folders**: AO486 | **RBF**: _Computer/ao486
+
+
+| Label | Files | Delay | Type | Index |
+| --- | --- | --- | --- | --- |
+| Floppy A: | .img, .ima, .vfd | 1 | s | 0 |
+| IDE 0-0 | .vhd | 1 | s | 2 |
 
 [Back to top](#systems)

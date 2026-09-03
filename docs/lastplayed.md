@@ -17,10 +17,11 @@ Enable the `recents` option in your `MiSTer.ini` file.
 
 Download [LastPlayed](https://github.com/wizzomafizzo/mrext/releases/latest/download/lastplayed.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/lastplayed]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/lastplayed/lastplayed.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/lastplayed/lastplayed.json
 ```
 
 Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.

@@ -30,6 +30,11 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
+func markdownAnchor(heading string) string {
+	anchor := strings.ReplaceAll(strings.ToLower(heading), " ", "-")
+	return "#" + utils.StripChars(anchor, "()/&")
+}
+
 func main() {
 	systems := make([]games.System, 0, len(games.Systems))
 	for id := range games.Systems {
@@ -53,9 +58,7 @@ func main() {
 	var tocOther []string
 	for i := range systems {
 		system := &systems[i]
-		tocAnchor := "#" + strings.ReplaceAll(strings.ToLower(system.Name), " ", "-")
-		tocAnchor = utils.StripChars(tocAnchor, "()/")
-		tocLink := fmt.Sprintf("[%s](%s)", system.Name, tocAnchor)
+		tocLink := fmt.Sprintf("[%s](%s)", system.Name, markdownAnchor(system.Name))
 		switch {
 		case strings.HasPrefix(system.Rbf, "_Console"):
 			tocConsole = append(tocConsole, tocLink)
@@ -85,8 +88,7 @@ func main() {
 		members := make([]string, 0, len(groupSystems))
 		for i := range groupSystems {
 			system := &groupSystems[i]
-			anchor := "#" + strings.ReplaceAll(strings.ToLower(system.Name), " ", "-")
-			members = append(members, fmt.Sprintf("[%s](%s)", system.Name, anchor))
+			members = append(members, fmt.Sprintf("[%s](%s)", system.Name, markdownAnchor(system.Name)))
 		}
 		_, _ = fmt.Fprintf(&document, "| %s | %s |\n", id, strings.Join(members, ", "))
 	}

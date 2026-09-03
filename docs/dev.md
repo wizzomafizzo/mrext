@@ -15,7 +15,7 @@ Applications should:
 
 ## Development Environment
 
-The project is written in pure Go and uses Mage for build scripts. Development and MiSTer ARM32 cross-compilation can run on any platform supported by Go; no C compiler, native libraries, ARM container, or Docker installation is required.
+The project is written in pure Go and uses Mage for build scripts. MiSTer ARM32 cross-compilation uses Go directly; no C compiler, native libraries, ARM container, or Docker installation is required.
 
 Most applications use a lot of MiSTer-specific paths and files to function. They will mostly work on a desktop with a `/media/fat` directory created to match a MiSTer system, but this generally won't work great beyond specific testing. The usual development cycle is to build a MiSTer ARM binary, copy it to your own MiSTer and run on there to test.
 
@@ -27,19 +27,19 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 
 - [Mage](https://magefile.org/)
 
-  Used for all builds and automations in the project. Easiest way to get it running is install the binary somewhere globally, rather than installing via the Go package manager as it recommends.
+  Used for builds and automation. Install Mage globally, or replace `mage` in commands below with `go run github.com/magefile/mage`.
 
 ### Optional Dependencies
 
 - [Python](https://www.python.org/)
 
-  Used for some scripts and older projects. Remember that MiSTer currently ships with version 3.9, so don't use any newer Python features.
+  Used by `scripts/generate_repo.py` in the repository publishing workflow.
 
 ## Building
 
 To start, you can run `go mod download` from the root of the project folder. This will download all dependencies used by the project. Builds automatically do this, but running it now will stop your editor from complaining about missing modules.
 
-All build steps are done with the `mage` command run from the root of the project folder. Run `mage` by itself to see a list of available commands. Build, test, and systems-documentation targets first generate an ignored metadata asset from a pinned Zaparoo Core Git revision. The first run requires network access and Git; later runs reuse the generated asset and cached checkout. Set `ZAPAROO_CORE_SOURCE` to a local Core checkout when developing metadata changes.
+All build steps are done with the `mage` command run from the root of the project folder. Run `mage` by itself to see a list of available commands. Build, test, lint, coverage, and systems-documentation targets first generate an ignored metadata asset from a pinned Zaparoo Core Git revision. The first run requires network access and Git; later runs reuse the generated asset and cached checkout. Set `ZAPAROO_CORE_SOURCE` to a local Core checkout when developing metadata changes.
 
 Built binaries will be created in the `_bin` directory under the appropriate architecture subdirectory.
 
@@ -81,9 +81,9 @@ The shared library for the whole project.
 
 All global configuration settings, MiSTer environment paths and the module for parsing per-app .ini configuration files. If you're hardcoding a path or a special value, it should go here instead.
 
-#### curses
+#### tui
 
-For showing a GUI/TUI using curses. These should be modular as much as possible and shareable between applications.
+Reusable terminal UI components built with tview and tcell, including list pickers, an on-screen keyboard, progress views, and MiSTer's framebuffer-console retry flow.
 
 #### games
 

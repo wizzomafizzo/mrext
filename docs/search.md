@@ -3,8 +3,6 @@
 > [!IMPORTANT]
 > Search is maintained for its controller-driven stock-OSD workflow. Before using it for new MiSTer search or library work, consider Core's media index and `media.search`, `zaparoo-cli media search`, or the search interfaces in App, Web UI, and Frontend. See [MIGRATE.md](../MIGRATE.md).
 
-<img src="images/search.gif"/>
-
 Search is an application to *search* for games on your MiSTer. It indexes all your games, lets you enter search queries without a keyboard, and then displays a list of results that can be launched directly.
 
 *NOTE: Search is still a work in progress. Core functionality of indexing and searching works great, but the GUI is missing a lot of features like filtering, sorting, re-indexing etc. which will come later. Feel free to use it now though.*
@@ -15,10 +13,11 @@ Search is an application to *search* for games on your MiSTer. It indexes all yo
 
 Download [Search](https://github.com/wizzomafizzo/mrext/releases/latest/download/search.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/search]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/search/search.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/search/search.json
 ```
 
 ## Usage

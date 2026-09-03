@@ -33,6 +33,7 @@
       * [Launch game](#launch-game)
       * [Generate search index](#generate-search-index)
       * [Check current playing game and system](#check-current-playing-game-and-system)
+      * [Browse game folders](#browse-game-folders)
     * [Launchers](#launchers)
       * [Launch token data](#launch-token-data)
       * [Launch games, cores, arcade and .mgl](#launch-games-cores-arcade-and-mgl)
@@ -74,6 +75,7 @@
       * [Indexing status](#indexing-status)
       * [Core status](#core-status)
       * [Game status](#game-status)
+      * [Menu status](#menu-status)
     * [Events](#events)
     * [Commands](#commands)
       * [Get indexing status](#get-indexing-status)
@@ -94,7 +96,7 @@ See the [supported systems](systems.md) page for a list of system IDs referred t
 
 ### Screenshots
 
-Methods related to viewing, manageing and taking screenshots.
+Methods related to viewing, managing, and taking screenshots.
 
 #### List screenshots
 
@@ -514,7 +516,7 @@ curl --request POST --url "http://mister:8182/api/music/next"
 
 #### Set playback type
 
-Set the playback type of the playlists. This setting doesn't not persist between service restarts.
+Set the playback type of the playlists. This setting does not persist between service restarts.
 
 ```plaintext
 POST /music/playback/{type}
@@ -584,7 +586,7 @@ On success, returns `200`.
 Example request:
 
 ```shell
-curl --request POST --url "http://mister:8182/api/music/playback/Arcade%20Ambiance"
+curl --request POST --url "http://mister:8182/api/music/playlist/Arcade%20Ambience"
 ```
 
 ### Games
@@ -606,7 +608,7 @@ Arguments (JSON):
 
 | Attribute | Type   | Required | Description                                                                                               |
 |-----------|--------|----------|-----------------------------------------------------------------------------------------------------------|
-| `data`    | string | Yes      | Query to search for in game filename (by word).                                                           |
+| `query`   | string | Yes      | Query to search for in game filename (by word).                                                           |
 | `system`  | string | Yes      | System ID to search in. `all` or empty string to search all systems. Must be an exact match of system ID. |
 
 On success, returns `200` and object:
@@ -679,7 +681,7 @@ Example response:
 
 Returns a list of all systems with indexed games.
 
-**This method is know to have significant resource usage, and can cause screen flickering in high resolution
+**This method is known to have significant resource usage, and can cause screen flickering in high resolution
 framebuffers, and potentially affect access timing for cores mounting CD images. It won't damage anything, but has
 noticeable effects.**
 
@@ -750,7 +752,7 @@ If system cannot be detected from path, returns `500`.
 Example request:
 
 ```shell
-curl --request POST --url "http://mister:8182/api/games/search" --data '{"query":"crash bandicoot","system":"PSX"}'
+curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/PSX/1 USA - A-D/Crash Bandicoot (USA).chd"}'
 ```
 
 #### Generate search index
@@ -813,6 +815,28 @@ Example response:
   "game": "NES/2022-04 Crystalis.mgl",
   "gameName": "2022-04 Crystalis"
 }
+```
+
+#### Browse game folders
+
+Lists configured game folders, directory contents, or supported files inside a ZIP archive. Send an empty path to list game roots; subsequent requests use an item's `next` value.
+
+```plaintext
+POST /games/view
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                                      |
+|-----------|--------|----------|--------------------------------------------------|
+| `path`    | string | Yes      | Empty string, game-folder path, or ZIP file path. |
+
+On success, returns `200` with an `items` array and, below a game root, an `up` path. Items use the same fields documented under [List menu folder](#list-menu-folder), with optional `next` and `system` fields.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/games/view" --data '{"path":""}'
 ```
 
 ### Launchers
@@ -922,8 +946,7 @@ Example response:
 #### Send named keyboard key or combo
 
 Sends a keyboard key or combo to the MiSTer based on a predefined list of names that describe its function.
-See [here](https://github.com/wizzomafizzo/mrext/blob/f03acd3b2cab6950037a83f73bdd37af3b63510e/cmd/remote/control/control.go#L49)
-for the full list of names available.
+See [`SendKeyboard`](../cmd/remote/control/control.go) for the full list of names available.
 
 ```plaintext
 POST /controls/keyboard/{name}
@@ -1473,7 +1496,7 @@ Example request:
 curl --request GET --url "http://mister:8182/api/settings/inis/1"
 ```
 
-Example reponse:
+Example response:
 
 ```json
 {
@@ -1519,7 +1542,7 @@ Set the "background mode" of the menu core. Equivalent to when `F1` is pressed i
 input.
 
 ```plaintext
-PUT /settings/core/menu
+PUT /settings/cores/menu
 ```
 
 Arguments (JSON):
@@ -1533,7 +1556,7 @@ On success, returns `200`.
 Example request:
 
 ```shell
-curl --request PUT --url "http://mister:8182/api/settings/core/menu" --data '{"mode":0}'
+curl --request PUT --url "http://mister:8182/api/settings/cores/menu" --data '{"mode":0}'
 ```
 
 #### Restart Remote service

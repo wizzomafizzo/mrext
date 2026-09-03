@@ -15,10 +15,11 @@ Enable the `recents` option in your `MiSTer.ini` file and reboot your MiSTer.
 
 Download [PlayLog](https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/playlog]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/playlog/playlog.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/playlog/playlog.json
 ```
 
 ## Usage

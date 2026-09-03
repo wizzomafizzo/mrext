@@ -5,7 +5,7 @@
 
 LaunchSync allows people to create, share and maintain live-updating game playlists for the MiSTer.
 
-You create a [sync file](#sync-files) with a list of games, someone copies the file to their MiSTer, and LaunchSync will use it to generate a working list of game shortcuts in the MiSTer main menu. Sync files are subscriptable, so you can publish changes to your playlist and people will see your updates on their own system.
+You create a [sync file](#sync-files) with a list of games, someone copies the file to their MiSTer, and LaunchSync uses it to generate working game shortcuts in MiSTer main menu. Sync files can subscribe to a published source, so playlist changes can reach other systems on their next LaunchSync run.
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh"><img src="images/download.svg" alt="Download LaunchSync" title="Download LaunchSync" width="140"></a>
 
@@ -13,10 +13,11 @@ You create a [sync file](#sync-files) with a list of games, someone copies the f
 
 Download [LaunchSync](https://github.com/wizzomafizzo/mrext/releases/latest/download/launchsync.sh) and copy it to the `Scripts` folder on your MiSTer's SD card.
 
-Optionally, add the following to the `downloader.ini` file on your MiSTer, to receive updates with the `update` script:
-```
+Optionally, add this database to `downloader.ini` in SD card root, then run `downloader` or `update` to receive updates:
+
+```ini
 [mrext/launchsync]
-db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/launchsync.json
+db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/launchsync/launchsync.json
 ```
 
 ## Usage
@@ -26,7 +27,7 @@ db_url = https://github.com/wizzomafizzo/mrext/raw/main/releases/launchsync/laun
 
 LaunchSync will search for all sync files on the MiSTer, check for sync file updates online, create folders for new sync files, and then create or update all shortcuts for listed games.
 
-*NOTE: Currently LaunchSync must be run manually to update. In the future, it will be possible to have it run on MiSTer startup and automatically sync shortcuts in the background.*
+LaunchSync must be run manually whenever you want to update subscribed files or regenerate shortcuts.
 
 ### Sync Files
 
