@@ -76,7 +76,7 @@ func wsConnectPayload(trk *tracker.Tracker) func() []string {
 	}
 }
 
-func wsMsgHandler(kbd input.Keyboard) func(string) string {
+func wsMsgHandler(kbd input.Keyboard, mouse input.Mouse) func(string) string {
 	return func(msg string) string {
 		parts := strings.SplitN(msg, ":", 2)
 		cmd := parts[0]
@@ -130,10 +130,60 @@ func wsMsgHandler(kbd input.Keyboard) func(string) string {
 			}
 
 			return ""
+		case "mouseMove":
+			x, y, err := parseMouseCoords(args)
+			if err != nil {
+				return "invalid"
+			}
+
+			err = control.SendMouseMove(mouse, x, y)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
+		case "mousePos":
+			x, y, err := parseMouseCoords(args)
+			if err != nil {
+				return "invalid"
+			}
+
+			err = control.SendMousePosition(mouse, x, y)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
+		case "mouseBtn":
+			err := control.SendMouseButton(mouse, args)
+			if err != nil {
+				return "invalid"
+			}
+
+			return ""
 		default:
 			return "invalid"
 		}
 	}
+}
+
+func parseMouseCoords(args string) (x, y int, err error) {
+	parts := strings.SplitN(args, ",", 2)
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid mouse coords: %s", args)
+	}
+
+	x, err = strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse mouse x coordinate: %w", err)
+	}
+
+	y, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse mouse y coordinate: %w", err)
+	}
+
+	return x, y, nil
 }
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
@@ -143,9 +193,24 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		return nil, fmt.Errorf("initialize keyboard: %w", err)
 	}
 
+	mouse, err := input.NewMouse()
+	if err != nil {
+		logger.Error("failed to initialize mouse: %s", err)
+		if closeErr := kbd.Close(); closeErr != nil {
+			logger.Error("failed to close keyboard: %s", closeErr)
+		}
+		return nil, fmt.Errorf("initialize mouse: %w", err)
+	}
+
 	trk, stopTracker, err := games.StartTracker(logger, cfg)
 	if err != nil {
 		logger.Error("failed to start tracker: %s", err)
+		if closeErr := kbd.Close(); closeErr != nil {
+			logger.Error("failed to close keyboard: %s", closeErr)
+		}
+		if closeErr := mouse.Close(); closeErr != nil {
+			logger.Error("failed to close mouse: %s", closeErr)
+		}
 		return nil, fmt.Errorf("start tracker: %w", err)
 	}
 
@@ -159,7 +224,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}
 
 	router := mux.NewRouter()
-	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, trk, logger, cfg)
+	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, mouse, trk, logger, cfg)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	corsHandler := cors.New(cors.Options{
@@ -186,6 +251,9 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		if err := kbd.Close(); err != nil {
 			logger.Error("failed to close keyboard: %s", err)
 		}
+		if err := mouse.Close(); err != nil {
+			logger.Error("failed to close mouse: %s", err)
+		}
 
 		if stopMDNS != nil {
 			err := stopMDNS()
@@ -211,11 +279,12 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 func setupAPI(
 	sub *mux.Router,
 	kbd input.Keyboard,
+	mouse input.Mouse,
 	trk *tracker.Tracker,
 	logger *service.Logger,
 	cfg *config.UserConfig,
 ) {
-	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd)))
+	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd, mouse)))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
 	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
@@ -253,6 +322,11 @@ func setupAPI(
 
 	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")
 	sub.HandleFunc("/controls/keyboard-raw/{key}", control.HandleRawKeyboard(kbd, logger)).Methods("POST")
+
+	sub.HandleFunc("/controls/screen", control.HandleScreen(logger)).Methods("GET")
+	sub.HandleFunc("/controls/mouse/move", control.HandleMouseMove(mouse, logger)).Methods("POST")
+	sub.HandleFunc("/controls/mouse/position", control.HandleMousePosition(mouse, logger)).Methods("POST")
+	sub.HandleFunc("/controls/mouse/{button}", control.HandleMouseButton(mouse, logger)).Methods("POST")
 
 	sub.HandleFunc("/menu/view", menu.ListFolder(logger)).Methods("POST")
 	sub.HandleFunc("/menu/files/create", menu.HandleCreateFile(logger)).Methods("POST")

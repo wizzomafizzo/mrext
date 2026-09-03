@@ -41,6 +41,11 @@
     * [Controls (keyboard)](#controls-keyboard)
       * [Send named keyboard key or combo](#send-named-keyboard-key-or-combo)
       * [Send raw keyboard key](#send-raw-keyboard-key)
+    * [Controls (mouse)](#controls-mouse)
+      * [Get current screen resolution](#get-current-screen-resolution)
+      * [Move mouse (relative)](#move-mouse-relative)
+      * [Move mouse (absolute position)](#move-mouse-absolute-position)
+      * [Send mouse button](#send-mouse-button)
     * [Menu](#menu)
       * [List menu folder](#list-menu-folder)
       * [Create menu folder](#create-menu-folder)
@@ -76,6 +81,9 @@
       * [Send raw keyboard key](#send-raw-keyboard-key-1)
       * [Send raw keyboard key down](#send-raw-keyboard-key-down)
       * [Send raw keyboard key up](#send-raw-keyboard-key-up)
+      * [Move mouse (relative)](#move-mouse-relative-1)
+      * [Move mouse (absolute position)](#move-mouse-absolute-position-1)
+      * [Send mouse button](#send-mouse-button-1)
 <!-- TOC -->
 
 ## REST
@@ -963,6 +971,139 @@ Example request:
 curl --request POST --url "http://mister:8182/api/controls/keyboard-raw/-16"
 ```
 
+### Controls (mouse)
+
+Mouse input is sent to the MiSTer through a pair of virtual input devices: a
+relative mouse (for movement deltas and all button events) and an absolute
+touchpad (for positioning the cursor at an exact screen coordinate).
+
+Whether a running core reacts to relative movement, absolute positioning or
+both depends on the core itself. Most cores and the main menu expect relative
+PS/2 style mouse movement, so prefer `/controls/mouse/move` for general use and
+treat `/controls/mouse/position` as best-effort.
+
+#### Get current screen resolution
+
+Returns the resolution of the MiSTer's Linux framebuffer, which reflects the
+HDMI **output** resolution produced by the scaler (e.g. the `video_mode` set in
+`MiSTer.ini`).
+
+*Note: this is the video output resolution, not the running core's internal
+render resolution. The core's native resolution is only available inside the
+FPGA and is not exposed to userspace, so it cannot be read here. Absolute mouse
+positioning does not use this value (see below).*
+
+```plaintext
+GET /controls/screen
+```
+
+On success, returns `200` with a JSON body.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/controls/screen"
+```
+
+Example response:
+
+```json
+{
+  "width": 1920,
+  "height": 1080
+}
+```
+
+#### Move mouse (relative)
+
+Moves the mouse cursor relative to its current position, in pixels. Negative
+values move left (`x`) and up (`y`).
+
+```plaintext
+POST /controls/mouse/move
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                        |
+|-----------|--------|----------|------------------------------------|
+| `x`       | number | Yes      | Horizontal movement delta, pixels. |
+| `y`       | number | Yes      | Vertical movement delta, pixels.   |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/controls/mouse/move" --data '{"x":10,"y":-5}'
+```
+
+#### Move mouse (absolute position)
+
+Moves the mouse cursor to an absolute screen position, given as **per-mille**
+(`0`–`1000`) of the screen along each axis, where `0,0` is the top-left corner
+and `1000,1000` is the bottom-right. This is resolution-independent: send where
+to point as a fraction of the screen and it is mapped onto the pointer range.
+Values outside `0`–`1000` are clamped.
+
+```plaintext
+POST /controls/mouse/position
+```
+
+Arguments (JSON):
+
+| Attribute | Type   | Required | Description                                   |
+|-----------|--------|----------|-----------------------------------------------|
+| `x`       | number | Yes      | Horizontal position, per-mille (`0`–`1000`).  |
+| `y`       | number | Yes      | Vertical position, per-mille (`0`–`1000`).    |
+
+On success, returns `200`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/controls/mouse/position" --data '{"x":500,"y":500}'
+```
+
+#### Send mouse button
+
+Sends a mouse button action.
+
+```plaintext
+POST /controls/mouse/{button}
+```
+
+Arguments:
+
+| Attribute | Type   | Required | Description       |
+|-----------|--------|----------|-------------------|
+| `button`  | string | Yes      | Button action.    |
+
+Available button actions:
+
+| Name           | Description                                    |
+|----------------|------------------------------------------------|
+| `click`        | Single left click (alias: `left`).             |
+| `double_click` | Double left click (alias: `double`).           |
+| `right`        | Single right click.                            |
+| `middle`       | Single middle click.                           |
+| `left_down`    | Press and hold the left button.                |
+| `left_up`      | Release the left button.                       |
+| `right_down`   | Press and hold the right button.               |
+| `right_up`     | Release the right button.                       |
+| `middle_down`  | Press and hold the middle button.              |
+| `middle_up`    | Release the middle button.                      |
+
+On success, returns `200`.
+
+If the button action is not recognised, returns `500`.
+
+Example request:
+
+```shell
+curl --request POST --url "http://mister:8182/api/controls/mouse/double_click"
+```
+
 ### Menu
 
 #### List menu folder
@@ -1708,3 +1849,39 @@ Format: `kbdRawUp:{code}`
 | Attribute | Type   | Description                                                                   |
 |-----------|--------|-------------------------------------------------------------------------------|
 | `code`    | number | uinput code of key, as described in the `/controls/keyboard-raw` REST method. |
+
+#### Move mouse (relative)
+
+Moves the mouse cursor relative to its current position, in pixels. Useful for
+low-latency continuous movement (e.g. dragging a pointer). Negative values move
+left (`x`) and up (`y`).
+
+Format: `mouseMove:{x},{y}`
+
+| Attribute | Type   | Description                        |
+|-----------|--------|------------------------------------|
+| `x`       | number | Horizontal movement delta, pixels. |
+| `y`       | number | Vertical movement delta, pixels.   |
+
+#### Move mouse (absolute position)
+
+Moves the mouse cursor to an absolute screen position, given as per-mille
+(`0`–`1000`) of the screen along each axis. Resolution-independent; see the
+`/controls/mouse/position` REST method.
+
+Format: `mousePos:{x},{y}`
+
+| Attribute | Type   | Description                                  |
+|-----------|--------|----------------------------------------------|
+| `x`       | number | Horizontal position, per-mille (`0`–`1000`). |
+| `y`       | number | Vertical position, per-mille (`0`–`1000`).   |
+
+#### Send mouse button
+
+Sends a mouse button action.
+
+Format: `mouseBtn:{button}`
+
+| Attribute | Type   | Description                                                                |
+|-----------|--------|----------------------------------------------------------------------------|
+| `button`  | string | Button action, as described in the `/controls/mouse/{button}` REST method. |
