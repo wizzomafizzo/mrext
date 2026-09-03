@@ -201,17 +201,6 @@ func TrySetupArcadeCoresLink(path string) error {
 	return nil
 }
 
-func DeleteLauncher(path string) error {
-	if _, err := os.Stat(path); err == nil {
-		err := os.Remove(path)
-		if err != nil {
-			return fmt.Errorf("failed to remove launcher: %s", err)
-		}
-	}
-
-	return TrySetupArcadeCoresLink(filepath.Dir(path))
-}
-
 func CreateLauncher(cfg *config.UserConfig, system *games.System, gameFile string, folder string, name string) (string, error) {
 	if system == nil {
 		return "", fmt.Errorf("no system specified")

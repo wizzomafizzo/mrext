@@ -30,7 +30,7 @@ jobs:
         run: |
           DL_URL=https://github.com/wizzomafizzo/mrext/releases/download/${{ steps.mrextreleaseinfo.outputs.tag_name }}
           mkdir -p _bin/releases
-          for file in lastplayed.sh launchseq.sh launchsync.sh playlog.sh random.sh remote.sh search.sh pocketbackup.sh; do
+          for file in lastplayed.sh launchsync.sh playlog.sh random.sh remote.sh search.sh; do
             curl -fsSL "$DL_URL/$file" -o "_bin/releases/$file"
           done
       - name: Update external scripts

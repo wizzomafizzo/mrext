@@ -25,11 +25,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
-      - name: Set up QEMU for cross-platform builds
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -45,22 +45,8 @@ jobs:
           mkdir -p cmd/remote/_client
           cp -a /tmp/mrext-client/build cmd/remote/_client/build
 
-      - name: Build Docker image for ARM
-        run: |
-          docker buildx create --use
-          docker buildx build --load --platform linux/arm/v7 -t mrext/armbuild:${{ github.sha }} -f scripts/armbuild/Dockerfile .
-
       - name: Run mage prepRelease
-        run: |
-          docker run --rm --platform linux/arm/v7 \
-            --user "$(id -u):$(id -g)" \
-            -e HOME=/tmp \
-            -e GOCACHE=/tmp/go-build \
-            -e GOMODCACHE=/tmp/go-mod \
-            -e UPX_BIN=upx-ucl \
-            -v ${{ github.workspace }}:/build \
-            mrext/armbuild:${{ github.sha }} \
-            go run github.com/magefile/mage prepRelease
+        run: go run github.com/magefile/mage prepRelease
 
       - name: Upload release assets
         env:

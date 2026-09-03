@@ -16,9 +16,6 @@ const MrextConfigFolder = ScriptsConfigFolder + "/mrext"
 const ArcadeDBUrl = "https://api.github.com/repositories/521644036/contents/ArcadeDatabase_CSV"
 const ArcadeDBFile = MrextConfigFolder + "/ArcadeDatabase.csv"
 
-const NfcDatabaseFile = SdFolder + "/nfc.csv"
-const NfcLastScanFile = TempFolder + "/NFCSCAN"
-
 const GamesDb = ScriptsConfigFolder + "/mrext/games.db"
 
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"

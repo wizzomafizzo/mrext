@@ -164,10 +164,6 @@ func GetSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 	return matches
 }
 
-func GetAllSystemPaths(cfg *config.UserConfig) []PathResult {
-	return GetSystemPaths(cfg, AllSystems())
-}
-
 // GetActiveSystemPaths returns the active path for each system.
 func GetActiveSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 	var matches []PathResult

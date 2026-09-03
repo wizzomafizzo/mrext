@@ -11,15 +11,6 @@
                 "lastplayed"
             ]
         },
-        "Scripts/launchseq.sh": {
-            "hash": "0871db9046fa6d1fc787bc5d4e974578",
-            "size": 2596072,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260612-5/launchseq.sh",
-            "reboot": false,
-            "tags": [
-                "launchseq"
-            ]
-        },
         "Scripts/launchsync.sh": {
             "hash": "635f33589bc521ea947c6fd4c1365af8",
             "size": 4585240,
@@ -63,15 +54,6 @@
             "reboot": false,
             "tags": [
                 "search"
-            ]
-        },
-        "Scripts/pocketbackup.sh": {
-            "hash": "148e98551ca2bd5401f5b1f5c6082780",
-            "size": 10802,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260612-5/pocketbackup.sh",
-            "reboot": false,
-            "tags": [
-                "pocketbackup"
             ]
         },
         "Scripts/bgm.sh": {

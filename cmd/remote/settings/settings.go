@@ -15,28 +15,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 	"time"
 )
-
-type UpdateProgress struct {
-	mu      sync.Mutex
-	Process *exec.Cmd
-}
-
-func (p *UpdateProgress) SetProcess(cmd *exec.Cmd) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.Process = cmd
-}
-
-func (p *UpdateProgress) GetProcess() *exec.Cmd {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.Process
-}
-
-var updateProgressInstance = &UpdateProgress{}
 
 func HandleRestartRemote(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

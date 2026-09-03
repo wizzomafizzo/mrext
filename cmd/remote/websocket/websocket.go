@@ -45,12 +45,6 @@ func (cg *connGroup) Remove(i int) {
 	cg.conns = append(cg.conns[:i], cg.conns[i+1:]...)
 }
 
-func (cg *connGroup) All() []*websocket.Conn {
-	cg.mu.Lock()
-	defer cg.mu.Unlock()
-	return cg.conns
-}
-
 func (cg *connGroup) Clean() {
 	cg.mu.Lock()
 	defer cg.mu.Unlock()

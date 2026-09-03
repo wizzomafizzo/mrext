@@ -113,23 +113,6 @@ func (s *Startup) Exists(name string) bool {
 	return false
 }
 
-func (s *Startup) Enable(name string) error {
-	for i, entry := range s.Entries {
-		if entry.Name == name && !entry.Enabled {
-			s.Entries[i].Enabled = true
-			for j, cmd := range entry.Cmds {
-				if len(cmd) > 0 && cmd[0] == '#' {
-					s.Entries[i].Cmds[j] = cmd[1:]
-				}
-			}
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf("startup entry not found: %s", name)
-}
-
 func (s *Startup) Add(name string, cmd string) error {
 	if s.Exists(name) {
 		return fmt.Errorf("startup entry already exists: %s", name)

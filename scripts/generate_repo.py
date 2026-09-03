@@ -10,16 +10,14 @@ from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
 
-APPS = ["lastplayed", "launchseq", "launchsync", "playlog", "random", "remote", "search", "pocketbackup"]
+APPS = ["lastplayed", "launchsync", "playlog", "random", "remote", "search"]
 FILES = {
     "lastplayed": ["lastplayed.sh"],
-    "launchseq": ["launchseq.sh"],
     "launchsync": ["launchsync.sh"],
     "playlog": ["playlog.sh"],
     "random": ["random.sh"],
     "remote": ["remote.sh"],
     "search": ["search.sh"],
-    "pocketbackup": ["pocketbackup.sh"],
 }
 REBOOT = ["remote"]
 EXTERNAL_FILES = [

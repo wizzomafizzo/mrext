@@ -811,10 +811,7 @@ Example response:
 
 #### Launch token data
 
-Launch encoded data matching format of
-the [NFC script](nfc.md#setting-up-tags) which includes cores,
-games, .mras, .mgls and custom commands. This method is intended for QR code launching or any other devices with limited
-REST support. Data is encoded in [base64url](https://simplycalc.com/base64url-encode.php).
+Launch legacy token data encoding cores, games, `.mra` files, `.mgl` files, and custom commands. This method is intended for QR code launching or other devices with limited REST support. Data is encoded in [base64url](https://simplycalc.com/base64url-encode.php).
 
 ```plaintext
 GET /l/{data}

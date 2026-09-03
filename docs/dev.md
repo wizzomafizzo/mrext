@@ -15,7 +15,7 @@ Applications should:
 
 ## Development Environment
 
-The project is primarily written in Go, uses Mage for build scripts and Docker for MiSTer builds. Development can be done on any platform, though the build system currently assumes a Linux environment and applications which use C binding libraries can be challenging to build on Windows.
+The project is written in pure Go and uses Mage for build scripts. Development and MiSTer ARM32 cross-compilation can run on any platform supported by Go; no C compiler, native libraries, ARM container, or Docker installation is required.
 
 Most applications use a lot of MiSTer-specific paths and files to function. They will mostly work on a desktop with a `/media/fat` directory created to match a MiSTer system, but this generally won't work great beyond specific testing. The usual development cycle is to build a MiSTer ARM binary, copy it to your own MiSTer and run on there to test.
 
@@ -23,23 +23,13 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 
 - [Go](https://go.dev/)
   
-  The whole meat of the project. Version 1.18 or newer.
+  The whole meat of the project. Version 1.27.1 or newer.
 
 - [Mage](https://magefile.org/)
 
   Used for all builds and automations in the project. Easiest way to get it running is install the binary somewhere globally, rather than installing via the Go package manager as it recommends.
 
-- [Docker](https://www.docker.com/)
-
-  Used for building all the MiSTer binaries. You also need to configure cross-compilation in Docker since ARM images are used for the build process. Podman should also work, but the build scripts use Docker explicitly.
-  
-  On Linux, enable cross-platform builds with something like this: `apt install qemu binfmt-support qemu-user-static`
-
 ### Optional Dependencies
-
-- [ncurses](https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/)
-
-  Just the dev files, and whatever version your favourite distro offers. This is only necessary if you want to build desktop versions of the applications that have GUIs. MiSTer builds pull this in automatically for the Docker images. Don't even bother trying to get this to work on Windows.
 
 - [Python](https://www.python.org/)
 
@@ -51,9 +41,7 @@ To start, you can run `go mod download` from the root of the project folder. Thi
 
 All build steps are done with the `mage` command run from the root of the project folder. Run `mage` by itself to see a list of available commands. Build, test, and systems-documentation targets first generate an ignored metadata asset from a pinned Zaparoo Core Git revision. The first run requires network access and Git; later runs reuse the generated asset and cached checkout. Set `ZAPAROO_CORE_SOURCE` to a local Core checkout when developing metadata changes.
 
-Before building MiSTer binaries, you'll also need to build the Docker image it uses. Just run `mage makeArmImage` to add it to your system.
-
-Built binaries will be created in the `bin` directory under its appropriate architecture subdirectory.
+Built binaries will be created in the `_bin` directory under the appropriate architecture subdirectory.
 
 Check the `apps` variable for a list of application target names near the top of the `magefile.go` file. These are the targets used for the commands below. Usually they should match the application folder name in the `cmd` folder.
 
@@ -65,22 +53,13 @@ These are the important commands:
 
 - `mage mister <target>`
 
-  Builds a binary of the target application for MiSTer.
+  Cross-compiles a static Linux ARMv7 binary for MiSTer with `CGO_ENABLED=0`.
 
 - `mage release <target>`
 
   Builds a binary of the target application for MiSTer, copies it to the appropriate folder in `releases`, generates an updated `<target>.json` repo file for use with `update` and `update_all` on MiSTer and updates the combined `all.json` repo file.
 
 Binary releases all go in the `releases` folder.
-
-Some builds may display warnings such as this:
-
-```
-/usr/bin/ld: /tmp/go-link-600559994/000029.o: in function `mygetgrouplist':
-/_/os/user/getgrouplist_unix.go:15: warning: Using 'getgrouplist' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-```
-
-They can be ignored. Some low-level things do not support static linking, but the Docker build environment matches the MiSTer image just to be safe (basically just the glibc major version).
 
 ## Project Layout
 
@@ -119,14 +98,6 @@ For interacting with and impersonating input devices.
 #### mister
 
 Functions for interacting with various parts of the MiSTer system. Somewhat of a catch-all for modules that aren't big enough for their own folder. Does things like generating and running MGL files, managing the startup services file and reading the main MiSTer .ini file.
-
-#### sqlindex
-
-Not currently used. This is a proof-of-concept of a searchable index of game files. Works fine but is quite slow compared to the `txtindex` module.
-
-#### txtindex
-
-A text-based read-only searchable index of all the game files on a system. It generates a simple set of text files listing all the games on a MiSTer and stores them in a single tarball. Generates very quickly and searching is almost instant.
 
 #### utils
 

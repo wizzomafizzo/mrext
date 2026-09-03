@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -287,27 +286,6 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	return allResults, nil
 }
 
-func GetAllFiles(systemPaths map[string][]string, statusFn func(systemId string, path string)) ([][2]string, error) {
-	var allFiles [][2]string
-
-	for systemId, paths := range systemPaths {
-		for i := range paths {
-			statusFn(systemId, paths[i])
-
-			files, err := GetFiles(systemId, paths[i])
-			if err != nil {
-				return nil, err
-			}
-
-			for i := range files {
-				allFiles = append(allFiles, [2]string{systemId, files[i]})
-			}
-		}
-	}
-
-	return allFiles, nil
-}
-
 func FilterUniqueFilenames(files []string) []string {
 	var filtered []string
 	filenames := make(map[string]struct{})
@@ -321,34 +299,6 @@ func FilterUniqueFilenames(files []string) []string {
 		}
 	}
 	return filtered
-}
-
-var zipRe = regexp.MustCompile(`^(.*\.zip)/(.+)$`)
-
-func FileExists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-
-	zipMatch := zipRe.FindStringSubmatch(path)
-	if zipMatch != nil {
-		zipPath := zipMatch[1]
-		file := zipMatch[2]
-
-		zipFiles, err := utils.ListZip(zipPath)
-		if err != nil {
-			return false
-		}
-
-		for i := range zipFiles {
-			if zipFiles[i] == file {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 type RbfInfo struct {

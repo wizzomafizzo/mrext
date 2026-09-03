@@ -3,7 +3,6 @@ package utils
 import (
 	"archive/zip"
 	"bufio"
-	"crypto/md5"
 	"fmt"
 	"io"
 	"io/fs"
@@ -153,13 +152,6 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
-// SortedMapKeys return a sorted list of all keys in a map.
-func SortedMapKeys[V any](m map[string]V) []string {
-	keys := MapKeys(m)
-	sort.Strings(keys)
-	return keys
-}
-
 func StripChars(s string, chars string) string {
 	for _, c := range chars {
 		s = strings.ReplaceAll(s, string(c), "")
@@ -172,21 +164,9 @@ func StripBadFileChars(s string) string {
 	return StripChars(s, "/\\:*?\"<>|")
 }
 
-// Md5Sum returns the MD5 hash of a file on disk.
-func Md5Sum(path string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	hash := md5.New()
-	io.Copy(hash, file)
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
-}
-
 // YesOrNoPrompt displays a simple yes/no prompt for use with a controller.
 func YesOrNoPrompt(prompt string) bool {
-	fmt.Printf(prompt + " [DOWN=Yes/UP=No] ")
+	fmt.Printf("%s [DOWN=Yes/UP=No] ", prompt)
 
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -211,25 +191,6 @@ func YesOrNoPrompt(prompt string) bool {
 		delay()
 		return false
 	}
-}
-
-// InfoPrompt displays an information prompt for use with a controller.
-func InfoPrompt(prompt string) {
-	fmt.Println(prompt)
-	fmt.Println("Press any key to continue...")
-
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		panic(err)
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-	buf := make([]byte, 1)
-	reader.Read(buf)
-
-	term.Restore(int(os.Stdin.Fd()), oldState)
-
-	time.Sleep(400 * time.Millisecond)
 }
 
 func IsEmptyDir(path string) (bool, error) {
@@ -318,12 +279,6 @@ func AlphaMapKeys[V any](m map[string]V) []string {
 	keys := MapKeys(m)
 	sort.Strings(keys)
 	return keys
-}
-
-func Reverse[S ~[]E, E any](s S) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
 }
 
 func RemoveFileExt(s string) string {

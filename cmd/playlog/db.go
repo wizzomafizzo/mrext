@@ -8,7 +8,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type playLogDb struct {
@@ -16,16 +16,19 @@ type playLogDb struct {
 }
 
 func openPlayLogDb() (*playLogDb, error) {
-	pldb := &playLogDb{}
+	return openPlayLogDbAt(config.PlayLogDbFile)
+}
 
-	db, err := sql.Open("sqlite3", config.PlayLogDbFile)
+func openPlayLogDbAt(path string) (*playLogDb, error) {
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
 	}
-
-	pldb.db = db
-	pldb.setupDb()
-
+	pldb := &playLogDb{db: db}
+	if err := pldb.setupDb(); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return pldb, nil
 }
 

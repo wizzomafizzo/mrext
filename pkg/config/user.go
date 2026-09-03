@@ -39,13 +39,6 @@ type RemoteConfig struct {
 	AnnounceGameUrl string `ini:"announce_game_url,omitempty"`
 }
 
-type NfcConfig struct {
-	ConnectionString string `ini:"connection_string,omitempty"`
-	AllowCommands    bool   `ini:"allow_commands,omitempty"`
-	DisableSounds    bool   `ini:"disable_sounds,omitempty"`
-	ProbeDevice      bool   `ini:"probe_device,omitempty"`
-}
-
 type SystemsConfig struct {
 	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
 	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
@@ -60,7 +53,6 @@ type UserConfig struct {
 	Search     SearchConfig     `ini:"search,omitempty"`
 	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
 	Remote     RemoteConfig     `ini:"remote,omitempty"`
-	Nfc        NfcConfig        `ini:"nfc,omitempty"`
 	Systems    SystemsConfig    `ini:"systems,omitempty"`
 }
 

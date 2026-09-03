@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -153,15 +154,14 @@ func TestRandomElem(t *testing.T) {
 	t2 := []int{1, 2, 3}
 	el, err := RandomElem(t2)
 	if err != nil {
-		t.Errorf("RandomElem(%v) = %q, want no error", t2, el)
+		t.Errorf("RandomElem(%v) = %v, want no error", t2, el)
 	}
 	if !Contains(t2, el) {
-		t.Errorf("RandomElem(%v) = %q, want element in %v", t2, el, t2)
+		t.Errorf("RandomElem(%v) = %v, want element in %v", t2, el, t2)
 	}
 }
 
 func TestMapKeys(t *testing.T) {
-	// FIXME: this shouldn't be checking order of result
 	var tests = []struct {
 		m    map[string]int
 		want []string
@@ -171,7 +171,9 @@ func TestMapKeys(t *testing.T) {
 		{map[string]int{"a": 1, "b": 2}, []string{"a", "b"}},
 	}
 	for _, tt := range tests {
-		if got := MapKeys(tt.m); !reflect.DeepEqual(got, tt.want) {
+		got := MapKeys(tt.m)
+		sort.Strings(got)
+		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("MapKeys(%v) = %v, want %v", tt.m, got, tt.want)
 		}
 	}

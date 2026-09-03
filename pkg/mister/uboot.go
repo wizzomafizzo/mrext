@@ -2,16 +2,13 @@ package mister
 
 import (
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
 	"os"
-	"regexp"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-const (
-	UBootMACParam    = "ethaddr"
-	UBootKernelParam = "v"
-)
+const UBootMACParam = "ethaddr"
 
 func ReadUBootParams() (map[string]string, error) {
 	params := make(map[string]string)
@@ -69,43 +66,6 @@ func WriteUBootParams(params map[string]string) error {
 	return nil
 }
 
-func parseKernelArgs(input string) map[string]string {
-	args := make(map[string]string)
-
-	re := regexp.MustCompile(`([\w_\-.]+)="(.*?)"|([\w_\-.]+)=(\S+)`)
-	matches := re.FindAllStringSubmatch(input, -1)
-
-	for _, match := range matches {
-		param := match[1] + match[3]
-		value := match[2] + match[4]
-
-		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
-			value = strings.Trim(value, "\"")
-		}
-
-		args[param] = value
-	}
-
-	return args
-}
-
-func makeKernelArgs(params map[string]string) string {
-	var pairs []string
-
-	for key, value := range params {
-		// if the value contains spaces, quote it
-		if strings.Contains(value, " ") {
-			value = fmt.Sprintf("\"%s\"", value)
-		}
-
-		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
-	}
-
-	content := strings.Join(pairs, " ")
-
-	return content
-}
-
 // GetConfiguredMacAddress returns the ethernet MAC address configured in the u-boot.txt file, if available.
 func GetConfiguredMacAddress() (string, error) {
 	params, err := ReadUBootParams()
@@ -131,77 +91,4 @@ func UpdateConfiguredMacAddress(newMacAddress string) error {
 	params[UBootMACParam] = newMacAddress
 
 	return WriteUBootParams(params)
-}
-
-func GetUsbHidQuirks() ([]string, error) {
-	params, err := ReadUBootParams()
-	if err != nil {
-		return nil, err
-	}
-
-	args := make(map[string]string)
-	if v, ok := params[UBootKernelParam]; ok {
-		args = parseKernelArgs(v)
-	}
-
-	if v, ok := args["usbhid.quirks"]; ok {
-		return strings.Split(v, ","), nil
-	}
-
-	return nil, nil
-}
-
-func UpdateUsbHidQuirks(quirks []string) error {
-	params, err := ReadUBootParams()
-	if err != nil {
-		return err
-	}
-
-	args := make(map[string]string)
-	if v, ok := params[UBootKernelParam]; ok {
-		args = parseKernelArgs(v)
-	}
-
-	args["usbhid.quirks"] = strings.Join(quirks, ",")
-	params[UBootKernelParam] = makeKernelArgs(args)
-
-	return WriteUBootParams(params)
-}
-
-func EnableFastUsbPoll() error {
-	params, err := ReadUBootParams()
-	if err != nil {
-		return err
-	}
-
-	args := make(map[string]string)
-	if v, ok := params[UBootKernelParam]; ok {
-		args = parseKernelArgs(v)
-	}
-
-	args["loglevel"] = "4"
-	args["usbhid.jspoll"] = "1"
-	args["xpad.cpoll"] = "1"
-
-	params[UBootKernelParam] = makeKernelArgs(args)
-
-	return WriteUBootParams(params)
-}
-
-func IsFastUsbPollActive() (bool, error) {
-	params, err := ReadUBootParams()
-	if err != nil {
-		return false, err
-	}
-
-	args := make(map[string]string)
-	if v, ok := params[UBootKernelParam]; ok {
-		args = parseKernelArgs(v)
-	}
-
-	if _, ok := args["usbhid.jspoll"]; ok {
-		return true, nil
-	}
-
-	return false, nil
 }

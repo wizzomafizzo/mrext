@@ -26,24 +26,12 @@ var (
 	releaseUrlPrefix        = "https://github.com/wizzomafizzo/mrext/releases/latest/download"
 	generatedSystemMetadata = filepath.Join(cwd, "pkg", "games", "system_metadata.gen.json")
 	upxBin                  = os.Getenv("UPX_BIN")
-	// docker arm build
-	armBuild          = filepath.Join(cwd, "scripts", "armbuild")
-	armBuildImageName = "mrext/armbuild"
-	armBuildCache     = filepath.Join(os.TempDir(), "mrext-buildcache")
-	armModCache       = filepath.Join(os.TempDir(), "mrext-modcache")
-	// docker kernel build
-	kernelBuild          = filepath.Join(cwd, "scripts", "kernelbuild")
-	kernelBuildImageName = "mrext/kernelbuild"
-	kernelRepoName       = "Linux-Kernel_MiSTer"
-	kernelRepoPath       = filepath.Join(kernelBuild, "_build", kernelRepoName)
-	kernelRepoUrl        = fmt.Sprintf("https://github.com/MiSTer-devel/%s.git", kernelRepoName)
 )
 
 type app struct {
 	name         string
 	path         string
 	bin          string
-	ldFlags      string
 	releaseId    string
 	reboot       bool
 	inAll        bool
@@ -51,11 +39,6 @@ type app struct {
 }
 
 var apps = []app{
-	{
-		name: "background",
-		path: filepath.Join(cwd, "cmd", "background"),
-		bin:  "background",
-	},
 	{
 		name: "contool",
 		path: filepath.Join(cwd, "cmd", "contool"),
@@ -65,16 +48,9 @@ var apps = []app{
 		name:      "remote",
 		path:      filepath.Join(cwd, "cmd", "remote"),
 		bin:       "remote.sh",
-		ldFlags:   "-lcurses",
 		releaseId: "mrext/remote",
 		reboot:    true,
 		inAll:     true,
-	},
-	{
-		name: "favorites",
-		path: filepath.Join(cwd, "cmd", "favorites"),
-		bin:  "addfav",
-		// releaseId: "mrext/favorites",
 	},
 	{
 		name:      "lastplayed",
@@ -91,28 +67,14 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
-		name:         "nfc",
-		path:         filepath.Join(cwd, "cmd", "nfc"),
-		bin:          "nfc.sh",
-		ldFlags:      "-lnfc -lusb -lcurses",
-		releaseFiles: []string{filepath.Join(cwd, "scripts", "nfcui", "nfcui.sh")},
-	},
-	{
 		name: "samindex",
 		path: filepath.Join(cwd, "cmd", "samindex"),
 		bin:  "samindex",
 	},
 	{
-		name: "screenshots",
-		path: filepath.Join(cwd, "cmd", "screenshots"),
-		bin:  "screenshots.sh",
-		// releaseId: "mrext/screenshots",
-	},
-	{
 		name:      "search",
 		path:      filepath.Join(cwd, "cmd", "search"),
 		bin:       "search.sh",
-		ldFlags:   "-lcurses",
 		releaseId: "mrext/search",
 		inAll:     true,
 	},
@@ -124,27 +86,11 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
-		name:      "launchseq",
-		path:      filepath.Join(cwd, "cmd", "launchseq"),
-		bin:       "launchseq.sh",
-		releaseId: "mrext/launchseq",
-	},
-	{
 		name:      "playlog",
 		path:      filepath.Join(cwd, "cmd", "playlog"),
 		bin:       "playlog.sh",
 		releaseId: "mrext/playlog",
 		inAll:     true,
-	},
-	{
-		name: "vplay",
-		path: filepath.Join(cwd, "cmd", "vplay"),
-		bin:  "vplay.sh",
-	},
-	{
-		name: "mm",
-		path: filepath.Join(cwd, "cmd", "mm"),
-		bin:  "mm",
 	},
 }
 
@@ -172,13 +118,6 @@ var externalApps = []externalApp{
 	},
 }
 
-var scriptApps = []externalApp{
-	{
-		name: "pocketbackup",
-		bin:  "pocketbackup.sh",
-	},
-}
-
 func getApp(name string) *app {
 	for _, a := range apps {
 		if a.name == name {
@@ -194,9 +133,6 @@ func cleanPlatform(name string) {
 
 func Clean() {
 	_ = sh.Rm(binDir)
-	_ = sh.Rm(armBuildCache)
-	_ = sh.Rm(armModCache)
-	_ = sh.Rm(kernelRepoPath)
 	_ = sh.Rm(generatedSystemMetadata)
 }
 
@@ -204,53 +140,51 @@ func GenerateSystemMetadata() error {
 	return sh.RunV("go", "run", "./internal/gensystemmetadata")
 }
 
-func buildApp(a app, out string) {
-	if a.ldFlags == "" {
-		env := map[string]string{
-			"GOPROXY": "https://goproxy.io,direct",
-		}
-		_ = sh.RunWithV(env, "go", "build", "-o", out, a.path)
-	} else {
-		staticEnv := map[string]string{
-			"GOPROXY":     "https://goproxy.io,direct",
-			"CGO_ENABLED": "1",
-			"CGO_LDFLAGS": a.ldFlags,
-		}
-		_ = sh.RunWithV(staticEnv, "go", "build", "--ldflags", "-linkmode external -extldflags -static", "-o", out, a.path)
+func buildApp(a app, out string, env map[string]string) error {
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		return err
 	}
+	buildEnv := map[string]string{
+		"CGO_ENABLED": "0",
+		"GOPROXY":     "https://proxy.golang.org,direct",
+	}
+	for key, value := range env {
+		buildEnv[key] = value
+	}
+	return sh.RunWithV(buildEnv, "go", "build", "-trimpath", "-o", out, a.path)
 }
 
-func Build(appName string) {
+func buildApps(appName, platform string, env map[string]string) error {
+	if appName == "all" {
+		cleanPlatform(platform)
+		for _, application := range apps {
+			fmt.Println("Building", application.name)
+			if err := buildApp(application, filepath.Join(binDir, platform, application.bin), env); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	application := getApp(appName)
+	if application == nil {
+		return fmt.Errorf("unknown app: %s", appName)
+	}
+	return buildApp(*application, filepath.Join(binDir, platform, application.bin), env)
+}
+
+func Build(appName string) error {
 	mg.Deps(GenerateSystemMetadata)
 	platform := runtime.GOOS + "_" + runtime.GOARCH
-	if appName == "all" {
-		mg.Deps(func() { cleanPlatform(platform) })
-		for _, app := range apps {
-			fmt.Println("Building", app.name)
-			buildApp(app, filepath.Join(binDir, platform, app.bin))
-		}
-	} else {
-		app := getApp(appName)
-		if app == nil {
-			fmt.Println("Unknown app", appName)
-			os.Exit(1)
-		}
-		buildApp(*app, filepath.Join(binDir, platform, app.bin))
-	}
+	return buildApps(appName, platform, nil)
 }
 
-func MakeArmImage() {
-	_ = sh.RunV("docker", "build", "--platform", "linux/arm/v7", "-t", armBuildImageName, armBuild)
-}
-
-func Mister(appName string) {
+func Mister(appName string) error {
 	mg.Deps(GenerateSystemMetadata)
-	buildCache := fmt.Sprintf("%s:%s", armBuildCache, "/home/build/.cache/go-build")
-	_ = os.Mkdir(armBuildCache, 0755)
-	modCache := fmt.Sprintf("%s:%s", armModCache, "/home/build/go/pkg/mod")
-	_ = os.Mkdir(armModCache, 0755)
-	buildDir := fmt.Sprintf("%s:%s", cwd, "/build")
-	_ = sh.RunV("docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildCache, "-v", modCache, "-v", buildDir, "--user", "1000:1000", armBuildImageName, "mage", "build", appName)
+	return buildApps(appName, "linux_arm", map[string]string{
+		"GOOS":   "linux",
+		"GOARCH": "arm",
+		"GOARM":  "7",
+	})
 }
 
 func UpdateExternalApps() {
@@ -341,10 +275,9 @@ func Release(name string) {
 		}
 	}
 
-	if runtime.GOOS == "linux" && runtime.GOARCH == "arm" {
-		Build(name)
-	} else {
-		Mister(name)
+	if err := Mister(name); err != nil {
+		fmt.Println("Error building MiSTer binary", err)
+		os.Exit(1)
 	}
 
 	rd := filepath.Join(releasesDir, a.name)
@@ -395,68 +328,11 @@ func PrepRelease() {
 			Release(app.name)
 		}
 	}
-	for _, app := range scriptApps {
-		fmt.Println("Preparing release:", app.name)
-		sh.Copy(filepath.Join(binReleasesDir, app.bin), filepath.Join(cwd, "scripts", app.name, app.bin))
-	}
 	UpdateExternalApps()
 	for _, app := range externalApps {
 		fmt.Println("Preparing release:", app.name)
 		sh.Copy(filepath.Join(binReleasesDir, app.bin), filepath.Join(releasesDir, "external", app.bin))
 	}
-}
-
-func MakeKernelImage() {
-	_ = sh.RunV("docker", "build", "-t", kernelBuildImageName, kernelBuild)
-}
-
-func Kernel() {
-	if _, err := os.Stat(kernelRepoPath); os.IsNotExist(err) {
-		_ = sh.RunV("git", "clone", "--depth", "1", kernelRepoUrl, kernelRepoPath)
-	}
-
-	patches, _ := filepath.Glob(filepath.Join(kernelBuild, "*.patch"))
-	for _, path := range patches {
-		_ = sh.RunV("git", "-C", kernelRepoPath, "apply", path)
-	}
-
-	kCmd := sh.RunCmd("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", kernelRepoPath, "/build"), "--user", "1000:1000", kernelBuildImageName)
-	_ = kCmd("make", "MiSTer_defconfig")
-	_ = kCmd("make", "modules")
-	_ = kCmd("make", "-j16", "zImage")
-	_ = kCmd("make", "socfpga_cyclone5_de10_nano.dtb")
-
-	zImage, _ := os.Open(filepath.Join(kernelRepoPath, "arch", "arm", "boot", "zImage"))
-	dtb, _ := os.Open(filepath.Join(kernelRepoPath, "arch", "arm", "boot", "dts", "socfpga_cyclone5_de10_nano.dtb"))
-
-	_ = os.MkdirAll(filepath.Join(binDir, "linux"), 0755)
-	kernel, _ := os.Create(filepath.Join(binDir, "linux", "zImage_dtb"))
-
-	_, _ = io.Copy(kernel, zImage)
-	_, _ = io.Copy(kernel, dtb)
-
-	_ = kernel.Close()
-	_ = dtb.Close()
-	_ = zImage.Close()
-}
-
-func MakeArmApp(name string) {
-	buildScript := name + ".sh"
-	if _, err := os.Stat(filepath.Join(armBuild, buildScript)); os.IsNotExist(err) {
-		fmt.Println("No build script for", name)
-		os.Exit(1)
-	}
-
-	buildDir := filepath.Join(armBuild, "_build")
-	_ = os.MkdirAll(buildDir, 0755)
-
-	err := sh.Copy(filepath.Join(buildDir, buildScript), filepath.Join(armBuild, buildScript))
-	if err != nil {
-		fmt.Println("Error copying build script", err)
-		os.Exit(1)
-	}
-
-	_ = sh.RunV("docker", "run", "--rm", "--platform", "linux/arm/v7", "-v", buildDir+":/build", "--user", "1000:1000", armBuildImageName, "bash", "./"+buildScript)
 }
 
 func Test() {

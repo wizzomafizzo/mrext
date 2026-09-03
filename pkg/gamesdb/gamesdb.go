@@ -275,13 +275,6 @@ func searchNamesGeneric(
 	return results, nil
 }
 
-// Return indexed names matching exact query (case insensitive).
-func SearchNamesExact(systems []games.System, query string) ([]SearchResult, error) {
-	return searchNamesGeneric(systems, query, func(query, keyName string) bool {
-		return strings.EqualFold(query, keyName)
-	})
-}
-
 // Return indexed names partially matching query (case insensitive).
 func SearchNamesPartial(systems []games.System, query string) ([]SearchResult, error) {
 	return searchNamesGeneric(systems, query, func(query, keyName string) bool {
@@ -314,26 +307,6 @@ func SearchNamesRegexp(systems []games.System, query string) ([]SearchResult, er
 
 		return r.MatchString(keyName)
 	})
-}
-
-// Return true if a specific system is indexed in the gamesdb
-func SystemIndexed(system games.System) bool {
-	if !DbExists() {
-		return false
-	}
-
-	db, err := open(&bolt.Options{ReadOnly: true})
-	if err != nil {
-		return false
-	}
-	defer db.Close()
-
-	systems, err := readIndexedSystems(db)
-	if err != nil {
-		return false
-	}
-
-	return utils.Contains(systems, system.Id)
 }
 
 // Return all systems indexed in the gamesdb

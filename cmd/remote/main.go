@@ -27,12 +27,9 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 
-	gc "github.com/rthornton128/goncurses"
-
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/curses"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
@@ -261,10 +258,6 @@ func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger 
 	sub.HandleFunc("/settings/system/reboot", settings.HandleReboot(logger)).Methods("POST")
 	sub.HandleFunc("/settings/system/generate-mac", settings.HandleGenerateMac(logger)).Methods("GET")
 
-	sub.HandleFunc("/nfc/status", games.NfcStatus(logger)).Methods("GET")
-	sub.HandleFunc("/nfc/write", games.NfcWrite(logger)).Methods("POST")
-	sub.HandleFunc("/nfc/cancel", games.NfcCancel(logger)).Methods("POST")
-
 	sub.HandleFunc("/sysinfo", settings.HandleSystemInfo(logger, cfg, appVersion)).Methods("GET")
 }
 
@@ -342,43 +335,17 @@ func main() {
 	}
 
 	interactive := true
-
-	stdscr, err := curses.Setup()
-	if err != nil {
-		logger.Error("starting curses: %s", err)
+	if err = tryAddStartup(); err != nil {
+		logger.Error("adding startup: %s", err)
 		interactive = false
 	}
-	defer gc.End()
 
 	if interactive {
-		err = tryAddStartup(stdscr)
-		if err != nil {
-			gc.End()
-			logger.Error("adding startup: %s", err)
-
-			var setupErr *curses.SetupWindowError
-			if errors.As(err, &setupErr) {
-				interactive = false
-			} else {
-				fmt.Println("Error adding to startup:", err)
-			}
-		}
-	}
-
-	if interactive {
-		action, err := displayServiceInfo(stdscr, svc, cfg)
-		if err != nil {
-			gc.End()
-			logger.Error("displaying service info: %s", err)
-
-			var setupErr *curses.SetupWindowError
-			if errors.As(err, &setupErr) {
-				interactive = false
-			} else {
-				fmt.Println("Error displaying service info:", err)
-			}
+		action, displayErr := displayServiceInfo(svc, cfg)
+		if displayErr != nil {
+			logger.Error("displaying service info: %s", displayErr)
+			interactive = false
 		} else if action == displayUninstall {
-			gc.End()
 			uninstallService(svc)
 			os.Exit(0)
 		}

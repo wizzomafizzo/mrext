@@ -2,88 +2,58 @@ package main
 
 import (
 	"fmt"
-	"github.com/rthornton128/goncurses"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/curses"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/tui"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func tryAddStartup(stdscr *goncurses.Window) error {
+func tryAddStartup() error {
 	var startup mister.Startup
-
-	err := startup.Load()
-	if err != nil {
+	if err := startup.Load(); err != nil {
 		logger.Error("failed to load startup file: %s", err)
 	}
-
-	if !startup.Exists("mrext/" + appName) {
-		win, err := curses.NewWindow(stdscr, 6, 43, "", -1)
-		if err != nil {
-			return err
-		}
-		defer func(win *goncurses.Window) {
-			err := win.Delete()
-			if err != nil {
-				logger.Error("failed to delete window: %s", err)
-			}
-		}(win)
-
-		var ch goncurses.Key
-		selected := 0
-
-		for {
-			win.MovePrint(1, 3, "Add Remote service to MiSTer startup?")
-			win.MovePrint(2, 2, "This won't impact MiSTer's performance.")
-			curses.DrawActionButtons(win, []string{"Yes", "No"}, selected, 10)
-
-			win.NoutRefresh()
-			err := goncurses.Update()
-			if err != nil {
-				return err
-			}
-
-			ch = win.GetChar()
-
-			if ch == goncurses.KEY_LEFT {
-				if selected == 0 {
-					selected = 1
-				} else if selected == 1 {
-					selected = 0
-				}
-			} else if ch == goncurses.KEY_RIGHT {
-				if selected == 0 {
-					selected = 1
-				} else if selected == 1 {
-					selected = 0
-				}
-			} else if ch == goncurses.KEY_ENTER || ch == 10 || ch == 13 {
-				break
-			} else if ch == goncurses.KEY_ESC {
-				selected = 1
-				break
-			}
-		}
-
-		if selected == 0 {
-			err = startup.AddService("mrext/" + appName)
-			if err != nil {
-				return err
-			}
-
-			err = startup.Save()
-			if err != nil {
-				return err
-			}
-		}
+	if startup.Exists("mrext/" + appName) {
+		return nil
 	}
 
-	return nil
+	addService := false
+	builder := func() (*tview.Application, error) {
+		app := tview.NewApplication()
+		modal := tview.NewModal().
+			SetText("Add Remote service to MiSTer startup?\nThis won't impact MiSTer's performance.").
+			AddButtons([]string{"Yes", "No"}).
+			SetDoneFunc(func(_ int, label string) {
+				addService = label == "Yes"
+				app.Stop()
+			})
+		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			if event.Key() == tcell.KeyEscape {
+				app.Stop()
+				return nil
+			}
+			return event
+		})
+		return app.SetRoot(modal, true).SetFocus(modal), nil
+	}
+	if err := tui.BuildAndRetry(builder); err != nil {
+		return err
+	}
+	if !addService {
+		return nil
+	}
+	if err := startup.AddService("mrext/" + appName); err != nil {
+		return err
+	}
+	return startup.Save()
 }
 
 func tryNonInteractiveAddToStartup(print bool) {
@@ -128,126 +98,95 @@ const (
 	displayUninstall
 )
 
-func displayServiceInfo(stdscr *goncurses.Window, service *service.Service, cfg *config.UserConfig) (int, error) {
-	width := 57
-	height := 11
-
-	win, err := curses.NewWindow(stdscr, height, width, "", -1)
-	if err != nil {
-		return displayNothing, err
-	}
-	defer func(win *goncurses.Window) {
-		err := win.Delete()
-		if err != nil {
-			logger.Error("failed to delete window: %s", err)
-		}
-	}(win)
-
-	printCenter := func(y int, text string) {
-		x := (width - len(text)) / 2
-		win.MovePrint(y, x, text)
-	}
-
-	clearLine := func(y int) {
-		win.MovePrint(y, 2, strings.Repeat(" ", width-4))
-	}
-
+func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, error) {
 	ip, err := utils.GetLocalIp()
-	appUrl := ""
+	appURL := fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
 	if err != nil {
 		logger.Error("could not get local ip: %s", err)
-		appUrl = fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
 	} else {
-		appUrl = fmt.Sprintf("http://%s:%d", ip, appPort)
+		appURL = fmt.Sprintf("http://%s:%d", ip, appPort)
 	}
-
-	altUrl := ""
+	altURL := ""
 	if cfg.Remote.MdnsService {
 		hostname, _ := os.Hostname()
-		altUrl = "OR " + fmt.Sprintf("http://%s.local:%d", hostname, appPort)
+		altURL = fmt.Sprintf("OR http://%s.local:%d", hostname, appPort)
 	}
 
-	var ch goncurses.Key
 	selected := 3
+	action := displayNothing
+	builder := func() (*tview.Application, error) {
+		app := tview.NewApplication()
+		status := tview.NewTextView().SetTextAlign(tview.AlignCenter)
+		footer := tview.NewTextView().SetDynamicColors(true).SetTextAlign(tview.AlignCenter)
+		content := tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(status, 0, 1, false).
+			AddItem(footer, 1, 0, false)
+		content.SetBorder(true)
 
-	for {
-		var statusText string
-		var toggleText string
-		running := service.Running()
-		if running {
-			statusText = "Service is RUNNING"
-			toggleText = "Stop"
-		} else {
-			statusText = "Service is NOT RUNNING"
-			toggleText = "Start"
-		}
-
-		clearLine(1)
-		printCenter(1, statusText)
-		clearLine(3)
-		clearLine(4)
-		clearLine(6)
-		if running {
-			printCenter(3, "Access Remote with this URL:")
-			printCenter(4, appUrl)
-			printCenter(5, altUrl)
-			printCenter(7, "It's safe to exit, the service will continue running.")
-		}
-
-		clearLine(8)
-		curses.DrawActionButtons(win, []string{toggleText, "Restart", "Uninstall", "Exit"}, selected, 1)
-
-		win.NoutRefresh()
-		err := goncurses.Update()
-		if err != nil {
-			return displayNothing, err
-		}
-
-		ch = win.GetChar()
-
-		if ch == goncurses.KEY_LEFT {
-			if selected == 0 {
-				selected = 3
-			} else {
-				selected--
+		draw := func() {
+			running := svc.Running()
+			state := "Service is NOT RUNNING"
+			toggle := "Start"
+			message := state
+			if running {
+				state = "Service is RUNNING"
+				toggle = "Stop"
+				message = fmt.Sprintf("%s\n\nAccess Remote with this URL:\n%s\n%s\n\nIt's safe to exit; service will continue running.", state, appURL, altURL)
 			}
-		} else if ch == goncurses.KEY_RIGHT {
-			if selected == 3 {
-				selected = 0
-			} else {
-				selected++
-			}
-		} else if ch == goncurses.KEY_ENTER || ch == 10 || ch == 13 {
-			if selected == 0 {
-				if service.Running() {
-					err := service.Stop()
-					if err != nil {
-						logger.Error("could not stop service: %s", err)
+			status.SetText(message)
+			footer.SetText(tui.ButtonBar([]string{toggle, "Restart", "Uninstall", "Exit"}, selected))
+		}
+		draw()
+
+		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyEscape:
+				app.Stop()
+				return nil
+			case tcell.KeyLeft:
+				selected = (selected + 3) % 4
+				draw()
+				return nil
+			case tcell.KeyRight:
+				selected = (selected + 1) % 4
+				draw()
+				return nil
+			case tcell.KeyEnter:
+				switch selected {
+				case 0:
+					if svc.Running() {
+						err = svc.Stop()
+					} else {
+						err = svc.Start()
 					}
-				} else {
-					err := service.Start()
 					if err != nil {
-						logger.Error("could not start service: %s", err)
+						logger.Error("could not toggle service: %s", err)
 					}
+					time.Sleep(time.Second)
+					draw()
+				case 1:
+					if err = svc.Restart(); err != nil {
+						logger.Error("could not restart service: %s", err)
+					}
+					time.Sleep(time.Second)
+					draw()
+				case 2:
+					action = displayUninstall
+					app.Stop()
+				case 3:
+					app.Stop()
 				}
-				time.Sleep(1 * time.Second)
-			} else if selected == 1 {
-				err := service.Restart()
-				if err != nil {
-					logger.Error("could not restart service: %s", err)
-				}
-				time.Sleep(1 * time.Second)
-			} else if selected == 2 {
-				return displayUninstall, nil
-			} else {
-				break
+				return nil
+			default:
+				return event
 			}
-		} else if ch == goncurses.KEY_ESC {
-			break
-		}
+		})
+		return app.SetRoot(tui.Centered(57, 11, content), true), nil
 	}
-
-	return displayNothing, nil
+	if err := tui.BuildAndRetry(builder); err != nil {
+		return displayNothing, err
+	}
+	return action, nil
 }
 
 func displayNonInteractiveServiceInfo(service *service.Service) {

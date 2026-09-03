@@ -318,7 +318,7 @@ func (s *Service) ServiceHandler(cmd *string) {
 	} else if *cmd == "start" {
 		err := s.Start()
 		if err != nil {
-			s.Logger.Error(err.Error())
+			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
 
@@ -326,7 +326,7 @@ func (s *Service) ServiceHandler(cmd *string) {
 	} else if *cmd == "stop" {
 		err := s.Stop()
 		if err != nil {
-			s.Logger.Error(err.Error())
+			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
 
@@ -334,7 +334,7 @@ func (s *Service) ServiceHandler(cmd *string) {
 	} else if *cmd == "restart" {
 		err := s.Restart()
 		if err != nil {
-			s.Logger.Error(err.Error())
+			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
 
