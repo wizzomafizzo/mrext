@@ -167,20 +167,20 @@ func wsMsgHandler(kbd input.Keyboard, mouse input.Mouse) func(string) string {
 	}
 }
 
-func parseMouseCoords(args string) (int, int, error) {
+func parseMouseCoords(args string) (x, y int, err error) {
 	parts := strings.SplitN(args, ",", 2)
 	if len(parts) != 2 {
 		return 0, 0, fmt.Errorf("invalid mouse coords: %s", args)
 	}
 
-	x, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	x, err = strconv.Atoi(strings.TrimSpace(parts[0]))
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("parse mouse x coordinate: %w", err)
 	}
 
-	y, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	y, err = strconv.Atoi(strings.TrimSpace(parts[1]))
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("parse mouse y coordinate: %w", err)
 	}
 
 	return x, y, nil
@@ -208,7 +208,9 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		if closeErr := kbd.Close(); closeErr != nil {
 			logger.Error("failed to close keyboard: %s", closeErr)
 		}
-		mouse.Close()
+		if closeErr := mouse.Close(); closeErr != nil {
+			logger.Error("failed to close mouse: %s", closeErr)
+		}
 		return nil, fmt.Errorf("start tracker: %w", err)
 	}
 
@@ -249,7 +251,9 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		if err := kbd.Close(); err != nil {
 			logger.Error("failed to close keyboard: %s", err)
 		}
-		mouse.Close()
+		if err := mouse.Close(); err != nil {
+			logger.Error("failed to close mouse: %s", err)
+		}
 
 		if stopMDNS != nil {
 			err := stopMDNS()

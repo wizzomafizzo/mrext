@@ -33,7 +33,7 @@ const (
 )
 
 // GetScreenResolution returns MiSTer's current framebuffer output resolution.
-func GetScreenResolution() (int, int, error) {
+func GetScreenResolution() (width, height int, err error) {
 	// #nosec G304 -- framebuffer path is a fixed MiSTer device.
 	framebuffer, err := os.Open(FrameBufferDevice)
 	if err != nil {

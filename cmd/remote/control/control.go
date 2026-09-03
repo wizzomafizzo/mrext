@@ -22,6 +22,7 @@ package control
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -132,7 +133,7 @@ type ScreenResponse struct {
 }
 
 func HandleScreen(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		width, height, err := mister.GetScreenResolution()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -158,8 +159,16 @@ type MouseMoveArgs struct {
 	Y int `json:"y"`
 }
 
-func SendMouseMove(mouse input.Mouse, x int, y int) error {
-	return mouse.Move(int32(x), int32(y))
+func SendMouseMove(mouse input.Mouse, x, y int) error {
+	if int64(x) < math.MinInt32 || int64(x) > math.MaxInt32 ||
+		int64(y) < math.MinInt32 || int64(y) > math.MaxInt32 {
+		return fmt.Errorf("mouse movement is outside int32 range: %d,%d", x, y)
+	}
+	// #nosec G115 -- both coordinates are range-checked above.
+	if err := mouse.Move(int32(x), int32(y)); err != nil {
+		return fmt.Errorf("move mouse: %w", err)
+	}
+	return nil
 }
 
 func HandleMouseMove(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
@@ -184,8 +193,11 @@ func HandleMouseMove(mouse input.Mouse, logger *service.Logger) http.HandlerFunc
 // SendMousePosition moves the cursor to an absolute position given as
 // per-mille (0-1000) of the screen along each axis, independent of the current
 // video resolution.
-func SendMousePosition(mouse input.Mouse, x int, y int) error {
-	return mouse.MoveToPermille(x, y)
+func SendMousePosition(mouse input.Mouse, x, y int) error {
+	if err := mouse.MoveToPermille(x, y); err != nil {
+		return fmt.Errorf("position mouse: %w", err)
+	}
+	return nil
 }
 
 func HandleMousePosition(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
@@ -208,30 +220,35 @@ func HandleMousePosition(mouse input.Mouse, logger *service.Logger) http.Handler
 }
 
 func SendMouseButton(mouse input.Mouse, button string) error {
+	var err error
 	switch button {
 	case "click", "left":
-		return mouse.LeftClick()
+		err = mouse.LeftClick()
 	case "double_click", "double":
-		return mouse.DoubleClick()
+		err = mouse.DoubleClick()
 	case "right":
-		return mouse.RightClick()
+		err = mouse.RightClick()
 	case "middle":
-		return mouse.MiddleClick()
+		err = mouse.MiddleClick()
 	case "left_down":
-		return mouse.LeftDown()
+		err = mouse.LeftDown()
 	case "left_up":
-		return mouse.LeftUp()
+		err = mouse.LeftUp()
 	case "right_down":
-		return mouse.RightDown()
+		err = mouse.RightDown()
 	case "right_up":
-		return mouse.RightUp()
+		err = mouse.RightUp()
 	case "middle_down":
-		return mouse.MiddleDown()
+		err = mouse.MiddleDown()
 	case "middle_up":
-		return mouse.MiddleUp()
+		err = mouse.MiddleUp()
 	default:
 		return fmt.Errorf("unknown mouse button: %s", button)
 	}
+	if err != nil {
+		return fmt.Errorf("send %s mouse button event: %w", button, err)
+	}
+	return nil
 }
 
 func HandleMouseButton(mouse input.Mouse, logger *service.Logger) http.HandlerFunc {
