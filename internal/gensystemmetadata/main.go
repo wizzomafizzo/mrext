@@ -1,13 +1,35 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +42,7 @@ import (
 const (
 	coreModule        = "github.com/ZaparooProject/zaparoo-core/v2"
 	coreRepository    = "https://github.com/ZaparooProject/zaparoo-core.git"
-	coreRevision      = "01d7a1798ab4f10fdb32fa6c02a6c3d723a15cd4"
+	coreRevision      = "97f142e67329526f59529db09f58010da72f8c70"
 	defaultOutput     = "pkg/games/system_metadata.gen.json"
 	coreSourceEnv     = "ZAPAROO_CORE_SOURCE"
 	coreRepositoryEnv = "ZAPAROO_CORE_REPOSITORY"
@@ -28,9 +50,9 @@ const (
 )
 
 type generatedMetadata struct {
+	Systems map[string]systemMetadata `json:"systems"`
 	Source  string                    `json:"source"`
 	Format  int                       `json:"format"`
-	Systems map[string]systemMetadata `json:"systems"`
 }
 
 type systemMetadata struct {
@@ -50,11 +72,17 @@ type directorySource struct {
 }
 
 func (s directorySource) ReadFile(name string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(s.root, filepath.FromSlash(name)))
+	// #nosec G304,G703 -- name is an internal path within explicitly selected Core source.
+	data, err := os.ReadFile(filepath.Join(s.root, filepath.FromSlash(name)))
+	if err != nil {
+		return nil, fmt.Errorf("read Core source file: %w", err)
+	}
+	return data, nil
 }
 
 func gitOutput(args ...string) (string, error) {
-	command := exec.Command("git", args...)
+	// #nosec G204,G702 -- arguments are fixed generator operations plus configured repository path.
+	command := exec.CommandContext(context.Background(), "git", args...)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
@@ -69,40 +97,49 @@ func checkoutCoreSource() (string, error) {
 	}
 	cacheParent := filepath.Join(cacheRoot, "mrext", "system-metadata")
 	checkout := filepath.Join(cacheParent, coreRevision)
-	if revision, revisionErr := gitOutput("-C", checkout, "rev-parse", "HEAD"); revisionErr == nil && revision == coreRevision {
+	cachedRevision, revisionErr := gitOutput("-C", checkout, "rev-parse", "HEAD")
+	if revisionErr == nil && cachedRevision == coreRevision {
 		return checkout, nil
 	}
-	if err := os.MkdirAll(cacheParent, 0o755); err != nil {
-		return "", fmt.Errorf("create metadata cache: %w", err)
+	if mkdirErr := os.MkdirAll(cacheParent, 0o750); mkdirErr != nil {
+		return "", fmt.Errorf("create metadata cache: %w", mkdirErr)
 	}
 	temporary, err := os.MkdirTemp(cacheParent, "checkout-")
 	if err != nil {
 		return "", fmt.Errorf("create temporary Core checkout: %w", err)
 	}
-	defer os.RemoveAll(temporary)
+	defer func() {
+		if removeErr := os.RemoveAll(temporary); removeErr != nil {
+			_, _ = fmt.Fprintln(os.Stderr, removeErr)
+		}
+	}()
 
 	repository := os.Getenv(coreRepositoryEnv)
 	if repository == "" {
 		repository = coreRepository
 	}
-	if _, err := gitOutput("init", "--quiet", temporary); err != nil {
-		return "", err
+	if _, initErr := gitOutput("init", "--quiet", temporary); initErr != nil {
+		return "", initErr
 	}
-	if _, err := gitOutput("-C", temporary, "remote", "add", "origin", repository); err != nil {
-		return "", err
+	if _, remoteErr := gitOutput("-C", temporary, "remote", "add", "origin", repository); remoteErr != nil {
+		return "", remoteErr
 	}
-	if _, err := gitOutput("-C", temporary, "fetch", "--quiet", "--depth=1", "origin", coreRevision); err != nil {
-		return "", err
+	if _, fetchErr := gitOutput(
+		"-C", temporary, "fetch", "--quiet", "--depth=1", "origin", coreRevision,
+	); fetchErr != nil {
+		return "", fetchErr
 	}
-	if _, err := gitOutput("-C", temporary, "checkout", "--quiet", "--detach", "FETCH_HEAD"); err != nil {
-		return "", err
+	if _, checkoutErr := gitOutput(
+		"-C", temporary, "checkout", "--quiet", "--detach", "FETCH_HEAD",
+	); checkoutErr != nil {
+		return "", checkoutErr
 	}
 	revision, err := gitOutput("-C", temporary, "rev-parse", "HEAD")
 	if err != nil {
 		return "", err
 	}
 	if revision != coreRevision {
-		return "", fmt.Errorf("Core source revision mismatch: got %s", revision)
+		return "", fmt.Errorf("core source revision mismatch: got %s", revision)
 	}
 	if err := os.RemoveAll(checkout); err != nil {
 		return "", fmt.Errorf("remove stale Core checkout: %w", err)
@@ -210,6 +247,36 @@ func parseAliases(data []byte) (map[string][]string, error) {
 	return aliases, nil
 }
 
+func metadataForSystem(
+	source sourceReader,
+	system *catalog.Core,
+	aliases map[string][]string,
+) (systemMetadata, error) {
+	path := "pkg/assets/systems/" + system.ID + ".json"
+	data, err := source.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		// Display assets are optional. Keep Core's operational catalog independent
+		// from metadata needed only by this legacy application.
+		return systemMetadata{
+			Name:    system.ID,
+			Aliases: append([]string(nil), aliases[system.ID]...),
+		}, nil
+	}
+	if err != nil {
+		return systemMetadata{}, fmt.Errorf("read metadata for %s: %w", system.ID, err)
+	}
+
+	var entry systemMetadata
+	if err := json.Unmarshal(data, &entry); err != nil {
+		return systemMetadata{}, fmt.Errorf("decode metadata for %s: %w", system.ID, err)
+	}
+	if entry.Name == "" || entry.Category == "" {
+		return systemMetadata{}, fmt.Errorf("metadata for %s lacks name or category", system.ID)
+	}
+	entry.Aliases = append([]string(nil), aliases[system.ID]...)
+	return entry, nil
+}
+
 func loadMetadata(source sourceReader) (map[string]systemMetadata, error) {
 	definitions, err := source.ReadFile("pkg/database/systemdefs/systemdefs.go")
 	if err != nil {
@@ -221,19 +288,13 @@ func loadMetadata(source sourceReader) (map[string]systemMetadata, error) {
 	}
 
 	metadata := make(map[string]systemMetadata)
-	for _, system := range catalog.All() {
-		data, err := source.ReadFile("pkg/assets/systems/" + system.ID + ".json")
+	systems := catalog.All()
+	for i := range systems {
+		system := &systems[i]
+		entry, err := metadataForSystem(source, system, aliases)
 		if err != nil {
-			return nil, fmt.Errorf("read metadata for %s: %w", system.ID, err)
+			return nil, err
 		}
-		var entry systemMetadata
-		if err := json.Unmarshal(data, &entry); err != nil {
-			return nil, fmt.Errorf("decode metadata for %s: %w", system.ID, err)
-		}
-		if entry.Name == "" || entry.Category == "" {
-			return nil, fmt.Errorf("metadata for %s lacks name or category", system.ID)
-		}
-		entry.Aliases = append([]string(nil), aliases[system.ID]...)
 		metadata[system.ID] = entry
 	}
 	return metadata, nil
@@ -244,6 +305,7 @@ func pinnedSourceLabel() string {
 }
 
 func generatedOutputCurrent(path string) bool {
+	// #nosec G304 -- path is explicit generator output.
 	current, err := os.ReadFile(path)
 	if err != nil {
 		return false
@@ -286,7 +348,7 @@ func main() {
 		}
 		checkout, err := checkoutCoreSource()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		source = directorySource{root: checkout}
@@ -295,18 +357,19 @@ func main() {
 
 	generated, err := generate(source, sourceLabel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	if current, err := os.ReadFile(*output); err == nil && bytes.Equal(current, generated) {
 		return
 	}
-	if err := os.MkdirAll(filepath.Dir(*output), 0o755); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if err := os.MkdirAll(filepath.Dir(*output), 0o750); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	// #nosec G306,G703 -- generated metadata is a world-readable build input at explicit output path.
 	if err := os.WriteFile(*output, generated, 0o644); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

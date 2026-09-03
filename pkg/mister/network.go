@@ -1,24 +1,45 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package mister
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
+	"os"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/libp2p/zeroconf/v2"
 	"github.com/txn2/txeh"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"golang.org/x/sys/unix"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
 )
 
 const (
 	DefaultHostname = "MiSTer"
-	MdnsServiceName = "_mister-remote._tcp"
+	MDNSServiceName = "_mister-remote._tcp"
 	mdnsPort        = 5353
 	mdnsTTL         = 120
 	startRetries    = 30
@@ -26,56 +47,56 @@ const (
 	browseInterval  = 1 * time.Minute
 )
 
-type MdnsClient struct {
+type MDNSClient struct {
 	Hostname string
 	Version  string
 	IP       string
 }
 
-type MdnsService struct {
+type MDNSService struct {
+	Clients []MDNSClient
 	mu      sync.Mutex
 	Active  bool
-	Clients []MdnsClient
 }
 
-func (s *MdnsService) AddClient(client MdnsClient) {
+func (s *MDNSService) AddClient(client MDNSClient) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Clients = append(s.Clients, client)
 	s.Active = true
 }
 
-func (s *MdnsService) ClearClients() {
+func (s *MDNSService) ClearClients() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Clients = []MdnsClient{}
+	s.Clients = []MDNSClient{}
 }
 
-func (s *MdnsService) GetClients() []MdnsClient {
+func (s *MDNSService) GetClients() []MDNSClient {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.Clients
+	return append([]MDNSClient(nil), s.Clients...)
 }
 
-func (s *MdnsService) IsActive() bool {
+func (s *MDNSService) IsActive() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.Active
 }
 
-func (s *MdnsService) SetActive(active bool) {
+func (s *MDNSService) SetActive(active bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Active = active
 }
 
-var Mdns = &MdnsService{
+var MDNS = &MDNSService{
 	Active:  false,
-	Clients: []MdnsClient{},
+	Clients: []MDNSClient{},
 }
 
-func browseMdns(logger *service.Logger) {
-	Mdns.ClearClients()
+func browseMDNS(logger *service.Logger) {
+	MDNS.ClearClients()
 
 	entries := make(chan *zeroconf.ServiceEntry)
 	go func(results <-chan *zeroconf.ServiceEntry) {
@@ -90,7 +111,7 @@ func browseMdns(logger *service.Logger) {
 				ip = entry.AddrIPv4[0].String()
 			}
 
-			Mdns.AddClient(MdnsClient{
+			MDNS.AddClient(MDNSClient{
 				Hostname: strings.TrimSuffix(entry.HostName, "."),
 				Version:  version,
 				IP:       ip,
@@ -103,7 +124,7 @@ func browseMdns(logger *service.Logger) {
 
 	err := zeroconf.Browse(
 		ctx,
-		MdnsServiceName,
+		MDNSServiceName,
 		"local.",
 		entries,
 		zeroconf.SelectIPTraffic(zeroconf.IPv4),
@@ -115,19 +136,19 @@ func browseMdns(logger *service.Logger) {
 	<-ctx.Done()
 }
 
-func startMdns(logger *service.Logger, appVersion string) (func() error, error) {
-	if Mdns.IsActive() {
-		return nil, nil
+func startMDNS(logger *service.Logger, appVersion string) (func() error, error) {
+	if MDNS.IsActive() {
+		return func() error { return nil }, nil
 	}
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read hostname: %w", err)
 	}
 
 	server, err := zeroconf.Register(
 		"MiSTer Remote ("+hostname+")",
-		MdnsServiceName,
+		MDNSServiceName,
 		"local.",
 		mdnsPort,
 		[]string{"version=" + appVersion},
@@ -135,17 +156,16 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 		zeroconf.TTL(mdnsTTL),
 	)
 	if err != nil {
-		return nil, err
-	} else {
-		Mdns.SetActive(true)
+		return nil, fmt.Errorf("register mDNS service: %w", err)
 	}
+	MDNS.SetActive(true)
 	logger.Info("registered mdns service with hostname: %s", hostname)
 
-	browseMdns(logger)
+	browseMDNS(logger)
 	ticker := time.NewTicker(browseInterval)
 	go func() {
 		for range ticker.C {
-			browseMdns(logger)
+			browseMDNS(logger)
 		}
 	}()
 	logger.Info("started network discovery service")
@@ -153,33 +173,32 @@ func startMdns(logger *service.Logger, appVersion string) (func() error, error) 
 	return func() error {
 		ticker.Stop()
 		server.Shutdown()
-		Mdns.ClearClients()
-		Mdns.SetActive(false)
+		MDNS.ClearClients()
+		MDNS.SetActive(false)
 		return nil
 	}, nil
 }
 
-// TryStartMdns will attempt to start the mDNS service, retrying multiple times if it fails. This is because a script
+// TryStartMDNS will attempt to start the mDNS service, retrying multiple times if it fails. This is because a script
 // may be run at boot time before the network is available.
-func TryStartMdns(logger *service.Logger, appVersion string) func() error {
+func TryStartMDNS(logger *service.Logger, appVersion string) func() error {
 	// TODO: allow a hook function on successful browse
 	retries := 0
 	for {
-		stop, err := startMdns(logger, appVersion)
+		stop, err := startMDNS(logger, appVersion)
 		if err == nil {
 			return stop
-		} else {
-			if retries >= startRetries {
-				logger.Error("failed to start mdns service, giving up: %s", err)
-				return nil
-			} else {
-				retries++
-				if retries == 1 {
-					logger.Error("failed to start mdns service, retrying: %s", err)
-				}
-				time.Sleep(time.Second)
-			}
 		}
+		if retries >= startRetries {
+			logger.Error("failed to start mdns service, giving up: %s", err)
+			return nil
+		}
+
+		retries++
+		if retries == 1 {
+			logger.Error("failed to start mdns service, retrying: %s", err)
+		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -188,7 +207,7 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 	// TODO: also update the linux/hostname file and linux/hosts file
 	procHostnameFile := "/proc/sys/kernel/hostname"
 	hostnameFile := "/etc/hostname"
-	localIp := "127.0.1.1"
+	localIP := "127.0.1.1"
 
 	if newHostname == "" {
 		newHostname = DefaultHostname
@@ -196,7 +215,7 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 
 	currentHostnameData, err := os.ReadFile(hostnameFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("read hostname file: %w", err)
 	}
 
 	currentHostname := string(currentHostnameData)
@@ -209,7 +228,7 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 	if unix.Access("/", unix.W_OK) != nil {
 		err = syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
 		if err != nil {
-			return err
+			return fmt.Errorf("remount root filesystem writable: %w", err)
 		}
 
 		defer func() {
@@ -218,30 +237,32 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 	}
 
 	// update hostname file
-	err = os.WriteFile(hostnameFile, []byte(newHostname), 0644)
+	// #nosec G306 -- system hostname file must remain world-readable.
+	err = os.WriteFile(hostnameFile, []byte(newHostname), 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("write hostname file: %w", err)
 	}
 
 	// update hosts file
 	hosts, err := txeh.NewHostsDefault()
 	if err != nil {
-		return err
+		return fmt.Errorf("load hosts file: %w", err)
 	}
 
 	hosts.RemoveHost(strings.ToLower(currentHostname))
-	hosts.AddHost(localIp, strings.ToLower(newHostname))
+	hosts.AddHost(localIP, strings.ToLower(newHostname))
 
 	err = hosts.Save()
 	if err != nil {
-		return err
+		return fmt.Errorf("save hosts file: %w", err)
 	}
 
 	// write new hostname to proc
 	if writeProc {
-		err = os.WriteFile(procHostnameFile, []byte(newHostname), 0644)
+		// #nosec G306 -- proc hostname node uses conventional readable permissions.
+		err = os.WriteFile(procHostnameFile, []byte(newHostname), 0o644)
 		if err != nil {
-			return err
+			return fmt.Errorf("update kernel hostname: %w", err)
 		}
 	}
 
@@ -250,39 +271,51 @@ func UpdateHostname(newHostname string, writeProc bool) error {
 
 func FixRootSSHPerms() error {
 	if unix.Access("/", unix.W_OK) != nil {
-		err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
-		if err != nil {
-			return err
+		if err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, ""); err != nil {
+			return fmt.Errorf("remount root filesystem writable: %w", err)
 		}
-
 		defer func() {
 			_ = syscall.Mount("/", "/", "", syscall.MS_REMOUNT|syscall.MS_RDONLY, "")
 		}()
 	}
 
-	err := os.Chmod(config.SSHConfigFolder, 0700)
-	if err != nil {
-		return err
+	// #nosec G302 -- directories require execute permission for traversal.
+	if err := os.Chmod(config.SSHConfigFolder, 0o700); err != nil {
+		return fmt.Errorf("secure SSH configuration directory: %w", err)
 	}
 
-	return filepath.Walk(config.SSHConfigFolder, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	root, err := os.OpenRoot(config.SSHConfigFolder)
+	if err != nil {
+		return fmt.Errorf("open SSH configuration root: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+
+	if err := fs.WalkDir(root.FS(), ".", func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return fmt.Errorf("walk SSH configuration: %w", walkErr)
 		}
-		if info.IsDir() {
-			return os.Chmod(path, 0700)
-		} else {
-			return os.Chmod(path, 0600)
+		if entry.IsDir() {
+			// #nosec G302 -- directories require execute permission for traversal.
+			if err := root.Chmod(path, 0o700); err != nil {
+				return fmt.Errorf("secure SSH directory: %w", err)
+			}
+			return nil
 		}
-	})
+		if err := root.Chmod(path, 0o600); err != nil {
+			return fmt.Errorf("secure SSH file: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("secure SSH configuration tree: %w", err)
+	}
+	return nil
 }
 
 // CopyAndFixSSHKeys copies the authorized_keys file from the linux folder to root home and fixes all permissions.
 func CopyAndFixSSHKeys(reverse bool) error {
 	if unix.Access("/", unix.W_OK) != nil {
-		err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, "")
-		if err != nil {
-			return err
+		if err := syscall.Mount("/", "/", "", syscall.MS_REMOUNT, ""); err != nil {
+			return fmt.Errorf("remount root filesystem writable: %w", err)
 		}
 
 		defer func() {
@@ -290,9 +323,9 @@ func CopyAndFixSSHKeys(reverse bool) error {
 		}()
 	}
 
-	err := os.MkdirAll(config.SSHConfigFolder, 0700)
+	err := os.MkdirAll(config.SSHConfigFolder, 0o700)
 	if err != nil {
-		return err
+		return fmt.Errorf("create SSH configuration directory: %w", err)
 	}
 
 	if reverse {
@@ -301,17 +334,17 @@ func CopyAndFixSSHKeys(reverse bool) error {
 		err = utils.CopyFile(config.UserSSHKeysFile, config.SSHKeysFile)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("copy SSH keys: %w", err)
 	}
 
 	modTime := time.Now()
 	err = os.Chtimes(config.SSHKeysFile, modTime, modTime)
 	if err != nil {
-		return err
+		return fmt.Errorf("update SSH key timestamp: %w", err)
 	}
 	err = os.Chtimes(config.UserSSHKeysFile, modTime, modTime)
 	if err != nil {
-		return err
+		return fmt.Errorf("update user SSH key timestamp: %w", err)
 	}
 
 	return FixRootSSHPerms()

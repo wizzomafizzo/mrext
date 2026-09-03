@@ -1,35 +1,56 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package websocket
 
 import (
+	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"sync"
+
+	"github.com/gorilla/websocket"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
+	CheckOrigin: func(_ *http.Request) bool {
 		return true
 	},
 }
 
 func send(c *websocket.Conn, msg string) error {
 	if c == nil {
-		return fmt.Errorf("websocket connection is nil")
+		return errors.New("websocket connection is nil")
 	}
 
 	err := c.WriteMessage(websocket.TextMessage, []byte(msg))
 	if err != nil {
-		return err
+		return fmt.Errorf("write websocket message: %w", err)
 	}
 
 	return nil
 }
 
 type connGroup struct {
-	mu    sync.Mutex
 	conns []*websocket.Conn
+	mu    sync.Mutex
 }
 
 func (cg *connGroup) Add(c *websocket.Conn) int {
@@ -86,9 +107,9 @@ func Handle(
 		id := conns.Add(c)
 
 		defer func(c *websocket.Conn) {
-			err := c.Close()
-			if err != nil {
-				logger.Error("failed to close websocket: %s", err)
+			closeErr := c.Close()
+			if closeErr != nil {
+				logger.Error("failed to close websocket: %s", closeErr)
 			}
 			conns.Remove(id)
 		}(c)

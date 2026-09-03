@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
@@ -5,11 +24,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/wizzomafizzo/mrext/pkg/tracker"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -35,9 +53,8 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 	tr.LoadCore()
 	if !mister.ActiveGameEnabled() {
-		err := mister.SetActiveGame("")
-		if err != nil {
-			tr.Logger.Error("error setting active game: %s", err)
+		if activeErr := mister.SetActiveGame(""); activeErr != nil {
+			tr.Logger.Error("error setting active game: %s", activeErr)
 		}
 	}
 
@@ -68,19 +85,19 @@ func tryAddStartup() error {
 
 	err := startup.Load()
 	if err != nil {
-		return err
+		return fmt.Errorf("load startup configuration: %w", err)
 	}
 
 	if !startup.Exists("mrext/" + appName) {
 		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
 			err = startup.AddService("mrext/" + appName)
 			if err != nil {
-				return err
+				return fmt.Errorf("add PlayLog startup service: %w", err)
 			}
 
 			err = startup.Save()
 			if err != nil {
-				return err
+				return fmt.Errorf("save startup configuration: %w", err)
 			}
 		}
 	}
@@ -101,7 +118,7 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
-		fmt.Println("Error loading config:", err)
+		_, _ = fmt.Println("Error loading config:", err)
 		os.Exit(1)
 	}
 
@@ -114,17 +131,23 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("error creating service: %s", err)
-		fmt.Println("Error creating service:", err)
+		_, _ = fmt.Println("Error creating service:", err)
 		os.Exit(1)
 	}
 
 	recents, err := mister.RecentsOptionEnabled()
 	if err != nil {
 		logger.Error("error checking recents option: %s", err)
-		fmt.Println("Could not read the MiSTer.ini file. Make sure the \"recents\" option is enabled if playlog doesn't work.")
+		_, _ = fmt.Println(
+			"Could not read the MiSTer.ini file. " +
+				"Make sure the \"recents\" option is enabled if playlog doesn't work.",
+		)
 	} else if !recents {
 		logger.Error("recents option not enabled, exiting...")
-		fmt.Println("The \"recents\" option must be enabled for playlog to work. Configure it in the MiSTer.ini file and reboot.")
+		_, _ = fmt.Println(
+			"The \"recents\" option must be enabled for playlog to work. " +
+				"Configure it in the MiSTer.ini file and reboot.",
+		)
 		os.Exit(1)
 	}
 
@@ -133,14 +156,13 @@ func main() {
 	err = tryAddStartup()
 	if err != nil {
 		logger.Error("error adding startup: %s", err)
-		fmt.Println("Error adding to startup:", err)
+		_, _ = fmt.Println("Error adding to startup:", err)
 	}
 
 	if !svc.Running() {
-		err := svc.Start()
-		if err != nil {
-			logger.Error("error starting service: %s", err)
-			fmt.Println("Error starting service:", err)
+		if startErr := svc.Start(); startErr != nil {
+			logger.Error("error starting service: %s", startErr)
+			_, _ = fmt.Println("Error starting service:", startErr)
 			os.Exit(1)
 		}
 	}
@@ -148,14 +170,14 @@ func main() {
 	db, err := openPlayLogDb()
 	if err != nil {
 		logger.Error("error opening db: %s", err)
-		fmt.Println("Error opening database:", err)
+		_, _ = fmt.Println("Error opening database:", err)
 		os.Exit(1)
 	}
 
 	cores, err := db.topCores(10)
 	if err != nil {
 		logger.Error("error getting top cores: %s", err)
-		fmt.Println("Error getting top cores:", err)
+		_, _ = fmt.Println("Error getting top cores:", err)
 		os.Exit(1)
 	}
 	maxCoreLen := 0
@@ -168,7 +190,7 @@ func main() {
 	games, err := db.topGames(10)
 	if err != nil {
 		logger.Error("error getting top games: %s", err)
-		fmt.Println("Error getting top games:", err)
+		_, _ = fmt.Println("Error getting top games:", err)
 		os.Exit(1)
 	}
 	maxGameLen := 0
@@ -178,18 +200,18 @@ func main() {
 		}
 	}
 
-	fmt.Println("Top played cores:")
+	_, _ = fmt.Println("Top played cores:")
 	// TODO: convert names using names.txt
 	for _, core := range cores {
 		hours := core.Time / 3600
 		minutes := (core.Time % 3600) / 60
-		fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.Name, hours, minutes)
+		_, _ = fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.Name, hours, minutes)
 	}
-	fmt.Println()
-	fmt.Println("Top played games:")
+	_, _ = fmt.Println()
+	_, _ = fmt.Println("Top played games:")
 	for _, game := range games {
 		hours := game.Time / 3600
 		minutes := (game.Time % 3600) / 60
-		fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.Name, hours, minutes)
+		_, _ = fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.Name, hours, minutes)
 	}
 }

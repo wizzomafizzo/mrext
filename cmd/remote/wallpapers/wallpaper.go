@@ -1,18 +1,36 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package wallpapers
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/service"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gorilla/mux"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 type Wallpaper struct {
@@ -29,15 +47,15 @@ func listWallpapers() ([]Wallpaper, error) {
 	wps := make([]Wallpaper, 0)
 
 	if _, err := os.Stat(wallpaperFolder); os.IsNotExist(err) {
-		err := os.Mkdir(wallpaperFolder, 0755)
-		if err != nil {
-			return nil, err
+		// #nosec G301 -- MiSTer wallpaper folder must remain world-readable.
+		if err := os.Mkdir(wallpaperFolder, 0o755); err != nil {
+			return nil, fmt.Errorf("create wallpaper folder: %w", err)
 		}
 	}
 
 	files, err := os.ReadDir(wallpaperFolder)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read wallpaper folder: %w", err)
 	}
 
 	for _, file := range files {
@@ -47,7 +65,6 @@ func listWallpapers() ([]Wallpaper, error) {
 
 		fn := file.Name()
 		if strings.HasSuffix(strings.ToLower(fn), ".png") || strings.HasSuffix(strings.ToLower(fn), ".jpg") {
-
 			wps = append(wps, Wallpaper{
 				Name:     strings.TrimSuffix(fn, filepath.Ext(fn)),
 				Filename: fn,
@@ -60,8 +77,8 @@ func listWallpapers() ([]Wallpaper, error) {
 
 type AllWallpapersPayload struct {
 	Active         string      `json:"active"`
-	BackgroundMode int         `json:"backgroundMode"`
 	Wallpapers     []Wallpaper `json:"wallpapers"`
+	BackgroundMode int         `json:"backgroundMode"`
 }
 
 func AllWallpapersHandler(logger *service.Logger) http.HandlerFunc {
@@ -84,8 +101,8 @@ func AllWallpapersHandler(logger *service.Logger) http.HandlerFunc {
 		}
 
 		if err == nil {
-			active, err := os.Readlink(filepath.Join(config.SdFolder, activeFile.Name()))
-			if err == nil {
+			active, linkErr := os.Readlink(filepath.Join(config.SdFolder, activeFile.Name()))
+			if linkErr == nil {
 				for i, wallpaper := range payload.Wallpapers {
 					if wallpaper.Filename == filepath.Base(active) {
 						wps[i].Active = true
@@ -143,11 +160,12 @@ func SetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 		filename := vars["filename"]
 
 		var ext string
-		if strings.HasSuffix(strings.ToLower(filename), ".png") {
+		switch {
+		case strings.HasSuffix(strings.ToLower(filename), ".png"):
 			ext = ".png"
-		} else if strings.HasSuffix(strings.ToLower(filename), ".jpg") {
+		case strings.HasSuffix(strings.ToLower(filename), ".jpg"):
 			ext = ".jpg"
-		} else {
+		default:
 			http.Error(w, "invalid file type", http.StatusBadRequest)
 			return
 		}
@@ -160,9 +178,10 @@ func SetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 					logger.Error("couldn't remove symlink: %s", err)
 				}
 			} else {
-				err := os.Rename(jpgPath, filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix())))
-				if err != nil {
-					logger.Error("couldn't rename file: %s", err)
+				backupPath := filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix()))
+				renameErr := os.Rename(jpgPath, backupPath)
+				if renameErr != nil {
+					logger.Error("couldn't rename file: %s", renameErr)
 				}
 			}
 		}
@@ -175,9 +194,10 @@ func SetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 					logger.Error("couldn't remove symlink: %s", err)
 				}
 			} else {
-				err := os.Rename(pngPath, filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix())))
-				if err != nil {
-					logger.Error("couldn't rename file: %s", err)
+				backupPath := filepath.Join(wallpaperFolder, fmt.Sprintf("menu_%d.jpg", f.ModTime().Unix()))
+				renameErr := os.Rename(pngPath, backupPath)
+				if renameErr != nil {
+					logger.Error("couldn't rename file: %s", renameErr)
 				}
 			}
 		}
@@ -206,7 +226,7 @@ func SetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
 }
 
 func UnsetWallpaperHandler(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		activeFile, err := os.Stat(filepath.Join(config.SdFolder, "menu.png"))
 		if err != nil {
 			activeFile, err = os.Stat(filepath.Join(config.SdFolder, "menu.jpg"))

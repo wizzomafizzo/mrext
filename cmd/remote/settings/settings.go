@@ -1,14 +1,29 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package settings
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
-	gm "github.com/c-seeger/mac-gen-go"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"mime"
 	"net"
 	"net/http"
@@ -16,12 +31,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	gm "github.com/c-seeger/mac-gen-go"
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 func HandleRestartRemote(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("restart remote request")
-		cmd := exec.Command(cfg.AppPath, "-service", "restart")
+		// #nosec G204,G702 -- executable path comes from Remote configuration.
+		cmd := exec.CommandContext(context.Background(), cfg.AppPath, "-service", "restart")
 		err := cmd.Start()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -42,8 +64,8 @@ type ListPeersPayload struct {
 }
 
 func HandleListPeers(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		peers := mister.Mdns.GetClients()
+	return func(w http.ResponseWriter, _ *http.Request) {
+		peers := mister.MDNS.GetClients()
 
 		payload := ListPeersPayload{
 			Peers: make([]ListPeersPayloadClient, len(peers)),
@@ -68,10 +90,10 @@ func HandleListPeers(logger *service.Logger) http.HandlerFunc {
 
 type HandleSystemInfoPayloadDisk struct {
 	Path        string `json:"path"`
+	DisplayName string `json:"displayName"`
 	Total       uint64 `json:"total"`
 	Used        uint64 `json:"used"`
 	Free        uint64 `json:"free"`
-	DisplayName string `json:"displayName"`
 }
 
 type HandleSystemInfoPayload struct {
@@ -116,22 +138,23 @@ func getDiskInfo(cfg *config.UserConfig) ([]HandleSystemInfoPayloadDisk, error) 
 
 	mounts, err := mister.GetMounts(cfg)
 	if err != nil {
-		return diskInfo, err
+		return diskInfo, fmt.Errorf("list mounted filesystems: %w", err)
 	}
 
 	for _, mount := range mounts {
 		info, err := mister.GetDiskUsage(mount)
 		if err != nil {
-			return diskInfo, err
+			return diskInfo, fmt.Errorf("read disk usage for %s: %w", mount, err)
 		}
 
 		displayName := ""
 
-		if mount == config.SdFolder {
+		switch mount {
+		case config.SdFolder:
 			displayName = "SD card"
-		} else if mount == config.CifsFolder {
+		case config.CifsFolder:
 			displayName = "Network share"
-		} else {
+		default:
 			displayName = filepath.Base(mount)
 		}
 
@@ -148,14 +171,14 @@ func getDiskInfo(cfg *config.UserConfig) ([]HandleSystemInfoPayloadDisk, error) 
 }
 
 func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		hostname, err := os.Hostname()
 		if err != nil {
 			hostname = ""
 		}
 
 		dns := ""
-		if cfg.Remote.MdnsService {
+		if cfg.Remote.MDNSService {
 			dns = hostname + ".local"
 		}
 
@@ -191,8 +214,8 @@ func HandleSystemInfo(logger *service.Logger, cfg *config.UserConfig, appVer str
 }
 
 func HandleReboot(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cmd := exec.Command("reboot")
+	return func(w http.ResponseWriter, _ *http.Request) {
+		cmd := exec.CommandContext(context.Background(), "reboot")
 		err := cmd.Start()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -207,10 +230,10 @@ type GenerateMacPayload struct {
 }
 
 func HandleGenerateMac(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		payload := GenerateMacPayload{}
 
-		ip, err := utils.GetLocalIp()
+		ip, err := utils.GetLocalIP()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get local ip: %s", err)
@@ -238,13 +261,14 @@ func HandleGenerateMac(logger *service.Logger) http.HandlerFunc {
 }
 
 func HandleLogoFile(logger *service.Logger, client embed.FS, cfg *config.UserConfig) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		var path string
 		var data []byte
 		var err error
 
 		if cfg.Remote.CustomLogo != "" {
 			path = cfg.Remote.CustomLogo
+			// #nosec G304,G703 -- custom logo path is explicit Remote configuration.
 			data, err = os.ReadFile(path)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

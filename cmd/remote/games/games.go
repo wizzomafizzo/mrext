@@ -1,19 +1,38 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
-	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 const pageSize = 500
@@ -32,17 +51,17 @@ type SearchResults struct {
 }
 
 type Index struct {
-	mu          sync.Mutex
-	Indexing    bool   `json:"indexing"`
+	CurrentDesc string `json:"currentDesc"`
 	TotalSteps  int    `json:"totalSteps"`
 	CurrentStep int    `json:"currentStep"`
-	CurrentDesc string `json:"currentDesc"`
+	mu          sync.Mutex
+	Indexing    bool `json:"indexing"`
 }
 
 func GetIndexingStatus() string {
 	status := "indexStatus:"
 
-	if gamesdb.DbExists() {
+	if gamesdb.DBExists() {
 		status += "y,"
 	} else {
 		status += "n,"
@@ -80,14 +99,15 @@ func (s *Index) GenerateIndex(logger *service.Logger, cfg *config.UserConfig) {
 		_, err := gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
 			s.TotalSteps = status.Total
 			s.CurrentStep = status.Step
-			if status.Step == 1 {
+			switch status.Step {
+			case 1:
 				s.CurrentDesc = "Finding games folders..."
-			} else if status.Step == status.Total {
-				s.CurrentDesc = "Writing database... (" + fmt.Sprint(status.Files) + " games)"
-			} else {
-				system, err := games.GetSystem(status.SystemId)
+			case status.Total:
+				s.CurrentDesc = "Writing database... (" + strconv.Itoa(status.Files) + " games)"
+			default:
+				system, err := games.GetSystem(status.SystemID)
 				if err != nil {
-					s.CurrentDesc = "Indexing " + status.SystemId + "..."
+					s.CurrentDesc = "Indexing " + status.SystemID + "..."
 				} else {
 					s.CurrentDesc = "Indexing " + system.Name + "..."
 				}
@@ -119,7 +139,7 @@ func GenerateSearchIndex(logger *service.Logger, cfg *config.UserConfig) http.Ha
 }
 
 type listSystemsPayloadSystem struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -152,7 +172,7 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 			}
 
 			payload.Systems = append(payload.Systems, listSystemsPayloadSystem{
-				Id:   id,
+				ID:   id,
 				Name: name,
 			})
 		}
@@ -180,7 +200,7 @@ func Search(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		var results = make([]SearchResultGame, 0)
+		results := make([]SearchResultGame, 0)
 		var search []gamesdb.SearchResult
 
 		if args.System == "all" || args.System == "" {
@@ -201,14 +221,14 @@ func Search(logger *service.Logger) http.HandlerFunc {
 		}
 
 		for _, result := range search {
-			system, err := games.GetSystem(result.SystemId)
-			if err != nil {
+			system, systemErr := games.GetSystem(result.SystemID)
+			if systemErr != nil {
 				continue
 			}
 
 			results = append(results, SearchResultGame{
 				System: systems.System{
-					Id:   system.Id,
+					ID:   system.Id,
 					Name: system.Name,
 				},
 				Name: result.Name,

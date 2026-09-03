@@ -1,23 +1,40 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package systems
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"net/http"
 	"strings"
 
-	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-
 	"github.com/gorilla/mux"
-
+	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type System struct {
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Category string `json:"category"`
 }
@@ -29,12 +46,13 @@ var ignoreSystems = []string{
 }
 
 func ListSystems(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		var systems []System
 
-		existingSystems := utils.MapKeys(games.SystemsWithRbf())
+		existingSystems := utils.MapKeys(games.SystemsWithRBF())
 
-		for _, system := range games.Systems {
+		for id := range games.Systems {
+			system := games.Systems[id]
 			if utils.Contains(ignoreSystems, system.Id) {
 				continue
 			}
@@ -49,7 +67,7 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 			}
 
 			systems = append(systems, System{
-				Id:   system.Id,
+				ID:   system.Id,
 				Name: name,
 				// TODO: error checking
 				Category: strings.Split(system.Rbf, "/")[0][1:],
@@ -76,7 +94,7 @@ func LaunchCore(cfg *config.UserConfig, logger *service.Logger) http.HandlerFunc
 			return
 		}
 
-		err = mister.LaunchCore(cfg, *system)
+		err = mister.LaunchCore(cfg, system)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch core: during launch: %s", err)

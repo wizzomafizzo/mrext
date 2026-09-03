@@ -20,21 +20,23 @@
 package mister
 
 import (
-	"fmt"
-	"os"
-	"time"
+	"path/filepath"
+	"testing"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
-func GetLastUpdateTime() (time.Time, error) {
-	file, err := os.Stat(config.DownloaderLastRun)
-	if os.IsNotExist(err) {
-		return time.Time{}, nil
-	}
-	if err != nil {
-		return time.Time{}, fmt.Errorf("stat downloader update marker: %w", err)
+func TestResolvePath(t *testing.T) {
+	t.Parallel()
+
+	absolute := filepath.Join(string(filepath.Separator), "tmp", "game.rom")
+	if got := ResolvePath(absolute); got != absolute {
+		t.Fatalf("ResolvePath(%q) = %q, want unchanged absolute path", absolute, got)
 	}
 
-	return file.ModTime(), nil
+	relative := filepath.Join("games", "NES", "game.nes")
+	want := filepath.Join(config.SdFolder, relative)
+	if got := ResolvePath(relative); got != want {
+		t.Fatalf("ResolvePath(%q) = %q, want %q", relative, got, want)
+	}
 }

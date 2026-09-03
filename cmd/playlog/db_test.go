@@ -1,7 +1,27 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,20 +40,26 @@ func TestPlayLogDatabaseRemainsSQLiteCompatible(t *testing.T) {
 	}
 	core := tracker.CoreTime{Name: "SNES", Time: 42}
 	game := tracker.GameTime{Id: "game-id", Path: "SNES/game.sfc", Name: "Game", Folder: "SNES", Time: 21}
-	event := tracker.EventAction{Timestamp: time.Unix(1_700_000_000, 0).UTC(), Action: tracker.EventActionGameStart, Target: game.Id, TotalTime: 21}
-	if err := db.UpdateCore(core); err != nil {
-		t.Fatal(err)
+	event := tracker.EventAction{
+		Timestamp: time.Unix(1_700_000_000, 0).UTC(),
+		Action:    tracker.EventActionGameStart,
+		Target:    game.Id,
+		TotalTime: 21,
 	}
-	if err := db.UpdateGame(game); err != nil {
-		t.Fatal(err)
+	if updateErr := db.UpdateCore(core); updateErr != nil {
+		t.Fatal(updateErr)
 	}
-	if err := db.AddEvent(event); err != nil {
-		t.Fatal(err)
+	if updateErr := db.UpdateGame(game); updateErr != nil {
+		t.Fatal(updateErr)
 	}
-	if err := db.db.Close(); err != nil {
-		t.Fatal(err)
+	if addErr := db.AddEvent(&event); addErr != nil {
+		t.Fatal(addErr)
+	}
+	if closeErr := db.db.Close(); closeErr != nil {
+		t.Fatal(closeErr)
 	}
 
+	// #nosec G304 -- path is controlled by this test's temporary directory.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +72,11 @@ func TestPlayLogDatabaseRemainsSQLiteCompatible(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer reopened.db.Close()
+	defer func() {
+		if closeErr := reopened.db.Close(); closeErr != nil {
+			t.Errorf("close reopened database: %v", closeErr)
+		}
+	}()
 	fixed, err := reopened.FixPowerLoss()
 	if err != nil {
 		t.Fatal(err)
@@ -77,13 +107,18 @@ func TestPlayLogReadsLegacyGoSQLiteTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.db.Close()
+	defer func() {
+		if closeErr := db.db.Close(); closeErr != nil {
+			t.Errorf("close database: %v", closeErr)
+		}
+	}()
 
 	game := tracker.GameTime{Id: "legacy", Path: "SNES/game.sfc", Name: "Game", Folder: "SNES", Time: 10}
-	if err := db.UpdateGame(game); err != nil {
-		t.Fatal(err)
+	if updateErr := db.UpdateGame(game); updateErr != nil {
+		t.Fatal(updateErr)
 	}
-	_, err = db.db.Exec(
+	_, err = db.db.ExecContext(
+		context.Background(),
 		"insert into events (timestamp, action, target, total_time) values (?, ?, ?, ?)",
 		"2023-11-14 22:13:20+00:00",
 		tracker.EventActionGameStart,

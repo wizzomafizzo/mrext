@@ -1,8 +1,28 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package menu
 
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -19,25 +39,25 @@ import (
 const namesTxtPath = "/media/fat/names.txt"
 
 type MenuSystem struct {
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Category string `json:"category"`
 }
 
 type Item struct {
-	Name      string      `json:"name"`
+	Modified  time.Time   `json:"modified"`
+	Version   *time.Time  `json:"version,omitempty"`
+	Next      *string     `json:"next,omitempty"`
 	NamesTxt  *string     `json:"namesTxt,omitempty"`
+	System    *MenuSystem `json:"system,omitempty"`
 	Path      string      `json:"path"`
 	Parent    string      `json:"parent"`
 	Filename  string      `json:"filename"`
 	Extension string      `json:"extension"`
-	Next      *string     `json:"next,omitempty"`
 	Type      string      `json:"type"`
-	Modified  time.Time   `json:"modified"`
-	Version   *time.Time  `json:"version,omitempty"`
+	Name      string      `json:"name"`
 	Size      int64       `json:"size"`
 	InZip     bool        `json:"inZip"`
-	System    *MenuSystem `json:"system,omitempty"`
 }
 
 type ListMenuPayload struct {
@@ -47,14 +67,14 @@ type ListMenuPayload struct {
 
 var namesMapping = map[string]string{}
 
-func GetNamesTxt(original string, filetype string) (string, error) {
+func GetNamesTxt(original, filetype string) (string, error) {
 	if filetype == "folder" {
 		return "", nil
 	}
 
 	if len(namesMapping) == 0 {
-		fs := os.DirFS("/")
-		err := loadNamesMapping(fs)
+		rootFS := os.DirFS("/")
+		err := loadNamesMapping(rootFS)
 		if err != nil {
 			return "", err
 		}
@@ -66,8 +86,9 @@ func GetNamesTxt(original string, filetype string) (string, error) {
 func loadNamesMapping(f fs.FS) error {
 	file, err := f.Open(strings.TrimPrefix(namesTxtPath, "/"))
 	if err != nil {
-		return err
+		return fmt.Errorf("open names mapping: %w", err)
 	}
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -78,6 +99,9 @@ func loadNamesMapping(f fs.FS) error {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scan names mapping: %w", err)
+	}
 	return nil
 }
 
@@ -141,22 +165,18 @@ func getFileType(file os.DirEntry) string {
 	return "unknown"
 }
 
-func GetFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
-	name := file.Name()
-	filetype := getFileType(file)
+func GetFilenameInfo(file os.DirEntry) (name, filetype string, version *time.Time) {
+	name = file.Name()
+	filetype = getFileType(file)
 
 	name = strings.TrimSuffix(name, filepath.Ext(name))
 
 	if filetype == "folder" {
-		if strings.HasPrefix(name, "_") {
-			name = name[1:]
-		}
-
+		name = strings.TrimPrefix(name, "_")
 		return name, filetype, nil
 	}
 
 	parts := strings.Split(name, "_")
-	var version *time.Time
 	if len(parts) > 1 {
 		ver, err := time.Parse("20060102", parts[len(parts)-1])
 		if err == nil {
@@ -169,7 +189,7 @@ func GetFilenameInfo(file os.DirEntry) (string, string, *time.Time) {
 	return name, filetype, version
 }
 
-var removeRoot = regexp.MustCompile(`(?i)^` + config.SdFolder + `\/?`)
+var removeRoot = regexp.MustCompile(`(?i)^` + config.SdFolder + `/?`)
 
 func ListFolder(logger *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -207,9 +227,9 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 			path = filepath.Join(cleaned...)
 		}
 
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			logger.Error("menu folder (%s) does not exist: %s", path, err)
+		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+			http.Error(w, statErr.Error(), http.StatusNotFound)
+			logger.Error("menu folder (%s) does not exist: %s", path, statErr)
 			return
 		}
 
@@ -226,15 +246,15 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 
 			formatted, filetype, version := GetFilenameInfo(file)
 
-			info, err := file.Info()
-			if err != nil {
-				logger.Error("couldn't get file info for %s: %s", name, err)
+			info, infoErr := file.Info()
+			if infoErr != nil {
+				logger.Error("couldn't get file info for %s: %s", name, infoErr)
 				continue
 			}
 
-			namesTxtResult, err := GetNamesTxt(formatted, filetype)
-			if err != nil {
-				logger.Error("couldn't get names.txt for %s: %s", name, err)
+			namesTxtResult, namesErr := GetNamesTxt(formatted, filetype)
+			if namesErr != nil {
+				logger.Error("couldn't get names.txt for %s: %s", name, namesErr)
 			}
 
 			var namesTxt *string

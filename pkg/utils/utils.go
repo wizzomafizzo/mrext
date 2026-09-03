@@ -1,12 +1,34 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
 	"archive/zip"
 	"bufio"
+	"context"
+	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -19,8 +41,6 @@ import (
 	"golang.org/x/term"
 )
 
-var r = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 func IsZip(path string) bool {
 	// TODO: this should check the file header
 	return filepath.Ext(strings.ToLower(path)) == ".zip"
@@ -30,37 +50,44 @@ func IsZip(path string) bool {
 func ListZip(path string) ([]string, error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open ZIP file: %w", err)
 	}
-	defer r.Close()
 
-	var files []string
+	files := make([]string, 0, len(r.File))
 	for _, f := range r.File {
 		files = append(files, f.Name)
 	}
 
+	if err := r.Close(); err != nil {
+		return nil, fmt.Errorf("close ZIP file: %w", err)
+	}
 	return files, nil
 }
 
 func CopyFile(sourcePath, destPath string) error {
+	// #nosec G304 -- both paths are explicit inputs to this filesystem utility.
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("open source file: %w", err)
 	}
-	defer inputFile.Close()
+	defer func() { _ = inputFile.Close() }()
 
+	// #nosec G304 -- both paths are explicit inputs to this filesystem utility.
 	outputFile, err := os.Create(destPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("create destination file: %w", err)
 	}
-	defer outputFile.Close()
+	defer func() { _ = outputFile.Close() }()
 
-	_, err = io.Copy(outputFile, inputFile)
-	if err != nil {
-		return err
+	if _, err := io.Copy(outputFile, inputFile); err != nil {
+		return fmt.Errorf("copy file data: %w", err)
 	}
-	outputFile.Sync()
-	inputFile.Close()
+	if err := outputFile.Sync(); err != nil {
+		return fmt.Errorf("sync destination file: %w", err)
+	}
+	if err := outputFile.Close(); err != nil {
+		return fmt.Errorf("close destination file: %w", err)
+	}
 
 	return nil
 }
@@ -74,7 +101,7 @@ func MoveFile(sourcePath, destPath string) error {
 
 	err = os.Remove(sourcePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("remove source file: %w", err)
 	}
 
 	return nil
@@ -86,13 +113,13 @@ func Max[T constraints.Ordered](xs []T) T {
 		var zv T
 		return zv
 	}
-	max := xs[0]
+	best := xs[0]
 	for _, x := range xs {
-		if x > max {
-			max = x
+		if x > best {
+			best = x
 		}
 	}
-	return max
+	return best
 }
 
 // Min returns the lowest value in a slice.
@@ -101,13 +128,13 @@ func Min[T constraints.Ordered](xs []T) T {
 		var zv T
 		return zv
 	}
-	min := xs[0]
+	best := xs[0]
 	for _, x := range xs {
-		if x < min {
-			min = x
+		if x < best {
+			best = x
 		}
 	}
-	return min
+	return best
 }
 
 // Contains returns true if slice contains value.
@@ -134,11 +161,14 @@ func ContainsFold(xs []string, x string) bool {
 func RandomElem[T any](xs []T) (T, error) {
 	var item T
 	if len(xs) == 0 {
-		return item, fmt.Errorf("empty slice")
-	} else {
-		item = xs[r.Intn(len(xs))]
-		return item, nil
+		return item, errors.New("empty slice")
 	}
+
+	index, err := rand.Int(rand.Reader, big.NewInt(int64(len(xs))))
+	if err != nil {
+		return item, fmt.Errorf("choose random element: %w", err)
+	}
+	return xs[index.Int64()], nil
 }
 
 // MapKeys returns a list of all keys in a map.
@@ -152,7 +182,7 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
-func StripChars(s string, chars string) string {
+func StripChars(s, chars string) string {
 	for _, c := range chars {
 		s = strings.ReplaceAll(s, string(c), "")
 	}
@@ -166,7 +196,7 @@ func StripBadFileChars(s string) string {
 
 // YesOrNoPrompt displays a simple yes/no prompt for use with a controller.
 func YesOrNoPrompt(prompt string) bool {
-	fmt.Printf("%s [DOWN=Yes/UP=No] ", prompt)
+	_, _ = fmt.Printf("%s [DOWN=Yes/UP=No] ", prompt)
 
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -175,28 +205,32 @@ func YesOrNoPrompt(prompt string) bool {
 
 	reader := bufio.NewReader(os.Stdin)
 	buf := make([]byte, 3)
-	reader.Read(buf)
-
-	term.Restore(int(os.Stdin.Fd()), oldState)
+	if _, err := io.ReadFull(reader, buf); err != nil {
+		_ = term.Restore(int(os.Stdin.Fd()), oldState)
+		return false
+	}
+	if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
+		return false
+	}
 
 	delay := func() { time.Sleep(400 * time.Millisecond) }
 
 	if buf[0] == 27 && buf[1] == 91 && buf[2] == 66 {
-		fmt.Println("Yes")
+		_, _ = fmt.Println("Yes")
 		delay()
 		return true
-	} else {
-		// 27 91 65 is up arrow
-		fmt.Println("No")
-		delay()
-		return false
 	}
+
+	// 27 91 65 is up arrow
+	_, _ = fmt.Println("No")
+	delay()
+	return false
 }
 
 func IsEmptyDir(path string) (bool, error) {
 	dir, err := os.ReadDir(path)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("read directory: %w", err)
 	}
 
 	return len(dir) == 0, nil
@@ -218,23 +252,21 @@ func RemoveEmptyDirs(path string) error {
 
 		return nil
 	})
-
 	if err != nil {
-		return err
+		return fmt.Errorf("walk directories: %w", err)
 	}
 
 	for i := len(dirs) - 1; i >= 0; i-- {
 		dir := dirs[i]
 
-		empty, err := IsEmptyDir(dir)
-		if err != nil {
-			return err
+		isEmpty, checkErr := IsEmptyDir(dir)
+		if checkErr != nil {
+			return checkErr
 		}
 
-		if empty {
-			err = os.Remove(dir)
-			if err != nil {
-				return err
+		if isEmpty {
+			if removeErr := os.Remove(dir); removeErr != nil {
+				return fmt.Errorf("remove empty directory: %w", removeErr)
 			}
 		}
 	}
@@ -242,35 +274,50 @@ func RemoveEmptyDirs(path string) error {
 	rootEmpty, err := IsEmptyDir(path)
 	if err != nil {
 		return err
-	} else if rootEmpty {
-		err = os.Remove(path)
-		if err != nil {
-			return err
+	}
+	if rootEmpty {
+		if err := os.Remove(path); err != nil {
+			return fmt.Errorf("remove empty root directory: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func GetLocalIp() (net.IP, error) {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+func GetLocalIP() (net.IP, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := (&net.Dialer{}).DialContext(ctx, "udp", "8.8.8.8:80")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("discover local IP: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return nil, fmt.Errorf("unexpected local address type %T", conn.LocalAddr())
+	}
 	return localAddr.IP, nil
 }
 
 func WaitForInternet(maxTries int) bool {
-	for i := 0; i < maxTries; i++ {
-		_, err := http.Get("https://api.github.com")
+	client := &http.Client{Timeout: 10 * time.Second}
+	for range maxTries {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com", http.NoBody)
+		if err != nil {
+			cancel()
+			return false
+		}
+		resp, err := client.Do(req)
 		if err == nil {
+			_ = resp.Body.Close()
+			cancel()
 			return true
 		}
-		time.Sleep(1 * time.Second)
+		cancel()
+		time.Sleep(time.Second)
 	}
 	return false
 }

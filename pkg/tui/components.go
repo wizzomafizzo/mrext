@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package tui
 
 import (
@@ -43,7 +62,7 @@ func ButtonBar(buttons []string, selected int) string {
 	return strings.Join(parts, "    ")
 }
 
-func ListPicker(opts ListPickerOpts, items []string) (int, int, error) {
+func ListPicker(opts *ListPickerOpts, items []string) (button, item int, err error) {
 	selectedButton := opts.DefaultButton
 	selectedItem := 0
 	resultButton := -1
@@ -114,8 +133,8 @@ func ListPicker(opts ListPickerOpts, items []string) (int, int, error) {
 				if len(opts.Buttons) == 0 {
 					return nil
 				}
-				button := opts.Buttons[selectedButton]
-				switch button {
+				buttonLabel := opts.Buttons[selectedButton]
+				switch buttonLabel {
 				case "PgUp":
 					selectedItem = max(list.GetCurrentItem()-max(opts.Height-5, 1), 0)
 					list.SetCurrentItem(selectedItem)
@@ -136,11 +155,12 @@ func ListPicker(opts ListPickerOpts, items []string) (int, int, error) {
 					app.Stop()
 					return nil
 				}
-			}
-			if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
+			case tcell.KeyUp, tcell.KeyDown:
 				defer drawFooter()
+				return event
+			default:
+				return event
 			}
-			return event
 		})
 		return app.SetRoot(Centered(opts.Width, opts.Height, content), true).SetFocus(list), nil
 	}

@@ -1,8 +1,27 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package screenshots
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/service"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -11,22 +30,22 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
 const screenshotsFolder = config.SdFolder + "/screenshots"
 
 type ScreenshotPayload struct {
+	Modified time.Time `json:"modified"`
 	Game     string    `json:"game"`
 	Filename string    `json:"filename"`
 	Path     string    `json:"path"`
 	Core     string    `json:"core"`
-	Modified time.Time `json:"modified"`
 }
 
 func AllScreenshots(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		var screenshots []ScreenshotPayload
 
 		err := filepath.WalkDir(screenshotsFolder, func(path string, info fs.DirEntry, err error) error {
@@ -35,13 +54,13 @@ func AllScreenshots(logger *service.Logger) http.HandlerFunc {
 			}
 
 			if !info.IsDir() && strings.HasSuffix(info.Name(), ".png") {
-				path := strings.Replace(path, screenshotsFolder+"/", "", 1)
-				if strings.Count(path, "/") == 1 {
-					core := strings.Split(path, "/")[0]
+				relPath := strings.Replace(path, screenshotsFolder+"/", "", 1)
+				if strings.Count(relPath, "/") == 1 {
+					core := strings.Split(relPath, "/")[0]
 
-					fd, err := info.Info()
-					if err != nil {
-						return err
+					fd, infoErr := info.Info()
+					if infoErr != nil {
+						return fmt.Errorf("read screenshot info: %w", infoErr)
 					}
 
 					gp := strings.SplitN(info.Name(), "-", 2)
@@ -53,7 +72,7 @@ func AllScreenshots(logger *service.Logger) http.HandlerFunc {
 					screenshots = append(screenshots, ScreenshotPayload{
 						Game:     game,
 						Filename: info.Name(),
-						Path:     path,
+						Path:     relPath,
 						Core:     core,
 						Modified: fd.ModTime(),
 					})
@@ -62,7 +81,6 @@ func AllScreenshots(logger *service.Logger) http.HandlerFunc {
 
 			return nil
 		})
-
 		if err != nil {
 			logger.Error("all screenshots: %s", err)
 		}
@@ -79,23 +97,35 @@ func AllScreenshots(logger *service.Logger) http.HandlerFunc {
 func ViewScreenshot(_ *service.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-
-		core := vars["core"]
-		image := vars["image"]
-
-		path := filepath.Join(screenshotsFolder, core, image)
-
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		core, image := vars["core"], vars["image"]
+		if filepath.Base(core) != core || filepath.Base(image) != image {
 			http.NotFound(w, r)
 			return
 		}
 
-		http.ServeFile(w, r, path)
+		root, err := os.OpenRoot(screenshotsFolder)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		defer func() { _ = root.Close() }()
+		file, err := root.Open(filepath.Join(core, image))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		defer func() { _ = file.Close() }()
+		info, err := file.Stat()
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeContent(w, r, image, info.ModTime(), file)
 	}
 }
 
 func TakeScreenshot(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		screenshot := ScreenshotPayload{}
 
 		cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
@@ -104,9 +134,9 @@ func TakeScreenshot(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 		defer func(cmd *os.File) {
-			err := cmd.Close()
-			if err != nil {
-				logger.Error("take screenshot: close dev: %s", err)
+			closeErr := cmd.Close()
+			if closeErr != nil {
+				logger.Error("take screenshot: close dev: %s", closeErr)
 			}
 		}(cmd)
 
@@ -135,14 +165,19 @@ func DeleteScreenshot(logger *service.Logger) http.HandlerFunc {
 		core := vars["core"]
 		image := vars["image"]
 
-		path := filepath.Join(screenshotsFolder, core, image)
-
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		if filepath.Base(core) != core || filepath.Base(image) != image {
 			http.NotFound(w, r)
 			return
 		}
 
-		err := os.Remove(path)
+		root, err := os.OpenRoot(screenshotsFolder)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("open screenshots folder: %s", err)
+			return
+		}
+		defer func() { _ = root.Close() }()
+		err = root.Remove(filepath.Join(core, image))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("delete screenshot: %s", err)

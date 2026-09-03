@@ -1,8 +1,31 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
+	"path/filepath"
+	"strings"
+
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -10,9 +33,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
-	"net/http"
-	"path/filepath"
-	"strings"
 )
 
 func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
@@ -35,7 +55,7 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 			return
 		}
 
-		err = mister.LaunchGame(cfg, system, args.Path)
+		err = mister.LaunchGame(cfg, &system, args.Path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch game: during launch: %s", err)
@@ -119,19 +139,6 @@ func CreateLauncher(logger *service.Logger, cfg *config.UserConfig) http.Handler
 			return
 		}
 
-		//file, err := os.Stat(args.GamePath)
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	logger.Error("create launcher: path is not accessible: %s", err)
-		//	return
-		//}
-		//
-		//if file.IsDir() {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	logger.Error("create launcher: path is a directory")
-		//	return
-		//}
-
 		system, err := games.BestSystemMatch(cfg, args.GamePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -152,20 +159,15 @@ func CreateLauncher(logger *service.Logger, cfg *config.UserConfig) http.Handler
 			args.Folder,
 			args.Name,
 		)
-
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("create launcher: creation: %s", err)
 			return
-		} else {
-			err = json.NewEncoder(w).Encode(CreateLauncherResponse{
-				Path: mglPath,
-			})
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				logger.Error("create launcher: encoding response: %s", err)
-				return
-			}
+		}
+		err = json.NewEncoder(w).Encode(CreateLauncherResponse{Path: mglPath})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("create launcher: encoding response: %s", err)
 		}
 	}
 }

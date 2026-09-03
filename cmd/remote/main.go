@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
@@ -13,6 +32,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -23,14 +44,11 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/systems"
 	"github.com/wizzomafizzo/mrext/cmd/remote/wallpapers"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/tracker"
-
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 )
 
 const (
@@ -51,8 +69,7 @@ func wsConnectPayload(trk *tracker.Tracker) func() []string {
 		}
 
 		if trk != nil {
-			response = append(response, "coreRunning:"+trk.ActiveCore)
-			response = append(response, "gameRunning:"+trk.ActiveGame)
+			response = append(response, "coreRunning:"+trk.ActiveCore, "gameRunning:"+trk.ActiveGame)
 		}
 
 		return response
@@ -123,26 +140,26 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
-		return nil, err
+		return nil, fmt.Errorf("initialize keyboard: %w", err)
 	}
 
 	trk, stopTracker, err := games.StartTracker(logger, cfg)
 	if err != nil {
 		logger.Error("failed to start tracker: %s", err)
-		return nil, err
+		return nil, fmt.Errorf("start tracker: %w", err)
 	}
 
 	runStartupTasks(logger, cfg, trk)
 
-	var stopMdns func() error
-	if cfg.Remote.MdnsService {
+	var stopMDNS func() error
+	if cfg.Remote.MDNSService {
 		go func() {
-			stopMdns = mister.TryStartMdns(logger, appVersion)
+			stopMDNS = mister.TryStartMDNS(logger, appVersion)
 		}()
 	}
 
 	router := mux.NewRouter()
-	setupApi(router.PathPrefix("/api").Subrouter(), kbd, trk, logger, cfg)
+	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, trk, logger, cfg)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	corsHandler := cors.New(cors.Options{
@@ -152,7 +169,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 	srv := &http.Server{
 		Handler: corsHandler.Handler(router),
-		Addr:    ":" + fmt.Sprint(appPort),
+		Addr:    ":" + strconv.Itoa(appPort),
 		// TODO: this will not work for large file uploads
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -166,10 +183,12 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}()
 
 	return func() error {
-		kbd.Close()
+		if err := kbd.Close(); err != nil {
+			logger.Error("failed to close keyboard: %s", err)
+		}
 
-		if stopMdns != nil {
-			err := stopMdns()
+		if stopMDNS != nil {
+			err := stopMDNS()
 			if err != nil {
 				logger.Error("failed to stop mdns: %s", err)
 			}
@@ -189,7 +208,13 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}, nil
 }
 
-func setupApi(sub *mux.Router, kbd input.Keyboard, trk *tracker.Tracker, logger *service.Logger, cfg *config.UserConfig) {
+func setupAPI(
+	sub *mux.Router,
+	kbd input.Keyboard,
+	trk *tracker.Tracker,
+	logger *service.Logger,
+	cfg *config.UserConfig,
+) {
 	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd)))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
@@ -287,21 +312,21 @@ func main() {
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		Remote: config.RemoteConfig{
-			MdnsService: true,
+			MDNSService: true,
 			SyncSSHKeys: true,
 			CustomLogo:  "",
 		},
 	})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
-		fmt.Println("Error loading config file:", err)
+		_, _ = fmt.Println("Error loading config file:", err)
 		os.Exit(1)
 	}
 
-	err = os.MkdirAll(config.MrextConfigFolder, 0755)
+	err = os.MkdirAll(config.MrextConfigFolder, 0o750)
 	if err != nil {
 		logger.Error("error creating config folder: %s", err)
-		fmt.Println("Error creating config folder:", err)
+		_, _ = fmt.Println("Error creating config folder:", err)
 		os.Exit(1)
 	}
 
@@ -314,7 +339,7 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("creating service: %s", err)
-		fmt.Println("Error creating service:", err)
+		_, _ = fmt.Println("Error creating service:", err)
 		os.Exit(1)
 	}
 
@@ -326,10 +351,9 @@ func main() {
 	svc.ServiceHandler(svcOpt)
 
 	if !svc.Running() {
-		err := svc.Start()
-		if err != nil {
-			logger.Error("starting service: %s", err)
-			fmt.Println("Error starting service:", err)
+		if startErr := svc.Start(); startErr != nil {
+			logger.Error("starting service: %s", startErr)
+			_, _ = fmt.Println("Error starting service:", startErr)
 			os.Exit(1)
 		}
 	}

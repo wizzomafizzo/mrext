@@ -1,11 +1,33 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -19,47 +41,47 @@ type fakeDb struct {
 	cfg    *config.UserConfig
 }
 
-func (f *fakeDb) FixPowerLoss() (bool, error) {
+func (*fakeDb) FixPowerLoss() (bool, error) {
 	return false, nil
 }
 
-func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
+func (f *fakeDb) AddEvent(ev *tracker.EventAction) error {
 	switch ev.Action {
 	case tracker.EventActionCoreStart:
 		websocket.Broadcast(f.logger, "coreRunning:"+ev.Target)
-		SendAnnounceGame(f.cfg, f.logger, &ev)
+		SendAnnounceGame(f.cfg, f.logger, ev)
 	case tracker.EventActionCoreStop:
 		websocket.Broadcast(f.logger, "coreRunning:")
-		SendAnnounceGame(f.cfg, f.logger, &ev)
+		SendAnnounceGame(f.cfg, f.logger, ev)
 	case tracker.EventActionGameStart:
 		websocket.Broadcast(f.logger, "gameRunning:"+ev.Target)
-		SendAnnounceGame(f.cfg, f.logger, &ev)
+		SendAnnounceGame(f.cfg, f.logger, ev)
 	case tracker.EventActionGameStop:
 		websocket.Broadcast(f.logger, "gameRunning:")
-		SendAnnounceGame(f.cfg, f.logger, &ev)
+		SendAnnounceGame(f.cfg, f.logger, ev)
 	case tracker.EventActionMenuNavigation:
 		websocket.Broadcast(f.logger, "menuNavigation:"+ev.Target)
 	}
 	return nil
 }
 
-func (f *fakeDb) UpdateCore(_ tracker.CoreTime) error {
+func (*fakeDb) UpdateCore(_ tracker.CoreTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetCore(_ string) (tracker.CoreTime, error) {
+func (*fakeDb) GetCore(_ string) (tracker.CoreTime, error) {
 	return tracker.CoreTime{}, nil
 }
 
-func (f *fakeDb) UpdateGame(_ tracker.GameTime) error {
+func (*fakeDb) UpdateGame(_ tracker.GameTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetGame(_ string) (tracker.GameTime, error) {
+func (*fakeDb) GetGame(_ string) (tracker.GameTime, error) {
 	return tracker.GameTime{}, nil
 }
 
-func (f *fakeDb) NoResults(_ error) bool {
+func (*fakeDb) NoResults(_ error) bool {
 	return true
 }
 
@@ -70,21 +92,20 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 	})
 	if err != nil {
 		logger.Error("failed to start tracker: %s", err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("create tracker: %w", err)
 	}
 
 	tr.LoadCore()
 	if !mister.ActiveGameEnabled() {
-		err := mister.SetActiveGame("")
-		if err != nil {
-			tr.Logger.Error("error setting active game: %s", err)
+		if activeErr := mister.SetActiveGame(""); activeErr != nil {
+			tr.Logger.Error("error setting active game: %s", activeErr)
 		}
 	}
 
 	watcher, err := tracker.StartFileWatch(tr)
 	if err != nil {
 		tr.Logger.Error("error starting file watch: %s", err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("start tracker file watch: %w", err)
 	}
 
 	tr.StartTicker(0)
@@ -108,7 +129,7 @@ type PlayingPayload struct {
 }
 
 func HandlePlaying(tr *tracker.Tracker) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		playing := PlayingPayload{
 			Core:       tr.ActiveCore,
 			System:     tr.ActiveSystem,
@@ -153,7 +174,7 @@ func SendAnnounceGame(cfg *config.UserConfig, logger *service.Logger, ev *tracke
 		GameName:     ev.ActiveGame.Name,
 	}
 
-	url := cfg.Remote.AnnounceGameUrl
+	url := cfg.Remote.AnnounceGameURL
 	data, err := json.Marshal(announce)
 	if err != nil {
 		logger.Error("error marshalling announce payload: %s", err)
@@ -161,11 +182,20 @@ func SendAnnounceGame(cfg *config.UserConfig, logger *service.Logger, ev *tracke
 	}
 
 	if url != "" {
-		resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
-		if err != nil {
-			logger.Error("error sending announce payload: %s", err)
+		req, requestErr := http.NewRequestWithContext(
+			context.Background(), http.MethodPost, url, bytes.NewReader(data),
+		)
+		if requestErr != nil {
+			logger.Error("error creating announce request: %s", requestErr)
 			return
 		}
-		defer resp.Body.Close()
+		req.Header.Set("Content-Type", "application/json")
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, requestErr := client.Do(req)
+		if requestErr != nil {
+			logger.Error("error sending announce payload: %s", requestErr)
+			return
+		}
+		_ = resp.Body.Close()
 	}
 }

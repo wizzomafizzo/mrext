@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package tracker
 
 import (
@@ -7,33 +26,22 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
 // Read a core's recent file and attempt to write the newest entry's
 // launch-able path to ACTIVEGAME.
-func loadRecent(tr *Tracker, filename string) error {
+func loadRecent(filename string) error {
 	if !strings.Contains(filename, "_recent") {
 		return nil
 	}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return fmt.Errorf("error opening game file: %w", err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			tr.Logger.Error("error closing file: %v", err)
-		}
-	}(file)
-
 	recents, err := mister.ReadRecent(filename)
 	if err != nil {
 		return fmt.Errorf("error reading recent file: %w", err)
-	} else if len(recents) == 0 {
+	}
+	if len(recents) == 0 {
 		return nil
 	}
 
@@ -43,9 +51,9 @@ func loadRecent(tr *Tracker, filename string) error {
 		// main menu's recent file, written when launching mgls
 		if strings.HasSuffix(strings.ToLower(newest.Name), ".mgl") {
 			mglPath := mister.ResolvePath(filepath.Join(newest.Directory, newest.Name))
-			mgl, err := mister.ReadMgl(mglPath)
-			if err != nil {
-				return fmt.Errorf("error reading mgl file: %w", err)
+			mgl, mglErr := mister.ReadMGL(mglPath)
+			if mglErr != nil {
+				return fmt.Errorf("error reading mgl file: %w", mglErr)
 			}
 
 			err = mister.SetActiveGame(mgl.File.Path)
@@ -70,7 +78,29 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create file watcher: %w", err)
+	}
+
+	closeOnError := func(watchErr error) (*fsnotify.Watcher, error) {
+		if closeErr := watcher.Close(); closeErr != nil {
+			tr.Logger.Error("error closing failed file watcher: %s", closeErr)
+		}
+		return nil, watchErr
+	}
+
+	if err = watcher.Add(config.CoreNameFile); err != nil {
+		return closeOnError(fmt.Errorf("watch core name: %w", err))
+	}
+	if err = watcher.Add(config.CoreConfigFolder); err != nil {
+		return closeOnError(fmt.Errorf("watch core configuration: %w", err))
+	}
+	if err = watcher.Add(config.ActiveGameFile); err != nil {
+		return closeOnError(fmt.Errorf("watch active game: %w", err))
+	}
+	if _, statErr := os.Stat(config.CurrentPathFile); statErr == nil {
+		if err = watcher.Add(config.CurrentPathFile); err != nil {
+			return closeOnError(fmt.Errorf("watch current menu path: %w", err))
+		}
 	}
 
 	go func() {
@@ -81,16 +111,16 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					if event.Name == config.CurrentPathFile {
+					switch {
+					case event.Name == config.CurrentPathFile:
 						tr.trackMenu()
-					} else if event.Name == config.CoreNameFile {
+					case event.Name == config.CoreNameFile:
 						tr.LoadCore()
-					} else if event.Name == config.ActiveGameFile {
+					case event.Name == config.ActiveGameFile:
 						tr.loadGame()
-					} else if strings.HasPrefix(event.Name, config.CoreConfigFolder) {
-						err = loadRecent(tr, event.Name)
-						if err != nil {
-							tr.Logger.Error("error loading recent file: %s", err)
+					case strings.HasPrefix(event.Name, config.CoreConfigFolder):
+						if recentErr := loadRecent(event.Name); recentErr != nil {
+							tr.Logger.Error("error loading recent file: %s", recentErr)
 						}
 					}
 				}
@@ -102,29 +132,6 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 			}
 		}
 	}()
-
-	err = watcher.Add(config.CoreNameFile)
-	if err != nil {
-		return nil, err
-	}
-
-	err = watcher.Add(config.CoreConfigFolder)
-	if err != nil {
-		return nil, err
-	}
-
-	err = watcher.Add(config.ActiveGameFile)
-	if err != nil {
-		return nil, err
-	}
-
-	_, fileExistsError := os.Stat(config.CurrentPathFile)
-	if fileExistsError == nil {
-		err = watcher.Add(config.CurrentPathFile)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	return watcher, nil
 }

@@ -42,10 +42,10 @@ func TestTryRunAppRetriesOnMiSTerTTY(t *testing.T) {
 			ttyPath := ""
 			newDevTTY = func(path string) (tcell.Tty, error) {
 				ttyPath = path
-				return nil, nil
+				return nil, nil //nolint:nilnil // Test stub does not exercise returned TTY.
 			}
 			newTTYScreen = func(tcell.Tty) (tcell.Screen, error) {
-				return nil, nil
+				return nil, nil //nolint:nilnil // Test stub does not exercise returned screen.
 			}
 			builds := 0
 			builder := func() (*tview.Application, error) {

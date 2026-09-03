@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -28,18 +48,19 @@ const (
 func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 	var mglName string
 
-	if cfg.LastPlayed.Name == "" && cfg.LastPlayed.LastPlayedName == "" {
-		mglName = defaultLastPlayedName
-	} else if cfg.LastPlayed.LastPlayedName != "" {
+	switch {
+	case cfg.LastPlayed.LastPlayedName != "":
 		mglName = cfg.LastPlayed.LastPlayedName
-	} else {
+	case cfg.LastPlayed.Name != "":
 		mglName = cfg.LastPlayed.Name
+	default:
+		mglName = defaultLastPlayedName
 	}
 
 	mglName = utils.StripBadFileChars(mglName)
 
 	if mglName == "" {
-		return fmt.Errorf("name cannot be empty")
+		return errors.New("name cannot be empty")
 	}
 
 	system, err := games.BestSystemMatch(cfg, path)
@@ -49,17 +70,17 @@ func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 
 	_, err = mister.CreateLauncher(cfg, &system, path, config.SdFolder, mglName)
 	if err != nil {
-		return fmt.Errorf("error creating mgl: %s", err)
+		return fmt.Errorf("error creating mgl: %w", err)
 	}
 
 	return nil
 }
 
 type recentFile struct {
+	Modified    time.Time
 	Path        string
 	Filename    string
 	NewFilename string
-	Modified    time.Time
 }
 
 func addToRecentFolder(cfg *config.UserConfig, path string) error {
@@ -74,15 +95,16 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 	recentFolderName = utils.StripBadFileChars(recentFolderName)
 
 	if recentFolderName == "" {
-		return fmt.Errorf("name cannot be empty")
+		return errors.New("name cannot be empty")
 	}
 
 	recentPath := filepath.Join(config.SdFolder, "_"+recentFolderName)
 
 	if _, err := os.Stat(recentPath); os.IsNotExist(err) {
-		err = os.Mkdir(recentPath, 0755)
+		// #nosec G301 -- MiSTer menu folder must remain world-readable.
+		err = os.Mkdir(recentPath, 0o755)
 		if err != nil {
-			return fmt.Errorf("error creating recent folder: %s", err)
+			return fmt.Errorf("error creating recent folder: %w", err)
 		}
 	}
 
@@ -98,12 +120,12 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 
 	_, err = mister.CreateLauncher(cfg, &system, path, recentPath, mglName)
 	if err != nil {
-		return fmt.Errorf("error creating mgl: %s", err)
+		return fmt.Errorf("error creating mgl: %w", err)
 	}
 
 	recentFolder, err := os.ReadDir(recentPath)
 	if err != nil {
-		return fmt.Errorf("error reading recent folder: %s", err)
+		return fmt.Errorf("error reading recent folder: %w", err)
 	}
 
 	var recentFiles []recentFile
@@ -137,7 +159,7 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		if i >= maxRecentEntries {
 			err := os.Remove(file.Path)
 			if err != nil {
-				return fmt.Errorf("error removing recent file: %s", err)
+				return fmt.Errorf("error removing recent file: %w", err)
 			}
 			continue
 		}
@@ -147,18 +169,17 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		if knownFiles[filename] {
 			err := os.Remove(file.Path)
 			if err != nil {
-				return fmt.Errorf("error removing recent file: %s", err)
+				return fmt.Errorf("error removing recent file: %w", err)
 			}
 			continue
-		} else {
-			knownFiles[filename] = true
 		}
+		knownFiles[filename] = true
 
 		newFilename := fmt.Sprintf("%0*d %s", prefixLength, i+1, filename)
 		newPath := filepath.Join(recentPath, newFilename)
 		err := os.Rename(file.Path, newPath)
 		if err != nil {
-			return fmt.Errorf("error renaming recent file: %s", err)
+			return fmt.Errorf("error renaming recent file: %w", err)
 		}
 
 		i++
@@ -171,11 +192,11 @@ type fakeDb struct {
 	config *config.UserConfig
 }
 
-func (f *fakeDb) FixPowerLoss() (bool, error) {
+func (*fakeDb) FixPowerLoss() (bool, error) {
 	return false, nil
 }
 
-func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
+func (f *fakeDb) AddEvent(ev *tracker.EventAction) error {
 	if ev.Action != tracker.EventActionGameStart {
 		return nil
 	}
@@ -183,37 +204,37 @@ func (f *fakeDb) AddEvent(ev tracker.EventAction) error {
 	if !f.config.LastPlayed.DisableLastPlayed {
 		err := createLastPlayedMgl(f.config, ev.TargetPath)
 		if err != nil {
-			return fmt.Errorf("error creating last played mgl: %s", err)
+			return fmt.Errorf("error creating last played mgl: %w", err)
 		}
 	}
 
 	if !f.config.LastPlayed.DisableRecentFolder {
 		err := addToRecentFolder(f.config, ev.TargetPath)
 		if err != nil {
-			return fmt.Errorf("error adding to recent folder: %s", err)
+			return fmt.Errorf("error adding to recent folder: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (f *fakeDb) UpdateCore(_ tracker.CoreTime) error {
+func (*fakeDb) UpdateCore(_ tracker.CoreTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetCore(_ string) (tracker.CoreTime, error) {
+func (*fakeDb) GetCore(_ string) (tracker.CoreTime, error) {
 	return tracker.CoreTime{}, nil
 }
 
-func (f *fakeDb) UpdateGame(_ tracker.GameTime) error {
+func (*fakeDb) UpdateGame(_ tracker.GameTime) error {
 	return nil
 }
 
-func (f *fakeDb) GetGame(_ string) (tracker.GameTime, error) {
+func (*fakeDb) GetGame(_ string) (tracker.GameTime, error) {
 	return tracker.GameTime{}, nil
 }
 
-func (f *fakeDb) NoResults(_ error) bool {
+func (*fakeDb) NoResults(_ error) bool {
 	return true
 }
 
@@ -228,9 +249,8 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 
 	tr.LoadCore()
 	if !mister.ActiveGameEnabled() {
-		err := mister.SetActiveGame("")
-		if err != nil {
-			tr.Logger.Error("error setting active game: %s", err)
+		if activeErr := mister.SetActiveGame(""); activeErr != nil {
+			tr.Logger.Error("error setting active game: %s", activeErr)
 		}
 	}
 
@@ -255,19 +275,19 @@ func tryAddStartup() error {
 
 	err := startup.Load()
 	if err != nil {
-		return err
+		return fmt.Errorf("load startup configuration: %w", err)
 	}
 
 	if !startup.Exists("mrext/" + appName) {
 		if utils.YesOrNoPrompt("LastPlayed must be set to run on MiSTer startup. Add it now?") {
 			err = startup.AddService("mrext/" + appName)
 			if err != nil {
-				return err
+				return fmt.Errorf("add LastPlayed startup service: %w", err)
 			}
 
 			err = startup.Save()
 			if err != nil {
-				return err
+				return fmt.Errorf("save startup configuration: %w", err)
 			}
 		}
 	}
@@ -291,7 +311,7 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
-		fmt.Println("Error loading config:", err)
+		_, _ = fmt.Println("Error loading config:", err)
 		os.Exit(1)
 	}
 
@@ -304,18 +324,21 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("error creating service: %s", err)
-		fmt.Println("Error creating service:", err)
+		_, _ = fmt.Println("Error creating service:", err)
 		os.Exit(1)
 	}
 
 	recents, err := mister.RecentsOptionEnabled()
 	if err != nil {
 		logger.Error("error checking recents option: %s", err)
-		fmt.Println("Could not read the MiSTer.ini file. Make sure the \"recents\" option is enabled if lastplayed doesn't work.")
+		_, _ = fmt.Println(
+			"Could not read the MiSTer.ini file. " +
+				"Make sure the \"recents\" option is enabled if lastplayed doesn't work.",
+		)
 	} else if !recents {
 		logger.Error("recents option not enabled, exiting...")
-		fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
-		fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")
+		_, _ = fmt.Println("The \"recents\" option must be enabled for lastplayed to work.")
+		_, _ = fmt.Println("Configure it in the MiSTer.ini file and run lastplayed again.")
 		os.Exit(1)
 	}
 
@@ -324,21 +347,19 @@ func main() {
 	err = tryAddStartup()
 	if err != nil {
 		logger.Error("error adding startup: %s", err)
-		fmt.Println("Error adding to startup:", err)
+		_, _ = fmt.Println("Error adding to startup:", err)
 	}
 
 	if !svc.Running() {
-		err := svc.Start()
-		if err != nil {
-			logger.Error("error starting service: %s", err)
-			fmt.Println("Error starting service:", err)
+		if startErr := svc.Start(); startErr != nil {
+			logger.Error("error starting service: %s", startErr)
+			_, _ = fmt.Println("Error starting service:", startErr)
 			os.Exit(1)
-		} else {
-			fmt.Println("Service started successfully.")
-			os.Exit(0)
 		}
-	} else {
-		fmt.Println("Service is running.")
+		_, _ = fmt.Println("Service started successfully.")
 		os.Exit(0)
 	}
+
+	_, _ = fmt.Println("Service is running.")
+	os.Exit(0)
 }

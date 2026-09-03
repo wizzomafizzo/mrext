@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package tracker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,13 +29,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wizzomafizzo/mrext/pkg/metadata"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/metadata"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 const (
@@ -28,21 +47,25 @@ const (
 
 const ArcadeSystem = "Arcade"
 
+type ActiveCore struct {
+	Core       string
+	System     string
+	SystemName string
+}
+
+type ActiveGame struct {
+	Path string
+	Name string
+}
+
 type EventAction struct {
 	Timestamp  time.Time
-	Action     int
+	ActiveCore ActiveCore
+	ActiveGame ActiveGame
 	Target     string
 	TargetPath string
-	TotalTime  int // for recovery from power loss
-	ActiveCore struct {
-		Core       string
-		System     string
-		SystemName string
-	}
-	ActiveGame struct {
-		Path string
-		Name string
-	}
+	Action     int
+	TotalTime  int
 }
 
 type CoreTime struct {
@@ -51,7 +74,7 @@ type CoreTime struct {
 }
 
 type GameTime struct {
-	Id     string
+	Id     string //nolint:revive // Legacy Remote JSON field name.
 	Path   string
 	Name   string
 	Folder string
@@ -67,7 +90,7 @@ type NameMapping struct {
 
 type Db interface {
 	FixPowerLoss() (bool, error)
-	AddEvent(ev EventAction) error
+	AddEvent(ev *EventAction) error
 	UpdateCore(ct CoreTime) error
 	GetCore(name string) (CoreTime, error)
 	UpdateGame(gt GameTime) error
@@ -76,48 +99,51 @@ type Db interface {
 }
 
 type Tracker struct {
+	Db               Db
 	Logger           *service.Logger
 	Config           *config.UserConfig
-	Db               Db
-	mu               sync.Mutex
-	ActiveCore       string
-	ActiveSystem     string
+	GameTimes        map[string]GameTime
+	CoreTimes        map[string]CoreTime
+	ActiveGamePath   string
 	ActiveSystemName string
 	ActiveGame       string
 	ActiveGameName   string
-	ActiveGamePath   string
+	ActiveSystem     string
+	ActiveCore       string
 	Events           []EventAction
-	CoreTimes        map[string]CoreTime
-	GameTimes        map[string]GameTime
 	NameMap          []NameMapping
+	mu               sync.Mutex
 }
 
 func generateNameMap(logger *service.Logger) []NameMapping {
 	nameMap := make([]NameMapping, 0)
 
-	for _, system := range games.Systems {
-		if system.SetName != "" {
+	for id := range games.Systems {
+		system := games.Systems[id]
+		switch {
+		case system.SetName != "":
 			nameMap = append(nameMap, NameMapping{
 				CoreName: system.SetName,
 				System:   system.Id,
 				Name:     system.Name,
 			})
-		} else if len(system.Folder) > 0 {
+		case len(system.Folder) > 0:
 			nameMap = append(nameMap, NameMapping{
 				CoreName: system.Folder[0],
 				System:   system.Id,
 				Name:     system.Name,
 			})
-		} else {
+		default:
 			logger.Warn("system %s has no setname or folder", system.Id)
 		}
 	}
 
-	arcadeDbEntries, err := metadata.ReadArcadeDb()
+	arcadeDbEntries, err := metadata.ReadArcadeDB()
 	if err != nil {
 		logger.Error("error reading arcade db: %s", err)
 	} else {
-		for _, entry := range arcadeDbEntries {
+		for i := range arcadeDbEntries {
+			entry := &arcadeDbEntries[i]
 			nameMap = append(nameMap, NameMapping{
 				CoreName:   entry.Setname,
 				System:     ArcadeSystem,
@@ -135,8 +161,9 @@ func NewTracker(logger *service.Logger, cfg *config.UserConfig, db Db) (*Tracker
 
 	fixed, err := db.FixPowerLoss()
 	if err != nil {
-		return nil, err
-	} else if fixed {
+		return nil, fmt.Errorf("repair interrupted play log: %w", err)
+	}
+	if fixed {
 		logger.Warn("fixed missing events from power loss")
 	}
 
@@ -169,7 +196,7 @@ func (tr *Tracker) ReloadNameMap() {
 	tr.NameMap = nameMap
 }
 
-func (tr *Tracker) LookupName(name string, game string) NameMapping {
+func (tr *Tracker) LookupName(name, game string) NameMapping {
 	for _, mapping := range tr.NameMap {
 		if len(mapping.CoreName) != len(name) {
 			continue
@@ -194,13 +221,14 @@ func (tr *Tracker) LookupName(name string, game string) NameMapping {
 	return NameMapping{}
 }
 
-func (tr *Tracker) execHook(bin string, arg string) {
+func (tr *Tracker) execHook(bin, arg string) {
 	if bin == "" {
 		return
 	}
 
 	go func() {
-		cmd := exec.Command(bin, arg)
+		// #nosec G204 -- executable and argument come from explicit hook configuration.
+		cmd := exec.CommandContext(context.Background(), bin, arg)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		tr.Logger.Info("executing hook: %s %s", bin, arg)
@@ -214,11 +242,12 @@ func (tr *Tracker) execHook(bin string, arg string) {
 func (tr *Tracker) addEvent(action int, target string) {
 	totalTime := 0
 
-	if action == EventActionCoreStart || action == EventActionCoreStop {
+	switch action {
+	case EventActionCoreStart, EventActionCoreStop:
 		if ct, ok := tr.CoreTimes[target]; ok {
 			totalTime = ct.Time
 		}
-	} else if action == EventActionGameStart || action == EventActionGameStop {
+	case EventActionGameStart, EventActionGameStop:
 		if gt, ok := tr.GameTimes[target]; ok {
 			totalTime = gt.Time
 		}
@@ -252,7 +281,7 @@ func (tr *Tracker) addEvent(action int, target string) {
 	if action != EventActionMenuNavigation {
 		tr.Events = append(tr.Events, ev)
 	}
-	err := tr.Db.AddEvent(ev)
+	err := tr.Db.AddEvent(&ev)
 	if err != nil {
 		tr.Logger.Error("error saving event: %s", err)
 	}
@@ -277,30 +306,29 @@ func (tr *Tracker) addEvent(action int, target string) {
 }
 
 func (tr *Tracker) stopCore() bool {
-	if tr.ActiveCore != "" {
-		if ct, ok := tr.CoreTimes[tr.ActiveCore]; ok && ct.Time > 0 {
-			err := tr.Db.UpdateCore(ct)
-			if err != nil {
-				tr.Logger.Error("error saving core time: %s", err)
-			}
-		}
-
-		tr.addEvent(EventActionCoreStop, tr.ActiveCore)
-
-		if tr.ActiveCore == ArcadeSystem {
-			tr.ActiveGame = ""
-			tr.ActiveGameName = ""
-			tr.addEvent(EventActionGameStop, ArcadeSystem)
-		}
-
-		tr.ActiveCore = ""
-		tr.ActiveSystem = ""
-		tr.ActiveSystemName = ""
-
-		return true
-	} else {
+	if tr.ActiveCore == "" {
 		return false
 	}
+	if ct, ok := tr.CoreTimes[tr.ActiveCore]; ok && ct.Time > 0 {
+		err := tr.Db.UpdateCore(ct)
+		if err != nil {
+			tr.Logger.Error("error saving core time: %s", err)
+		}
+	}
+
+	tr.addEvent(EventActionCoreStop, tr.ActiveCore)
+
+	if tr.ActiveCore == ArcadeSystem {
+		tr.ActiveGame = ""
+		tr.ActiveGameName = ""
+		tr.addEvent(EventActionGameStop, ArcadeSystem)
+	}
+
+	tr.ActiveCore = ""
+	tr.ActiveSystem = ""
+	tr.ActiveSystemName = ""
+
+	return true
 }
 
 // trackMenu check where we are in the menu and update the websocket
@@ -354,12 +382,15 @@ func (tr *Tracker) LoadCore() {
 			tr.ActiveSystem = result.System
 			tr.ActiveSystemName = result.Name
 
-			if result.System == ArcadeSystem {
-				mister.SetActiveGame(coreName)
+			switch result.System {
+			case ArcadeSystem:
+				if err := mister.SetActiveGame(coreName); err != nil {
+					tr.Logger.Error("error setting active arcade game: %s", err)
+				}
 				tr.ActiveGame = coreName
 				tr.ActiveGameName = result.ArcadeName
 				tr.addEvent(EventActionGameStart, coreName)
-			} else if result.System == "" {
+			case "":
 				tr.ActiveSystem = coreName
 				tr.ActiveSystemName = coreName
 			}
@@ -370,14 +401,15 @@ func (tr *Tracker) LoadCore() {
 
 		if _, ok := tr.CoreTimes[coreName]; !ok {
 			ct, err := tr.Db.GetCore(coreName)
-			if tr.Db.NoResults(err) {
+			switch {
+			case tr.Db.NoResults(err):
 				tr.CoreTimes[coreName] = CoreTime{
 					Name: coreName,
 					Time: 0,
 				}
-			} else if err != nil {
+			case err != nil:
 				tr.Logger.Error("error loading core time: %s", err)
-			} else {
+			default:
 				tr.CoreTimes[coreName] = ct
 			}
 		}
@@ -387,22 +419,21 @@ func (tr *Tracker) LoadCore() {
 }
 
 func (tr *Tracker) stopGame() bool {
-	if tr.ActiveGame != "" {
-		if gt, ok := tr.GameTimes[tr.ActiveGame]; ok && gt.Time > 0 {
-			err := tr.Db.UpdateGame(gt)
-			if err != nil {
-				tr.Logger.Error("error saving game time: %s", err)
-			}
-		}
-
-		target := tr.ActiveGame
-		tr.ActiveGame = ""
-		tr.ActiveGameName = ""
-		tr.addEvent(EventActionGameStop, target)
-		return true
-	} else {
+	if tr.ActiveGame == "" {
 		return false
 	}
+	if gt, ok := tr.GameTimes[tr.ActiveGame]; ok && gt.Time > 0 {
+		err := tr.Db.UpdateGame(gt)
+		if err != nil {
+			tr.Logger.Error("error saving game time: %s", err)
+		}
+	}
+
+	target := tr.ActiveGame
+	tr.ActiveGame = ""
+	tr.ActiveGameName = ""
+	tr.addEvent(EventActionGameStop, target)
+	return true
 }
 
 // Load the current running game and set it as active.
@@ -415,7 +446,8 @@ func (tr *Tracker) loadGame() {
 		tr.Logger.Error("error getting active game: %s", err)
 		tr.stopGame()
 		return
-	} else if activeGame == "" {
+	}
+	if activeGame == "" {
 		tr.stopGame()
 		return
 	}
@@ -425,9 +457,9 @@ func (tr *Tracker) loadGame() {
 	name := utils.RemoveFileExt(filename)
 
 	if filepath.Ext(strings.ToLower(filename)) == ".mgl" {
-		mgl, err := mister.ReadMgl(path)
-		if err != nil {
-			tr.Logger.Error("error reading mgl: %s", err)
+		mgl, mglErr := mister.ReadMGL(path)
+		if mglErr != nil {
+			tr.Logger.Error("error reading mgl: %s", mglErr)
 		} else {
 			path = mister.ResolvePath(mgl.File.Path)
 			tr.Logger.Info("mgl path: %s", path)
@@ -469,7 +501,8 @@ func (tr *Tracker) loadGame() {
 
 		if _, ok := tr.GameTimes[id]; !ok {
 			gt, err := tr.Db.GetGame(id)
-			if tr.Db.NoResults(err) {
+			switch {
+			case tr.Db.NoResults(err):
 				tr.GameTimes[id] = GameTime{
 					Id:     id,
 					Path:   path,
@@ -477,9 +510,9 @@ func (tr *Tracker) loadGame() {
 					Folder: folder,
 					Time:   0,
 				}
-			} else if err != nil {
+			case err != nil:
 				tr.Logger.Error("error loading game time: %s", err)
-			} else {
+			default:
 				tr.GameTimes[id] = gt
 			}
 		}

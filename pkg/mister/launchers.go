@@ -1,6 +1,27 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package mister
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,19 +32,18 @@ import (
 	"time"
 
 	mglgen "github.com/ZaparooProject/zaparoo-core/mister/mgl"
-	"github.com/wizzomafizzo/mrext/pkg/input"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
-
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/input"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, override string) (string, error) {
+func GenerateMgl(cfg *config.UserConfig, system *games.System, path, override string) (string, error) {
 	if system == nil {
-		return "", fmt.Errorf("no system supplied for MGL generation")
+		return "", errors.New("no system supplied for MGL generation")
 	}
 
-	core := games.CatalogCore(*system)
+	core := games.CatalogCore(system)
 
 	// Preserve legacy per-system RBF overrides.
 	for _, setCore := range cfg.Systems.SetCore {
@@ -34,48 +54,50 @@ func GenerateMgl(cfg *config.UserConfig, system *games.System, path string, over
 		}
 	}
 
-	return mglgen.Generate(&core, core.RBF, path, override)
+	mgl, err := mglgen.Generate(&core, core.RBF, path, override)
+	if err != nil {
+		return "", fmt.Errorf("generate MGL: %w", err)
+	}
+	return mgl, nil
 }
 
 func writeTempFile(content string) (string, error) {
-	tmpFile, err := os.Create(config.LastLaunchFile)
-	if err != nil {
-		return "", err
+	// #nosec G306 -- MiSTer main must read this cross-process launcher file.
+	if err := os.WriteFile(config.LastLaunchFile, []byte(content), 0o644); err != nil {
+		return "", fmt.Errorf("write temporary launcher: %w", err)
 	}
-	defer tmpFile.Close()
-
-	_, err = tmpFile.WriteString(content)
-	if err != nil {
-		return "", err
-	}
-	return tmpFile.Name(), nil
+	return config.LastLaunchFile, nil
 }
 
 func launchFile(path string) error {
 	_, err := os.Stat(config.CmdInterface)
 	if err != nil {
-		return fmt.Errorf("command interface not accessible: %s", err)
+		return fmt.Errorf("command interface not accessible: %w", err)
 	}
 
-	if !(s.HasSuffix(s.ToLower(path), ".mgl") || s.HasSuffix(s.ToLower(path), ".mra") || s.HasSuffix(s.ToLower(path), ".rbf")) {
+	lowerPath := s.ToLower(path)
+	if !s.HasSuffix(lowerPath, ".mgl") &&
+		!s.HasSuffix(lowerPath, ".mra") &&
+		!s.HasSuffix(lowerPath, ".rbf") {
 		return fmt.Errorf("not a valid launch file: %s", path)
 	}
 
 	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("open command interface: %w", err)
 	}
-	defer cmd.Close()
+	defer func() { _ = cmd.Close() }()
 
-	cmd.WriteString(fmt.Sprintf("load_core %s\n", path))
-
+	if _, err := fmt.Fprintf(cmd, "load_core %s\n", path); err != nil {
+		return fmt.Errorf("write launch command: %w", err)
+	}
 	return nil
 }
 
 func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) error {
-	override, err := games.RunSystemHook(cfg, *system, path)
+	override, err := games.RunSystemHook(cfg, system, path)
 	if err != nil {
-		return err
+		return fmt.Errorf("run system hook: %w", err)
 	}
 
 	mgl, err := GenerateMgl(cfg, system, path, override)
@@ -107,7 +129,7 @@ func LaunchShortCore(path string) error {
 	return launchFile(tmpFile)
 }
 
-func LaunchGame(cfg *config.UserConfig, system games.System, path string) error {
+func LaunchGame(cfg *config.UserConfig, system *games.System, path string) error {
 	switch s.ToLower(filepath.Ext(path)) {
 	case ".mra":
 		err := launchFile(path)
@@ -121,35 +143,39 @@ func LaunchGame(cfg *config.UserConfig, system games.System, path string) error 
 		}
 
 		if ActiveGameEnabled() {
-			SetActiveGame(path)
+			if err := SetActiveGame(path); err != nil {
+				return err
+			}
 		}
 	default:
-		err := launchTempMgl(cfg, &system, path)
+		err := launchTempMgl(cfg, system, path)
 		if err != nil {
 			return err
 		}
 
 		if ActiveGameEnabled() {
-			SetActiveGame(path)
+			if err := SetActiveGame(path); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func GetLauncherFilename(system *games.System, folder string, name string) string {
+func GetLauncherFilename(system *games.System, folder, name string) string {
 	if system.Id == "Arcade" {
 		return filepath.Join(folder, name+".mra")
-	} else {
-		return filepath.Join(folder, name+".mgl")
 	}
+	return filepath.Join(folder, name+".mgl")
 }
 
 func TrySetupArcadeCoresLink(path string) error {
 	folder, err := os.Stat(path)
 	if err != nil {
-		return err
-	} else if !folder.IsDir() {
+		return fmt.Errorf("stat launcher directory: %w", err)
+	}
+	if !folder.IsDir() {
 		return fmt.Errorf("parent is not a directory: %s", path)
 	}
 
@@ -157,22 +183,22 @@ func TrySetupArcadeCoresLink(path string) error {
 	coresLink, err := os.Lstat(coresLinkPath)
 
 	coresLinkExists := false
-	if err == nil {
-		if coresLink.Mode()&os.ModeSymlink != 0 {
-			coresLinkExists = true
-		} else {
+	switch {
+	case err == nil:
+		if coresLink.Mode()&os.ModeSymlink == 0 {
 			// cores exists but it's not a symlink. not touching this!
 			return nil
 		}
-	} else if os.IsNotExist(err) {
+		coresLinkExists = true
+	case os.IsNotExist(err):
 		coresLinkExists = false
-	} else {
-		return err
+	default:
+		return fmt.Errorf("inspect arcade cores link: %w", err)
 	}
 
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("read launcher directory: %w", err)
 	}
 
 	mraCount := 0
@@ -189,108 +215,107 @@ func TrySetupArcadeCoresLink(path string) error {
 	if mraCount > 0 && !coresLinkExists {
 		err = os.Symlink(config.ArcadeCoresFolder, coresLinkPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("create arcade cores link: %w", err)
 		}
 	} else if mraCount == 0 && coresLinkExists {
 		err = os.Remove(coresLinkPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("remove arcade cores link: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func CreateLauncher(cfg *config.UserConfig, system *games.System, gameFile string, folder string, name string) (string, error) {
+func CreateLauncher(
+	cfg *config.UserConfig,
+	system *games.System,
+	gameFile, folder, name string,
+) (string, error) {
 	if system == nil {
-		return "", fmt.Errorf("no system specified")
+		return "", errors.New("no system specified")
 	}
 
 	if system.Id == "Arcade" {
 		mraPath := GetLauncherFilename(system, folder, name)
 		if _, err := os.Lstat(mraPath); err == nil {
-			err := os.Remove(mraPath)
-			if err != nil {
-				return "", fmt.Errorf("failed to remove existing link: %s", err)
+			if err := os.Remove(mraPath); err != nil {
+				return "", fmt.Errorf("remove existing game link: %w", err)
 			}
 		}
 
-		err := os.Symlink(gameFile, mraPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to create game link: %s", err)
+		if err := os.Symlink(gameFile, mraPath); err != nil {
+			return "", fmt.Errorf("create game link: %w", err)
 		}
 
-		err = TrySetupArcadeCoresLink(filepath.Dir(mraPath))
-		if err != nil {
-			return "", err
+		if err := TrySetupArcadeCoresLink(filepath.Dir(mraPath)); err != nil {
+			return "", fmt.Errorf("set up arcade cores link: %w", err)
 		}
 
 		return mraPath, nil
-	} else {
-		mglPath := GetLauncherFilename(system, folder, name)
-
-		override, err := games.RunSystemHook(cfg, *system, gameFile)
-		if err != nil {
-			return "", err
-		}
-
-		mgl, err := GenerateMgl(cfg, system, gameFile, override)
-		if err != nil {
-			return "", err
-		}
-
-		err = os.WriteFile(mglPath, []byte(mgl), 0644)
-		if err != nil {
-			return "", fmt.Errorf("failed to write mgl file: %s", err)
-		}
-
-		return mglPath, nil
 	}
+
+	mglPath := GetLauncherFilename(system, folder, name)
+	override, err := games.RunSystemHook(cfg, system, gameFile)
+	if err != nil {
+		return "", fmt.Errorf("run system hook: %w", err)
+	}
+
+	mgl, err := GenerateMgl(cfg, system, gameFile, override)
+	if err != nil {
+		return "", err
+	}
+
+	// #nosec G306,G703 -- generated MGL launchers must remain world-readable.
+	if err := os.WriteFile(mglPath, []byte(mgl), 0o644); err != nil {
+		return "", fmt.Errorf("write MGL file: %w", err)
+	}
+
+	return mglPath, nil
 }
 
 // LaunchCore Launch a core given a possibly partial path, as per MGL files.
-func LaunchCore(cfg *config.UserConfig, system games.System) error {
+func LaunchCore(cfg *config.UserConfig, system *games.System) error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
-		return fmt.Errorf("command interface not accessible: %s", err)
+		return fmt.Errorf("command interface not accessible: %w", err)
 	}
 
 	if system.SetName != "" {
 		return LaunchGame(cfg, system, "")
 	}
 
-	var path string
-	rbfs := games.SystemsWithRbf()
-	if _, ok := rbfs[system.Id]; ok {
-		path = rbfs[system.Id].Path
-	} else {
+	rbf, ok := games.SystemsWithRBF()[system.Id]
+	if !ok {
 		return fmt.Errorf("no core found for system %s", system.Id)
 	}
 
 	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("open command interface: %w", err)
 	}
-	defer cmd.Close()
+	defer func() { _ = cmd.Close() }()
 
-	cmd.WriteString(fmt.Sprintf("load_core %s\n", path))
-
+	if _, err := fmt.Fprintf(cmd, "load_core %s\n", rbf.Path); err != nil {
+		return fmt.Errorf("write launch command: %w", err)
+	}
 	return nil
 }
 
 func LaunchMenu() error {
 	if _, err := os.Stat(config.CmdInterface); err != nil {
-		return fmt.Errorf("command interface not accessible: %s", err)
+		return fmt.Errorf("command interface not accessible: %w", err)
 	}
 
 	cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("open command interface: %w", err)
 	}
-	defer cmd.Close()
+	defer func() { _ = cmd.Close() }()
 
 	// TODO: don't hardcode here
-	cmd.WriteString(fmt.Sprintf("load_core %s\n", filepath.Join(config.SdFolder, "menu.rbf")))
-
+	if _, err := fmt.Fprintf(cmd, "load_core %s\n", filepath.Join(config.SdFolder, "menu.rbf")); err != nil {
+		return fmt.Errorf("write menu launch command: %w", err)
+	}
 	return nil
 }
 
@@ -344,7 +369,7 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 func TryPickRandomGame(system *games.System, folder string) (string, error) {
 	files, err := os.ReadDir(folder)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read game directory: %w", err)
 	}
 
 	if len(files) == 0 {
@@ -353,11 +378,7 @@ func TryPickRandomGame(system *games.System, folder string) (string, error) {
 
 	var validFiles []os.DirEntry
 	for _, file := range files {
-		if file.IsDir() {
-			validFiles = append(validFiles, file)
-		} else if utils.IsZip(file.Name()) {
-			validFiles = append(validFiles, file)
-		} else if games.MatchSystemFile(*system, file.Name()) {
+		if file.IsDir() || utils.IsZip(file.Name()) || games.MatchSystemFile(system, file.Name()) {
 			validFiles = append(validFiles, file)
 		}
 	}
@@ -368,33 +389,32 @@ func TryPickRandomGame(system *games.System, folder string) (string, error) {
 
 	file, err := utils.RandomElem(validFiles)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("pick random game entry: %w", err)
 	}
 
 	path := filepath.Join(folder, file.Name())
-	if file.IsDir() {
+	switch {
+	case file.IsDir():
 		return TryPickRandomGame(system, path)
-	} else if utils.IsZip(path) {
-		// zip files
+	case utils.IsZip(path):
 		zipFiles, err := utils.ListZip(path)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("list ZIP contents: %w", err)
 		}
 		if len(zipFiles) == 0 {
 			return "", fmt.Errorf("no files in %s", path)
 		}
-		// just shoot our shot on a zip instead of checking every file
+
 		randomZip, err := utils.RandomElem(zipFiles)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("pick random ZIP entry: %w", err)
 		}
 		zipPath := filepath.Join(path, randomZip)
-		if games.MatchSystemFile(*system, zipPath) {
-			return zipPath, nil
-		} else {
+		if !games.MatchSystemFile(system, zipPath) {
 			return "", fmt.Errorf("invalid file picked in %s", path)
 		}
-	} else {
+		return zipPath, nil
+	default:
 		return path, nil
 	}
 }
@@ -404,21 +424,21 @@ func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
 
 	populated := games.GetPopulatedGamesFolders(cfg, systems)
 	if len(populated) == 0 {
-		return fmt.Errorf("no populated games folders found")
+		return errors.New("no populated games folders found")
 	}
 
-	for i := 0; i < maxTries; i++ {
-		systemId, err := utils.RandomElem(utils.MapKeys(populated))
+	for range maxTries {
+		systemID, err := utils.RandomElem(utils.MapKeys(populated))
 		if err != nil {
-			return err
+			return fmt.Errorf("pick random system: %w", err)
 		}
 
-		folders := populated[systemId]
+		folders := populated[systemID]
 		var files []string
 		for _, folder := range folders {
-			results, err := games.GetFiles(systemId, folder)
-			if err != nil {
-				return err
+			results, fileErr := games.GetFiles(systemID, folder)
+			if fileErr != nil {
+				return fmt.Errorf("list games for %s: %w", systemID, fileErr)
 			}
 			files = append(files, results...)
 		}
@@ -427,20 +447,37 @@ func LaunchRandomGame(cfg *config.UserConfig, systems []games.System) error {
 			continue
 		}
 
-		system, err := games.GetSystem(systemId)
+		system, err := games.GetSystem(systemID)
 		if err != nil {
-			return err
+			return fmt.Errorf("get system %s: %w", systemID, err)
 		}
 
 		game, err := utils.RandomElem(files)
 		if err != nil {
-			return err
+			return fmt.Errorf("pick random game: %w", err)
 		}
 
-		return LaunchGame(cfg, *system, game)
+		return LaunchGame(cfg, system, game)
 	}
 
-	return fmt.Errorf("failed to find a random game")
+	return errors.New("failed to find a random game")
+}
+
+func triggerHTTPGet(rawURL string) error {
+	// #nosec G107 -- URL is an explicit launch-token action.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("create HTTP request: %w", err)
+	}
+
+	go func() {
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, requestErr := client.Do(req)
+		if requestErr == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	return nil
 }
 
 func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text string) error {
@@ -467,25 +504,26 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 
 			system, err := games.LookupSystem(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("look up system: %w", err)
 			}
 
-			return LaunchCore(cfg, *system)
+			return LaunchCore(cfg, system)
 		case "command":
 			if !manual {
-				return fmt.Errorf("commands must be manually run")
+				return errors.New("commands must be manually run")
 			}
 
-			command := exec.Command("bash", "-c", args)
+			// #nosec G204 -- shell command is permitted only for explicit manual tokens.
+			command := exec.CommandContext(context.Background(), "bash", "-c", args)
 			err := command.Start()
 			if err != nil {
-				return err
+				return fmt.Errorf("start manual command: %w", err)
 			}
 
 			return nil
 		case "random":
 			if args == "" {
-				return fmt.Errorf("no system specified")
+				return errors.New("no system specified")
 			}
 
 			if args == "all" {
@@ -495,23 +533,23 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 			// TODO: allow multiple systems
 			system, err := games.LookupSystem(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("look up random-game system: %w", err)
 			}
 
 			return LaunchRandomGame(cfg, []games.System{*system})
 		case "ini":
 			inis, err := GetAllMisterIni()
 			if err != nil {
-				return err
+				return fmt.Errorf("list MiSTer INI files: %w", err)
 			}
 
 			if len(inis) == 0 {
-				return fmt.Errorf("no ini files found")
+				return errors.New("no ini files found")
 			}
 
 			id, err := strconv.Atoi(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("parse INI ID: %w", err)
 			}
 
 			if id < 1 || id > len(inis) {
@@ -520,27 +558,27 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 
 			return SetActiveIni(id, true)
 		case "get":
-			go func() {
-				_, _ = http.Get(args)
-			}()
-			return nil
+			return triggerHTTPGet(args)
 		case "key":
 			code, err := strconv.Atoi(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("parse key code: %w", err)
 			}
 
-			kbd.Press(code)
-
+			if err := kbd.Press(code); err != nil {
+				return fmt.Errorf("press key: %w", err)
+			}
 			return nil
 		case "coinp1":
 			amount, err := strconv.Atoi(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("parse player-one coin count: %w", err)
 			}
 
-			for i := 0; i < amount; i++ {
-				kbd.Press(6)
+			for range amount {
+				if err := kbd.Press(6); err != nil {
+					return fmt.Errorf("press player-one coin key: %w", err)
+				}
 				time.Sleep(100 * time.Millisecond)
 			}
 
@@ -549,11 +587,13 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 			// TODO: this is lazy, make a function
 			amount, err := strconv.Atoi(args)
 			if err != nil {
-				return err
+				return fmt.Errorf("parse player-two coin count: %w", err)
 			}
 
-			for i := 0; i < amount; i++ {
-				kbd.Press(7)
+			for range amount {
+				if err := kbd.Press(7); err != nil {
+					return fmt.Errorf("press player-two coin key: %w", err)
+				}
 				time.Sleep(100 * time.Millisecond)
 			}
 
@@ -599,20 +639,15 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 }
 
 func RelaunchIfInMenu() error {
-	if _, err := os.Stat(config.CoreNameFile); err == nil {
-		name, err := os.ReadFile(config.CoreNameFile)
-		if err != nil {
-			err := LaunchMenu()
-			if err != nil {
-				return err
-			}
-		} else if string(name) == config.MenuCore {
-			err := LaunchMenu()
-			if err != nil {
-				return err
-			}
-		}
+	if _, err := os.Stat(config.CoreNameFile); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("stat active core name: %w", err)
 	}
 
+	name, err := os.ReadFile(config.CoreNameFile)
+	if err != nil || string(name) == config.MenuCore {
+		return LaunchMenu()
+	}
 	return nil
 }

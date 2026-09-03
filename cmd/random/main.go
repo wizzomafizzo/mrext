@@ -1,14 +1,34 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
-	"os"
-	"strings"
 )
 
 const (
@@ -26,22 +46,22 @@ func main() {
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
-		fmt.Println("Error loading config file:", err)
+		_, _ = fmt.Println("Error loading config file:", err)
 		os.Exit(1)
 	}
 
-	filteredIds := strings.Split(*filter, ",")
+	filteredIDs := strings.Split(*filter, ",")
 	var filteredSystems []games.System
-	for _, id := range filteredIds {
+	for _, id := range filteredIDs {
 		system, _ := games.LookupSystem(id)
 		if system != nil {
 			filteredSystems = append(filteredSystems, *system)
 		}
 	}
 
-	ignoredIds := strings.Split(*ignore, ",")
+	ignoredIDs := strings.Split(*ignore, ",")
 	var ignoredSystems []games.System
-	for _, id := range ignoredIds {
+	for _, id := range ignoredIDs {
 		found, _ := games.LookupSystem(id)
 		if found != nil {
 			ignoredSystems = append(ignoredSystems, *found)
@@ -58,16 +78,18 @@ func main() {
 	// ignore systems
 	if len(ignoredSystems) > 0 {
 		var filtered []games.System
-		for _, system := range systems {
+		for systemIndex := range systems {
+			system := &systems[systemIndex]
 			ignore := false
-			for _, ignored := range ignoredSystems {
+			for ignoredIndex := range ignoredSystems {
+				ignored := &ignoredSystems[ignoredIndex]
 				if system.Id == ignored.Id {
 					ignore = true
 					break
 				}
 			}
 			if !ignore {
-				filtered = append(filtered, system)
+				filtered = append(filtered, *system)
 			}
 		}
 		systems = filtered
@@ -75,13 +97,14 @@ func main() {
 
 	results := games.GetSystemPaths(cfg, systems)
 	if len(results) == 0 {
-		fmt.Println("No games folders found.")
+		_, _ = fmt.Println("No games folders found.")
 		os.Exit(1)
 	}
 
 	// pick out the folders that actually have stuff in them
 	populated := make(map[string][]string)
-	for _, folder := range results {
+	for i := range results {
+		folder := &results[i]
 		files, err := os.ReadDir(folder.Path)
 		if err != nil {
 			continue
@@ -92,85 +115,71 @@ func main() {
 	}
 
 	if len(populated) == 0 {
-		fmt.Println("No games found.")
+		_, _ = fmt.Println("No games found.")
 		return
 	}
 
 	if *noscan {
-		for i := 0; i < maxPickAttempts; i++ {
-			// random system
-			systemId, err := utils.RandomElem(utils.MapKeys(populated))
-			if err != nil {
+		for range maxPickAttempts {
+			systemID, randomErr := utils.RandomElem(utils.MapKeys(populated))
+			if randomErr != nil {
 				continue
 			}
 
-			// random folder from that system
-			folder, err := utils.RandomElem(populated[systemId])
-			if err != nil {
+			folder, randomErr := utils.RandomElem(populated[systemID])
+			if randomErr != nil {
+				continue
+			}
+			system, systemErr := games.GetSystem(systemID)
+			if systemErr != nil {
+				continue
+			}
+			game, gameErr := mister.TryPickRandomGame(system, folder)
+			if gameErr != nil || game == "" {
 				continue
 			}
 
-			// search for a random game
-			system, err := games.GetSystem(systemId)
-			if err != nil {
-				continue
+			_, _ = fmt.Printf("Launching %s: %s\n", system.Id, game)
+			if launchErr := mister.LaunchGame(cfg, system, game); launchErr != nil {
+				_, _ = fmt.Println(launchErr)
 			}
-
-			game, err := mister.TryPickRandomGame(system, folder)
-			if err != nil || game == "" {
-				continue
-			} else {
-				// we did it
-				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				err := mister.LaunchGame(cfg, *system, game)
-				if err != nil {
-					fmt.Println(err)
-				}
-				return
-			}
+			return
 		}
 	} else {
-		for i := 0; i < maxPickAttempts; i++ {
-			// random system
-			systemId, err := utils.RandomElem(utils.MapKeys(populated))
-			if err != nil {
+		for range maxPickAttempts {
+			systemID, randomErr := utils.RandomElem(utils.MapKeys(populated))
+			if randomErr != nil {
 				continue
 			}
 
-			// scan all system folders
 			var files []string
-			for _, path := range populated[systemId] {
-				results, err := games.GetFiles(systemId, path)
-				if err != nil {
+			for _, path := range populated[systemID] {
+				results, filesErr := games.GetFiles(systemID, path)
+				if filesErr != nil {
 					continue
-				} else {
-					files = append(files, results...)
 				}
+				files = append(files, results...)
 			}
-
 			if len(files) == 0 {
 				continue
 			}
 
-			system, err := games.GetSystem(systemId)
-			if err != nil {
+			system, systemErr := games.GetSystem(systemID)
+			if systemErr != nil {
+				continue
+			}
+			game, gameErr := utils.RandomElem(files)
+			if gameErr != nil {
 				continue
 			}
 
-			game, err := utils.RandomElem(files)
-			if err != nil {
-				continue
-			} else {
-				// we did it
-				fmt.Printf("Launching %s: %s\n", system.Id, game)
-				err := mister.LaunchGame(cfg, *system, game)
-				if err != nil {
-					fmt.Println(err)
-				}
-				return
+			_, _ = fmt.Printf("Launching %s: %s\n", system.Id, game)
+			if launchErr := mister.LaunchGame(cfg, system, game); launchErr != nil {
+				_, _ = fmt.Println(launchErr)
 			}
+			return
 		}
 	}
 
-	fmt.Println("No games found.")
+	_, _ = fmt.Println("No games found.")
 }

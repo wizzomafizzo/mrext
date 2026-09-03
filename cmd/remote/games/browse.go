@@ -1,7 +1,27 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,15 +36,16 @@ import (
 )
 
 type FolderResult struct {
-	System games.System `json:"system"`
 	Path   string       `json:"path"`
+	System games.System `json:"system"`
 }
 
 func getGamesFolders() []FolderResult {
 	systemResults := make(map[string]FolderResult)
 	folderNames := make(map[string]games.System)
 
-	for _, system := range games.Systems {
+	for id := range games.Systems {
+		system := games.Systems[id]
 		folder := strings.ToLower(system.Folder[0])
 		folderNames[folder] = system
 	}
@@ -64,20 +85,20 @@ func getGamesFolders() []FolderResult {
 		}
 	}
 
-	folders := make([]FolderResult, 0)
-	for _, result := range systemResults {
-		folders = append(folders, result)
+	folders := make([]FolderResult, 0, len(systemResults))
+	for id := range systemResults {
+		folders = append(folders, systemResults[id])
 	}
 
 	return folders
 }
 
 type fileEntry struct {
+	modTime time.Time
 	path    string
 	name    string
 	size    int64
 	isDir   bool
-	modTime time.Time
 }
 
 func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
@@ -104,7 +125,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 
 		paths, err := utils.ListZip(zipFile)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list ZIP contents: %w", err)
 		}
 
 		if len(paths) == 0 {
@@ -140,7 +161,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 	} else {
 		fsFiles, err := os.ReadDir(path)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("read games directory: %w", err)
 		}
 
 		for _, fsFile := range fsFiles {
@@ -165,7 +186,8 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 		validFiletypes = append(validFiletypes, ".zip")
 	}
 
-	for _, system := range systems {
+	for systemIndex := range systems {
+		system := &systems[systemIndex]
 		for _, slot := range system.Slots {
 			validFiletypes = append(validFiletypes, slot.Exts...)
 		}
@@ -174,8 +196,8 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 
 	items := make([]menu.Item, 0)
 
-	for _, file := range files {
-
+	for fileIndex := range files {
+		file := &files[fileIndex]
 		var friendlyName string
 		if file.isDir {
 			friendlyName = file.name
@@ -203,7 +225,7 @@ func listPath(logger *service.Logger, path string) ([]menu.Item, error) {
 			match, err := games.BestSystemMatch(&config.UserConfig{}, file.path)
 			if err == nil {
 				system = &menu.MenuSystem{
-					Id:       match.Id,
+					ID:       match.Id,
 					Name:     match.Name,
 					Category: match.Category,
 				}
@@ -260,14 +282,16 @@ func ListGamesFolder(logger *service.Logger) http.HandlerFunc {
 
 		systemFolders := getGamesFolders()
 		systemFoldersMap := make(map[string]bool)
-		for _, folder := range systemFolders {
+		for i := range systemFolders {
+			folder := &systemFolders[i]
 			systemFoldersMap[strings.ToLower(folder.Path)] = true
 		}
 
 		// list system folders instead
 		if args.Path == "" {
 			up = nil
-			for _, folder := range systemFolders {
+			for i := range systemFolders {
+				folder := &systemFolders[i]
 				var next *string
 				nextPath := folder.Path
 				next = &nextPath

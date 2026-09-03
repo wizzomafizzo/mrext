@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package settings
 
 import (
@@ -18,9 +37,9 @@ const (
 
 type SaveIniRequest = map[string]string
 
-func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
+func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("save ini request: %d", reqId)
+		logger.Info("save ini request: %d", reqID)
 
 		var args SaveIniRequest
 
@@ -31,7 +50,7 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 			return
 		}
 
-		mi, err := mister.GetMisterIni(reqId)
+		mi, err := mister.GetMisterIni(reqID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get mister.ini: %s", err)
@@ -48,12 +67,13 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 		for key, value := range args {
 			// custom internal setting
 			if strings.HasPrefix(key, "__") {
-				if key == hostnameKey {
+				switch key {
+				case hostnameKey:
 					err = mister.UpdateHostname(value, false)
 					if err != nil {
 						logger.Error("set hostname: %s", err)
 					}
-				} else if key == macAddressKey {
+				case macAddressKey:
 					err = mister.UpdateConfiguredMacAddress(value)
 					if err != nil {
 						logger.Error("set mac address: %s", err)
@@ -61,9 +81,9 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 				}
 			}
 
-			err := mi.SetKey(key, value)
-			if err != nil {
-				logger.Error("update mister.ini: %s", err)
+			setErr := mi.SetKey(key, value)
+			if setErr != nil {
+				logger.Error("update mister.ini: %s", setErr)
 			}
 			logger.Info("update mister.ini: %s=%s", key, value)
 		}
@@ -84,11 +104,11 @@ func HandleSaveIni(logger *service.Logger, reqId int) http.HandlerFunc {
 	}
 }
 
-func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("load ini request: %d", reqId)
+func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		logger.Info("load ini request: %d", reqID)
 
-		mi, err := mister.GetMisterIni(reqId)
+		mi, err := mister.GetMisterIni(reqID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("get mister.ini: %s", err)
@@ -138,12 +158,12 @@ func HandleLoadIni(logger *service.Logger, reqId int) http.HandlerFunc {
 }
 
 type IniResponse struct {
-	Active int                `json:"active"`
 	Inis   []mister.MisterIni `json:"inis"`
+	Active int                `json:"active"`
 }
 
 func HandleListInis(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		inis, err := mister.GetAllWithDefaultMisterIni()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -158,12 +178,9 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		inisList := make([]mister.MisterIni, 0)
-		inisList = append(inisList, inis...)
-
 		iniResponse := IniResponse{
 			Active: activeIni,
-			Inis:   inisList,
+			Inis:   inis,
 		}
 
 		err = json.NewEncoder(w).Encode(iniResponse)
@@ -250,7 +267,7 @@ func HandleSetMenuBackgroundMode(logger *service.Logger) http.HandlerFunc {
 }
 
 func HandleDownloadRemoteLog(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("download remote log")
 
 		// TODO: don't hardcode this path

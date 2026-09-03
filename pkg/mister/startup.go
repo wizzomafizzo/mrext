@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package mister
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -17,8 +37,8 @@ type Startup struct {
 
 type StartupEntry struct {
 	Name    string
-	Enabled bool
 	Cmds    []string
+	Enabled bool
 }
 
 func (s *Startup) Load() error {
@@ -28,7 +48,7 @@ func (s *Startup) Load() error {
 	if os.IsNotExist(err) {
 		contents = []byte{}
 	} else if err != nil {
-		return err
+		return fmt.Errorf("read startup script: %w", err)
 	}
 
 	lines := strings.Split(string(contents), "\n")
@@ -40,10 +60,12 @@ func (s *Startup) Load() error {
 			continue
 		}
 
-		if len(line) == 0 && len(section) != 0 {
+		if line == "" && len(section) != 0 {
 			sections = append(sections, section)
 			section = make([]string, 0)
-		} else if len(line) > 0 {
+			continue
+		}
+		if line != "" {
 			section = append(section, line)
 		}
 	}
@@ -53,7 +75,7 @@ func (s *Startup) Load() error {
 		cmds := make([]string, 0)
 		enabled := false
 
-		if len(section[0]) > 0 && section[0][0] == '#' {
+		if section[0] != "" && section[0][0] == '#' {
 			name = strings.TrimSpace(section[0][1:])
 			cmds = append(cmds, section[1:]...)
 		} else {
@@ -61,7 +83,7 @@ func (s *Startup) Load() error {
 		}
 
 		for _, line := range cmds {
-			if len(line) > 0 && line[0] != '#' {
+			if line != "" && line[0] != '#' {
 				enabled = true
 				break
 			}
@@ -83,24 +105,27 @@ func (s *Startup) Load() error {
 
 func (s *Startup) Save() error {
 	if len(s.Entries) == 0 {
-		return fmt.Errorf("no startup entries to save")
+		return errors.New("no startup entries to save")
 	}
 
-	contents := "#!/bin/sh\n\n"
-
-	for _, entry := range s.Entries {
-		if len(entry.Name) != 0 {
-			contents += "# " + entry.Name + "\n"
+	var contents strings.Builder
+	_, _ = contents.WriteString("#!/bin/sh\n\n")
+	for i := range s.Entries {
+		entry := &s.Entries[i]
+		if entry.Name != "" {
+			_, _ = fmt.Fprintf(&contents, "# %s\n", entry.Name)
 		}
-
 		for _, cmd := range entry.Cmds {
-			contents += cmd + "\n"
+			_, _ = fmt.Fprintln(&contents, cmd)
 		}
-
-		contents += "\n"
+		_ = contents.WriteByte('\n')
 	}
 
-	return os.WriteFile(config.StartupFile, []byte(contents), 0644)
+	// #nosec G306 -- MiSTer startup script must remain readable by system tooling.
+	if err := os.WriteFile(config.StartupFile, []byte(contents.String()), 0o644); err != nil {
+		return fmt.Errorf("write startup script: %w", err)
+	}
+	return nil
 }
 
 func (s *Startup) Exists(name string) bool {
@@ -113,7 +138,7 @@ func (s *Startup) Exists(name string) bool {
 	return false
 }
 
-func (s *Startup) Add(name string, cmd string) error {
+func (s *Startup) Add(name, cmd string) error {
 	if s.Exists(name) {
 		return fmt.Errorf("startup entry already exists: %s", name)
 	}
@@ -130,10 +155,10 @@ func (s *Startup) Add(name string, cmd string) error {
 func (s *Startup) AddService(name string) error {
 	path, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve service executable: %w", err)
 	}
 
-	cmd := fmt.Sprintf("[[ -e %s ]] && %s -service $1", path, path)
+	cmd := fmt.Sprintf("[[ -e %q ]] && %q -service $1", path, path)
 
 	return s.Add(name, cmd)
 }

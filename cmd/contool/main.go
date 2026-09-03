@@ -1,17 +1,35 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
 	"flag"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
@@ -27,16 +45,16 @@ var extMap = map[string][]string{
 }
 
 // Convert an internal system ID to a mistercon ID if possible.
-func conId(id string) string {
-	if id, ok := idMap[id]; ok {
-		return id
+func conID(id string) string {
+	if mappedID, ok := idMap[id]; ok {
+		return mappedID
 	}
 
 	return id
 }
 
 // Convert a mistercon system ID to an internal ID if possible.
-func reverseId(id string) string {
+func reverseID(id string) string {
 	for k, v := range idMap {
 		if strings.EqualFold(v, id) {
 			return k
@@ -47,43 +65,53 @@ func reverseId(id string) string {
 }
 
 // Return the filename of the gamelist for a given system ID.
-func gamelistFilename(systemId string) string {
+func gamelistFilename(systemID string) string {
 	var prefix string
-	if id, ok := idMap[systemId]; ok {
+	if id, ok := idMap[systemID]; ok {
 		prefix = id
 	} else {
-		prefix = systemId
+		prefix = systemID
 	}
 
 	return strings.ToLower(prefix) + ".txt"
 }
 
 // Generate a gamelist file for a system with given results.
-func writeGamelist(gamelistDir string, systemId string, files []string) {
-	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemId))
+func writeGamelist(gamelistDir, systemID string, files []string) error {
+	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemID))
 	tmpPath, err := os.CreateTemp("", "gamelist-*.txt")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create temporary game list: %w", err)
 	}
+	defer func() { _ = tmpPath.Close() }()
 
 	for _, file := range files {
-		tmpPath.WriteString(file + "\n")
+		if _, err := tmpPath.WriteString(file + "\n"); err != nil {
+			return fmt.Errorf("write temporary game list: %w", err)
+		}
 	}
-	tmpPath.Sync()
-	tmpPath.Close()
-
-	err = utils.MoveFile(tmpPath.Name(), gamelistPath)
-	if err != nil {
-		panic(err)
+	if err := tmpPath.Sync(); err != nil {
+		return fmt.Errorf("sync temporary game list: %w", err)
 	}
+	if err := tmpPath.Close(); err != nil {
+		return fmt.Errorf("close temporary game list: %w", err)
+	}
+	if err := utils.MoveFile(tmpPath.Name(), gamelistPath); err != nil {
+		return fmt.Errorf("install game list: %w", err)
+	}
+	return nil
 }
 
 // Generate gamelists for all systems. Main workflow of app.
-func createGamelists(gamelistDir string, systemPaths map[string][]string, progress bool, quiet bool, filter bool) int {
+func createGamelists(
+	gamelistDir string,
+	systemPaths map[string][]string,
+	progress, quiet, filter bool,
+) int {
 	start := time.Now()
 
 	if !quiet && !progress {
-		fmt.Println("Finding system folders...")
+		_, _ = fmt.Println("Finding system folders...")
 	}
 
 	// prep calculating progress
@@ -96,24 +124,24 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 
 	// generate file list
 	totalGames := 0
-	for systemId, paths := range systemPaths {
+	for systemID, paths := range systemPaths {
 		var systemFiles []string
 
 		for _, path := range paths {
 			if !quiet {
 				if progress {
-					fmt.Println("XXX")
-					fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
-					fmt.Printf("Scanning %s (%s)\n", systemId, path)
-					fmt.Println("XXX")
+					_, _ = fmt.Println("XXX")
+					_, _ = fmt.Println(int(float64(currentStep) / float64(totalSteps) * 100))
+					_, _ = fmt.Printf("Scanning %s (%s)\n", systemID, path)
+					_, _ = fmt.Println("XXX")
 				} else {
-					fmt.Printf("Scanning %s: %s\n", systemId, path)
+					_, _ = fmt.Printf("Scanning %s: %s\n", systemID, path)
 				}
 			}
 
-			files, err := games.GetFiles(systemId, path)
+			files, err := games.GetFiles(systemID, path)
 			if err != nil {
-				log.Println(err)
+				_, _ = fmt.Fprintln(os.Stderr, err)
 				continue
 			}
 			systemFiles = append(systemFiles, files...)
@@ -127,7 +155,7 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 
 		// filter out certain extensions
 		var filteredFiles []string
-		if filterExts, ok := extMap[systemId]; ok {
+		if filterExts, ok := extMap[systemID]; ok {
 			for _, file := range systemFiles {
 				path := strings.ToLower(file)
 				for _, ext := range filterExts {
@@ -142,19 +170,21 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 
 		if len(systemFiles) > 0 {
 			totalGames += len(systemFiles)
-			writeGamelist(gamelistDir, systemId, systemFiles)
+			if err := writeGamelist(gamelistDir, systemID, systemFiles); err != nil {
+				panic(err)
+			}
 		}
 	}
 
 	if !quiet {
 		taken := int(time.Since(start).Seconds())
 		if progress {
-			fmt.Println("XXX")
-			fmt.Println("100")
-			fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
-			fmt.Println("XXX")
+			_, _ = fmt.Println("XXX")
+			_, _ = fmt.Println("100")
+			_, _ = fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
+			_, _ = fmt.Println("XXX")
 		} else {
-			fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
+			_, _ = fmt.Printf("Indexing complete (%d games in %ds)\n", totalGames, taken)
 		}
 	}
 
@@ -164,12 +194,12 @@ func createGamelists(gamelistDir string, systemPaths map[string][]string, progre
 func tryLaunchGame(cfg *config.UserConfig, launchPath string) error {
 	system, err := games.BestSystemMatch(&config.UserConfig{}, launchPath)
 	if err != nil {
-		return fmt.Errorf("error during launch: %s", err)
+		return fmt.Errorf("error during launch: %w", err)
 	}
 
-	err = mister.LaunchGame(cfg, system, launchPath)
+	err = mister.LaunchGame(cfg, &system, launchPath)
 	if err != nil {
-		return fmt.Errorf("error during launch: %s", err)
+		return fmt.Errorf("error during launch: %w", err)
 	}
 
 	return nil
@@ -189,7 +219,7 @@ func main() {
 	if *launchPath != "" {
 		err := tryLaunchGame(&config.UserConfig{}, *launchPath)
 		if err != nil {
-			fmt.Println("Error launching game:", err)
+			_, _ = fmt.Println("Error launching game:", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -200,15 +230,15 @@ func main() {
 	if *filter == "all" {
 		systems = games.AllSystems()
 	} else {
-		for _, filterId := range strings.Split(*filter, ",") {
-			systemId := reverseId(filterId)
+		for _, filterID := range strings.Split(*filter, ",") {
+			systemID := reverseID(filterID)
 
-			if system, ok := games.Systems[systemId]; ok {
+			if system, ok := games.Systems[systemID]; ok {
 				systems = append(systems, system)
 				continue
 			}
 
-			system, err := games.LookupSystem(systemId)
+			system, err := games.LookupSystem(systemID)
 			if err != nil {
 				continue
 			}
@@ -220,8 +250,9 @@ func main() {
 	// find active system paths
 	if *detect {
 		results := games.GetActiveSystemPaths(&config.UserConfig{}, systems)
-		for _, r := range results {
-			fmt.Printf("%s:%s\n", strings.ToLower(conId(r.System.Id)), r.Path)
+		for i := range results {
+			r := &results[i]
+			_, _ = fmt.Printf("%s:%s\n", strings.ToLower(conID(r.System.Id)), r.Path)
 		}
 		os.Exit(0)
 	}
@@ -229,15 +260,15 @@ func main() {
 	systemPaths := games.GetSystemPaths(&config.UserConfig{}, systems)
 	systemPathsMap := make(map[string][]string)
 
-	for _, p := range systemPaths {
-		systemPathsMap[p.System.Id] = append(systemPathsMap[p.System.Id], p.Path)
+	for i := range systemPaths {
+		path := &systemPaths[i]
+		systemPathsMap[path.System.Id] = append(systemPathsMap[path.System.Id], path.Path)
 	}
 
 	total := createGamelists(*gamelistDir, systemPathsMap, *progress, *quiet, *noDupes)
 
 	if total == 0 {
 		os.Exit(8)
-	} else {
-		os.Exit(0)
 	}
+	os.Exit(0)
 }

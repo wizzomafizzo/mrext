@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
@@ -32,7 +51,7 @@ func FindFile(path string) (string, error) {
 
 	files, err := os.ReadDir(parent)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read parent directory: %w", err)
 	}
 
 	for _, file := range files {
@@ -40,7 +59,8 @@ func FindFile(path string) (string, error) {
 
 		if len(target) != len(name) {
 			continue
-		} else if strings.EqualFold(target, name) {
+		}
+		if strings.EqualFold(target, name) {
 			return filepath.Join(parent, target), nil
 		}
 	}
@@ -67,7 +87,8 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 	}
 
 	var validSystems []System
-	for _, system := range Systems {
+	for id := range Systems {
+		system := Systems[id]
 		for _, folder := range system.Folder {
 			systemPath := strings.ToLower(filepath.Join(gamesFolder, folder))
 			if strings.HasPrefix(path, systemPath) {
@@ -82,9 +103,9 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 	}
 
 	var matchedExtensions []System
-	for _, system := range validSystems {
-		if MatchSystemFile(system, path) {
-			matchedExtensions = append(matchedExtensions, system)
+	for i := range validSystems {
+		if MatchSystemFile(&validSystems[i], path) {
+			matchedExtensions = append(matchedExtensions, validSystems[i])
 		}
 	}
 
@@ -110,9 +131,9 @@ func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
 	// check for system matches by file extension if possible
 	if filepath.Ext(path) != "" {
 		filtered := []System{}
-		for _, system := range systems {
-			if MatchSystemFile(system, path) {
-				filtered = append(filtered, system)
+		for i := range systems {
+			if MatchSystemFile(&systems[i], path) {
+				filtered = append(filtered, systems[i])
 			}
 		}
 
@@ -122,9 +143,9 @@ func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
 	}
 
 	// prefer the system with a setname
-	for _, system := range systems {
-		if system.SetName != "" {
-			return system, nil
+	for i := range systems {
+		if systems[i].SetName != "" {
+			return systems[i], nil
 		}
 	}
 
@@ -132,6 +153,7 @@ func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
 	return systems[0], nil
 }
 
+//nolint:govet // Field order preserves legacy JSON output.
 type PathResult struct {
 	System System
 	Path   string
@@ -142,7 +164,8 @@ func GetSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 	var matches []PathResult
 
 	gamesFolders := GetGamesFolders(cfg)
-	for _, system := range systems {
+	for i := range systems {
+		system := &systems[i]
 		for _, gamesFolder := range gamesFolders {
 			gf, err := FindFile(gamesFolder)
 			if err != nil {
@@ -156,7 +179,7 @@ func GetSystemPaths(cfg *config.UserConfig, systems []System) []PathResult {
 					continue
 				}
 
-				matches = append(matches, PathResult{system, path})
+				matches = append(matches, PathResult{Path: path, System: *system})
 			}
 		}
 	}
@@ -169,7 +192,8 @@ func GetActiveSystemPaths(cfg *config.UserConfig, systems []System) []PathResult
 	var matches []PathResult
 
 	gamesFolders := GetGamesFolders(cfg)
-	for _, system := range systems {
+	for i := range systems {
+		system := &systems[i]
 		for _, gamesFolder := range gamesFolders {
 			gf, err := FindFile(gamesFolder)
 			if err != nil {
@@ -185,7 +209,7 @@ func GetActiveSystemPaths(cfg *config.UserConfig, systems []System) []PathResult
 					continue
 				}
 
-				matches = append(matches, PathResult{system, path})
+				matches = append(matches, PathResult{Path: path, System: *system})
 				found = true
 				break
 			}
@@ -211,9 +235,9 @@ func GetPopulatedGamesFolders(cfg *config.UserConfig, systems []System) map[stri
 
 	populated := make(map[string][]string)
 
-	for _, folder := range results {
+	for i := range results {
+		folder := &results[i]
 		files, err := os.ReadDir(folder.Path)
-
 		if err != nil {
 			continue
 		}

@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
@@ -8,7 +27,7 @@ import (
 )
 
 func TestIsZip(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		path string
 		want bool
 	}{
@@ -42,33 +61,33 @@ func TestListZip(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	orig_path := "testdata/test_file"
-	dest_path := "testdata/test_file_moved"
-	if _, err := os.Stat(orig_path); err != nil {
-		t.Errorf("test file not found: %s", orig_path)
+	origPath := "testdata/test_file"
+	destPath := "testdata/test_file_moved"
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("test file not found: %s", origPath)
 	}
-	if err := MoveFile(orig_path, dest_path); err != nil {
+	if err := MoveFile(origPath, destPath); err != nil {
 		t.Errorf("error moving orig file: %s", err)
 	}
-	if _, err := os.Stat(orig_path); err == nil {
-		t.Errorf("orig file still exists: %s", orig_path)
+	if _, err := os.Stat(origPath); err == nil {
+		t.Errorf("orig file still exists: %s", origPath)
 	}
-	if _, err := os.Stat(dest_path); err != nil {
-		t.Errorf("dest file not found: %s", dest_path)
+	if _, err := os.Stat(destPath); err != nil {
+		t.Errorf("dest file not found: %s", destPath)
 	}
-	if err := MoveFile(dest_path, orig_path); err != nil {
+	if err := MoveFile(destPath, origPath); err != nil {
 		t.Errorf("error moving dest file: %s", err)
 	}
-	if _, err := os.Stat(dest_path); err == nil {
-		t.Errorf("dest file still exists: %s", dest_path)
+	if _, err := os.Stat(destPath); err == nil {
+		t.Errorf("dest file still exists: %s", destPath)
 	}
-	if _, err := os.Stat(orig_path); err != nil {
-		t.Errorf("orig file not found: %s", orig_path)
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("orig file not found: %s", origPath)
 	}
 }
 
 func TestMax(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		xs   []int
 		want int
 	}{
@@ -89,7 +108,7 @@ func TestMax(t *testing.T) {
 }
 
 func TestMin(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		xs   []int
 		want int
 	}{
@@ -110,7 +129,7 @@ func TestMin(t *testing.T) {
 }
 
 func TestContains(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		xs   []int
 		x    int
 		want bool
@@ -128,16 +147,16 @@ func TestContains(t *testing.T) {
 }
 
 func TestContainsFold(t *testing.T) {
-	var tests = []struct {
-		xs   []string
+	tests := []struct {
 		x    string
+		xs   []string
 		want bool
 	}{
-		{[]string{}, "Game", false},
-		{[]string{"Game"}, "Game", true},
-		{[]string{"Game"}, "NewGame", false},
-		{[]string{"Umbrella", "Ball"}, "Ball", true},
-		{[]string{"Frog", "Lamp"}, "Fruit", false},
+		{x: "Game", xs: []string{}, want: false},
+		{x: "Game", xs: []string{"Game"}, want: true},
+		{x: "NewGame", xs: []string{"Game"}, want: false},
+		{x: "Ball", xs: []string{"Umbrella", "Ball"}, want: true},
+		{x: "Fruit", xs: []string{"Frog", "Lamp"}, want: false},
 	}
 	for _, tt := range tests {
 		if got := ContainsFold(tt.xs, tt.x); got != tt.want {
@@ -162,7 +181,7 @@ func TestRandomElem(t *testing.T) {
 }
 
 func TestMapKeys(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		m    map[string]int
 		want []string
 	}{

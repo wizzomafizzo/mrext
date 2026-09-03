@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package tui
 
 import (
@@ -41,7 +60,7 @@ func newOnScreenKeyboard(title string, buttons []string, defaultText string, don
 
 func drawText(screen tcell.Screen, x, y, width int, text string, style tcell.Style) {
 	runes := []rune(text)
-	for i := 0; i < width; i++ {
+	for i := range width {
 		value := ' '
 		if i < len(runes) {
 			value = runes[i]
@@ -110,7 +129,7 @@ func (k *onScreenKeyboard) Focus(delegate func(tview.Primitive)) {
 	delegate(k)
 }
 
-func (k *onScreenKeyboard) HasFocus() bool {
+func (*onScreenKeyboard) HasFocus() bool {
 	return true
 }
 
@@ -185,7 +204,8 @@ func (k *onScreenKeyboard) InputHandler() func(*tcell.EventKey, func(tview.Primi
 				k.section = 1
 				k.selectedKey[0] = len(keyboardKeys) - 1
 				if len(k.buttons) > 0 {
-					k.selectedKey[1] = min(k.selectedButton*len(keyboardKeys[0])/len(k.buttons)+1, len(keyboardKeys[0])-1)
+					keyColumn := k.selectedButton*len(keyboardKeys[0])/len(k.buttons) + 1
+					k.selectedKey[1] = min(keyColumn, len(keyboardKeys[0])-1)
 				}
 			}
 		case tcell.KeyLeft:
@@ -229,13 +249,15 @@ func (k *onScreenKeyboard) InputHandler() func(*tcell.EventKey, func(tview.Primi
 			if event.Rune() >= 32 && event.Rune() <= 126 {
 				k.addText(string(event.Rune()))
 			}
+		default:
+			return
 		}
 	})
 }
 
-func OnScreenKeyboard(title string, buttons []string, defaultText string) (int, string, error) {
-	button := -1
-	text := defaultText
+func OnScreenKeyboard(title string, buttons []string, defaultText string) (button int, text string, err error) {
+	button = -1
+	text = defaultText
 	builder := func() (*tview.Application, error) {
 		app := tview.NewApplication()
 		keyboard := newOnScreenKeyboard(title, buttons, text, func(selected int, value string) {
@@ -245,8 +267,8 @@ func OnScreenKeyboard(title string, buttons []string, defaultText string) (int, 
 		})
 		return app.SetRoot(Centered(63, 16, keyboard), true).SetFocus(keyboard), nil
 	}
-	if err := BuildAndRetry(builder); err != nil {
-		return -1, text, err
+	if runErr := BuildAndRetry(builder); runErr != nil {
+		return -1, text, runErr
 	}
 	return button, text, nil
 }

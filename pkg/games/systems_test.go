@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
@@ -17,7 +36,8 @@ func TestSystemsUseCatalogOperationalData(t *testing.T) {
 		t.Fatalf("system count: want %d, got %d", len(definitions), len(Systems))
 	}
 
-	for _, definition := range definitions {
+	for i := range definitions {
+		definition := &definitions[i]
 		system, ok := Systems[definition.ID]
 		if !ok {
 			t.Fatalf("catalog system missing from mrext: %s", definition.ID)
@@ -29,7 +49,7 @@ func TestSystemsUseCatalogOperationalData(t *testing.T) {
 			system.SetNameSameDir != definition.SetNameSameDir {
 			t.Fatalf("%s launch metadata differs from catalog", definition.ID)
 		}
-		if !reflect.DeepEqual(CatalogCore(system).Slots, definition.Slots) {
+		if !reflect.DeepEqual(CatalogCore(&system).Slots, definition.Slots) {
 			t.Fatalf("%s slots differ from catalog", definition.ID)
 		}
 		if !reflect.DeepEqual(system.extensions, definition.Extensions) {
@@ -91,14 +111,15 @@ func TestSystemsIncludeNewCatalogEntries(t *testing.T) {
 func TestMatchSystemFileUsesCatalogScanExtensions(t *testing.T) {
 	t.Parallel()
 
-	if !MatchSystemFile(Systems["NES"], "shortcut.mgl") {
+	nes := Systems["NES"]
+	if !MatchSystemFile(&nes, "shortcut.mgl") {
 		t.Fatal("catalog-added MGL scan extension was not used")
 	}
 	group, err := GetGroup("Jaguar")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !MatchSystemFile(group, "game.cdi") {
+	if !MatchSystemFile(&group, "game.cdi") {
 		t.Fatal("group did not merge catalog scan extensions")
 	}
 }

@@ -1,19 +1,40 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package scripts
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"os/exec"
+	"path/filepath"
+
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
-	"net/http"
-	"os/exec"
-	"path/filepath"
 )
 
 func HandleLaunchScript(logger *service.Logger, kbd input.Keyboard) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(_ http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		filename := vars["filename"]
 
@@ -32,7 +53,7 @@ func HandleLaunchScript(logger *service.Logger, kbd input.Keyboard) http.Handler
 }
 
 func HandleListScripts(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("list scripts request")
 
 		files, err := mister.GetAllScripts()
@@ -43,8 +64,8 @@ func HandleListScripts(logger *service.Logger) http.HandlerFunc {
 		}
 
 		var payload struct {
-			CanLaunch bool            `json:"canLaunch"`
 			Scripts   []mister.Script `json:"scripts"`
+			CanLaunch bool            `json:"canLaunch"`
 		}
 
 		payload.CanLaunch = mister.ScriptCanLaunch()
@@ -60,7 +81,7 @@ func HandleListScripts(logger *service.Logger) http.HandlerFunc {
 }
 
 func HandleOpenScriptsConsole(logger *service.Logger, kbd input.Keyboard) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("open scripts console request")
 
 		err := mister.OpenConsole(kbd)
@@ -71,7 +92,7 @@ func HandleOpenScriptsConsole(logger *service.Logger, kbd input.Keyboard) http.H
 		}
 
 		if mister.IsScriptRunning() {
-			err = exec.Command("chvt", "2").Run()
+			err = exec.CommandContext(context.Background(), "chvt", "2").Run()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				logger.Error("error changing vt: %s", err)
@@ -82,7 +103,7 @@ func HandleOpenScriptsConsole(logger *service.Logger, kbd input.Keyboard) http.H
 }
 
 func HandleKillActiveScript(logger *service.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("kill active script request")
 
 		err := mister.KillActiveScript()

@@ -1,3 +1,22 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
@@ -52,6 +71,7 @@ const (
 	ManufacturerPanasonic       = "Panasonic"
 )
 
+//nolint:govet // Field order preserves legacy JSON output.
 type MglParams struct {
 	Delay      int
 	Method     string
@@ -60,14 +80,16 @@ type MglParams struct {
 	resetHold  int
 }
 
+//nolint:govet // Field order preserves legacy JSON output.
 type Slot struct {
 	Label string
 	Exts  []string
 	Mgl   *MglParams
 }
 
+//nolint:govet // Field order preserves legacy JSON output.
 type System struct {
-	Id             string
+	Id             string //nolint:revive // Legacy Remote JSON field name.
 	Name           string // US
 	Category       string
 	ReleaseDate    string // US
@@ -76,7 +98,7 @@ type System struct {
 	SetName        string
 	SetNameSameDir bool
 	Folder         []string
-	Rbf            string
+	Rbf            string //nolint:revive // Legacy Remote JSON field name.
 	Slots          []Slot
 	extensions     []string
 }
@@ -144,7 +166,7 @@ func slotsToCatalog(slots []Slot) []catalog.Slot {
 	return converted
 }
 
-func systemFromCatalog(core catalog.Core) System {
+func systemFromCatalog(core *catalog.Core) System {
 	metadata := systemMetadataByID[core.ID]
 	name := metadata.Name
 	if name == "" {
@@ -170,7 +192,8 @@ func systemFromCatalog(core catalog.Core) System {
 func buildSystems() map[string]System {
 	definitions := catalog.All()
 	systems := make(map[string]System, len(definitions))
-	for _, definition := range definitions {
+	for i := range definitions {
+		definition := &definitions[i]
 		systems[definition.ID] = systemFromCatalog(definition)
 	}
 	return systems
@@ -186,7 +209,7 @@ func buildCoreGroups() map[string][]System {
 	for id, members := range definitions {
 		converted := make([]System, len(members))
 		for i := range members {
-			converted[i] = systemFromCatalog(members[i])
+			converted[i] = systemFromCatalog(&members[i])
 		}
 		groups[id] = converted
 	}
@@ -198,7 +221,7 @@ func buildCoreGroups() map[string][]System {
 var CoreGroups = buildCoreGroups()
 
 // CatalogCore converts a legacy system value to the canonical launch model.
-func CatalogCore(system System) catalog.Core {
+func CatalogCore(system *System) catalog.Core {
 	return catalog.Core{
 		ID:             system.Id,
 		SetName:        system.SetName,
@@ -208,13 +231,13 @@ func CatalogCore(system System) catalog.Core {
 	}
 }
 
-func PathToMglDef(system System, path string) (*MglParams, error) {
+func PathToMglDef(system *System, path string) (*MglParams, error) {
 	params, err := catalog.PathToMGLDef(&catalog.Core{ID: system.Id, Slots: slotsToCatalog(system.Slots)}, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve catalog MGL parameters: %w", err)
 	}
 	if params == nil {
-		return nil, nil
+		return nil, nil //nolint:nilnil // No matching MGL slot is a valid optional result.
 	}
 	return &MglParams{
 		Delay:      params.Delay,

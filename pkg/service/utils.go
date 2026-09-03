@@ -2,8 +2,14 @@
 
 package service
 
-import "syscall"
+import (
+	"fmt"
+	"syscall"
+)
 
 func SetNice() error {
-	return syscall.Setpriority(syscall.PRIO_PROCESS, 0, 1)
+	if err := syscall.Setpriority(syscall.PRIO_PROCESS, 0, 1); err != nil {
+		return fmt.Errorf("set process priority: %w", err)
+	}
+	return nil
 }

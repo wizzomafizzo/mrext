@@ -1,38 +1,67 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package config
 
 // TODO: should this be hardcoded? how common is usb0 setup?
-const SdFolder = "/media/fat"
-const CoreConfigFolder = SdFolder + "/config"
-const FontFolder = SdFolder + "/font"
-const TempFolder = "/tmp"
-const LinuxFolder = SdFolder + "/linux"
-const ScriptsFolder = SdFolder + "/Scripts"
-const CifsFolder = SdFolder + "/cifs"
+const (
+	SdFolder         = "/media/fat"
+	CoreConfigFolder = SdFolder + "/config"
+	FontFolder       = SdFolder + "/font"
+	TempFolder       = "/tmp"
+	LinuxFolder      = SdFolder + "/linux"
+	ScriptsFolder    = SdFolder + "/Scripts"
+	CifsFolder       = SdFolder + "/cifs"
+)
 
 const MenuConfigFile = CoreConfigFolder + "/MENU.CFG"
 
-const MisterIniFile = SdFolder + "/MiSTer.ini"
-const MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
-const MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
-const MisterIniFileAlt3 = SdFolder + "/MiSTer_alt_3.ini"
+const (
+	MisterIniFile     = SdFolder + "/MiSTer.ini"
+	MisterIniFileAlt1 = SdFolder + "/MiSTer_alt_1.ini"
+	MisterIniFileAlt2 = SdFolder + "/MiSTer_alt_2.ini"
+	MisterIniFileAlt3 = SdFolder + "/MiSTer_alt_3.ini"
+)
 
-const StartupFile = LinuxFolder + "/user-startup.sh"
-const UBootConfigFile = LinuxFolder + "/u-boot.txt"
+const (
+	StartupFile     = LinuxFolder + "/user-startup.sh"
+	UBootConfigFile = LinuxFolder + "/u-boot.txt"
+)
 
-const CoreNameFile = TempFolder + "/CORENAME"
-const CurrentPathFile = TempFolder + "/CURRENTPATH"
-const StartPathFile = TempFolder + "/STARTPATH"
-const FullPathFile = TempFolder + "/FULLPATH"
+const (
+	CoreNameFile    = TempFolder + "/CORENAME"
+	CurrentPathFile = TempFolder + "/CURRENTPATH"
+	StartPathFile   = TempFolder + "/STARTPATH"
+	FullPathFile    = TempFolder + "/FULLPATH"
+)
 
 const CoresRecentFile = CoreConfigFolder + "/cores_recent.cfg"
 
 const MenuCore = "MENU"
 
-const CmdInterface = "/dev/MiSTer_cmd"
-const SSHConfigFolder = "/root/.ssh"
-const SSHKeysFile = SSHConfigFolder + "/authorized_keys"
-const UserSSHKeysFile = LinuxFolder + "/authorized_keys"
-const DownloaderLastRun = ScriptsFolder + "/.config/downloader/downloader.last_successful_run"
+const (
+	CmdInterface      = "/dev/MiSTer_cmd"
+	SSHConfigFolder   = "/root/.ssh"
+	SSHKeysFile       = SSHConfigFolder + "/authorized_keys"
+	UserSSHKeysFile   = LinuxFolder + "/authorized_keys"
+	DownloaderLastRun = ScriptsFolder + "/.config/downloader/downloader.last_successful_run"
+)
 
 // TODO: this can't be hardcoded if we want dynamic arcade folders
 const ArcadeCoresFolder = "/media/fat/_Arcade/cores"

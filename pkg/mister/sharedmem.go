@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package mister
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,7 +36,7 @@ func mapSharedMem(address int64) (*[]byte, *os.File, error) {
 		0,
 	)
 	if err != nil {
-		return &[]byte{}, nil, fmt.Errorf("error opening /dev/mem: %s", err)
+		return &[]byte{}, nil, fmt.Errorf("error opening /dev/mem: %w", err)
 	}
 
 	mem, err := syscall.Mmap(
@@ -27,7 +47,8 @@ func mapSharedMem(address int64) (*[]byte, *os.File, error) {
 		syscall.MAP_SHARED,
 	)
 	if err != nil {
-		return &[]byte{}, nil, fmt.Errorf("error mapping /dev/mem: %s", err)
+		_ = file.Close()
+		return &[]byte{}, nil, fmt.Errorf("error mapping /dev/mem: %w", err)
 	}
 
 	return &mem, file, nil
@@ -36,16 +57,16 @@ func mapSharedMem(address int64) (*[]byte, *os.File, error) {
 func unmapSharedMem(mem *[]byte, file *os.File) error {
 	err := syscall.Munmap(*mem)
 	if err != nil {
-		return fmt.Errorf("error unmapping /dev/mem: %s", err)
+		return fmt.Errorf("error unmapping /dev/mem: %w", err)
 	}
 
 	if file == nil {
-		return fmt.Errorf("/dev/mem file reference is nil")
+		return errors.New("/dev/mem file reference is nil")
 	}
 
 	err = file.Close()
 	if err != nil {
-		return fmt.Errorf("error closing /dev/mem: %s", err)
+		return fmt.Errorf("error closing /dev/mem: %w", err)
 	}
 
 	return nil
@@ -67,9 +88,8 @@ func GetActiveIni() (int, error) {
 
 	if vs[0] == 0x34 && vs[1] == 0x99 && vs[2] == 0xBA {
 		return int(vs[3] + 1), nil
-	} else {
-		return 0, nil
 	}
+	return 0, nil
 }
 
 func SetActiveIni(ini int, relaunchCore bool) error {
@@ -103,31 +123,16 @@ func SetActiveIni(ini int, relaunchCore bool) error {
 	}
 
 	if coreName == config.MenuCore {
-		err = LaunchMenu()
-		if err != nil {
-			return err
-		} else {
-			return nil
-		}
+		return LaunchMenu()
 	}
 
 	// TODO: can we check if this file has been modified recently?
 	recent, err := ReadRecent(config.CoresRecentFile)
 	if err != nil || len(recent) == 0 {
-		err = LaunchMenu()
-		if err != nil {
-			return err
-		} else {
-			return nil
-		}
-	} else {
-		corePath := filepath.Join(config.SdFolder, recent[0].Directory, recent[0].Name)
-		// TODO: use real config later
-		err = LaunchGenericFile(&config.UserConfig{}, corePath)
-		if err != nil {
-			return err
-		}
+		return LaunchMenu()
 	}
 
-	return nil
+	corePath := filepath.Join(config.SdFolder, recent[0].Directory, recent[0].Name)
+	// TODO: use real config later
+	return LaunchGenericFile(&config.UserConfig{}, corePath)
 }

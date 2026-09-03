@@ -1,11 +1,29 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package mister
 
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
-	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,12 +31,14 @@ import (
 	"syscall"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/games"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 func GetActiveCoreName() (string, error) {
 	data, err := os.ReadFile(config.CoreNameFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read active core name: %w", err)
 	}
 
 	return string(data), nil
@@ -30,24 +50,17 @@ func ActiveGameEnabled() bool {
 }
 
 func SetActiveGame(path string) error {
-	file, err := os.Create(config.ActiveGameFile)
-	if err != nil {
-		return err
+	// #nosec G306 -- ACTIVEGAME is a legacy cross-process compatibility file.
+	if err := os.WriteFile(config.ActiveGameFile, []byte(path), 0o644); err != nil {
+		return fmt.Errorf("write active game: %w", err)
 	}
-	defer file.Close()
-
-	_, err = file.WriteString(path)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func GetActiveGame() (string, error) {
 	data, err := os.ReadFile(config.ActiveGameFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read active game: %w", err)
 	}
 
 	return string(data), nil
@@ -58,12 +71,11 @@ func ResolvePath(path string) string {
 	if path == "" {
 		return path
 	}
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
 
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	os.Chdir(config.SdFolder)
-
-	abs, err := filepath.Abs(path)
+	abs, err := filepath.Abs(filepath.Join(config.SdFolder, path))
 	if err != nil {
 		return path
 	}
@@ -105,21 +117,24 @@ func ReadRecent(path string) ([]RecentEntry, error) {
 	var recents []RecentEntry
 
 	if _, err := os.Stat(path); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stat recent file: %w", err)
 	}
 
+	// #nosec G304 -- path is an explicit MiSTer recent-file input.
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open recent file: %w", err)
 	}
+	defer func() { _ = file.Close() }()
 
 	for {
 		entry := make([]byte, 1024+256+256)
-		n, err := file.Read(entry)
-		if err == io.EOF || n == 0 {
+		n, err := io.ReadFull(file, entry)
+		if errors.Is(err, io.EOF) && n == 0 {
 			break
-		} else if err != nil {
-			return nil, err
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read recent entry: %w", err)
 		}
 
 		empty := true
@@ -144,29 +159,30 @@ func ReadRecent(path string) ([]RecentEntry, error) {
 
 type MGLFile struct {
 	XMLName xml.Name `xml:"file"`
-	Delay   int      `xml:"delay,attr"`
 	Type    string   `xml:"type,attr"`
-	Index   int      `xml:"index,attr"`
 	Path    string   `xml:"path,attr"`
+	Delay   int      `xml:"delay,attr"`
+	Index   int      `xml:"index,attr"`
 }
 
 type MGL struct {
 	XMLName xml.Name `xml:"mistergamedescription"`
-	Rbf     string   `xml:"rbf"`
+	Rbf     string   `xml:"rbf"` //nolint:revive // Legacy field name is part of Remote JSON.
 	SetName string   `xml:"setname"`
 	File    MGLFile  `xml:"file"`
 }
 
-func ReadMgl(path string) (MGL, error) {
+func ReadMGL(path string) (MGL, error) {
 	var mgl MGL
 
 	if _, err := os.Stat(path); err != nil {
-		return mgl, err
+		return mgl, fmt.Errorf("stat MGL file: %w", err)
 	}
 
+	// #nosec G304 -- path is an explicit MGL file input.
 	file, err := os.ReadFile(path)
 	if err != nil {
-		return mgl, err
+		return mgl, fmt.Errorf("read MGL file: %w", err)
 	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(file))
@@ -174,7 +190,7 @@ func ReadMgl(path string) (MGL, error) {
 
 	err = decoder.Decode(&mgl)
 	if err != nil {
-		return mgl, err
+		return mgl, fmt.Errorf("decode MGL file: %w", err)
 	}
 
 	return mgl, nil
@@ -199,12 +215,15 @@ func ReadMenuConfig() (MenuConfig, error) {
 	var cfg MenuConfig
 
 	if _, err := os.Stat(config.MenuConfigFile); err != nil {
-		return cfg, err
+		return cfg, fmt.Errorf("stat menu configuration: %w", err)
 	}
 
 	file, err := os.ReadFile(config.MenuConfigFile)
 	if err != nil {
-		return cfg, err
+		return cfg, fmt.Errorf("read menu configuration: %w", err)
+	}
+	if len(file) == 0 {
+		return cfg, errors.New("menu configuration is empty")
 	}
 
 	cfg.BackgroundMode = int(file[0])
@@ -223,7 +242,7 @@ func SetMenuBackgroundMode(mode int) error {
 		BackgroundModeSpectrum,
 		BackgroundModeBlack,
 	}, mode) {
-		return fmt.Errorf("invalid background mode")
+		return errors.New("invalid background mode")
 	}
 
 	cfg, err := ReadMenuConfig()
@@ -237,18 +256,26 @@ func SetMenuBackgroundMode(mode int) error {
 
 	file, err := os.ReadFile(config.MenuConfigFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("read menu configuration: %w", err)
+	}
+	if len(file) == 0 {
+		return errors.New("menu configuration is empty")
 	}
 
+	// #nosec G115 -- mode is restricted to known byte-sized constants above.
 	file[0] = byte(mode)
 
-	return os.WriteFile(config.MenuConfigFile, file, 0644)
+	// #nosec G306,G703 -- fixed MiSTer menu configuration must remain world-readable.
+	if err := os.WriteFile(config.MenuConfigFile, file, 0o644); err != nil {
+		return fmt.Errorf("write menu configuration: %w", err)
+	}
+	return nil
 }
 
 func GetMounts(cfg *config.UserConfig) ([]string, error) {
 	file, err := os.ReadFile("/proc/mounts")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read mounts: %w", err)
 	}
 
 	var mounts []string
@@ -285,11 +312,15 @@ func GetDiskUsage(path string) (DiskUsage, error) {
 	stat := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &stat)
 	if err != nil {
-		return usage, err
+		return usage, fmt.Errorf("stat filesystem: %w", err)
+	}
+	if stat.Bsize < 0 {
+		return usage, fmt.Errorf("invalid filesystem block size: %d", stat.Bsize)
 	}
 
-	usage.Total = stat.Blocks * uint64(stat.Bsize)
-	usage.Free = stat.Bfree * uint64(stat.Bsize)
+	blockSize := uint64(stat.Bsize)
+	usage.Total = stat.Blocks * blockSize
+	usage.Free = stat.Bfree * blockSize
 	usage.Used = usage.Total - usage.Free
 
 	return usage, nil

@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package games
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -15,29 +35,30 @@ import (
 func GetSystem(id string) (*System, error) {
 	if system, ok := Systems[id]; ok {
 		return &system, nil
-	} else {
-		return nil, fmt.Errorf("unknown system: %s", id)
 	}
+	return nil, fmt.Errorf("unknown system: %s", id)
 }
 
-func GetGroup(groupId string) (System, error) {
+func GetGroup(groupID string) (System, error) {
 	var merged System
-	if _, ok := CoreGroups[groupId]; !ok {
-		return merged, fmt.Errorf("no system group found for %s", groupId)
+	group, ok := CoreGroups[groupID]
+	if !ok {
+		return merged, fmt.Errorf("no system group found for %s", groupID)
 	}
 
-	if len(CoreGroups[groupId]) < 1 {
-		return merged, fmt.Errorf("no systems in %s", groupId)
-	} else if len(CoreGroups[groupId]) == 1 {
-		return CoreGroups[groupId][0], nil
+	if len(group) < 1 {
+		return merged, fmt.Errorf("no systems in %s", groupID)
+	}
+	if len(group) == 1 {
+		return group[0], nil
 	}
 
-	merged = CoreGroups[groupId][0]
+	merged = group[0]
 	merged.Slots = make([]Slot, 0)
 	merged.extensions = make([]string, 0)
-	for _, system := range CoreGroups[groupId] {
-		merged.Slots = append(merged.Slots, system.Slots...)
-		merged.extensions = append(merged.extensions, system.extensions...)
+	for i := range group {
+		merged.Slots = append(merged.Slots, group[i].Slots...)
+		merged.extensions = append(merged.extensions, group[i].extensions...)
 	}
 
 	return merged, nil
@@ -49,14 +70,15 @@ func LookupSystem(id string) (*System, error) {
 		return &system, nil
 	}
 
-	for k, v := range Systems {
+	for k := range Systems {
+		system := Systems[k]
 		if strings.EqualFold(k, id) {
-			return &v, nil
+			return &system, nil
 		}
 
-		for _, alias := range v.Alias {
+		for _, alias := range system.Alias {
 			if strings.EqualFold(alias, id) {
-				return &v, nil
+				return &system, nil
 			}
 		}
 	}
@@ -65,7 +87,7 @@ func LookupSystem(id string) (*System, error) {
 }
 
 // MatchSystemFile returns true if a given file's extension is valid for a system.
-func MatchSystemFile(system System, path string) bool {
+func MatchSystemFile(system *System, path string) bool {
 	// ignore dot files
 	if strings.HasPrefix(filepath.Base(path), ".") {
 		return false
@@ -94,9 +116,9 @@ func MatchSystemFile(system System, path string) bool {
 }
 
 func AllSystems() []System {
-	var systems []System
-
 	keys := utils.AlphaMapKeys(Systems)
+	systems := make([]System, 0, len(keys))
+
 	for _, k := range keys {
 		systems = append(systems, Systems[k])
 	}
@@ -119,7 +141,7 @@ func (r *resultsStack) pop() {
 
 func (r *resultsStack) get() (*[]string, error) {
 	if len(*r) == 0 {
-		return nil, fmt.Errorf("nothing on stack")
+		return nil, errors.New("nothing on stack")
 	}
 	return &(*r)[len(*r)-1], nil
 }
@@ -127,53 +149,56 @@ func (r *resultsStack) get() (*[]string, error) {
 // GetFiles searches for all valid games in a given path and return a list of
 // files. This function deep searches .zip files and handles symlinks at all
 // levels.
-func GetFiles(systemId string, path string) ([]string, error) {
+func GetFiles(systemID, path string) ([]string, error) {
 	var allResults []string
 	var stack resultsStack
 	visited := make(map[string]struct{})
 
-	system, err := GetSystem(systemId)
+	system, err := GetSystem(systemID)
 	if err != nil {
 		return nil, err
 	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get working directory: %w", err)
 	}
+	defer func() { _ = os.Chdir(cwd) }()
 
 	var scanner func(path string, file fs.DirEntry, err error) error
-	scanner = func(path string, file fs.DirEntry, _ error) error {
+	scanner = func(path string, file fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return fmt.Errorf("scan game path: %w", walkErr)
+		}
 		// avoid recursive symlinks
 		if file.IsDir() {
 			if _, ok := visited[path]; ok {
 				return filepath.SkipDir
-			} else {
-				visited[path] = struct{}{}
 			}
+			visited[path] = struct{}{}
 		}
 
 		// handle symlinked directories
 		if file.Type()&os.ModeSymlink != 0 {
 			err = os.Chdir(filepath.Dir(path))
 			if err != nil {
-				return err
+				return fmt.Errorf("enter symlink parent directory: %w", err)
 			}
 
-			realPath, err := filepath.EvalSymlinks(path)
-			if err != nil {
-				return err
+			realPath, resolveErr := filepath.EvalSymlinks(path)
+			if resolveErr != nil {
+				return fmt.Errorf("resolve game symlink: %w", resolveErr)
 			}
 
-			file, err := os.Stat(realPath)
-			if err != nil {
-				return err
+			file, statErr := os.Stat(realPath)
+			if statErr != nil {
+				return fmt.Errorf("stat game symlink target: %w", statErr)
 			}
 
 			if file.IsDir() {
 				err = os.Chdir(path)
 				if err != nil {
-					return err
+					return fmt.Errorf("enter symlinked game directory: %w", err)
 				}
 
 				stack.new()
@@ -181,12 +206,12 @@ func GetFiles(systemId string, path string) ([]string, error) {
 
 				err = filepath.WalkDir(realPath, scanner)
 				if err != nil {
-					return err
+					return fmt.Errorf("scan symlinked game directory: %w", err)
 				}
 
-				results, err := stack.get()
-				if err != nil {
-					return err
+				results, stackErr := stack.get()
+				if stackErr != nil {
+					return stackErr
 				}
 
 				for i := range *results {
@@ -197,30 +222,28 @@ func GetFiles(systemId string, path string) ([]string, error) {
 			}
 		}
 
-		results, err := stack.get()
-		if err != nil {
-			return err
+		results, stackErr := stack.get()
+		if stackErr != nil {
+			return stackErr
 		}
 
 		if strings.HasSuffix(strings.ToLower(path), ".zip") {
 			// zip files
-			zipFiles, err := utils.ListZip(path)
-			if err != nil {
+			zipFiles, zipErr := utils.ListZip(path)
+			if zipErr != nil {
 				// skip invalid zip files
 				return nil
 			}
 
 			for i := range zipFiles {
-				if MatchSystemFile(*system, zipFiles[i]) {
+				if MatchSystemFile(system, zipFiles[i]) {
 					abs := filepath.Join(path, zipFiles[i])
 					*results = append(*results, abs)
 				}
 			}
-		} else {
+		} else if MatchSystemFile(system, path) {
 			// regular files
-			if MatchSystemFile(*system, path) {
-				*results = append(*results, path)
-			}
+			*results = append(*results, path)
 		}
 
 		return nil
@@ -231,12 +254,12 @@ func GetFiles(systemId string, path string) ([]string, error) {
 
 	root, err := os.Lstat(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inspect game root: %w", err)
 	}
 
 	err = os.Chdir(filepath.Dir(path))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("enter game root parent: %w", err)
 	}
 
 	// handle symlinks on root game folder because WalkDir fails silently on them
@@ -246,22 +269,22 @@ func GetFiles(systemId string, path string) ([]string, error) {
 	} else {
 		realPath, err = filepath.EvalSymlinks(path)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve game root: %w", err)
 		}
 	}
 
 	realRoot, err := os.Stat(realPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stat game root: %w", err)
 	}
 
 	if !realRoot.IsDir() {
-		return nil, fmt.Errorf("root is not a directory")
+		return nil, errors.New("root is not a directory")
 	}
 
 	err = filepath.WalkDir(realPath, scanner)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan game root: %w", err)
 	}
 
 	results, err := stack.get()
@@ -280,7 +303,7 @@ func GetFiles(systemId string, path string) ([]string, error) {
 
 	err = os.Chdir(cwd)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("restore working directory: %w", err)
 	}
 
 	return allResults, nil
@@ -293,23 +316,22 @@ func FilterUniqueFilenames(files []string) []string {
 		fn := filepath.Base(files[i])
 		if _, ok := filenames[fn]; ok {
 			continue
-		} else {
-			filenames[fn] = struct{}{}
-			filtered = append(filtered, files[i])
 		}
+		filenames[fn] = struct{}{}
+		filtered = append(filtered, files[i])
 	}
 	return filtered
 }
 
-type RbfInfo struct {
+type RBFInfo struct {
 	Path      string // full path to RBF file
 	Filename  string // base filename of RBF file
 	ShortName string // base filename without date or extension
-	MglName   string // relative path launch-able from MGL file
+	MGLName   string // relative path launch-able from MGL file
 }
 
-func ParseRbf(path string) RbfInfo {
-	info := RbfInfo{
+func ParseRBF(path string) RBFInfo {
+	info := RBFInfo{
 		Path:     path,
 		Filename: filepath.Base(path),
 	}
@@ -322,43 +344,41 @@ func ParseRbf(path string) RbfInfo {
 
 	if strings.HasPrefix(path, config.SdFolder) {
 		relDir := strings.TrimPrefix(filepath.Dir(path), config.SdFolder+"/")
-		info.MglName = filepath.Join(relDir, info.ShortName)
+		info.MGLName = filepath.Join(relDir, info.ShortName)
 	} else {
-		info.MglName = path
+		info.MGLName = path
 	}
 
 	return info
 }
 
 // Find all rbf files in the top 2 menu levels of the SD card.
-func shallowScanRbf() ([]RbfInfo, error) {
-	results := make([]RbfInfo, 0)
+func shallowScanRBF() ([]RBFInfo, error) {
+	results := make([]RBFInfo, 0)
 
-	isRbf := func(file os.DirEntry) bool {
+	isRBF := func(file os.DirEntry) bool {
 		return filepath.Ext(strings.ToLower(file.Name())) == ".rbf"
 	}
 
-	infoSymlink := func(path string) (RbfInfo, error) {
+	infoSymlink := func(path string) (RBFInfo, error) {
 		info, err := os.Lstat(path)
 		if err != nil {
-			return RbfInfo{}, err
+			return RBFInfo{}, fmt.Errorf("inspect RBF path: %w", err)
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
 			newPath, err := os.Readlink(path)
 			if err != nil {
-				return RbfInfo{}, err
+				return RBFInfo{}, fmt.Errorf("read RBF symlink: %w", err)
 			}
-
-			return ParseRbf(newPath), nil
-		} else {
-			return ParseRbf(path), nil
+			return ParseRBF(newPath), nil
 		}
+		return ParseRBF(path), nil
 	}
 
 	files, err := os.ReadDir(config.SdFolder)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("read MiSTer root: %w", err)
 	}
 
 	for _, file := range files {
@@ -369,7 +389,7 @@ func shallowScanRbf() ([]RbfInfo, error) {
 			}
 
 			for _, subFile := range subFiles {
-				if isRbf(subFile) {
+				if isRBF(subFile) {
 					path := filepath.Join(config.SdFolder, file.Name(), subFile.Name())
 					info, err := infoSymlink(path)
 					if err != nil {
@@ -378,7 +398,7 @@ func shallowScanRbf() ([]RbfInfo, error) {
 					results = append(results, info)
 				}
 			}
-		} else if isRbf(file) {
+		} else if isRBF(file) {
 			path := filepath.Join(config.SdFolder, file.Name())
 			info, err := infoSymlink(path)
 			if err != nil {
@@ -392,17 +412,18 @@ func shallowScanRbf() ([]RbfInfo, error) {
 }
 
 // SystemsWithRbf returns a map of all system IDs which have an existing rbf file.
-func SystemsWithRbf() map[string]RbfInfo {
+func SystemsWithRBF() map[string]RBFInfo {
 	// TODO: include alt rbfs somehow?
-	results := make(map[string]RbfInfo)
+	results := make(map[string]RBFInfo)
 
-	rbfFiles, err := shallowScanRbf()
+	rbfFiles, err := shallowScanRBF()
 	if err != nil {
 		return results
 	}
 
 	for _, rbfFile := range rbfFiles {
-		for _, system := range Systems {
+		for id := range Systems {
+			system := Systems[id]
 			shortName := system.Rbf
 
 			if strings.Contains(shortName, "/") {

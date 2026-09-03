@@ -1,15 +1,35 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package menu
 
 import (
 	"encoding/json"
-	"github.com/wizzomafizzo/mrext/pkg/config"
-	"github.com/wizzomafizzo/mrext/pkg/mister"
-	"github.com/wizzomafizzo/mrext/pkg/service"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/service"
+	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 const CreateTypeFolder = "folder"
@@ -43,7 +63,8 @@ func HandleCreateFile(logger *service.Logger) http.HandlerFunc {
 			name := "_" + utils.StripBadFileChars(args.Name)
 			path := filepath.Join(folder, name)
 			logger.Info("creating folder: %s", path)
-			err := os.Mkdir(path, 0755)
+			// #nosec G301 -- MiSTer menu folders must remain world-readable.
+			err := os.Mkdir(path, 0o755)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				logger.Error("error creating folder: %s", err)
@@ -82,13 +103,13 @@ func HandleRenameFile(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		if _, err := os.Stat(fromPath); os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			logger.Error("menu file (%s) does not exist: %s", fromPath, err)
+		if _, statErr := os.Stat(fromPath); os.IsNotExist(statErr) {
+			http.Error(w, statErr.Error(), http.StatusNotFound)
+			logger.Error("menu file (%s) does not exist: %s", fromPath, statErr)
 			return
 		}
 
-		if _, err := os.Stat(toPath); err == nil {
+		if _, statErr := os.Stat(toPath); statErr == nil {
 			http.Error(w, "file already exists", http.StatusInternalServerError)
 			logger.Error("error renaming file: file already exists")
 			return
@@ -135,25 +156,25 @@ func HandleDeleteFile(logger *service.Logger) http.HandlerFunc {
 		path := cleanPath(args.Path)
 
 		file, err := os.Stat(path)
-		if os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			logger.Error("menu file (%s) does not exist: %s", path, err)
+		if err != nil {
+			status := http.StatusInternalServerError
+			if os.IsNotExist(err) {
+				status = http.StatusNotFound
+			}
+			http.Error(w, err.Error(), status)
+			logger.Error("cannot inspect menu file (%s): %s", path, err)
 			return
 		}
 
-		var invalidPath bool
-
-		if path == "" {
+		invalidPath := false
+		switch {
+		case path == "", path == config.SdFolder, path == config.SdFolder+"/":
 			invalidPath = true
-		} else if path == config.SdFolder {
+		case strings.HasPrefix(path, config.SdFolder+"/MiSTer"):
 			invalidPath = true
-		} else if path == config.SdFolder+"/" {
+		case path == config.SdFolder+"/menu.rbf":
 			invalidPath = true
-		} else if strings.HasPrefix(path, config.SdFolder+"/MiSTer") {
-			invalidPath = true
-		} else if path == config.SdFolder+"/menu.rbf" {
-			invalidPath = true
-		} else if file.IsDir() && len(file.Name()) > 0 && file.Name()[0] != '_' {
+		case file.IsDir() && file.Name() != "" && file.Name()[0] != '_':
 			invalidPath = true
 		}
 

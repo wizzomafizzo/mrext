@@ -189,7 +189,7 @@ func Mister(appName string) error {
 
 func UpdateExternalApps() {
 	externalDir := filepath.Join(releasesDir, "external")
-	_ = os.MkdirAll(externalDir, 0755)
+	_ = os.MkdirAll(externalDir, 0o755)
 	for _, app := range externalApps {
 		resp, err := http.Get(app.url)
 		if err != nil || resp.StatusCode != 200 {
@@ -281,8 +281,8 @@ func Release(name string) {
 	}
 
 	rd := filepath.Join(releasesDir, a.name)
-	_ = os.MkdirAll(rd, 0755)
-	_ = os.MkdirAll(binReleasesDir, 0755)
+	_ = os.MkdirAll(rd, 0o755)
+	_ = os.MkdirAll(binReleasesDir, 0o755)
 	releaseBin := filepath.Join(binReleasesDir, a.bin)
 	err := sh.Copy(releaseBin, filepath.Join(binDir, "linux_arm", a.bin))
 	if err != nil {
@@ -303,7 +303,7 @@ func Release(name string) {
 		os.Exit(1)
 	} else {
 		if runtime.GOOS != "windows" {
-			err := os.Chmod(releaseBin, 0755)
+			err := os.Chmod(releaseBin, 0o755)
 			if err != nil {
 				fmt.Println("Error chmod release bin", err)
 				os.Exit(1)
@@ -320,7 +320,7 @@ func Release(name string) {
 
 func PrepRelease() {
 	_ = sh.Rm(binReleasesDir)
-	_ = os.MkdirAll(binReleasesDir, 0755)
+	_ = os.MkdirAll(binReleasesDir, 0o755)
 	cleanPlatform("linux_arm")
 	for _, app := range apps {
 		if app.releaseId != "" {
@@ -338,6 +338,16 @@ func PrepRelease() {
 func Test() {
 	mg.Deps(GenerateSystemMetadata)
 	_ = sh.RunV("go", "test", "./...")
+}
+
+func Lint() error {
+	mg.Deps(GenerateSystemMetadata)
+	return sh.RunV("golangci-lint", "run", "./...")
+}
+
+func LintFix() error {
+	mg.Deps(GenerateSystemMetadata)
+	return sh.RunV("golangci-lint", "run", "--fix", "./...")
 }
 
 func Coverage() {

@@ -1,6 +1,26 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -10,33 +30,33 @@ import (
 type LaunchSyncConfig struct{}
 
 type PlayLogConfig struct {
-	SaveEvery   int    `ini:"save_every,omitempty"`
 	OnCoreStart string `ini:"on_core_start,omitempty"`
 	OnCoreStop  string `ini:"on_core_stop,omitempty"`
 	OnGameStart string `ini:"on_game_start,omitempty"`
 	OnGameStop  string `ini:"on_game_stop,omitempty"`
+	SaveEvery   int    `ini:"save_every,omitempty"`
 }
 
 type RandomConfig struct{}
 
 type SearchConfig struct {
-	Filter []string `ini:"filter,omitempty" delim:","`
 	Sort   string   `ini:"sort,omitempty"`
+	Filter []string `ini:"filter,omitempty" delim:","`
 }
 
 type LastPlayedConfig struct {
 	Name                string `ini:"name,omitempty"`
 	LastPlayedName      string `ini:"last_played_name,omitempty"`
-	DisableLastPlayed   bool   `ini:"disable_last_played,omitempty"`
 	RecentFolderName    string `ini:"recent_folder_name,omitempty"`
+	DisableLastPlayed   bool   `ini:"disable_last_played,omitempty"`
 	DisableRecentFolder bool   `ini:"disable_recent_folder,omitempty"`
 }
 
 type RemoteConfig struct {
-	MdnsService     bool   `ini:"mdns_service,omitempty"`
-	SyncSSHKeys     bool   `ini:"sync_ssh_keys,omitempty"`
 	CustomLogo      string `ini:"custom_logo,omitempty"`
-	AnnounceGameUrl string `ini:"announce_game_url,omitempty"`
+	AnnounceGameURL string `ini:"announce_game_url,omitempty"`
+	MDNSService     bool   `ini:"mdns_service,omitempty"`
+	SyncSSHKeys     bool   `ini:"sync_ssh_keys,omitempty"`
 }
 
 type SystemsConfig struct {
@@ -61,7 +81,7 @@ func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error)
 
 	exePath, err := os.Executable()
 	if err != nil {
-		return defaultConfig, err
+		return defaultConfig, fmt.Errorf("resolve executable path: %w", err)
 	}
 
 	appPath := os.Getenv(UserAppPathEnv)
@@ -76,18 +96,21 @@ func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error)
 	defaultConfig.AppPath = exePath
 	defaultConfig.IniPath = iniPath
 
-	if _, err := os.Stat(iniPath); os.IsNotExist(err) {
-		return defaultConfig, nil
+	// #nosec G703 -- configuration path is explicitly selected by caller or environment.
+	if _, statErr := os.Stat(iniPath); statErr != nil {
+		if os.IsNotExist(statErr) {
+			return defaultConfig, nil
+		}
+		return defaultConfig, fmt.Errorf("stat user configuration: %w", statErr)
 	}
 
 	cfg, err := ini.ShadowLoad(iniPath)
 	if err != nil {
-		return defaultConfig, err
+		return defaultConfig, fmt.Errorf("load user configuration: %w", err)
 	}
 
-	err = cfg.StrictMapTo(defaultConfig)
-	if err != nil {
-		return defaultConfig, err
+	if err := cfg.StrictMapTo(defaultConfig); err != nil {
+		return defaultConfig, fmt.Errorf("map user configuration: %w", err)
 	}
 
 	return defaultConfig, nil

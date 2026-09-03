@@ -1,9 +1,27 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -17,14 +35,14 @@ import (
 const appName = "search"
 
 func generateIndexWindow(cfg *config.UserConfig) error {
-	return tui.RunProgress("", tui.ProgressUpdate{
+	err := tui.RunProgress("", tui.ProgressUpdate{
 		Text:    "Finding games folders...",
 		Current: 1,
 		Total:   100,
 	}, func(update func(tui.ProgressUpdate)) error {
 		_, err := gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
-			systemName := status.SystemId
-			if system, systemErr := games.GetSystem(status.SystemId); systemErr == nil {
+			systemName := status.SystemID
+			if system, systemErr := games.GetSystem(status.SystemID); systemErr == nil {
 				systemName = system.Name
 			}
 			text := fmt.Sprintf("Indexing %s...", systemName)
@@ -36,12 +54,19 @@ func generateIndexWindow(cfg *config.UserConfig) error {
 			}
 			update(tui.ProgressUpdate{Text: text, Current: status.Step, Total: status.Total})
 		})
-		return err
+		if err != nil {
+			return fmt.Errorf("build game-name index: %w", err)
+		}
+		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("show index progress: %w", err)
+	}
+	return nil
 }
 
 func mainOptionsWindow(cfg *config.UserConfig) error {
-	button, selected, err := tui.ListPicker(tui.ListPickerOpts{
+	button, selected, err := tui.ListPicker(&tui.ListPickerOpts{
 		Title:         "Options",
 		Buttons:       []string{"Select", "Back"},
 		DefaultButton: 0,
@@ -50,7 +75,7 @@ func mainOptionsWindow(cfg *config.UserConfig) error {
 		Height:        18,
 	}, []string{"Update games database..."})
 	if err != nil {
-		return err
+		return fmt.Errorf("show options: %w", err)
 	}
 	if button == 0 && selected == 0 {
 		return generateIndexWindow(cfg)
@@ -61,7 +86,7 @@ func mainOptionsWindow(cfg *config.UserConfig) error {
 func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 	button, text, err := tui.OnScreenKeyboard("Search", []string{"Options", "Search", "Exit"}, query)
 	if err != nil {
-		return err
+		return fmt.Errorf("show search keyboard: %w", err)
 	}
 
 	switch button {
@@ -76,17 +101,24 @@ func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 		}
 
 		var results []gamesdb.SearchResult
-		err := tui.RunProgress("", tui.ProgressUpdate{Text: "Searching..."}, func(_ func(tui.ProgressUpdate)) error {
-			var searchErr error
-			results, searchErr = gamesdb.SearchNamesWords(games.AllSystems(), text)
-			return searchErr
-		})
-		if err != nil {
-			return err
+		progressErr := tui.RunProgress(
+			"",
+			tui.ProgressUpdate{Text: "Searching..."},
+			func(_ func(tui.ProgressUpdate)) error {
+				var searchErr error
+				results, searchErr = gamesdb.SearchNamesWords(games.AllSystems(), text)
+				if searchErr != nil {
+					return fmt.Errorf("search game names: %w", searchErr)
+				}
+				return nil
+			},
+		)
+		if progressErr != nil {
+			return fmt.Errorf("show search progress: %w", progressErr)
 		}
 		if len(results) == 0 {
-			if err := tui.InfoBox("", "No results found."); err != nil {
-				return err
+			if infoErr := tui.InfoBox("", "No results found."); infoErr != nil {
+				return fmt.Errorf("show no-results message: %w", infoErr)
 			}
 			return searchWindow(cfg, text, launchGame)
 		}
@@ -94,8 +126,8 @@ func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 		names := make([]string, 0, len(results))
 		items := make([]gamesdb.SearchResult, 0, len(results))
 		for _, result := range results {
-			systemName := result.SystemId
-			if system, systemErr := games.GetSystem(result.SystemId); systemErr == nil {
+			systemName := result.SystemID
+			if system, systemErr := games.GetSystem(result.SystemID); systemErr == nil {
 				systemName = system.Name
 			}
 			display := fmt.Sprintf("[%s] %s", systemName, result.Name)
@@ -111,7 +143,7 @@ func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 			titleLabel = "Pick Game"
 			launchLabel = "Select"
 		}
-		button, selected, err := tui.ListPicker(tui.ListPickerOpts{
+		button, selected, err := tui.ListPicker(&tui.ListPickerOpts{
 			Title:         titleLabel,
 			Buttons:       []string{"PgUp", "PgDn", launchLabel, "Cancel"},
 			DefaultButton: 2,
@@ -121,7 +153,7 @@ func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 			Height:        18,
 		}, names)
 		if err != nil {
-			return err
+			return fmt.Errorf("show search results: %w", err)
 		}
 		if button != 2 || selected < 0 {
 			return searchWindow(cfg, text, launchGame)
@@ -129,17 +161,25 @@ func searchWindow(cfg *config.UserConfig, query string, launchGame bool) error {
 
 		game := items[selected]
 		if !launchGame {
-			fmt.Fprintln(os.Stderr, game.Path)
+			_, _ = fmt.Fprintln(os.Stderr, game.Path)
 			return nil
 		}
-		system, err := games.GetSystem(game.SystemId)
+		system, err := games.GetSystem(game.SystemID)
 		if err != nil {
-			return err
+			return fmt.Errorf("get selected system: %w", err)
 		}
-		return mister.LaunchGame(cfg, *system, game.Path)
+		if err := mister.LaunchGame(cfg, system, game.Path); err != nil {
+			return fmt.Errorf("launch selected game: %w", err)
+		}
+		return nil
 	default:
 		return nil
 	}
+}
+
+func fatal(err error) {
+	_, _ = fmt.Fprintln(os.Stderr, err)
+	os.Exit(1)
 }
 
 func main() {
@@ -148,14 +188,14 @@ func main() {
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
-	if !gamesdb.DbExists() {
-		if err := generateIndexWindow(cfg); err != nil {
-			log.Fatal(err)
+	if !gamesdb.DBExists() {
+		if indexErr := generateIndexWindow(cfg); indexErr != nil {
+			fatal(indexErr)
 		}
 	}
-	if err := searchWindow(cfg, "", !*printPath); err != nil {
-		log.Fatal(err)
+	if searchErr := searchWindow(cfg, "", !*printPath); searchErr != nil {
+		fatal(searchErr)
 	}
 }

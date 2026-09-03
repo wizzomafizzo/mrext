@@ -1,33 +1,55 @@
+// mrext
+// Copyright (c) 2026 mrext contributors.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// This file is part of mrext.
+//
+// mrext is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// mrext is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with mrext. If not, see <http://www.gnu.org/licenses/>.
+
 package control
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/bendahl/uinput"
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/service"
-	"net/http"
-	"strconv"
 )
+
+func wrapKeyboard(action string, err error) error {
+	if err != nil {
+		return fmt.Errorf("%s: %w", action, err)
+	}
+	return nil
+}
 
 func SendRawKeyboard(kbd input.Keyboard, code int) error {
 	if code < 0 {
-		kbd.Combo(uinput.KeyLeftshift, -code)
-	} else {
-		kbd.Press(code)
+		return wrapKeyboard("send shifted raw key", kbd.Combo(uinput.KeyLeftshift, -code))
 	}
-
-	return nil
+	return wrapKeyboard("send raw key", kbd.Press(code))
 }
 
 func SendRawKeyboardDown(kbd input.Keyboard, code int) error {
-	kbd.KeyDown(code)
-	return nil
+	return wrapKeyboard("press raw key", kbd.KeyDown(code))
 }
 
 func SendRawKeyboardUp(kbd input.Keyboard, code int) error {
-	kbd.KeyUp(code)
-	return nil
+	return wrapKeyboard("release raw key", kbd.KeyUp(code))
 }
 
 func HandleRawKeyboard(kbd input.Keyboard, logger *service.Logger) http.HandlerFunc {
@@ -42,63 +64,64 @@ func HandleRawKeyboard(kbd input.Keyboard, logger *service.Logger) http.HandlerF
 			return
 		}
 
-		_ = SendRawKeyboard(kbd, key)
+		if err := SendRawKeyboard(kbd, key); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("failed to send raw keyboard input: %s", err)
+		}
 	}
 }
 
 func SendKeyboard(kbd input.Keyboard, key string) error {
 	switch key {
 	case "up":
-		kbd.Up()
+		return wrapKeyboard("send up key", kbd.Up())
 	case "down":
-		kbd.Down()
+		return wrapKeyboard("send down key", kbd.Down())
 	case "left":
-		kbd.Left()
+		return wrapKeyboard("send left key", kbd.Left())
 	case "right":
-		kbd.Right()
+		return wrapKeyboard("send right key", kbd.Right())
 	case "volume_up":
-		kbd.VolumeUp()
+		return wrapKeyboard("raise volume", kbd.VolumeUp())
 	case "volume_down":
-		kbd.VolumeDown()
+		return wrapKeyboard("lower volume", kbd.VolumeDown())
 	case "volume_mute":
-		kbd.VolumeMute()
+		return wrapKeyboard("toggle mute", kbd.VolumeMute())
 	case "menu":
-		kbd.Menu()
+		return wrapKeyboard("send menu key", kbd.Menu())
 	case "back":
-		kbd.Back()
+		return wrapKeyboard("send back key", kbd.Back())
 	case "confirm":
-		kbd.Confirm()
+		return wrapKeyboard("send confirm key", kbd.Confirm())
 	case "cancel":
-		kbd.Cancel()
+		return wrapKeyboard("send cancel key", kbd.Cancel())
 	case "osd":
-		kbd.Osd()
+		return wrapKeyboard("send OSD key", kbd.OSD())
 	case "screenshot":
-		kbd.Screenshot()
+		return wrapKeyboard("capture screenshot", kbd.Screenshot())
 	case "raw_screenshot":
-		kbd.RawScreenshot()
+		return wrapKeyboard("capture raw screenshot", kbd.RawScreenshot())
 	case "pair_bluetooth":
-		kbd.PairBluetooth()
+		return wrapKeyboard("pair Bluetooth", kbd.PairBluetooth())
 	case "change_background":
-		kbd.ChangeBackground()
+		return wrapKeyboard("change background", kbd.ChangeBackground())
 	case "core_select":
-		kbd.CoreSelect()
+		return wrapKeyboard("select core", kbd.CoreSelect())
 	case "user":
-		kbd.User()
+		return wrapKeyboard("send user key", kbd.User())
 	case "reset":
-		kbd.Reset()
+		return wrapKeyboard("reset core", kbd.Reset())
 	case "toggle_core_dates":
-		kbd.ToggleCoreDates()
+		return wrapKeyboard("toggle core dates", kbd.ToggleCoreDates())
 	case "console":
-		kbd.Console()
+		return wrapKeyboard("open console", kbd.Console())
 	case "exit_console":
-		kbd.ExitConsole()
+		return wrapKeyboard("exit console", kbd.ExitConsole())
 	case "computer_osd":
-		kbd.ComputerOsd()
+		return wrapKeyboard("send computer OSD key", kbd.ComputerOSD())
 	default:
 		return fmt.Errorf("unknown key: %s", key)
 	}
-
-	return nil
 }
 
 func HandleKeyboard(kbd input.Keyboard) http.HandlerFunc {

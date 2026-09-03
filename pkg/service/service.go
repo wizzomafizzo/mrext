@@ -3,6 +3,8 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,27 +22,27 @@ import (
 type ServiceEntry func() (func() error, error)
 
 type Service struct {
-	Name   string
 	Logger *Logger
-	daemon bool
 	start  ServiceEntry
 	stop   func() error
+	Name   string
+	daemon bool
 }
 
 type ServiceArgs struct {
-	Name     string
 	Logger   *Logger
 	Entry    ServiceEntry
+	Name     string
 	NoDaemon bool
 }
 
 func NewService(args ServiceArgs) (*Service, error) {
 	if args.Name == "" {
-		return nil, fmt.Errorf("service name is required")
+		return nil, errors.New("service name is required")
 	}
 
 	if args.Logger == nil {
-		return nil, fmt.Errorf("service logger is required")
+		return nil, errors.New("service logger is required")
 	}
 
 	return &Service{
@@ -58,9 +60,10 @@ func (s *Service) pidFilePath() string {
 // Create new PID file using current process PID.
 func (s *Service) createPidFile() error {
 	pid := os.Getpid()
-	err := os.WriteFile(s.pidFilePath(), []byte(fmt.Sprintf("%d", pid)), 0644)
+	// #nosec G306 -- service PID files must remain world-readable.
+	err := os.WriteFile(s.pidFilePath(), []byte(strconv.Itoa(pid)), 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("write service PID file: %w", err)
 	}
 	return nil
 }
@@ -68,7 +71,7 @@ func (s *Service) createPidFile() error {
 func (s *Service) removePidFile() error {
 	err := os.Remove(s.pidFilePath())
 	if err != nil {
-		return err
+		return fmt.Errorf("remove service PID file: %w", err)
 	}
 	return nil
 }
@@ -79,6 +82,7 @@ func (s *Service) Pid() (int, error) {
 	pid := 0
 
 	if _, err := os.Stat(pidPath); err == nil {
+		// #nosec G304 -- path is derived from configured service name and PID template.
 		pidFile, err := os.ReadFile(pidPath)
 		if err != nil {
 			return pid, fmt.Errorf("error reading pid file: %w", err)
@@ -197,16 +201,15 @@ func (s *Service) startService() {
 	s.setupStopService()
 	s.stop = stop
 
-	if s.daemon {
-		<-make(chan struct{})
-	} else {
+	if !s.daemon {
 		err := s.stopService()
 		if err != nil {
 			os.Exit(1)
 		}
-
 		os.Exit(0)
 	}
+
+	<-make(chan struct{})
 }
 
 // Start a new service daemon in the background.
@@ -228,33 +231,43 @@ func (s *Service) Start() error {
 		binPath = exePath
 	}
 
+	// #nosec G304,G703 -- binary path is current executable or explicit application path.
 	binFile, err := os.Open(binPath)
 	if err != nil {
 		return fmt.Errorf("error opening binary: %w", err)
 	}
+	defer func() { _ = binFile.Close() }()
 
 	tempPath := filepath.Join(config.TempFolder, filepath.Base(binPath))
-	tempFile, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	// #nosec G302,G304,G703 -- copied service binary must be executable at its controlled temp path.
+	tempFile, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return fmt.Errorf("error creating temp binary: %w", err)
 	}
+	defer func() { _ = tempFile.Close() }()
 
 	_, err = io.Copy(tempFile, binFile)
 	if err != nil {
 		return fmt.Errorf("error copying binary to temp: %w", err)
 	}
 
-	tempFile.Close()
-	binFile.Close()
+	if closeErr := tempFile.Close(); closeErr != nil {
+		return fmt.Errorf("close temporary binary: %w", closeErr)
+	}
+	if closeErr := binFile.Close(); closeErr != nil {
+		return fmt.Errorf("close source binary: %w", closeErr)
+	}
 
-	cmd := exec.Command(tempPath, "-service", "exec", "&")
+	// #nosec G204,G702 -- executable is controlled service copy created above.
+	cmd := exec.CommandContext(context.Background(), tempPath, "-service", "exec", "&")
 	env := os.Environ()
 	cmd.Env = env
 
 	// point new binary to existing config file
 	configPath := filepath.Join(filepath.Dir(binPath), s.Name+".ini")
 
-	if _, err := os.Stat(configPath); err == nil {
+	// #nosec G703 -- path is derived from explicit application path and service name.
+	if _, statErr := os.Stat(configPath); statErr == nil {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserConfigEnv, configPath))
 	}
 	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", config.UserAppPathEnv, binPath))
@@ -275,17 +288,17 @@ func (s *Service) Stop() error {
 
 	pid, err := s.Pid()
 	if err != nil {
-		return err
+		return fmt.Errorf("read service PID: %w", err)
 	}
 
 	process, err := os.FindProcess(pid)
 	if err != nil {
-		return err
+		return fmt.Errorf("find service process: %w", err)
 	}
 
 	err = process.Signal(syscall.SIGTERM)
 	if err != nil {
-		return err
+		return fmt.Errorf("signal service process: %w", err)
 	}
 
 	return nil
@@ -312,43 +325,39 @@ func (s *Service) Restart() error {
 }
 
 func (s *Service) ServiceHandler(cmd *string) {
-	if *cmd == "exec" {
+	switch *cmd {
+	case "exec":
 		s.startService()
 		os.Exit(0)
-	} else if *cmd == "start" {
-		err := s.Start()
-		if err != nil {
+	case "start":
+		if err := s.Start(); err != nil {
 			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
-
 		os.Exit(0)
-	} else if *cmd == "stop" {
-		err := s.Stop()
-		if err != nil {
+	case "stop":
+		if err := s.Stop(); err != nil {
 			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
-
 		os.Exit(0)
-	} else if *cmd == "restart" {
-		err := s.Restart()
-		if err != nil {
+	case "restart":
+		if err := s.Restart(); err != nil {
 			s.Logger.Error("%s", err)
 			os.Exit(1)
 		}
-
 		os.Exit(0)
-	} else if *cmd == "status" {
+	case "status":
 		if s.Running() {
-			fmt.Printf("%s service running\n", s.Name)
+			_, _ = fmt.Printf("%s service running\n", s.Name)
 		} else {
-			fmt.Printf("%s service not running\n", s.Name)
+			_, _ = fmt.Printf("%s service not running\n", s.Name)
 		}
-
 		os.Exit(0)
-	} else if *cmd != "" {
-		fmt.Printf("Invalid service command: %s", *cmd)
+	case "":
+		return
+	default:
+		_, _ = fmt.Printf("Invalid service command: %s", *cmd)
 		os.Exit(1)
 	}
 }
