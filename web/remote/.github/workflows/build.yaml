@@ -1,0 +1,39 @@
+name: build app
+on:
+  push:
+    tags: 
+      - "*"
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Production build
+        run: npx vite build
+
+      - name: Package release tarball
+        if: startsWith(github.ref, 'refs/tags/')
+        run: tar jcvf mrext-client.tar.gz -C ./build .
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: mrext-client.tar.gz
+          fail_on_unmatched_files: true
+
+permissions:
+  contents: write
