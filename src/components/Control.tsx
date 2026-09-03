@@ -11,6 +11,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import BluetoothIcon from "@mui/icons-material/Bluetooth";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import KeyboardIcon from "@mui/icons-material/Keyboard";
+import MouseIcon from "@mui/icons-material/Mouse";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -22,6 +23,7 @@ import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { Dialog } from "@mui/material";
 import useWs from "./WebSocket";
+import MousePad from "./MousePad";
 import Stack from "@mui/material/Stack";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -166,6 +168,7 @@ export default function Control() {
   const [keyboardLayout, setKeyboardLayout] = React.useState("default");
   const [keyboardOpen, setKeyboardOpen] = React.useState(false);
   const [numpadOpen, setNumpadOpen] = React.useState(false);
+  const [mouseOpen, setMouseOpen] = React.useState(false);
   const [resetOpen, setResetOpen] = React.useState(false);
 
   const ws = useWs();
@@ -390,7 +393,7 @@ export default function Control() {
       </Grid>
 
       <Grid container spacing={2} sx={{ mt: 3 }}>
-        <Grid item xs={12}>
+        <Grid item xs={6}>
           <Button
             variant="outlined"
             sx={{ width: "100%" }}
@@ -400,6 +403,18 @@ export default function Control() {
             startIcon={<KeyboardIcon />}
           >
             Keyboard
+          </Button>
+        </Grid>
+        <Grid item xs={6}>
+          <Button
+            variant="outlined"
+            sx={{ width: "100%" }}
+            onClick={() => {
+              setMouseOpen(true);
+            }}
+            startIcon={<MouseIcon />}
+          >
+            Mouse
           </Button>
         </Grid>
 
@@ -525,6 +540,12 @@ export default function Control() {
           </Button>
         </Grid>
       </Grid>
+
+      <MousePad
+        open={mouseOpen}
+        onClose={() => setMouseOpen(false)}
+        sendMessage={ws.sendMessage}
+      />
 
       <Dialog open={resetOpen} onClose={() => setResetOpen(false)}>
         <DialogContent>
