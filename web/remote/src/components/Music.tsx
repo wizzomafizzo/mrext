@@ -64,7 +64,7 @@ export default function Music() {
           <br />
           Music requires{" "}
           <a
-            href="https://github.com/wizzomafizzo/MiSTer_BGM"
+            href="https://github.com/wizzomafizzo/mrext#bgm"
             target="_blank"
             rel="noreferrer"
           >

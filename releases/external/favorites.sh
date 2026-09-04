@@ -527,6 +527,11 @@ def get_mgl_setname(path):
                 core = re.search("<setname>(.+)</setname>", f.read())
                 if core:
                     return core.groups()[0]
+                else:
+                    f.seek(0)
+                    core = re.search("<setname same_dir=\"1\">(.+)</setname>", f.read())
+                    if core:
+                        return core.groups()[0]
         except UnicodeDecodeError:
             return None
 
@@ -924,6 +929,7 @@ def display_modify_item(path):
     info = f"Name: {name}\n"
 
     folder = relative_path(os.path.dirname(path))
+    setname = None
     if folder == SD_ROOT:
         folder = "<TOP LEVEL>"
     info += f"Folder: {folder}\n"
@@ -932,11 +938,12 @@ def display_modify_item(path):
         info += "Type: Core\n"
     elif ext == ".mra":
         info += "Type: Arcade Core\n"
+        setname = get_mgl_setname(path)
     elif ext == ".mgl":
         info += "Type: Game\n"
         info += f"System: {get_mgl_system(path)}\n"
+        setname = get_mgl_setname(path)
 
-    setname = get_mgl_setname(path)
     if setname:
         info += f"Set name: {setname}\n"
 
@@ -1153,6 +1160,16 @@ def display_launcher_select(start_folder):
             "Select",
             "--default-item",
             get_selection(folder),
+        ]
+        
+        if file_type == "NeoGeo":
+            args = args + [
+                "--extra-button",
+                "--extra-label",
+                "Browse",
+            ]
+
+        args = args + [
             "--menu",
             msg + "\n" + folder,
             WINDOW_DIMENSIONS[0],
@@ -1206,6 +1223,15 @@ def display_launcher_select(start_folder):
                 return file_type, all_items[selection - 2]
             else:
                 return file_type, all_items[selection - 1]
+        elif button == 3:
+            if selection == "":
+                return None, None
+            if show_external and selection == 1:
+                return file_type + "_Browse", EXTERNAL_FOLDER + "/"
+            elif show_external:
+                return file_type + "_Browse", all_items[selection - 2]
+            else:
+                return file_type + "_Browse", all_items[selection - 1]
         else:
             return None, None
 

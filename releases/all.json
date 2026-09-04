@@ -1,6 +1,6 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1781320187,
+    "timestamp": 1788494400,
     "files": {
         "Scripts/lastplayed.sh": {
             "hash": "696f537ed0bb03465a9b7550164da7f4",
@@ -57,27 +57,27 @@
             ]
         },
         "Scripts/bgm.sh": {
-            "hash": "dcf9e21ad87ba4ccecdf07c20b4f67fd",
-            "size": 32636,
-            "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/bgm.sh",
+            "hash": "5f95d6353984ee9975452c8bc610d6d9",
+            "size": 32760,
+            "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/bgm.sh",
             "reboot": false,
             "tags": [
                 "bgm"
             ]
         },
         "Scripts/favorites.sh": {
-            "hash": "00657058f278eed125a90b815a4bf444",
-            "size": 40203,
-            "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/favorites.sh",
+            "hash": "32c7a4a350054b6051ff837235762cd8",
+            "size": 41098,
+            "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/favorites.sh",
             "reboot": false,
             "tags": [
                 "favorites"
             ]
         },
         "Scripts/gamesmenu.sh": {
-            "hash": "fe58fdebad04e7a441a06612233faec6",
-            "size": 15315,
-            "url": "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/gamesmenu.sh",
+            "hash": "30e52a20c678e03d3b15e228fc3c83a1",
+            "size": 15307,
+            "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/gamesmenu.sh",
             "reboot": false,
             "tags": [
                 "gamesmenu"

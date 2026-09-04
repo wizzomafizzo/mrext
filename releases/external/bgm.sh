@@ -19,7 +19,7 @@ HISTORY_SIZE = 0.2  # ratio of total tracks to keep in play history
 SOCKET_FILE = "/tmp/bgm.sock"
 MESSAGE_SIZE = 4096  # max size of socket payloads
 MIDI_PORT = "128:0"
-SCRIPTS_FOLDER = "/media/fat/Scripts"
+SCRIPTS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 STARTUP_SCRIPT = "/media/fat/linux/user-startup.sh"
 CORENAME_FILE = "/tmp/CORENAME"
 LOG_FILE = "/tmp/bgm.log"
@@ -647,12 +647,13 @@ def start_service(player: Player):
     while True:
         new_core = wait_core_change()
         ini = get_ini()
+        player.play_in_core = ini["playincore"]
 
         if new_core is None:
             log("CORENAME file is missing, exiting...")
             break
 
-        if core == new_core:
+        if core is not None and core.lower().strip() == new_core.lower().strip():
             log("CORENAME file changed, but core is the same")
             pass
         elif player.play_in_core:

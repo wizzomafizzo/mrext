@@ -338,7 +338,7 @@ def display_menu(system_paths):
         display_name = get_names_replacement(name)
 
         if os.path.exists(
-                os.path.join(GAMES_MENU_PATH, folder_name(display_name))
+                os.path.join(GAMES_MENU_PATH, folder_name(name))
         ) or not os.path.exists(GAMES_MENU_PATH):
             selected = True
         else:
