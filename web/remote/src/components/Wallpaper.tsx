@@ -121,7 +121,7 @@ export default function Wallpaper() {
         >
           {allWallpapers.data?.wallpapers
             .slice()
-            .sort()
+            .sort((a, b) => a.name.localeCompare(b.name))
             .map((wallpaper) => (
               <Grid item xs={4} sm={4} md={4} key={wallpaper.filename}>
                 <Card

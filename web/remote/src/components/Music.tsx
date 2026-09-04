@@ -55,7 +55,7 @@ export default function Music() {
     return <div></div>;
   }
 
-  if (musicStatus.data?.running === false) {
+  if (musicStatus.isError || musicStatus.data?.running === false) {
     return (
       <div>
         <Typography sx={{ textAlign: "center" }}>

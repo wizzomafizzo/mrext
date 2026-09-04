@@ -49,7 +49,6 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FolderZipIcon from '@mui/icons-material/FolderZip';
-import TapAndPlayIcon from "@mui/icons-material/TapAndPlay";
 import ShortcutIcon from "@mui/icons-material/Shortcut";
 
 enum Sort {
@@ -202,16 +201,6 @@ function EditSection(props: {
 
   const [editMode, setEditMode] = useState<EditMode>(EditMode.None);
 
-  const [nfcRunning, setNfcRunning] = React.useState(false);
-  const [waitingNfc, setWaitingNfc] = React.useState(false);
-
-
-  useEffect(() => {
-    api.nfcStatus().then((status) => {
-      setNfcRunning(status.running);
-    });
-  }, []);
-
   useEffect(() => {
     setEditMode(EditMode.None);
   }, []);
@@ -321,27 +310,6 @@ function EditSection(props: {
                   }}
                 >
                   Create shortcut
-                </Button>
-              ) : null}
-              {nfcRunning && props.item.type !== "folder" && props.item.type !== "zip" ? (
-                <Button
-                  variant="outlined"
-                  sx={{mt: 1}}
-                  startIcon={<TapAndPlayIcon/>}
-                  onClick={() => {
-                    if (props.item.path) {
-                      setWaitingNfc(true);
-                      api.nfcWrite({
-                        path: props.item.path
-                      }).then(() => {
-                        props.setOpen(false);
-                      }).finally(() => {
-                        setWaitingNfc(false);
-                      });
-                    }
-                  }}
-                >
-                  {waitingNfc ? "Waiting for tag..." : "Write to NFC tag"}
                 </Button>
               ) : null}
               {!props.item.inZip ? (

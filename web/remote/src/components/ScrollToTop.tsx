@@ -1,12 +1,13 @@
 // https://dilshankelsen.com/creating-scroll-to-top-button-with-react-mui/
-import {useScrollTrigger, Zoom} from "@mui/material";
-import {useCallback} from "react";
+import { useScrollTrigger, Zoom } from "@mui/material";
+import { useCallback } from "react";
 import Box from "@mui/material/Box";
 import Fab from "@mui/material/Fab";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 export default function ScrollToTopFab() {
   const trigger = useScrollTrigger({
+    disableHysteresis: true,
     threshold: 100,
   });
 

@@ -375,16 +375,6 @@ function ConnectDialog(props: {
   const [address, setAddress] = useState(storedAddress);
   const [canConnect, setCanConnect] = useState(false);
 
-  const tryConnect = (address: string) => {
-    const url = "http://" + address + ":8182/api";
-    const statusUrl = url + "/sysinfo";
-    fetch(statusUrl).then((response) => {
-      if (response.status === 200) {
-        setCanConnect(true);
-      }
-    });
-  };
-
   const saveAddress = (address: string) => {
     const url = "http://" + address + ":8182/api";
     setApiEndpoint(url);
@@ -393,8 +383,21 @@ function ConnectDialog(props: {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     setCanConnect(false);
-    tryConnect(address);
+
+    if (address.trim() !== "") {
+      const statusUrl = `http://${address}:8182/api/sysinfo`;
+      fetch(statusUrl, { signal: controller.signal })
+        .then((response) => setCanConnect(response.ok))
+        .catch((error: unknown) => {
+          if (!(error instanceof DOMException && error.name === "AbortError")) {
+            setCanConnect(false);
+          }
+        });
+    }
+
+    return () => controller.abort();
   }, [address]);
 
   return (
@@ -491,7 +494,7 @@ export default function ResponsiveDrawer() {
           closeDrawer={handleDrawerToggle}
         />
         <RouterLink
-          to="menu"
+          to="/menu"
           text="Menu"
           icon={<DvrIcon />}
           closeDrawer={handleDrawerToggle}
@@ -685,7 +688,7 @@ export default function ResponsiveDrawer() {
       <Box
         component="nav"
         sx={!isMobile ? { width: drawerWidth, flexShrink: 0 } : null}
-        aria-label="mailbox folders"
+        aria-label="main navigation"
       >
         {isMobile ? (
           <SwipeableDrawer

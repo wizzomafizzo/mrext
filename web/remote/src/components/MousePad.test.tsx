@@ -23,6 +23,18 @@ describe("MousePad", () => {
     vi.useRealTimers();
   });
 
+  it("ignores non-primary pointer buttons", () => {
+    const sendMessage = vi.fn();
+    render(<MousePad open onClose={vi.fn()} sendMessage={sendMessage} />);
+
+    const pad = screen.getByTestId("mouse-pad");
+    fireEvent.pointerDown(pad, { button: 2, clientX: 20, clientY: 20 });
+    fireEvent.pointerUp(pad, { button: 2, clientX: 20, clientY: 20 });
+    act(() => vi.advanceTimersByTime(500));
+
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
   it("does not turn a canceled pointer gesture into a click", () => {
     const sendMessage = vi.fn();
     render(<MousePad open onClose={vi.fn()} sendMessage={sendMessage} />);

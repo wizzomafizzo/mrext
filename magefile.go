@@ -293,17 +293,17 @@ func Release(name string) {
 		os.Exit(1)
 	}
 
+	if err := Mister(name); err != nil {
+		fmt.Println("Error building MiSTer binary", err)
+		os.Exit(1)
+	}
+
 	if name == "remote" {
-		clientIndex := filepath.Join(cwd, "cmd", "remote", "_client", "build", "index.html")
+		clientIndex := filepath.Join(remoteWebBuildDir, "index.html")
 		if _, err := os.Stat(clientIndex); err != nil {
 			fmt.Println("Remote client build missing", clientIndex)
 			os.Exit(1)
 		}
-	}
-
-	if err := Mister(name); err != nil {
-		fmt.Println("Error building MiSTer binary", err)
-		os.Exit(1)
 	}
 
 	rd := filepath.Join(releasesDir, a.name)

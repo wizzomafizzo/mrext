@@ -37,7 +37,7 @@ export function activeIniId(inis: ListInisPayload): number {
 
 export function PageHeader(props: { title: string; noRevert?: boolean }) {
   const setActiveSettingsPage = useUIStateStore(
-    (state) => state.setActiveSettingsPage
+    (state) => state.setActiveSettingsPage,
   );
   const modified = useIniSettingsStore((state) => state.modified);
   const revertChanges = useIniSettingsStore((state) => state.revertChanges);
@@ -116,7 +116,7 @@ export function SaveButton() {
                 const api = new ControlApi();
                 api.listMisterInis().then((inis) => {
                   saveMisterIni(activeIniId(inis), store).catch((err) =>
-                    console.error(err)
+                    console.error(err),
                   );
                 });
               }}
@@ -198,8 +198,8 @@ export function BoolOption(props: {
                     ? "0"
                     : "1"
                   : e.target.checked
-                  ? "1"
-                  : "0"
+                    ? "1"
+                    : "0",
               );
             }}
           />
@@ -298,6 +298,45 @@ export function SimpleSelectOption(props: {
   );
 }
 
+function useBoundedNumberDraft(
+  value: string,
+  min: number,
+  max: number,
+  setValue: (value: string) => void,
+) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => setDraft(value), [value]);
+
+  const update = (next: string) => {
+    setDraft(next);
+    if (!/^-?(?:\d+|\d*\.\d+)$/.test(next)) return;
+
+    const parsed = Number(next);
+    if (Number.isFinite(parsed) && parsed >= min && parsed <= max) {
+      setValue(next);
+    }
+  };
+
+  const finish = () => {
+    const parsed = Number(draft);
+    if (draft.trim() === "" || !Number.isFinite(parsed)) {
+      setDraft(value);
+      return;
+    }
+
+    const bounded = Math.min(max, Math.max(min, parsed)).toString();
+    setDraft(bounded);
+    setValue(bounded);
+  };
+
+  const sliderValue = /^-?(?:\d+|\d*\.\d+)$/.test(draft)
+    ? Number(draft)
+    : Number(value);
+
+  return { draft, finish, setDraft, sliderValue, update };
+}
+
 export function NumberOption(props: {
   value: string;
   setValue: (value: string) => void;
@@ -311,10 +350,16 @@ export function NumberOption(props: {
   suffix?: string;
 }) {
   const [enabled, setEnabled] = useState(props.value !== props.disabledValue);
+  const number = useBoundedNumberDraft(
+    props.value,
+    props.min,
+    props.max,
+    props.setValue,
+  );
 
   useEffect(() => {
     setEnabled(props.value !== props.disabledValue);
-  }, [props.value]);
+  }, [props.value, props.disabledValue]);
 
   return (
     <FormControl>
@@ -350,10 +395,10 @@ export function NumberOption(props: {
             }}
           >
             <TextField
-              type="number"
+              type="text"
               inputProps={{
-                inputMode: "numeric",
-                pattern: "[0-9]*",
+                "aria-label": `${props.label} value`,
+                inputMode: "decimal",
                 style: { textAlign: "left" },
               }}
               size="small"
@@ -362,17 +407,9 @@ export function NumberOption(props: {
                   ? { width: props.width + "px" }
                   : { width: "100px" }
               }
-              value={props.value}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                if (value < props.min) {
-                  props.setValue(props.min.toString());
-                } else if (value > props.max) {
-                  props.setValue(props.max.toString());
-                } else {
-                  props.setValue(value.toString());
-                }
-              }}
+              value={number.draft}
+              onChange={(e) => number.update(e.target.value)}
+              onBlur={number.finish}
             />
             {props.suffix ? <div>{props.suffix}</div> : null}
           </Stack>
@@ -391,11 +428,12 @@ export function NumberSliderOption(props: {
   min: number;
   max: number;
 }) {
-  const [internalValue, setInternalValue] = useState(props.value);
-
-  useEffect(() => {
-    setInternalValue(props.value);
-  }, [props.value]);
+  const number = useBoundedNumberDraft(
+    props.value,
+    props.min,
+    props.max,
+    props.setValue,
+  );
 
   return (
     <FormControl>
@@ -403,32 +441,24 @@ export function NumberSliderOption(props: {
       <Stack spacing={1} direction="row" alignItems="center">
         <Slider
           sx={{ ml: 1.5, mr: 1.5 }}
-          value={Number(internalValue)}
+          value={number.sliderValue}
           min={props.min}
           max={props.max}
-          onChange={(e, v) => setInternalValue(v.toString())}
+          onChange={(_, value) => number.setDraft(value.toString())}
           onChangeCommitted={(e, v) => props.setValue(v.toString())}
         />
         <TextField
-          type="number"
+          type="text"
           inputProps={{
-            inputMode: "numeric",
-            pattern: "[0-9]*",
+            "aria-label": `${props.label} value`,
+            inputMode: "decimal",
             style: { textAlign: "left" },
           }}
           size="small"
           sx={{ width: 120 }}
-          value={internalValue}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v < props.min) {
-              props.setValue(props.min.toString());
-            } else if (v > props.max) {
-              props.setValue(props.max.toString());
-            } else {
-              props.setValue(v.toString());
-            }
-          }}
+          value={number.draft}
+          onChange={(e) => number.update(e.target.value)}
+          onBlur={number.finish}
         />
       </Stack>
       <FormHelperText>{props.helpText}</FormHelperText>
@@ -444,11 +474,12 @@ export function VerticalNumberSliderOption(props: {
   max: number;
   step: number;
 }) {
-  const [internalValue, setInternalValue] = useState(props.value);
-
-  useEffect(() => {
-    setInternalValue(props.value);
-  }, [props.value]);
+  const number = useBoundedNumberDraft(
+    props.value,
+    props.min,
+    props.max,
+    props.setValue,
+  );
 
   return (
     <FormControl>
@@ -456,35 +487,26 @@ export function VerticalNumberSliderOption(props: {
         <FormLabel>{props.label}</FormLabel>
         <Slider
           step={props.step}
-          value={Number(internalValue)}
+          value={number.sliderValue}
           min={props.min}
           max={props.max}
           sx={{ height: 100 }}
-          onChange={(e, v) => setInternalValue(v.toString())}
+          onChange={(_, value) => number.setDraft(value.toString())}
           onChangeCommitted={(e, v) => props.setValue(v.toString())}
           orientation="vertical"
         />
         <TextField
-          type="number"
+          type="text"
           inputProps={{
-            inputMode: "numeric",
-            pattern: "[0-9]*",
+            "aria-label": `${props.label} value`,
+            inputMode: "decimal",
             style: { textAlign: "left" },
-            step: props.step,
           }}
           size="small"
           sx={{ width: 90 }}
-          value={Number(internalValue).toFixed(2)}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v < props.min) {
-              props.setValue(props.min.toString());
-            } else if (v > props.max) {
-              props.setValue(props.max.toString());
-            } else {
-              props.setValue(v.toString());
-            }
-          }}
+          value={number.draft}
+          onChange={(e) => number.update(e.target.value)}
+          onBlur={number.finish}
         />
       </Stack>
     </FormControl>
@@ -503,11 +525,15 @@ export function ToggleableNumberSliderOption(props: {
   suffix?: string;
 }) {
   const [enabled, setEnabled] = useState(props.value !== "0");
-  const [internalValue, setInternalValue] = useState(props.value);
+  const number = useBoundedNumberDraft(
+    props.value,
+    props.min,
+    props.max,
+    props.setValue,
+  );
 
   useEffect(() => {
     setEnabled(props.value !== "0");
-    setInternalValue(props.value);
   }, [props.value]);
 
   return (
@@ -533,33 +559,25 @@ export function ToggleableNumberSliderOption(props: {
         <Stack spacing={2} direction="row" alignItems="center">
           <Slider
             sx={{ ml: 1.5, mr: 1.5 }}
-            value={Number(internalValue)}
-            onChangeCommitted={(e, v) => props.setValue(v.toString())}
-            onChange={(e, v) => setInternalValue(v.toString())}
+            value={number.sliderValue}
+            onChangeCommitted={(_, value) => props.setValue(value.toString())}
+            onChange={(_, value) => number.setDraft(value.toString())}
             step={props.step}
             min={props.min}
             max={props.max}
           />
           <TextField
-            type="number"
+            type="text"
             inputProps={{
-              inputMode: "numeric",
-              pattern: "[0-9]*",
+              "aria-label": `${props.label} value`,
+              inputMode: "decimal",
               style: { textAlign: "left" },
             }}
             size="small"
             sx={{ width: "110px" }}
-            value={internalValue}
-            onChange={(e) => {
-              const value = Number(e.target.value);
-              if (value < props.min) {
-                props.setValue(props.min.toString());
-              } else if (value > props.max) {
-                props.setValue(props.max.toString());
-              } else {
-                props.setValue(value.toString());
-              }
-            }}
+            value={number.draft}
+            onChange={(e) => number.update(e.target.value)}
+            onBlur={number.finish}
           />
           <div>{props.suffix}</div>
         </Stack>

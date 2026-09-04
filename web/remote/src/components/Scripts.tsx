@@ -42,12 +42,13 @@ export function Scripts() {
     uiState.setFavoriteScripts(favorites.filter((f) => f !== filename));
   };
 
-  allScripts.data?.scripts.sort((a, b) => a.name.localeCompare(b.name));
-
+  const sortedScripts = [...(allScripts.data?.scripts ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const displayFavorites: Script[] = [];
   const displayRest: Script[] = [];
 
-  allScripts.data?.scripts.forEach((script) => {
+  sortedScripts.forEach((script) => {
     if (isFavorite(script.filename)) {
       displayFavorites.push(script);
     } else {

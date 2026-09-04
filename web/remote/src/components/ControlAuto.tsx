@@ -212,23 +212,30 @@ export function ControlAuto() {
 
   const logKey = (name: string, code: number) => {
     setLog(
-      moment().format("YYYY-MM-DD HH:mm:ss.S") +
+      (current) =>
+        moment().format("YYYY-MM-DD HH:mm:ss.S") +
         " - " +
         name +
         " (" +
         code +
         ")\n" +
-        log
+        current,
     );
   };
 
   const logGeneric = (msg: string) => {
-    setLog(moment().format("YYYY-MM-DD HH:mm:ss.S") + " - " + msg + "\n" + log);
+    setLog(
+      (current) =>
+        moment().format("YYYY-MM-DD HH:mm:ss.S") + " - " + msg + "\n" + current,
+    );
   };
 
   const editKey = (index: number, value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return;
+
     const newKeys = [...uiState.autoControlKeys];
-    newKeys[index] = parseInt(value, 10);
+    newKeys[index] = parsed;
     uiState.setAutoControlKeys(newKeys);
   };
 
@@ -580,7 +587,7 @@ export function ControlAuto() {
             <Grid container spacing={1}>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-0"
                   label="L2"
                   variant="outlined"
                   size="small"
@@ -592,7 +599,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-1"
                   label="L1"
                   variant="outlined"
                   size="small"
@@ -604,7 +611,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-2"
                   label="R1"
                   variant="outlined"
                   size="small"
@@ -616,7 +623,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-3"
                   label="R2"
                   variant="outlined"
                   size="small"
@@ -628,7 +635,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-4"
                   label="Up"
                   variant="outlined"
                   size="small"
@@ -640,7 +647,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-5"
                   label="Down"
                   variant="outlined"
                   size="small"
@@ -652,7 +659,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-6"
                   label="Left"
                   variant="outlined"
                   size="small"
@@ -664,7 +671,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-7"
                   label="Right"
                   variant="outlined"
                   size="small"
@@ -676,7 +683,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-8"
                   label="OSD"
                   variant="outlined"
                   size="small"
@@ -688,7 +695,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-9"
                   label="Select"
                   variant="outlined"
                   size="small"
@@ -700,7 +707,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-10"
                   label="Start"
                   variant="outlined"
                   size="small"
@@ -712,7 +719,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-11"
                   label="X"
                   variant="outlined"
                   size="small"
@@ -724,7 +731,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-12"
                   label="Y"
                   variant="outlined"
                   size="small"
@@ -736,7 +743,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-13"
                   label="B"
                   variant="outlined"
                   size="small"
@@ -748,7 +755,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-14"
                   label="A"
                   variant="outlined"
                   size="small"
@@ -760,7 +767,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-15"
                   label="1"
                   variant="outlined"
                   size="small"
@@ -772,7 +779,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-16"
                   label="2"
                   variant="outlined"
                   size="small"
@@ -784,7 +791,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-17"
                   label="3"
                   variant="outlined"
                   size="small"
@@ -796,7 +803,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-18"
                   label="4"
                   variant="outlined"
                   size="small"
@@ -808,7 +815,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-19"
                   label="5"
                   variant="outlined"
                   size="small"
@@ -820,7 +827,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-20"
                   label="6"
                   variant="outlined"
                   size="small"
@@ -832,7 +839,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-21"
                   label="7"
                   variant="outlined"
                   size="small"
@@ -844,7 +851,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-22"
                   label="8"
                   variant="outlined"
                   size="small"
@@ -856,7 +863,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-23"
                   label="9"
                   variant="outlined"
                   size="small"
@@ -868,7 +875,7 @@ export function ControlAuto() {
               </Grid>
               <Grid item xs={2}>
                 <TextField
-                  id="outlined-basic"
+                  id="auto-key-24"
                   label="10"
                   variant="outlined"
                   size="small"

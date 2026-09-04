@@ -233,6 +233,9 @@ export default function Control() {
             onTouchEnd={() => {
               sendRawKeyUp(103);
             }}
+            onTouchCancel={() => {
+              sendRawKeyUp(103);
+            }}
             onClick={() => {
               sendRawKeyNoTouch(103);
             }}
@@ -261,6 +264,9 @@ export default function Control() {
               sendRawKeyDown(105);
             }}
             onTouchEnd={() => {
+              sendRawKeyUp(105);
+            }}
+            onTouchCancel={() => {
               sendRawKeyUp(105);
             }}
             onClick={() => {
@@ -293,6 +299,9 @@ export default function Control() {
             onTouchEnd={() => {
               sendRawKeyUp(106);
             }}
+            onTouchCancel={() => {
+              sendRawKeyUp(106);
+            }}
             onClick={() => {
               sendRawKeyNoTouch(106);
             }}
@@ -321,6 +330,9 @@ export default function Control() {
               sendRawKeyDown(108);
             }}
             onTouchEnd={() => {
+              sendRawKeyUp(108);
+            }}
+            onTouchCancel={() => {
               sendRawKeyUp(108);
             }}
             onClick={() => {

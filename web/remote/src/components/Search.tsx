@@ -34,13 +34,13 @@ import SyncIcon from "@mui/icons-material/Sync";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
-import TapAndPlayIcon from "@mui/icons-material/TapAndPlay";
 import { getApiEndpoint } from "../lib/api";
+import { encodeLaunchToken } from "../lib/launchToken";
 import QRCodeStyling from "qr-code-styling";
 
 function downloadQrCode(options: { path: string; name: string }) {
   const { path, name } = options;
-  const data = `${getApiEndpoint()}/l/${btoa(path).replace(/=+$/, "")}`;
+  const data = `${getApiEndpoint()}/l/${encodeLaunchToken(path)}`;
   const qr = new QRCodeStyling({
     data,
     type: "canvas",
@@ -59,7 +59,7 @@ function downloadQrCode(options: { path: string; name: string }) {
     link.href = url;
     link.download = `${name}.png`;
     link.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   });
 }
 
@@ -77,15 +77,6 @@ function SearchResultsList(props: {
   const displayed = new Set<string>();
   const displayResults: Game[] = [];
   const [gameInfoOpen, setGameInfoOpen] = React.useState(false);
-
-  const [nfcRunning, setNfcRunning] = React.useState(false);
-  const [waitingNfc, setWaitingNfc] = React.useState(false);
-
-  useEffect(() => {
-    api.nfcStatus().then((status) => {
-      setNfcRunning(status.running);
-    });
-  }, []);
 
   if (props.results && props.results.data) {
     for (const game of props.results.data) {
@@ -165,30 +156,6 @@ function SearchResultsList(props: {
             >
               Create shortcut
             </Button>
-            {nfcRunning ? (
-              <Button
-                variant="outlined"
-                sx={{ mt: 1 }}
-                startIcon={<TapAndPlayIcon />}
-                onClick={() => {
-                  if (props.selectedGame) {
-                    setWaitingNfc(true);
-                    api
-                      .nfcWrite({
-                        path: props.selectedGame.path,
-                      })
-                      .then(() => {
-                        setGameInfoOpen(false);
-                      })
-                      .finally(() => {
-                        setWaitingNfc(false);
-                      });
-                  }
-                }}
-              >
-                {waitingNfc ? "Waiting for tag..." : "Write to NFC tag"}
-              </Button>
-            ) : null}
             <Button
               variant="outlined"
               sx={{ mt: 1 }}
@@ -344,7 +311,7 @@ export default function Search() {
                 sx={{ flexGrow: 1 }}
               >
                 <MenuItem value="all">All systems</MenuItem>
-                {systems.data?.systems
+                {[...(systems.data?.systems ?? [])]
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((system) => (
                     <MenuItem key={system.id} value={system.id}>

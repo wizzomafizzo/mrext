@@ -60,6 +60,12 @@ export function setWsEndpoint(endpoint: string): void {
   localStorage.setItem(WS_ENDPOINT_KEY, endpoint);
 }
 
+const encodePath = (path: string) =>
+  path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
 export class ControlApi {
   apiUrl: string;
 
@@ -76,7 +82,7 @@ export class ControlApi {
   }
 
   getScreenshotUrl(path: string): string {
-    return `${this.apiUrl}/screenshots/${path}`;
+    return `${this.apiUrl}/screenshots/${encodePath(path)}`;
   }
 
   async takeScreenshot(): Promise<Screenshot> {
@@ -84,7 +90,7 @@ export class ControlApi {
   }
 
   async deleteScreenshot(path: string): Promise<void> {
-    await axios.delete(`/screenshots/${path}`);
+    await axios.delete(`/screenshots/${encodePath(path)}`);
   }
 
   // systems
@@ -94,7 +100,7 @@ export class ControlApi {
   }
 
   async launchSystem(id: string): Promise<void> {
-    await axios.post(`/systems/${id}`);
+    await axios.post(`/systems/${encodeURIComponent(id)}`);
   }
 
   // wallpaper
@@ -104,11 +110,11 @@ export class ControlApi {
   }
 
   getWallpaperUrl(filename: string): string {
-    return `${this.apiUrl}/wallpapers/${filename}`;
+    return `${this.apiUrl}/wallpapers/${encodeURIComponent(filename)}`;
   }
 
   async setWallpaper(filename: string): Promise<void> {
-    await axios.post(`/wallpapers/${filename}`);
+    await axios.post(`/wallpapers/${encodeURIComponent(filename)}`);
   }
 
   async unsetWallpaper(): Promise<void> {
@@ -116,7 +122,7 @@ export class ControlApi {
   }
 
   async deleteWallpaper(filename: string): Promise<void> {
-    await axios.delete(`/wallpapers/${filename}`);
+    await axios.delete(`/wallpapers/${encodeURIComponent(filename)}`);
   }
 
   // music
@@ -142,7 +148,7 @@ export class ControlApi {
   }
 
   async setMusicPlaylist(playlist: string): Promise<void> {
-    await axios.post(`/music/playlist/${playlist}`);
+    await axios.post(`/music/playlist/${encodeURIComponent(playlist)}`);
   }
 
   async getMusicPlaylists(): Promise<string[]> {
@@ -266,7 +272,7 @@ export class ControlApi {
   }
 
   async runScript(filename: string) {
-    await axios.post(`/scripts/launch/${filename}`);
+    await axios.post(`/scripts/launch/${encodeURIComponent(filename)}`);
   }
 
   async openConsole() {
@@ -279,21 +285,6 @@ export class ControlApi {
 
   async killScript() {
     await axios.post(`/scripts/kill`);
-  }
-
-  async nfcStatus(): Promise<{
-    available: boolean;
-    running: boolean;
-  }> {
-    return (await axios.get(`/nfc/status`)).data;
-  }
-
-  async nfcWrite(data: { path: string }) {
-    await axios.post(`/nfc/write`, data);
-  }
-
-  async nfcCancel() {
-    await axios.post(`/nfc/cancel`);
   }
 
   async listGamesFolder(path: string): Promise<ViewMenu> {

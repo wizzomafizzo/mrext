@@ -424,31 +424,23 @@ const distinct = (arr: string[]) => [...new Set(arr)];
 function m(
   state: IniStore,
   key: string,
-  value: string
+  value: string,
 ): IniStore | Partial<IniStore> {
-  console.log("update", key, "=", value);
-
   if ((state as Indexable)[key] === value) {
-    console.log("no change");
     return {};
   }
 
   if ((state.original as Indexable)[key] === value) {
-    console.log("reverted");
     return {
       [key]: value,
-      modified: state.modified.filter((m) => m !== key),
+      modified: state.modified.filter((modifiedKey) => modifiedKey !== key),
     };
   }
 
-  const partial = {
+  return {
     [key]: value,
     modified: distinct([...state.modified, key]),
   };
-
-  console.log("partial", partial);
-
-  return partial;
 }
 
 export const useIniSettingsStore = create<IniStore>()((set) => ({
@@ -466,7 +458,7 @@ export const useIniSettingsStore = create<IniStore>()((set) => ({
   resetModified: () => set({ modified: [] }),
 
   setOriginal: (ini: IniState) => set({ original: ini }),
-  revertChanges: () => set((s) => ({ ...s, ...s.original })),
+  revertChanges: () => set((s) => ({ ...s, ...s.original, modified: [] })),
 
   setVideoMode: (v: string) => set((s) => m(s, "videoMode", v)),
   setVideoModeNtsc: (v: string) => set((s) => m(s, "videoModeNtsc", v)),
@@ -603,20 +595,29 @@ function newIniRequest(state: IniStore): {
 
 export function saveMisterIni(id: number, state: IniStore) {
   const changes = newIniRequest(state);
-  console.log(changes);
   const api = new ControlApi();
   return api.saveMisterIni(id, changes).then(() => {
-    state.resetModified();
-    const newState = { ...state.original };
+    const current = useIniSettingsStore.getState();
+    const newOriginal = { ...current.original };
+    const savedUnchanged = new Set<string>();
+
     for (const key in changes) {
-      if (key in iniKeyMapReverse) {
-        const mKey = iniKeyMapReverse[key];
-        (newState as Indexable)[mKey] = changes[key];
-      } else {
+      if (!(key in iniKeyMapReverse)) {
         console.warn(`Unknown ini key ${key}`);
+        continue;
+      }
+
+      const mKey = iniKeyMapReverse[key];
+      (newOriginal as Indexable)[mKey] = changes[key];
+      if ((current as Indexable)[mKey] === changes[key]) {
+        savedUnchanged.add(mKey);
       }
     }
-    state.setOriginal(newState);
+
+    useIniSettingsStore.setState({
+      modified: current.modified.filter((key) => !savedUnchanged.has(key)),
+      original: newOriginal,
+    });
   });
 }
 
@@ -647,7 +648,7 @@ export function loadMisterIni(id: number, state: IniStore, reset = false) {
         if (key in iniKeyMapReverse) {
           const mKey = iniKeyMapReverse[key];
 
-          if (state.modified.includes(key)) {
+          if (state.modified.includes(mKey)) {
             console.log(`Skipping ini key ${mKey} as ${key} is modified`);
             continue;
           }

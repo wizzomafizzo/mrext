@@ -495,7 +495,7 @@ export default function MousePad(props: MousePadProps) {
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (capturedRef.current) return;
+    if (capturedRef.current || e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     pressActiveRef.current = true;
     lastPointRef.current = { x: e.clientX, y: e.clientY };

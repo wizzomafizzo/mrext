@@ -44,7 +44,7 @@ function SettingsPageLink(props: {
   icon: ReactNode;
 }) {
   const setActiveSettingsPage = useUIStateStore(
-    (state) => state.setActiveSettingsPage
+    (state) => state.setActiveSettingsPage,
   );
 
   return (
@@ -62,7 +62,21 @@ function IniSwitcher() {
   const api = new ControlApi();
   const inis = useListMisterInis();
   const [iniDialogOpen, setIniDialogOpen] = useState(false);
+  const [changingIni, setChangingIni] = useState(false);
   const iniSettings = useIniSettingsStore();
+
+  const changeIni = async (id: number) => {
+    setChangingIni(true);
+    try {
+      await api.setMisterIni({ ini: id });
+      setIniDialogOpen(false);
+      await Promise.all([inis.refetch(), loadMisterIni(id, iniSettings, true)]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setChangingIni(false);
+    }
+  };
 
   let activeIni = {
     name: "Main",
@@ -104,26 +118,19 @@ function IniSwitcher() {
                   filename: string;
                   displayName: string;
                 },
-                i: number
+                i: number,
               ) => (
                 <ListItem key={ini.filename} disableGutters>
                   <Button
                     fullWidth
                     variant={activeIni.id == i + 1 ? "contained" : "outlined"}
-                    onClick={() => {
-                      setIniDialogOpen(false);
-                      api.setMisterIni({ ini: i + 1 }).then(() => {
-                        inis.refetch().catch((e) => console.error(e));
-                        loadMisterIni(i + 1, iniSettings, true).catch((e) =>
-                          console.error(e)
-                        );
-                      });
-                    }}
+                    disabled={changingIni}
+                    onClick={() => void changeIni(i + 1)}
                   >
                     {ini.displayName}
                   </Button>
                 </ListItem>
-              )
+              ),
             )}
           </List>
         </Box>
@@ -200,7 +207,7 @@ function MainPage() {
 
 export default function Settings() {
   const activeSettingsPage = useUIStateStore(
-    (state) => state.activeSettingsPage
+    (state) => state.activeSettingsPage,
   );
 
   const iniSettingsStore = useIniSettingsStore();

@@ -6,7 +6,7 @@ Remote communicates through its established REST and WebSocket APIs. See [`../..
 
 ## Development
 
-Requires Node.js 22.12 or newer and npm.
+Requires Node.js 24 or newer and npm 12.0.2.
 
 ```sh
 npm ci

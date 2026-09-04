@@ -33,6 +33,7 @@ export function Network() {
   if (peers.data?.peers.length === 0) {
     return (
       <Box sx={{ m: 1 }}>
+        {refreshButton}
         <Typography textAlign="center">No MiSTers found on network.</Typography>
       </Box>
     );
