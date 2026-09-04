@@ -5,7 +5,6 @@ import json
 import hashlib
 import sys
 import time
-import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
@@ -20,17 +19,17 @@ FILES = {
     "search": ["search.sh"],
 }
 REBOOT = ["remote"]
-EXTERNAL_FILES = [
-    "releases/external/bgm.sh",
-    "releases/external/favorites.sh",
-    "releases/external/gamesmenu.sh",
+SCRIPT_FILES = [
+    "scripts/bgm.sh",
+    "scripts/favorites.sh",
+    "scripts/gamesmenu.sh",
 ]
 
 DB_ID = "mrext/{}"
 RELEASES_FOLDER = "releases"
 DL_FOLDER = "_bin/releases"
 DL_URL = "https://github.com/wizzomafizzo/mrext/releases/download/{}"
-EXTERNAL_URL = "https://github.com/wizzomafizzo/mrext/raw/main/releases/external/{}"
+SCRIPT_URL = "https://github.com/wizzomafizzo/mrext/raw/main/scripts/{}"
 
 
 class RepoDbFilesItem(TypedDict):
@@ -123,15 +122,8 @@ def create_all_db(tag: str) -> RepoDb:
 
             files[key] = file_entry
 
-    for file in EXTERNAL_FILES:
-        if file.startswith("https://"):
-            dl_to = os.path.join(DL_FOLDER, os.path.basename(file))
-            urllib.request.urlretrieve(file, dl_to)
-            url = file
-            file = dl_to
-        else:
-            url = EXTERNAL_URL.format(os.path.basename(file))
-        
+    for file in SCRIPT_FILES:
+        url = SCRIPT_URL.format(os.path.basename(file))
         local_path = file
         key = "Scripts/{}".format(os.path.basename(local_path))
         size = os.stat(local_path).st_size

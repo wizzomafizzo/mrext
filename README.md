@@ -28,7 +28,7 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/all.
 
 Run either `downloader` or `update` from MiSTer Scripts menu. Both names launch MiSTer Downloader.
 
-Each application also has an individual database listed in its documentation.
+Individual databases are listed in application documentation where available. Existing BGM, Favorites, or GamesMenu users who configured a standalone database must replace its old `db_url` with the combined `mrext/all` URL above.
 
 ### Manual
 
@@ -45,22 +45,22 @@ Control MiSTer from any device on your network. Remote provides a web interface 
 
 Play music in MiSTer menu. BGM supports common audio formats and internet radio streams, and can pause automatically while a core is running.
 
-<a href="https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh"><img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140"></a>
-<a href="https://github.com/wizzomafizzo/MiSTer_BGM"><img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/bgm.sh"><img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext#bgm"><img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140"></a>
 
 ## Favorites
 
 Create and manage shortcuts for favorite games and cores in MiSTer menu.
 
-<a href="https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh"><img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140"></a>
-<a href="https://github.com/wizzomafizzo/MiSTer_Favorites"><img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/favorites.sh"><img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext#favorites"><img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140"></a>
 
 ## GamesMenu
 
 Browse a game collection from MiSTer menu. GamesMenu scans games and creates launchers matching collection folder layout.
 
-<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
-<a href="https://github.com/wizzomafizzo/MiSTer_GamesMenu"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext#gamesmenu"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
 
 ## LastPlayed
 

@@ -7,7 +7,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -98,26 +97,26 @@ var apps = []app{
 	},
 }
 
-type externalApp struct {
+type scriptApp struct {
 	name string
-	url  string
+	path string
 	bin  string
 }
 
-var externalApps = []externalApp{
+var scriptApps = []scriptApp{
 	{
 		name: "bgm",
-		url:  "https://github.com/wizzomafizzo/MiSTer_BGM/raw/main/bgm.sh",
+		path: filepath.Join(cwd, "scripts", "bgm.sh"),
 		bin:  "bgm.sh",
 	},
 	{
 		name: "favorites",
-		url:  "https://github.com/wizzomafizzo/MiSTer_Favorites/raw/main/favorites.sh",
+		path: filepath.Join(cwd, "scripts", "favorites.sh"),
 		bin:  "favorites.sh",
 	},
 	{
 		name: "gamesmenu",
-		url:  "https://github.com/wizzomafizzo/MiSTer_GamesMenu/raw/main/gamesmenu.sh",
+		path: filepath.Join(cwd, "scripts", "gamesmenu.sh"),
 		bin:  "gamesmenu.sh",
 	},
 }
@@ -211,32 +210,6 @@ func Mister(appName string) error {
 		"GOARCH": "arm",
 		"GOARM":  "7",
 	})
-}
-
-func UpdateExternalApps() {
-	externalDir := filepath.Join(releasesDir, "external")
-	_ = os.MkdirAll(externalDir, 0o755)
-	for _, app := range externalApps {
-		resp, err := http.Get(app.url)
-		if err != nil || resp.StatusCode != 200 {
-			fmt.Println("Error downloading", app.name, err)
-			os.Exit(1)
-		}
-
-		out, err := os.Create(filepath.Join(externalDir, app.bin))
-		if err != nil {
-			fmt.Println("Error creating", app.name, err)
-			os.Exit(1)
-		}
-
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			fmt.Println("Error writing", app.name, err)
-			os.Exit(1)
-		}
-
-		_ = resp.Body.Close()
-	}
 }
 
 type updateDbFile struct {
@@ -354,10 +327,12 @@ func PrepRelease() {
 			Release(app.name)
 		}
 	}
-	UpdateExternalApps()
-	for _, app := range externalApps {
+	for _, app := range scriptApps {
 		fmt.Println("Preparing release:", app.name)
-		sh.Copy(filepath.Join(binReleasesDir, app.bin), filepath.Join(releasesDir, "external", app.bin))
+		if err := sh.Copy(filepath.Join(binReleasesDir, app.bin), app.path); err != nil {
+			fmt.Println("Error copying script", app.name, err)
+			os.Exit(1)
+		}
 	}
 }
 

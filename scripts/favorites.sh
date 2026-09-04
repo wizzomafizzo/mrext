@@ -166,7 +166,7 @@ MGL_MAP = (
     ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
     ("Saturn", "_Console/Saturn", (({".cue", ".chd"}, 1, "s", 0),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 1),)),
-    ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
+    ("SG1000", "_Console/ColecoVision", (({".sg"}, 1, "f", 2),)),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),
     ("SNES", "_Console/SNES", (({".sfc", ".smc", ".bin", ".bs"}, 2, "f", 0),)),
@@ -288,11 +288,12 @@ def get_favorite_target(path: str):
     elif ext == ".mgl":
         try:
             with open(path, "r") as f:
-                match = re.search(r'path="\.\./\.\./\.\./\.\.(.+)"', f.read())
+                contents = f.read()
+                match = re.search(r'path="\.\./\.\./\.\./\.\.(.+)"', contents)
                 if match:
                     return match.group(1)
                 else:
-                    match = re.search(r'path="(.+)"', f.read())
+                    match = re.search(r'path="(.+)"', contents)
                     if match:
                         return match.group(1)
                     else:
@@ -527,6 +528,11 @@ def get_mgl_setname(path):
                 core = re.search("<setname>(.+)</setname>", f.read())
                 if core:
                     return core.groups()[0]
+                else:
+                    f.seek(0)
+                    core = re.search("<setname same_dir=\"1\">(.+)</setname>", f.read())
+                    if core:
+                        return core.groups()[0]
         except UnicodeDecodeError:
             return None
 
@@ -924,6 +930,7 @@ def display_modify_item(path):
     info = f"Name: {name}\n"
 
     folder = relative_path(os.path.dirname(path))
+    setname = None
     if folder == SD_ROOT:
         folder = "<TOP LEVEL>"
     info += f"Folder: {folder}\n"
@@ -932,11 +939,12 @@ def display_modify_item(path):
         info += "Type: Core\n"
     elif ext == ".mra":
         info += "Type: Arcade Core\n"
+        setname = get_mgl_setname(path)
     elif ext == ".mgl":
         info += "Type: Game\n"
         info += f"System: {get_mgl_system(path)}\n"
+        setname = get_mgl_setname(path)
 
-    setname = get_mgl_setname(path)
     if setname:
         info += f"Set name: {setname}\n"
 
@@ -1007,7 +1015,7 @@ def refresh_favorites():
         remove_favorite(entry[1])
 
         # ignore core files that aren't versioned
-        if re.search("_\d{8}\.", entry[1]) is None:
+        if re.search(r"_\d{8}\.", entry[1]) is None:
             continue
 
         link = entry[1].rsplit("_", 1)[0]
@@ -1153,6 +1161,16 @@ def display_launcher_select(start_folder):
             "Select",
             "--default-item",
             get_selection(folder),
+        ]
+        
+        if file_type == "NeoGeo":
+            args = args + [
+                "--extra-button",
+                "--extra-label",
+                "Browse",
+            ]
+
+        args = args + [
             "--menu",
             msg + "\n" + folder,
             WINDOW_DIMENSIONS[0],
@@ -1206,6 +1224,15 @@ def display_launcher_select(start_folder):
                 return file_type, all_items[selection - 2]
             else:
                 return file_type, all_items[selection - 1]
+        elif button == 3:
+            if selection == "":
+                return None, None
+            if show_external and selection == 1:
+                return file_type + "_Browse", EXTERNAL_FOLDER + "/"
+            elif show_external:
+                return file_type + "_Browse", all_items[selection - 2]
+            else:
+                return file_type + "_Browse", all_items[selection - 1]
         else:
             return None, None
 
@@ -1262,6 +1289,10 @@ def add_favorite_workflow():
         # cancelled
         return
 
+    browse_suffix = "_Browse"
+    if file_type.endswith(browse_suffix):
+        file_type = file_type[:-len(browse_suffix)]
+
     # pick the folder where the favorite goes
     folder = display_add_favorite_folder()
     if folder is None:
@@ -1311,11 +1342,11 @@ def add_favorite_workflow():
         # system rom, make mgl file
         rbf, mgl_def = mgl_from_file(file_type, name)
 
-        rbf=CORE_PREFIX+rbf
-
         if rbf is None or mgl_def is None:
             # this shouldn't really happen due to the contraints on the file picker
             raise Exception("Rom file type does not match any MGL definition")
+
+        rbf = CORE_PREFIX + rbf
 
         setname = None
         if file_type in SET_NAMES:

@@ -21,7 +21,7 @@ Remote is a web-based interface with a stack of modern features to manage all as
   * Create shortcuts in the menu from results
 * Browse and launch all cores installed on your MiSTer
 * View, browse, download and take new screenshots
-* Control [BGM](https://github.com/wizzomafizzo/MiSTer_BGM) music playback
+* Control [BGM](https://github.com/wizzomafizzo/mrext#bgm) music playback
 * Browse and activate wallpapers
 * Launch scripts from the Scripts menu
 * Change all MiSTer.ini file settings
