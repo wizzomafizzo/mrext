@@ -13,7 +13,7 @@ import time
 import signal
 import re
 
-MUSIC_FOLDER = "/media/fat/MP3"
+MUSIC_FOLDER = "/media/fat/music"
 BOOT_FOLDER = os.path.join(MUSIC_FOLDER, "boot")
 HISTORY_SIZE = 0.2  # ratio of total tracks to keep in play history
 SOCKET_FILE = "/tmp/bgm.sock"
@@ -653,7 +653,7 @@ def start_service(player: Player):
             log("CORENAME file is missing, exiting...")
             break
 
-        if core.lower().strip() == new_core.lower().strip():
+        if core is not None and core.lower().strip() == new_core.lower().strip():
             log("CORENAME file changed, but core is the same")
             pass
         elif player.play_in_core:
