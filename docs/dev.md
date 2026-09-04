@@ -15,7 +15,7 @@ Applications should:
 
 ## Development Environment
 
-The project is written in pure Go and uses Mage for build scripts. MiSTer ARM32 cross-compilation uses Go directly; no C compiler, native libraries, ARM container, or Docker installation is required.
+Applications and shared backend packages are written in pure Go. Remote also embeds a React/TypeScript web UI from `web/remote`. Mage coordinates both build systems. MiSTer ARM32 cross-compilation uses Go directly; no C compiler, native libraries, ARM container, or Docker installation is required.
 
 Most applications use a lot of MiSTer-specific paths and files to function. They will mostly work on a desktop with a `/media/fat` directory created to match a MiSTer system, but this generally won't work great beyond specific testing. The usual development cycle is to build a MiSTer ARM binary, copy it to your own MiSTer and run on there to test.
 
@@ -28,6 +28,10 @@ Most applications use a lot of MiSTer-specific paths and files to function. They
 - [Mage](https://magefile.org/)
 
   Used for builds and automation. Install Mage globally, or replace `mage` in commands below with `go run github.com/magefile/mage`.
+
+- [Node.js](https://nodejs.org/) 24 or newer and npm 12.0.2
+
+  Required to build Remote's embedded web UI. npm version is pinned by `web/remote/package.json` and CI.
 
 ### Optional Dependencies
 
@@ -49,11 +53,15 @@ These are the important commands:
 
 - `mage build <target>`
 
-  Builds a binary of the target application for the current system.
+  Builds a binary of the target application for the current system. Building `remote` or `all` first installs and builds the embedded web UI.
 
 - `mage mister <target>`
 
-  Cross-compiles a static Linux ARMv7 binary for MiSTer with `CGO_ENABLED=0`.
+  Cross-compiles a static Linux ARMv7 binary for MiSTer with `CGO_ENABLED=0`. Building `remote` or `all` also rebuilds its web UI.
+
+- `mage remoteWeb`
+
+  Runs deterministic npm installation and builds `web/remote` into the ignored `cmd/remote/_client/build` directory.
 
 - `mage release <target>`
 
@@ -106,6 +114,12 @@ Simple generic functions used throughout the project. This is mostly used for co
 ### releases
 
 Final binary releases and repo files go here. Automatically generated from build script.
+
+### web
+
+Remote's React/TypeScript web UI lives in `web/remote`. Its original `mrext-client` Git history is retained in this repository. Run `npm ci` and `npm run dev` there for frontend development. Production builds are generated directly into `cmd/remote/_client/build` and embedded in `remote.sh`.
+
+Retired Android and iOS wrappers are available through repository history but are not part of the maintained source tree.
 
 ### scripts
 

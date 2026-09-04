@@ -21,29 +21,25 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
-          node-version: 20
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/remote/package-lock.json
 
-      - name: Build remote client
-        run: |
-          git clone --depth 1 https://github.com/wizzomafizzo/mrext-client.git /tmp/mrext-client
-          npm ci --prefix /tmp/mrext-client
-          npm run build --prefix /tmp/mrext-client
-          rm -rf cmd/remote/_client/build
-          mkdir -p cmd/remote/_client
-          cp -a /tmp/mrext-client/build cmd/remote/_client/build
+      - name: Use pinned npm
+        run: npm install --global npm@12.0.2
 
       - name: Run mage prepRelease
         run: go run github.com/magefile/mage prepRelease

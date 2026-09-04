@@ -17,6 +17,42 @@ env:
   GOLANGCI_LINT_VERSION: v2.13.2
 
 jobs:
+  web:
+    name: Remote web UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/remote/package-lock.json
+
+      - name: Audit dependency changes
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: low
+
+      - name: Use pinned npm
+        run: npm install --global npm@12.0.2 --no-audit
+
+      - name: Install dependencies
+        run: npm ci --prefix web/remote --no-audit
+
+      - name: Test Remote web UI
+        run: npm test --prefix web/remote
+
+      - name: Build Remote web UI
+        run: npm run build --prefix web/remote
+
   lint:
     name: GolangCI-Lint
     runs-on: ubuntu-latest
@@ -25,6 +61,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

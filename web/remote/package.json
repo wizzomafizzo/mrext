@@ -1,0 +1,48 @@
+{
+  "name": "@mrext/remote-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@12.0.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "audit": "npm audit --omit=dev --audit-level=high"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.6",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.18.0",
+    "@tanstack/react-query": "^4.44.0",
+    "axios": "^1.20.0",
+    "moment": "^2.30.1",
+    "qr-code-styling": "^1.9.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-responsive": "^9.0.2",
+    "react-router-dom": "^7.18.3",
+    "react-simple-keyboard": "^3.8.263",
+    "react-use-websocket": "^4.13.0",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^22.18.0",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4",
+    "vitest": "^5.0.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
