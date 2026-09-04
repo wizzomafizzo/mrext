@@ -55,7 +55,7 @@ import {
   Popper,
   SwipeableDrawer,
 } from "@mui/material";
-import {GamesMenu, Menu} from "./Menu";
+import { GamesMenu, Menu } from "./Menu";
 import useWs from "./WebSocket";
 import {
   SettingsPageId,
@@ -81,7 +81,6 @@ import { ControlAuto } from "./ControlAuto";
 import Grid from "@mui/material/Grid";
 import Dialog from "@mui/material/Dialog";
 import TextField from "@mui/material/TextField";
-import { Capacitor } from "@capacitor/core";
 
 const drawerWidth = 240;
 
@@ -208,9 +207,9 @@ function RouterLink(props: RouterLinkProps) {
               }
             />
           );
-        }
+        },
       ),
-    [props.to]
+    [props.to],
   );
   return (
     <ListItemButton
@@ -455,22 +454,18 @@ export default function ResponsiveDrawer() {
   const isMobile = useMediaQuery({ query: "(max-width: 600px)" });
   const [connectOpen, setConnectOpen] = useState(false);
 
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const storedApiUrl = getStoredApiEndpoint();
-      if (!storedApiUrl || storedApiUrl === "") {
-        setConnectOpen(true);
-      }
-    }
-  }, []);
-
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   const drawer = (
     <div>
-      <Toolbar sx={{ justifyContent: "center", paddingTop: "env(safe-area-inset-top)" }}>
+      <Toolbar
+        sx={{
+          justifyContent: "center",
+          paddingTop: "env(safe-area-inset-top)",
+        }}
+      >
         <Stack>
           <Stack direction="row">
             <img alt="MiSTer Kun Logo" src="/misterkun.svg" height={43} />
@@ -510,7 +505,12 @@ export default function ResponsiveDrawer() {
           icon={<SearchIcon />}
           closeDrawer={handleDrawerToggle}
         />
-        <RouterLink to="/games" text="Games" icon={<VideogameAssetIcon />} closeDrawer={handleDrawerToggle} />
+        <RouterLink
+          to="/games"
+          text="Games"
+          icon={<VideogameAssetIcon />}
+          closeDrawer={handleDrawerToggle}
+        />
         <RouterLink
           to="/systems"
           text="Systems"
@@ -626,19 +626,6 @@ export default function ResponsiveDrawer() {
     </div>
   );
 
-  // for some reason the min-height of a Toolbar component is not right on iOS and
-  // is different between mobile and desktop (assuming it's actually between the hidden
-  // and always visible sidebar layouts). this may also have something to to with safe
-  // area insets on these devices. this is a hack to fix it. it causes the second floating
-  // toolbar on menu and games pages to be offset slightly. it's probably best in the future
-  // to come up with an alternative layout that doesn't use double fixed toolbars
-  const toolbarStyle: {minHeight?: string} = {}
-  if (Capacitor.getPlatform() === "ios" && isMobile) {
-    toolbarStyle["minHeight"] = "50px";
-  } else if (Capacitor.getPlatform() === "ios" && !isMobile) {
-    toolbarStyle["minHeight"] = "40px";
-  }
-
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
@@ -744,7 +731,7 @@ export default function ResponsiveDrawer() {
           width: isMobile ? "100%" : `calc(100% - ${drawerWidth}px)`,
         }}
       >
-        <Toolbar style={toolbarStyle} />
+        <Toolbar />
         <Routes>
           <Route path="/systems" element={<Systems />} />
           <Route path="/" element={<Navigate to="/control" />} />

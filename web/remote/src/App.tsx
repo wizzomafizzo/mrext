@@ -6,14 +6,10 @@ import { getTheme } from "./lib/themes";
 import Layout from "./components/Layout";
 import { useUIStateStore } from "./lib/store";
 
-import { StatusBar, Style } from '@capacitor/status-bar';
-
 function App() {
   const activeThemeState = useUIStateStore((state) => state.activeTheme);
   const activeTheme = getTheme(activeThemeState);
   const fontSize = useUIStateStore((state) => state.fontSize);
-
-  StatusBar.setStyle({ style: Style.Dark });
 
   const theme = createTheme({
     ...activeTheme.options,

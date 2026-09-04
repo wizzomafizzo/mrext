@@ -18,6 +18,8 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
+const npmVersion = "12.0.2"
+
 var (
 	cwd, _                  = os.Getwd()
 	binDir                  = filepath.Join(cwd, "_bin")
@@ -25,6 +27,8 @@ var (
 	releasesDir             = filepath.Join(cwd, "releases")
 	releaseUrlPrefix        = "https://github.com/wizzomafizzo/mrext/releases/latest/download"
 	generatedSystemMetadata = filepath.Join(cwd, "pkg", "games", "system_metadata.gen.json")
+	remoteWebDir            = filepath.Join(cwd, "web", "remote")
+	remoteWebBuildDir       = filepath.Join(cwd, "cmd", "remote", "_client", "build")
 	upxBin                  = os.Getenv("UPX_BIN")
 )
 
@@ -134,6 +138,18 @@ func cleanPlatform(name string) {
 func Clean() {
 	_ = sh.Rm(binDir)
 	_ = sh.Rm(generatedSystemMetadata)
+	_ = sh.Rm(remoteWebBuildDir)
+}
+
+func RemoteWeb() error {
+	npm := "npm@" + npmVersion
+	if err := sh.RunV("npx", "--yes", npm, "--prefix", remoteWebDir, "ci"); err != nil {
+		return fmt.Errorf("install Remote web dependencies: %w", err)
+	}
+	if err := sh.RunV("npx", "--yes", npm, "--prefix", remoteWebDir, "run", "build"); err != nil {
+		return fmt.Errorf("build Remote web UI: %w", err)
+	}
+	return nil
 }
 
 func GenerateSystemMetadata() error {
@@ -174,12 +190,22 @@ func buildApps(appName, platform string, env map[string]string) error {
 
 func Build(appName string) error {
 	mg.Deps(GenerateSystemMetadata)
+	if appName == "remote" || appName == "all" {
+		if err := RemoteWeb(); err != nil {
+			return err
+		}
+	}
 	platform := runtime.GOOS + "_" + runtime.GOARCH
 	return buildApps(appName, platform, nil)
 }
 
 func Mister(appName string) error {
 	mg.Deps(GenerateSystemMetadata)
+	if appName == "remote" || appName == "all" {
+		if err := RemoteWeb(); err != nil {
+			return err
+		}
+	}
 	return buildApps(appName, "linux_arm", map[string]string{
 		"GOOS":   "linux",
 		"GOARCH": "arm",

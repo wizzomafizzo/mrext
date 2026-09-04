@@ -120,11 +120,6 @@ export type MouseButtons =
   | "middle_down"
   | "middle_up";
 
-export interface ScreenResponse {
-  width: number;
-  height: number;
-}
-
 export interface CreateLauncherRequest {
   gamePath: string;
   folder: string;

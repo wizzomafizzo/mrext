@@ -10,12 +10,11 @@ import {
   ViewMenu,
   CreateLauncherRequest,
   KeyboardCodes,
-  MouseButtons,
-  ScreenResponse,
   ListInisPayload,
   SysInfoResponse,
   PeersResponse,
-  ScriptsResponse, MenuItem,
+  ScriptsResponse,
+  MenuItem,
 } from "./models";
 
 const API_ENDPOINT_KEY = "apiEndpoint";
@@ -181,22 +180,6 @@ export class ControlApi {
     await axios.post(`/controls/keyboard-raw/${key}`);
   }
 
-  async getScreen(): Promise<ScreenResponse> {
-    return (await axios.get<ScreenResponse>(`/controls/screen`)).data;
-  }
-
-  async moveMouse(x: number, y: number) {
-    await axios.post(`/controls/mouse/move`, { x, y });
-  }
-
-  async setMousePosition(x: number, y: number) {
-    await axios.post(`/controls/mouse/position`, { x, y });
-  }
-
-  async sendMouseButton(button: MouseButtons) {
-    await axios.post(`/controls/mouse/${button}`);
-  }
-
   // menu
 
   async listMenuFolder(path: string): Promise<ViewMenu> {
@@ -223,7 +206,7 @@ export class ControlApi {
   // settings
   async saveMisterIni(
     id: number,
-    data: { [key: string]: string }
+    data: { [key: string]: string },
   ): Promise<void> {
     await axios.put(`/settings/inis/${id}`, data);
   }
@@ -305,9 +288,7 @@ export class ControlApi {
     return (await axios.get(`/nfc/status`)).data;
   }
 
-  async nfcWrite(data: {
-    path: string;
-  }) {
+  async nfcWrite(data: { path: string }) {
     await axios.post(`/nfc/write`, data);
   }
 

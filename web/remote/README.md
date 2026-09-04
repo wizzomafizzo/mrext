@@ -1,49 +1,28 @@
-# mrext-client
+# Remote web UI
 
-This is the web UI component of [Remote](https://github.com/wizzomafizzo/mrext).
-It is a standalone React app which is embedded into the Remote binary and
-served statically from Remote's web server.
+React web UI embedded in the `remote.sh` binary and served by Remote. Source moved here from [`wizzomafizzo/mrext-client`](https://github.com/wizzomafizzo/mrext-client), with original Git history retained.
 
-All communication between the
-client and server is done through a combination of a REST API and WebSockets.
-It can be hosted anywhere, as long as the API address is set correctly.
+Remote communicates through its established REST and WebSocket APIs. See [`../../docs/remote-api.md`](../../docs/remote-api.md) for contracts.
 
-[Download Android APK](https://github.com/wizzomafizzo/mrext-client/releases/latest/download/mrext-client.apk)
+## Development
 
-## Setup
+Requires Node.js 22.12 or newer and npm.
 
-### Prerequisites
+```sh
+npm ci
+npm run dev
+```
 
-- [Node.js](https://nodejs.org/en/) (v16 LTS or higher)
-- NPM (comes with Node.js)
+Development server can target another Remote instance through **Settings → Remote**.
 
-These libraries are installed automatically but are notable:
+## Checks
 
-- Vite is used to build the app
-- All code is written in Typescript
-- Prettier is used for code formatting
-- React is used for basically everything
-- Material UI is used for the UI components
-- Axios for API requests
-- React Router for routing
-- React Query for data fetching
-- Zustand for state management
+```sh
+npm test
+npm run build
+npm run audit
+```
 
-### Dev Environment
+Production build is written directly to `cmd/remote/_client/build` for Go embedding. Generated files and `node_modules` are not committed. Root Mage and release workflows build this client before compiling Remote.
 
-1. Clone the repository
-2. Run `npm install` to install dependencies
-3. Run `npm run start` to start the development server
-4. Browse to Settings > Remote and change the API settings to point to your
-   MiSTer running Remote
-
-### Production Build
-
-1. Run `vite build` to build the app
-2. Copy the entire `build` directory to `cmd/remote/_client` in the Remote
-   repository
-
-### Publishing a release
-
-1. Create a tag `git tag vx.x` with your chosen version number
-2. Push the tag: `git push origin --tags`
+Android and iOS wrappers were retired when source moved into this repository. Remote is distributed as embedded web UI only.
