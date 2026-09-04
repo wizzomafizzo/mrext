@@ -4,6 +4,7 @@ import { encodeLaunchToken } from "./launchToken";
 
 describe("encodeLaunchToken", () => {
   it("uses unpadded URL-safe base64", () => {
+    expect(encodeLaunchToken("ÿ")).toBe("w78");
     expect(encodeLaunchToken("ÿÿÿ")).not.toMatch(/[+/=]/);
   });
 

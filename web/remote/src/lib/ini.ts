@@ -621,7 +621,7 @@ export function saveMisterIni(id: number, state: IniStore) {
   });
 }
 
-export function loadMisterIni(id: number, state: IniStore, reset = false) {
+export function loadMisterIni(id: number, _state: IniStore, reset = false) {
   const api = new ControlApi();
   return api
     .loadMisterIni(id)
@@ -638,23 +638,25 @@ export function loadMisterIni(id: number, state: IniStore, reset = false) {
         }
       }
 
-      state.setOriginal(newState);
+      let current = useIniSettingsStore.getState();
+      current.setOriginal(newState);
 
       if (reset) {
-        state.resetModified();
+        current.resetModified();
+        current = useIniSettingsStore.getState();
       }
 
       for (const key in data) {
         if (key in iniKeyMapReverse) {
           const mKey = iniKeyMapReverse[key];
 
-          if (state.modified.includes(mKey)) {
+          if (current.modified.includes(mKey)) {
             console.log(`Skipping ini key ${mKey} as ${key} is modified`);
             continue;
           }
 
           console.log(`Setting ini key ${mKey} to ${data[key]}`);
-          state.setAttribute(mKey, data[key]);
+          current.setAttribute(mKey, data[key]);
         } else {
           console.warn(`Unknown ini key ${key}`);
         }

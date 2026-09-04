@@ -48,7 +48,20 @@ jobs:
         run: npm run build --prefix web/remote
 
       - name: Audit dependencies
-        run: npm audit --prefix web/remote --audit-level=low
+        env:
+          NPM_CONFIG_FETCH_RETRIES: 1
+          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 10000
+          NPM_CONFIG_FETCH_TIMEOUT: 30000
+        run: |
+          for attempt in 1 2 3; do
+            if npm audit --prefix web/remote --audit-level=low; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 15
+          done
 
   lint:
     name: GolangCI-Lint
