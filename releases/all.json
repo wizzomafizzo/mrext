@@ -57,8 +57,8 @@
             ]
         },
         "Scripts/bgm.sh": {
-            "hash": "5f95d6353984ee9975452c8bc610d6d9",
-            "size": 32760,
+            "hash": "3f15de880e804ca42b7b05e841bb2f58",
+            "size": 32765,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/bgm.sh",
             "reboot": false,
             "tags": [
@@ -66,8 +66,8 @@
             ]
         },
         "Scripts/favorites.sh": {
-            "hash": "32c7a4a350054b6051ff837235762cd8",
-            "size": 41098,
+            "hash": "b7b9b0efdf5635502a3fb6e5536a4488",
+            "size": 41266,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/favorites.sh",
             "reboot": false,
             "tags": [
@@ -75,8 +75,8 @@
             ]
         },
         "Scripts/gamesmenu.sh": {
-            "hash": "30e52a20c678e03d3b15e228fc3c83a1",
-            "size": 15307,
+            "hash": "5ee1d6535c5d06e629e10c810692e021",
+            "size": 15274,
             "url": "https://github.com/wizzomafizzo/mrext/raw/main/scripts/gamesmenu.sh",
             "reboot": false,
             "tags": [

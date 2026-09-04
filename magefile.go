@@ -327,14 +327,8 @@ func PrepRelease() {
 			Release(app.name)
 		}
 	}
-	externalDir := filepath.Join(releasesDir, "external")
-	_ = os.MkdirAll(externalDir, 0o755)
 	for _, app := range scriptApps {
 		fmt.Println("Preparing release:", app.name)
-		if err := sh.Copy(filepath.Join(externalDir, app.bin), app.path); err != nil {
-			fmt.Println("Error updating compatibility copy", app.name, err)
-			os.Exit(1)
-		}
 		if err := sh.Copy(filepath.Join(binReleasesDir, app.bin), app.path); err != nil {
 			fmt.Println("Error copying script", app.name, err)
 			os.Exit(1)

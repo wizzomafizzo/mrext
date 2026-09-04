@@ -109,7 +109,7 @@ def get_core():
         return None
 
     with open(CORENAME_FILE) as f:
-        return str(f.read())
+        return f.read().strip()
 
 
 def volume_mute():
@@ -517,19 +517,19 @@ class Player:
                 self.play_in_core = False
             elif cmd.startswith("get"):
                 args = cmd.split(" ", 1)
-                self.mutex.release()
+                response = ""
                 if len(args) > 1:
                     if args[1] == "playlist":
-                        return self.playlist
+                        response = self.playlist
                     elif args[1] == "playback":
-                        return self.playback
+                        response = self.playback
                     elif args[1] == "playincore":
                         if self.play_in_core:
-                            return "yes"
+                            response = "yes"
                         else:
-                            return "no"
-                    else:
-                        return ""
+                            response = "no"
+                self.mutex.release()
+                return response
             else:
                 log("Unknown command: {}".format(cmd))
 
@@ -653,7 +653,7 @@ def start_service(player: Player):
             log("CORENAME file is missing, exiting...")
             break
 
-        if core is not None and core.lower().strip() == new_core.lower().strip():
+        if core is not None and core.lower() == new_core.lower():
             log("CORENAME file changed, but core is the same")
             pass
         elif player.play_in_core:

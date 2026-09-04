@@ -72,7 +72,7 @@ MGL_MAP = (
     ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 0),)),
     ("Saturn", "_Console/Saturn", (({".cue", ".chd"}, 1, "s", 0),)),
-    ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
+    ("SG1000", "_Console/ColecoVision", (({".sg"}, 1, "f", 2),)),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1),)),
     ("SNES", "_Console/SNES", (({".sfc", ".smc"}, 2, "f", 0),)),
@@ -319,14 +319,14 @@ def display_generate_mgls(system_names):
 
     for i, system_name in enumerate(system_names):
         for folder in system_paths[system_name]:
-            pct = math.ceil(i / len(systems) * 100)
+            pct = math.ceil(i / len(system_names) * 100)
             display_progress(f"Scanning {get_names_replacement(system_name)} ({folder})", pct)
             for system, path, parent, filename, match in get_system_files(
                     system_name, folder
             ):
                 mgl_args = to_mgl_args(system, match, path)
                 created = create_mgl_file(system_name, filename, mgl_args, parent)
-    display_progress(f"Scanning {get_names_replacement(system_name)} ({folder})", 100)
+    display_progress("Finished scanning", 100)
 
 
 def display_menu(system_paths):

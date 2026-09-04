@@ -166,7 +166,7 @@ MGL_MAP = (
     ("PokemonMini", "_Console/PokemonMini", (({".min"}, 1, "f", 1),)),
     ("Saturn", "_Console/Saturn", (({".cue", ".chd"}, 1, "s", 0),)),
     ("S32X", "_Console/S32X", (({".32x"}, 1, "f", 1),)),
-    ("SG1000", "_Console/ColecoVision", ({".sg"}, 1, "f", 2),),
+    ("SG1000", "_Console/ColecoVision", (({".sg"}, 1, "f", 2),)),
     ("SGB", "_Console/SGB", (({".gb", ".gbc"}, 1, "f", 1),)),
     ("SMS", "_Console/SMS", (({".sms", ".sg"}, 1, "f", 1), ({".gg"}, 1, "f", 2))),
     ("SNES", "_Console/SNES", (({".sfc", ".smc", ".bin", ".bs"}, 2, "f", 0),)),
@@ -288,11 +288,12 @@ def get_favorite_target(path: str):
     elif ext == ".mgl":
         try:
             with open(path, "r") as f:
-                match = re.search(r'path="\.\./\.\./\.\./\.\.(.+)"', f.read())
+                contents = f.read()
+                match = re.search(r'path="\.\./\.\./\.\./\.\.(.+)"', contents)
                 if match:
                     return match.group(1)
                 else:
-                    match = re.search(r'path="(.+)"', f.read())
+                    match = re.search(r'path="(.+)"', contents)
                     if match:
                         return match.group(1)
                     else:
@@ -1014,7 +1015,7 @@ def refresh_favorites():
         remove_favorite(entry[1])
 
         # ignore core files that aren't versioned
-        if re.search("_\d{8}\.", entry[1]) is None:
+        if re.search(r"_\d{8}\.", entry[1]) is None:
             continue
 
         link = entry[1].rsplit("_", 1)[0]
@@ -1288,6 +1289,10 @@ def add_favorite_workflow():
         # cancelled
         return
 
+    browse_suffix = "_Browse"
+    if file_type.endswith(browse_suffix):
+        file_type = file_type[:-len(browse_suffix)]
+
     # pick the folder where the favorite goes
     folder = display_add_favorite_folder()
     if folder is None:
@@ -1337,11 +1342,11 @@ def add_favorite_workflow():
         # system rom, make mgl file
         rbf, mgl_def = mgl_from_file(file_type, name)
 
-        rbf=CORE_PREFIX+rbf
-
         if rbf is None or mgl_def is None:
             # this shouldn't really happen due to the contraints on the file picker
             raise Exception("Rom file type does not match any MGL definition")
+
+        rbf = CORE_PREFIX + rbf
 
         setname = None
         if file_type in SET_NAMES:
