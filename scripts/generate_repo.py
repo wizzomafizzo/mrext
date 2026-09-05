@@ -9,8 +9,9 @@ from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
 
-APPS = ["lastplayed", "launchsync", "playlog", "random", "remote", "search"]
+APPS = ["favorites", "lastplayed", "launchsync", "playlog", "random", "remote", "search"]
 FILES = {
+    "favorites": ["favorites.sh"],
     "lastplayed": ["lastplayed.sh"],
     "launchsync": ["launchsync.sh"],
     "playlog": ["playlog.sh"],
@@ -21,7 +22,6 @@ FILES = {
 REBOOT = ["remote"]
 SCRIPT_FILES = [
     "scripts/bgm.sh",
-    "scripts/favorites.sh",
     "scripts/gamesmenu.sh",
 ]
 
@@ -160,6 +160,7 @@ def main():
 
     for app in APPS:
         repo_db = create_app_db(app, tag)
+        os.makedirs("{}/{}".format(RELEASES_FOLDER, app), exist_ok=True)
         with open("{}/{}/{}.json".format(RELEASES_FOLDER, app, app), "w") as f:
             f.write(generate_json(repo_db))
 

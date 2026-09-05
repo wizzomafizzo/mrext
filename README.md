@@ -52,8 +52,8 @@ Play music in MiSTer menu. BGM supports common audio formats and internet radio 
 
 Create and manage shortcuts for favorite games and cores in MiSTer menu.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/favorites.sh"><img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140"></a>
-<a href="https://github.com/wizzomafizzo/mrext#favorites"><img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/favorites.sh"><img src="docs/images/download.svg" alt="Download Favorites" title="Download Favorites" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/favorites.md"><img src="docs/images/readme.svg" alt="Readme Favorites" title="Readme Favorites" width="140"></a>
 
 ## GamesMenu
 

@@ -59,21 +59,75 @@ type RemoteConfig struct {
 	SyncSSHKeys     bool   `ini:"sync_ssh_keys,omitempty"`
 }
 
+type FavoritesConfig struct {
+	DefaultFolder         string   `ini:"default_folder,omitempty"`
+	ExternalFolder        string   `ini:"external_folder,omitempty"`
+	CorePrefix            string   `ini:"core_prefix,omitempty"`
+	FolderNameContains    []string `ini:"folder_name_contains,omitempty" delim:","`
+	GamesFolder           []string `ini:"games_folder,omitempty,allowshadow"`
+	CreateDefaultFolder   bool     `ini:"create_default_folder,omitempty"`
+	ManageArcadeCoreLinks bool     `ini:"manage_arcade_core_links,omitempty"`
+	HideRootFiles         bool     `ini:"hide_root_files,omitempty"`
+}
+
+type FavoritesCoresConfig struct {
+	All string `ini:"all,omitempty"`
+}
+
+type TUIConfig struct {
+	Theme            string `ini:"theme,omitempty"`
+	Mouse            bool   `ini:"mouse,omitempty"`
+	CRTMode          bool   `ini:"crt_mode,omitempty"`
+	OnScreenKeyboard bool   `ini:"on_screen_keyboard,omitempty"`
+}
+
 type SystemsConfig struct {
 	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
 	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
 }
 
+//nolint:govet // Field order keeps application sections grouped for configuration mapping.
 type UserConfig struct {
-	AppPath    string
-	IniPath    string
-	LaunchSync LaunchSyncConfig `ini:"launchsync,omitempty"`
-	PlayLog    PlayLogConfig    `ini:"playlog,omitempty"`
-	Random     RandomConfig     `ini:"random,omitempty"`
-	Search     SearchConfig     `ini:"search,omitempty"`
-	LastPlayed LastPlayedConfig `ini:"lastplayed,omitempty"`
-	Remote     RemoteConfig     `ini:"remote,omitempty"`
-	Systems    SystemsConfig    `ini:"systems,omitempty"`
+	AppPath        string
+	IniPath        string
+	LaunchSync     LaunchSyncConfig     `ini:"launchsync,omitempty"`
+	PlayLog        PlayLogConfig        `ini:"playlog,omitempty"`
+	Random         RandomConfig         `ini:"random,omitempty"`
+	Search         SearchConfig         `ini:"search,omitempty"`
+	LastPlayed     LastPlayedConfig     `ini:"lastplayed,omitempty"`
+	Remote         RemoteConfig         `ini:"remote,omitempty"`
+	Favorites      FavoritesConfig      `ini:"favorites,omitempty"`
+	FavoritesCores FavoritesCoresConfig `ini:"cores,omitempty"`
+	TUI            TUIConfig            `ini:"tui,omitempty"`
+	Systems        SystemsConfig        `ini:"systems,omitempty"`
+}
+
+func EnsureUserConfig(path, content string) error {
+	// #nosec G302 -- MiSTer configuration must remain editable through shared storage.
+	file, err := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if os.IsExist(err) {
+			return nil
+		}
+		return fmt.Errorf("create user configuration: %w", err)
+	}
+
+	removeIncomplete := true
+	defer func() {
+		_ = file.Close()
+		if removeIncomplete {
+			_ = os.Remove(path)
+		}
+	}()
+
+	if _, err := file.WriteString(content); err != nil {
+		return fmt.Errorf("write user configuration: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close user configuration: %w", err)
+	}
+	removeIncomplete = false
+	return nil
 }
 
 func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error) {
@@ -92,11 +146,14 @@ func LoadUserConfig(name string, defaultConfig *UserConfig) (*UserConfig, error)
 	if iniPath == "" {
 		iniPath = filepath.Join(filepath.Dir(exePath), name+".ini")
 	}
+	return LoadUserConfigAt(iniPath, exePath, defaultConfig)
+}
 
-	defaultConfig.AppPath = exePath
+func LoadUserConfigAt(iniPath, appPath string, defaultConfig *UserConfig) (*UserConfig, error) {
+	defaultConfig.AppPath = appPath
 	defaultConfig.IniPath = iniPath
 
-	// #nosec G703 -- configuration path is explicitly selected by caller or environment.
+	// #nosec G703 -- configuration path is explicitly selected by caller.
 	if _, statErr := os.Stat(iniPath); statErr != nil {
 		if os.IsNotExist(statErr) {
 			return defaultConfig, nil

@@ -30,11 +30,9 @@ jobs:
         run: |
           DL_URL=https://github.com/wizzomafizzo/mrext/releases/download/${{ steps.mrextreleaseinfo.outputs.tag_name }}
           mkdir -p _bin/releases
-          for file in lastplayed.sh launchsync.sh playlog.sh random.sh remote.sh search.sh; do
+          for file in favorites.sh lastplayed.sh launchsync.sh playlog.sh random.sh remote.sh search.sh; do
             curl -fsSL "$DL_URL/$file" -o "_bin/releases/$file"
           done
-      - name: Update external scripts
-        run: go run github.com/magefile/mage updateExternalApps
       - name: Create databases
         run: |
           cp scripts/generate_repo.py .
