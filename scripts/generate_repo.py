@@ -9,8 +9,9 @@ from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
 
-APPS = ["favorites", "lastplayed", "launchsync", "playlog", "random", "remote", "search"]
+APPS = ["bgm", "favorites", "lastplayed", "launchsync", "playlog", "random", "remote", "search"]
 FILES = {
+    "bgm": ["bgm.sh"],
     "favorites": ["favorites.sh"],
     "lastplayed": ["lastplayed.sh"],
     "launchsync": ["launchsync.sh"],
@@ -21,7 +22,6 @@ FILES = {
 }
 REBOOT = ["remote"]
 SCRIPT_FILES = [
-    "scripts/bgm.sh",
     "scripts/gamesmenu.sh",
 ]
 

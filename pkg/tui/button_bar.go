@@ -105,6 +105,21 @@ func (bb *ButtonBar) SetOnRight(callback func()) *ButtonBar {
 	return bb
 }
 
+// FocusedIndex returns the highlighted button.
+func (bb *ButtonBar) FocusedIndex() int {
+	return bb.focusedIndex
+}
+
+// SetFocusedIndex highlights a button without activating it, so a rebuilt
+// page can keep the button the user had moved to.
+func (bb *ButtonBar) SetFocusedIndex(index int) *ButtonBar {
+	if index >= 0 && index < len(bb.buttons) {
+		bb.focusedIndex = index
+		bb.triggerHelp()
+	}
+	return bb
+}
+
 func (bb *ButtonBar) triggerHelp() {
 	if bb.helpCallback != nil && bb.focusedIndex < len(bb.helpTexts) {
 		bb.helpCallback(bb.helpTexts[bb.focusedIndex])
