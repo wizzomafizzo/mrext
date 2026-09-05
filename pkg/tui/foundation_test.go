@@ -279,6 +279,24 @@ func TestButtonBarNavigationAndActivation(t *testing.T) {
 	if selected != "second" {
 		t.Fatalf("selected = %q", selected)
 	}
+	if bar.FocusedIndex() != 1 {
+		t.Fatalf("focused index = %d", bar.FocusedIndex())
+	}
+
+	// A rebuilt page restores the highlight; out-of-range values are ignored.
+	help := ""
+	rebuilt := NewButtonBar(app).
+		AddButtonWithHelp("First", "first help", func() { selected = "first" }).
+		AddButtonWithHelp("Second", "second help", func() { selected = "second" }).
+		SetHelpCallback(func(text string) { help = text })
+	rebuilt.SetFocusedIndex(bar.FocusedIndex()).SetFocusedIndex(5).SetFocusedIndex(-1)
+	if rebuilt.FocusedIndex() != 1 || help != "second help" {
+		t.Fatalf("focused index = %d help = %q", rebuilt.FocusedIndex(), help)
+	}
+	rebuilt.InputHandler()(tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone), setFocus)
+	if selected != "second" {
+		t.Fatalf("selected = %q", selected)
+	}
 }
 
 func TestModalDismissalRestoresPageFocus(t *testing.T) {

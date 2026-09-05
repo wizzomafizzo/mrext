@@ -89,6 +89,13 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name:      "bgm",
+		path:      filepath.Join(cwd, "cmd", "bgm"),
+		bin:       "bgm.sh",
+		releaseId: "mrext/bgm",
+		inAll:     true,
+	},
+	{
 		name:      "launchsync",
 		path:      filepath.Join(cwd, "cmd", "launchsync"),
 		bin:       "launchsync.sh",
@@ -111,11 +118,6 @@ type scriptApp struct {
 }
 
 var scriptApps = []scriptApp{
-	{
-		name: "bgm",
-		path: filepath.Join(cwd, "scripts", "bgm.sh"),
-		bin:  "bgm.sh",
-	},
 	{
 		name: "gamesmenu",
 		path: filepath.Join(cwd, "scripts", "gamesmenu.sh"),

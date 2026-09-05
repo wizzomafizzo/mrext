@@ -45,8 +45,8 @@ Control MiSTer from any device on your network. Remote provides a web interface 
 
 Play music in MiSTer menu. BGM supports common audio formats and internet radio streams, and can pause automatically while a core is running.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/bgm.sh"><img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140"></a>
-<a href="https://github.com/wizzomafizzo/mrext#bgm"><img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/bgm.sh"><img src="docs/images/download.svg" alt="Download BGM" title="Download BGM" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/bgm.md"><img src="docs/images/readme.svg" alt="Readme BGM" title="Readme BGM" width="140"></a>
 
 ## Favorites
 
