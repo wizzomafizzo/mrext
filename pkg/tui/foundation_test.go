@@ -280,3 +280,78 @@ func TestButtonBarNavigationAndActivation(t *testing.T) {
 		t.Fatalf("selected = %q", selected)
 	}
 }
+
+func TestModalDismissalRestoresPageFocus(t *testing.T) {
+	type harness struct {
+		app   *tview.Application
+		pages *tview.Pages
+		root  tview.Primitive
+		list  *MenuList
+	}
+	newHarness := func(t *testing.T) harness {
+		t.Helper()
+		app := tview.NewApplication()
+		pages := tview.NewPages()
+		list := NewMenuList().AddRow("Item", MenuRowItem)
+		frame := NewPageFrame(app).SetTitle("Main").SetContent(list).SetFocusTarget(list)
+		pages.AddAndSwitchToPage("main", frame, true)
+		root := WrapRoot(ApplicationOptions{}, pages)
+		app.SetRoot(root, true)
+		if app.GetFocus() != list {
+			t.Fatalf("initial focus = %T", app.GetFocus())
+		}
+		return harness{app: app, pages: pages, root: root, list: list}
+	}
+	press := func(h harness, keys ...tcell.Key) {
+		setFocus := func(p tview.Primitive) { h.app.SetFocus(p) }
+		for _, key := range keys {
+			h.root.InputHandler()(tcell.NewEventKey(key, 0, tcell.ModNone), setFocus)
+		}
+	}
+	cases := []struct {
+		show func(h harness, done *bool)
+		name string
+		page string
+		keys []tcell.Key
+	}{
+		{func(h harness, done *bool) {
+			ShowInfoModal(h.pages, h.app, "Title", "Message", func() { *done = true })
+		}, "info", infoModalPage, []tcell.Key{tcell.KeyEnter}},
+		{func(h harness, done *bool) {
+			ShowErrorModal(h.pages, h.app, "Message", func() { *done = true })
+		}, "error", errorModalPage, []tcell.Key{tcell.KeyEnter}},
+		{func(h harness, done *bool) {
+			ShowConfirmModal(h.pages, h.app, "Title", "Message", func() { *done = true }, nil)
+		}, "confirm yes", confirmModalPage, []tcell.Key{tcell.KeyEnter}},
+		{func(h harness, done *bool) {
+			ShowConfirmModal(h.pages, h.app, "Title", "Message", nil, func() { *done = true })
+		}, "confirm escape", confirmModalPage, []tcell.Key{tcell.KeyEscape}},
+		{func(h harness, done *bool) {
+			ShowInputModal(h.pages, h.app, InputOptions{Title: "Name"}, func(string) { *done = true }, nil)
+		}, "input submit", inputModalPage, []tcell.Key{tcell.KeyEnter, tcell.KeyEnter}},
+		{func(h harness, done *bool) {
+			ShowInputModal(h.pages, h.app, InputOptions{Title: "Name"}, nil, func() { *done = true })
+		}, "input escape", inputModalPage, []tcell.Key{tcell.KeyEscape}},
+		{func(h harness, done *bool) {
+			options := InputOptions{Title: "Name", OnScreenKeyboard: true}
+			ShowInputModal(h.pages, h.app, options, nil, func() { *done = true })
+		}, "keyboard escape", inputModalPage, []tcell.Key{tcell.KeyEscape}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(t)
+			done := false
+			tc.show(h, &done)
+			if !h.pages.HasPage(tc.page) || h.app.GetFocus() == h.list {
+				t.Fatal("modal did not open or take focus")
+			}
+			press(h, tc.keys...)
+			if !done || h.pages.HasPage(tc.page) {
+				t.Fatal("modal did not dismiss")
+			}
+			if !h.root.HasFocus() || h.app.GetFocus() != h.list {
+				t.Fatalf("focus after dismissal = %T", h.app.GetFocus())
+			}
+		})
+	}
+}

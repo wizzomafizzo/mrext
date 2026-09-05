@@ -583,7 +583,7 @@ func refreshVersionedCore(linkPath, oldTarget string) error {
 		return nil
 	}
 	sort.Strings(matches)
-	newTarget := matches[0]
+	newTarget := matches[len(matches)-1]
 	underscore := strings.LastIndex(newTarget, "_")
 	if underscore < 0 {
 		return nil

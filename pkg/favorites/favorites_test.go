@@ -456,9 +456,12 @@ func TestRefreshUpdatesVersionedCoreSymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 	oldCore := filepath.Join(coreFolder, "SNES_20250101.rbf")
+	staleCore := filepath.Join(coreFolder, "SNES_20250601.rbf")
 	newCore := filepath.Join(coreFolder, "SNES_20260101.rbf")
-	if err := os.WriteFile(newCore, nil, 0o644); err != nil {
-		t.Fatal(err)
+	for _, core := range []string{staleCore, newCore} {
+		if err := os.WriteFile(core, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 	oldLink := filepath.Join(folder, filepath.Base(oldCore))
 	if err := os.Symlink(oldCore, oldLink); err != nil {
@@ -477,6 +480,9 @@ func TestRefreshUpdatesVersionedCoreSymlink(t *testing.T) {
 	}
 	if _, err := os.Lstat(oldLink); !os.IsNotExist(err) {
 		t.Fatalf("old link still exists: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(folder, filepath.Base(staleCore))); !os.IsNotExist(err) {
+		t.Fatalf("stale core was linked instead of newest: %v", err)
 	}
 }
 
