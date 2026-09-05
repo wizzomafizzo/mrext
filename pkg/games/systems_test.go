@@ -21,12 +21,30 @@ package games
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/ZaparooProject/zaparoo-core/mister/catalog"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
+
+func TestFolderMatchingUsesComponentBoundaries(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "library")
+	cfg := &config.UserConfig{Systems: config.SystemsConfig{GamesFolder: []string{root}}}
+	if found := FolderToSystems(cfg, filepath.Join(root+"backup", "GBA", "game.gba")); len(found) != 0 {
+		t.Fatalf("matched sibling root: %#v", found)
+	}
+	if found := FolderToSystems(cfg, filepath.Join(root, "GBAunknown", "game.gba")); len(found) != 0 {
+		t.Fatalf("matched partial system folder: %#v", found)
+	}
+	cfg.Systems.GamesFolder = append(cfg.Systems.GamesFolder, filepath.Join(root, "nested"))
+	found := FolderToSystems(cfg, filepath.Join(root, "nested", "GBA", "game.gba"))
+	if len(found) != 1 || found[0].Id != "GBA" {
+		t.Fatalf("nested root shadowed by parent: %#v", found)
+	}
+}
 
 func TestSystemsUseCatalogOperationalData(t *testing.T) {
 	t.Parallel()

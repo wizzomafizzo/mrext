@@ -82,6 +82,13 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name:      "favorites",
+		path:      filepath.Join(cwd, "cmd", "favorites"),
+		bin:       "favorites.sh",
+		releaseId: "mrext/favorites",
+		inAll:     true,
+	},
+	{
 		name:      "launchsync",
 		path:      filepath.Join(cwd, "cmd", "launchsync"),
 		bin:       "launchsync.sh",
@@ -108,11 +115,6 @@ var scriptApps = []scriptApp{
 		name: "bgm",
 		path: filepath.Join(cwd, "scripts", "bgm.sh"),
 		bin:  "bgm.sh",
-	},
-	{
-		name: "favorites",
-		path: filepath.Join(cwd, "scripts", "favorites.sh"),
-		bin:  "favorites.sh",
 	},
 	{
 		name: "gamesmenu",

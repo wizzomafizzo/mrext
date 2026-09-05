@@ -49,7 +49,7 @@ func Centered(width, height int, primitive tview.Primitive) tview.Primitive {
 		AddItem(nil, 0, 1, false)
 }
 
-func ButtonBar(buttons []string, selected int) string {
+func ButtonLabels(buttons []string, selected int) string {
 	parts := make([]string, len(buttons))
 	for i, button := range buttons {
 		label := "< " + tview.Escape(button) + " >"
@@ -81,7 +81,7 @@ func ListPicker(opts *ListPickerOpts, items []string) (button, item int, err err
 
 		footer := tview.NewTextView().SetDynamicColors(true).SetTextAlign(tview.AlignCenter)
 		drawFooter := func() {
-			text := ButtonBar(opts.Buttons, selectedButton)
+			text := ButtonLabels(opts.Buttons, selectedButton)
 			if opts.ShowTotal && len(items) > 0 {
 				text = fmt.Sprintf("%d/%d    %s", list.GetCurrentItem()+1, len(items), text)
 			}

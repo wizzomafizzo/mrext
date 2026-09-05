@@ -5,6 +5,7 @@
 *.dylib
 *.test
 *.out
+__pycache__/
 go.work
 .vscode/
 .idea/

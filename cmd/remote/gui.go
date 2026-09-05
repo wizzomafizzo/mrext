@@ -161,7 +161,7 @@ func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, erro
 				)
 			}
 			status.SetText(message)
-			footer.SetText(tui.ButtonBar([]string{toggle, "Restart", "Uninstall", "Exit"}, selected))
+			footer.SetText(tui.ButtonLabels([]string{toggle, "Restart", "Uninstall", "Exit"}, selected))
 		}
 		draw()
 

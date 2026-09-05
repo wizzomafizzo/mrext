@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -75,10 +76,9 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 	gamesFolder := ""
 
 	for _, folder := range GetGamesFolders(cfg) {
-		if strings.HasPrefix(path, strings.ToLower(folder)) {
+		if withinFolder(path, strings.ToLower(folder)) && len(folder) > len(gamesFolder) {
 			validGamesFolder = true
 			gamesFolder = folder
-			break
 		}
 	}
 
@@ -91,13 +91,14 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 		system := Systems[id]
 		for _, folder := range system.Folder {
 			systemPath := strings.ToLower(filepath.Join(gamesFolder, folder))
-			if strings.HasPrefix(path, systemPath) {
+			if withinFolder(path, systemPath) {
 				validSystems = append(validSystems, system)
 				break
 			}
 		}
 	}
 
+	sort.Slice(validSystems, func(i, j int) bool { return validSystems[i].Id < validSystems[j].Id })
 	if strings.HasSuffix(path, "/") {
 		return validSystems
 	}
@@ -115,6 +116,11 @@ func FolderToSystems(cfg *config.UserConfig, path string) []System {
 	}
 
 	return matchedExtensions
+}
+
+func withinFolder(path, folder string) bool {
+	folder = strings.TrimRight(filepath.Clean(folder), string(filepath.Separator))
+	return path == folder || strings.HasPrefix(path, folder+string(filepath.Separator))
 }
 
 func BestSystemMatch(cfg *config.UserConfig, path string) (System, error) {
