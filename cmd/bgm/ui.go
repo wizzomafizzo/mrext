@@ -67,6 +67,7 @@ type ui struct {
 
 	mu         sync.Mutex
 	lastStatus status
+	statusRev  uint64
 	runningApp *tview.Application
 }
 
@@ -131,6 +132,15 @@ func (u *ui) setLastStatus(current status) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.lastStatus = current
+	u.statusRev++
+}
+
+// statusRevision counts main-screen rebuilds so a refresh fetched before a
+// command completed cannot overwrite the newer status the command installed.
+func (u *ui) statusRevision() uint64 {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.statusRev
 }
 
 func (u *ui) statusChanged(current status) bool {
@@ -152,13 +162,23 @@ func (u *ui) refreshLoop(stop <-chan struct{}) {
 			if app == nil {
 				continue
 			}
+			revision := u.statusRevision()
 			current, err := u.fetchStatus(false)
 			if err != nil || !u.statusChanged(current) {
 				continue
 			}
-			app.QueueUpdateDraw(func() { u.refreshMain(current) })
+			app.QueueUpdateDraw(func() { u.applyRefresh(revision, current) })
 		}
 	}
+}
+
+// applyRefresh drops a status fetched before another rebuild changed the
+// screen, otherwise refreshes with it.
+func (u *ui) applyRefresh(revision uint64, current status) bool {
+	if u.statusRevision() != revision {
+		return false
+	}
+	return u.refreshMain(current)
 }
 
 // refreshMain rebuilds the main screen for a new status only while it is the

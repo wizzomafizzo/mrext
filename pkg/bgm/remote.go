@@ -36,6 +36,10 @@ import (
 // MessageSize is the maximum socket payload, matching the Python script.
 const MessageSize = 4096
 
+// idleReadTimeout bounds how long the accept loop waits for a connected
+// client to send its command, so Close never hangs on an idle client.
+var idleReadTimeout = 5 * time.Second
+
 // Remote serves the /tmp/bgm.sock line protocol: one command per connection,
 // an optional reply, then the connection is closed.
 type Remote struct {
@@ -79,9 +83,11 @@ func (r *Remote) serve() {
 			break
 		}
 		buffer := make([]byte, MessageSize)
+		_ = conn.SetReadDeadline(time.Now().Add(idleReadTimeout))
 		count, _ := conn.Read(buffer)
 		if count == 0 {
-			// A liveness probe connected without sending a command.
+			// A liveness probe connected without sending a command, or an
+			// idle client never did.
 			_ = conn.Close()
 			continue
 		}

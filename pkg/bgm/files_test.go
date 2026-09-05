@@ -60,7 +60,7 @@ func TestPLSURL(t *testing.T) {
 	writeINI(t, &paths, "[bgm]\ndebug = yes\n")
 	radio := filepath.Join(paths.MusicFolder, "radio.pls")
 	writeFile(t, radio, "[playlist]\nFile1=http://example.com/stream\r\nTitle1=Example\n")
-	if got := PLSURL(radio, logger); got != "http://example.com/stream\r" {
+	if got := PLSURL(radio, logger); got != "http://example.com/stream" {
 		t.Fatalf("url = %q", got)
 	}
 	empty := filepath.Join(paths.MusicFolder, "empty.pls")

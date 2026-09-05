@@ -86,7 +86,9 @@ func PLSURL(path string, logger *Logger) string {
 		logger.Log("Playlist URL not found")
 		return ""
 	}
-	if url := plsURLPattern.FindString(string(data)); url != "" {
+	// Python read the file in text mode, so CRLF endings never reached the
+	// URL; trim them here.
+	if url := strings.TrimSpace(plsURLPattern.FindString(string(data))); url != "" {
 		return url
 	}
 	logger.Log("Playlist URL not found")

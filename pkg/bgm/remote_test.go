@@ -21,11 +21,14 @@
 package bgm
 
 import (
+	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func startTestRemote(t *testing.T, paths *Paths, cfg *Config) (*Remote, *Player, *syncBuffer) {
@@ -140,6 +143,29 @@ func TestRemoteQuitStopsListeningButKeepsSocketFile(t *testing.T) {
 		t.Fatalf("log %q", out.String())
 	}
 	remote.Close()
+}
+
+func TestRemoteCloseCompletesWithIdleClient(t *testing.T) {
+	previous := idleReadTimeout
+	idleReadTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { idleReadTimeout = previous })
+	paths := newTestPaths(t)
+	remote, _, _ := startTestRemote(t, &paths, ptr(DefaultConfig()))
+	idle, err := (&net.Dialer{}).DialContext(context.Background(), "unix", paths.SocketFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = idle.Close() }()
+	closed := make(chan struct{})
+	go func() {
+		remote.Close()
+		close(closed)
+	}()
+	select {
+	case <-closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close must not wait on an idle client")
+	}
 }
 
 func TestRemoteRefusesSecondBind(t *testing.T) {

@@ -217,6 +217,31 @@ func TestRefreshKeepsCursorAndOnlyRunsWhenIdle(t *testing.T) {
 	}
 }
 
+func TestRefreshDiscardsStatusFetchedBeforeACommand(t *testing.T) {
+	view, player := newWorkflowUI(t)
+	revision := view.statusRevision()
+	stale, err := view.fetchStatus(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	selectRow(t, view, "(loop)") // rebuilds with newer status
+	if view.applyRefresh(revision, stale) {
+		t.Fatal("a status fetched before the command must be discarded")
+	}
+	if !strings.Contains(rowLabels(view)[findRow(t, view, "(loop)")], escapedActive) {
+		t.Fatal("the command's status must remain on screen")
+	}
+	fresh, err := view.fetchStatus(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fresh.track = "one.wav"
+	if !view.applyRefresh(view.statusRevision(), fresh) {
+		t.Fatal("a status fetched after the command must apply")
+	}
+	player.StopPlaylist()
+}
+
 func TestSettingsSaveWritesINIAndUpdatesService(t *testing.T) {
 	view, player := newWorkflowUI(t)
 	view.startSettings()
