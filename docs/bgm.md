@@ -41,6 +41,7 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Optional `music/boot/default/` tracks provide a generic core boot sound when no core-specific boot directory exists. Existing empty core-specific directories remain silent.
 
 ## Music folder
 
@@ -54,7 +55,10 @@ Intentional differences:
   Radio/station.pls    an internet radio playlist
   boot/                global boot sounds, no prefix needed
   boot/SNES/           boot sounds played when the SNES core launches
+  boot/default/        optional fallback for cores without their own boot folder
 ```
+
+Core boot folders are matched case-insensitively. BGM chooses a random supported track from the matching folder's top level and applies `corebootdelay`. If no core-specific directory exists, it uses `boot/default/` with the same selection and delay rules. A core-specific folder with no supported tracks suppresses the fallback. Missing or empty fallback folders remain silent; startup tracks directly inside `boot/` are not reused for core launches. No INI changes are needed to enable this: add tracks to `boot/default/`.
 
 ### Supported files
 
