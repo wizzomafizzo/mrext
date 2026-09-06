@@ -44,9 +44,16 @@ type MisterIni struct {
 }
 
 func GetAllMisterIni() ([]MisterIni, error) {
-	var inis []MisterIni
+	return getAllMisterIniAt(config.SdFolder)
+}
 
-	files, err := os.ReadDir(config.SdFolder)
+func getAllMisterIniAt(root string) ([]MisterIni, error) {
+	inis := []MisterIni{{
+		Id: 1, DisplayName: "Main", Filename: DefaultIniFilename,
+		Path: filepath.Join(root, DefaultIniFilename),
+	}}
+
+	files, err := os.ReadDir(root)
 	if err != nil {
 		return nil, fmt.Errorf("read MiSTer root: %w", err)
 	}
@@ -54,7 +61,7 @@ func GetAllMisterIni() ([]MisterIni, error) {
 	var iniFilenames []string
 
 	for _, file := range files {
-		if file.IsDir() {
+		if file.IsDir() || strings.EqualFold(file.Name(), ExampleIniFilename) {
 			continue
 		}
 
@@ -63,26 +70,20 @@ func GetAllMisterIni() ([]MisterIni, error) {
 		}
 	}
 
-	currentID := 1
+	currentID := 2
 
 	for _, filename := range iniFilenames {
 		lower := strings.ToLower(filename)
 
 		if strings.EqualFold(lower, DefaultIniFilename) {
-			inis = append(inis, MisterIni{
-				Id:          currentID,
-				DisplayName: "Main",
-				Filename:    filename,
-				Path:        filepath.Join(config.SdFolder, filename),
-			})
-
-			currentID++
+			inis[0].Filename = filename
+			inis[0].Path = filepath.Join(root, filename)
 		} else if strings.HasPrefix(lower, "mister_") {
 			iniFile := MisterIni{
 				Id:          currentID,
 				DisplayName: "",
 				Filename:    filename,
-				Path:        filepath.Join(config.SdFolder, filename),
+				Path:        filepath.Join(root, filename),
 			}
 
 			iniFile.DisplayName = filename[7:]
@@ -149,23 +150,9 @@ func GetMisterIni(id int) (MisterIni, error) {
 	return inis[id-1], nil
 }
 
-// GetAllWithDefaultMisterIni returns all ini files, setting up a default one if none exist.
+// GetAllWithDefaultMisterIni includes Main even when its file does not exist.
 func GetAllWithDefaultMisterIni() ([]MisterIni, error) {
-	inis, err := GetAllMisterIni()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(inis) == 0 {
-		inis = append(inis, MisterIni{
-			Id:          1,
-			DisplayName: "Main",
-			Filename:    DefaultIniFilename,
-			Path:        filepath.Join(config.SdFolder, DefaultIniFilename),
-		})
-	}
-
-	return inis, nil
+	return GetAllMisterIni()
 }
 
 func blankMisterIniFile() (*ini.File, error) {
@@ -190,9 +177,10 @@ func (mi *MisterIni) Load() error {
 		if err != nil {
 			return err
 		}
-		if err = blank.SaveTo(mi.Path); err != nil {
-			return fmt.Errorf("save blank MiSTer INI: %w", err)
-		}
+		// Reading settings must not create configuration. Save is the explicit
+		// write boundary, including on installations containing only the example.
+		mi.File = blank
+		return nil
 	}
 
 	iniFile, err := ini.ShadowLoad(mi.Path)

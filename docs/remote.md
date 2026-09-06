@@ -49,6 +49,10 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Main configuration
+
+Settings always offers Main, even if `MiSTer.ini` is absent. Loading it uses blank defaults without writing a file. Save creates `/media/fat/MiSTer.ini` with a `[MiSTer]` section and the selected settings; the Save screen explains this. `MiSTer_example.ini` is never offered as an active configuration or edited. Saving Main leaves alternate INIs unchanged, and the menu is relaunched only after saving succeeds.
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.

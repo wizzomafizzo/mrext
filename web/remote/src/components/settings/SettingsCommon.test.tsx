@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { NumberOption } from "./SettingsCommon";
+import { NumberOption, SaveButton } from "./SettingsCommon";
 
 afterEach(cleanup);
 
@@ -25,6 +25,16 @@ function NumberOptionHarness(props: { onChange: (value: string) => void }) {
     />
   );
 }
+
+describe("SaveButton", () => {
+  it("explains that Save creates missing Main without editing the example", () => {
+    render(<SaveButton />);
+    expect(
+      screen.getByText(/Saving Main creates MiSTer.ini if it is missing/),
+    ).toBeTruthy();
+    expect(screen.getByText(/MiSTer_example.ini is never edited/)).toBeTruthy();
+  });
+});
 
 describe("NumberOption", () => {
   it("preserves an incomplete negative value without committing zero", () => {
