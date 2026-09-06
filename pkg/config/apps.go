@@ -48,3 +48,5 @@ const (
 const GamesDB = ScriptsConfigFolder + "/mrext/games.db"
 
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
+
+const NeoGeoRomsetsFile = "romsets.xml"
