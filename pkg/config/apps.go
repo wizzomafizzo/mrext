@@ -48,3 +48,9 @@ const (
 const GamesDB = ScriptsConfigFolder + "/mrext/games.db"
 
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
+
+const (
+	ServiceProcFolder       = "/proc"
+	RemoteWatchAttempts     = 6
+	RemoteWatchRetrySeconds = 1
+)

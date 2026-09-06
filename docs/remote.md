@@ -49,6 +49,16 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Startup diagnostics
+
+Remote retries tracker setup when required MiSTer state files or directories are missing: at most six attempts, with one-second gaps. Each retry is logged. Permission errors and other failures stop immediately. This does not retry a missing `remote.sh` before the executable starts, or missing input devices.
+
+The HTTP listener is bound before device/tracker setup. A port conflict therefore follows normal startup-error logging and PID cleanup rather than terminating from the background HTTP goroutine. A service-start command still launches a background process; its return is not an HTTP-readiness acknowledgment.
+
+Remote verifies that a PID belongs to its copied executable running the service subcommand before treating it as running or sending it a stop signal. Numeric PID-file format is unchanged. This prevents an unrelated process using a stale PID from being mistaken for Remote.
+
+If startup fails, capture `/tmp/remote.log`, `/tmp/remote.pid` (if present), and `/media/fat/linux/user-startup.sh` before restarting or re-enabling Remote. Also note executable location, mounted storage, and whether the recorded PID exists. These checks harden startup but do not establish the cause of intermittent reboot failures.
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.

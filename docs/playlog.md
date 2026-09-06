@@ -31,6 +31,8 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/play
 
 From this point, PlayLog will always run on boot and silently track game playing stats in the background. At any point you can run `playlog` again and see a summary report of the stats.
 
+Service status and stop commands verify the recorded PID's executable and daemon arguments before trusting it, so an unrelated process reusing a stale PID is not treated as PlayLog. The PID-file format is unchanged.
+
 ## Configuration
 
 PlayLog can be configured by creating a `playlog.ini` file in the `/media/fat/Scripts` folder where you put `playlog.sh`. For example:

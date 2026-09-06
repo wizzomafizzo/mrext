@@ -102,12 +102,14 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 		}
 	}
 
-	watcher, err := tracker.StartFileWatch(tr)
+	watcher, err := tracker.StartFileWatchWithRetry(tr)
 	if err != nil {
 		tr.Logger.Error("error starting file watch: %s", err)
 		return nil, nil, fmt.Errorf("start tracker file watch: %w", err)
 	}
 
+	// The core state may have appeared while watch setup was retrying.
+	tr.LoadCore()
 	tr.StartTicker(0)
 
 	return tr, func() error {

@@ -26,6 +26,8 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/last
 
 Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.
 
+Service status and stop commands verify the recorded PID's executable and daemon arguments before trusting it, so an unrelated process reusing a stale PID is not treated as LastPlayed. The PID-file format is unchanged.
+
 ## Configuration
 
 LastPlayed can be configured by creating a `lastplayed.ini` file in the `/media/fat/Scripts` folder where you put `lastplayed.sh`. For example:
