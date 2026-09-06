@@ -96,6 +96,13 @@ var apps = []app{
 		inAll:     true,
 	},
 	{
+		name:      "gamesmenu",
+		path:      filepath.Join(cwd, "cmd", "gamesmenu"),
+		bin:       "gamesmenu.sh",
+		releaseId: "mrext/gamesmenu",
+		inAll:     true,
+	},
+	{
 		name:      "launchsync",
 		path:      filepath.Join(cwd, "cmd", "launchsync"),
 		bin:       "launchsync.sh",
@@ -108,20 +115,6 @@ var apps = []app{
 		bin:       "playlog.sh",
 		releaseId: "mrext/playlog",
 		inAll:     true,
-	},
-}
-
-type scriptApp struct {
-	name string
-	path string
-	bin  string
-}
-
-var scriptApps = []scriptApp{
-	{
-		name: "gamesmenu",
-		path: filepath.Join(cwd, "scripts", "gamesmenu.sh"),
-		bin:  "gamesmenu.sh",
 	},
 }
 
@@ -329,13 +322,6 @@ func PrepRelease() {
 		if app.releaseId != "" {
 			fmt.Println("Preparing release:", app.name)
 			Release(app.name)
-		}
-	}
-	for _, app := range scriptApps {
-		fmt.Println("Preparing release:", app.name)
-		if err := sh.Copy(filepath.Join(binReleasesDir, app.bin), app.path); err != nil {
-			fmt.Println("Error copying script", app.name, err)
-			os.Exit(1)
 		}
 	}
 }

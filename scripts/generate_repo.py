@@ -9,10 +9,11 @@ from pathlib import Path
 from zipfile import ZipFile
 from typing import TypedDict, Union, Optional, List
 
-APPS = ["bgm", "favorites", "lastplayed", "launchsync", "playlog", "random", "remote", "search"]
+APPS = ["bgm", "favorites", "gamesmenu", "lastplayed", "launchsync", "playlog", "random", "remote", "search"]
 FILES = {
     "bgm": ["bgm.sh"],
     "favorites": ["favorites.sh"],
+    "gamesmenu": ["gamesmenu.sh"],
     "lastplayed": ["lastplayed.sh"],
     "launchsync": ["launchsync.sh"],
     "playlog": ["playlog.sh"],
@@ -21,15 +22,11 @@ FILES = {
     "search": ["search.sh"],
 }
 REBOOT = ["remote"]
-SCRIPT_FILES = [
-    "scripts/gamesmenu.sh",
-]
 
 DB_ID = "mrext/{}"
 RELEASES_FOLDER = "releases"
 DL_FOLDER = "_bin/releases"
 DL_URL = "https://github.com/wizzomafizzo/mrext/releases/download/{}"
-SCRIPT_URL = "https://github.com/wizzomafizzo/mrext/raw/main/scripts/{}"
 
 
 class RepoDbFilesItem(TypedDict):
@@ -121,19 +118,6 @@ def create_all_db(tag: str) -> RepoDb:
             )
 
             files[key] = file_entry
-
-    for file in SCRIPT_FILES:
-        url = SCRIPT_URL.format(os.path.basename(file))
-        local_path = file
-        key = "Scripts/{}".format(os.path.basename(local_path))
-        size = os.stat(local_path).st_size
-        md5 = hashlib.md5(open(local_path, "rb").read()).hexdigest()
-
-        file_entry = RepoDbFilesItem(
-            hash=md5, size=size, url=url, overwrite=None, reboot=False, tags=[Path(local_path).stem]
-        )
-
-        files[key] = file_entry
 
     return RepoDb(
         db_id=DB_ID.format("all"),

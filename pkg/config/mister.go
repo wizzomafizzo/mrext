@@ -66,6 +66,12 @@ const (
 // TODO: this can't be hardcoded if we want dynamic arcade folders
 const ArcadeCoresFolder = "/media/fat/_Arcade/cores"
 
+// NamesFile is MiSTer's optional display-name mapping, one "Key: Name" per line.
+const NamesFile = SdFolder + "/names.txt"
+
+// GamesMenuFolder is the stock-menu folder GamesMenu mirrors game libraries into.
+const GamesMenuFolder = SdFolder + "/_Games"
+
 // TODO: not the order mister actually checks, it does games folders second, but this is simpler for checking prefix
 var GamesFolders = []string{
 	"/media/usb0/games",

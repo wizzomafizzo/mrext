@@ -21,8 +21,6 @@ package favorites
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -107,152 +105,43 @@ func SaveSettings(path string, settings *Settings) error {
 	if err := settings.Validate(); err != nil {
 		return err
 	}
-	data, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return fmt.Errorf("read Favorites configuration for update: %w", err)
-	}
-	file, err := ini.LoadSources(ini.LoadOptions{AllowShadows: true}, data)
-	if err != nil {
-		return fmt.Errorf("load Favorites configuration for update: %w", err)
-	}
-	favoritesSection, err := getOrCreateSection(file, "favorites")
-	if err != nil {
-		return err
-	}
-	setKey(favoritesSection, "default_folder", settings.DefaultFolder)
-	setKey(favoritesSection, "folder_name_contains", strings.Join(settings.FolderNameContains, ","))
-	setKey(favoritesSection, "create_default_folder", formatBool(settings.CreateDefaultFolder))
-	setKey(favoritesSection, "manage_arcade_core_links", formatBool(settings.ManageArcadeCoreLinks))
-	setKey(favoritesSection, "hide_root_files", formatBool(settings.HideRootFiles))
-	setKey(favoritesSection, "external_folder", settings.ExternalFolder)
-	setKey(favoritesSection, "core_prefix", settings.CorePrefix)
-	if shadowErr := setShadowKeys(favoritesSection, "games_folder", settings.GamesFolders); shadowErr != nil {
-		return shadowErr
-	}
-
-	coresSection, err := getOrCreateSection(file, "cores")
-	if err != nil {
-		return err
-	}
-	setKey(coresSection, "all", settings.AlternateCore)
-
-	tuiSection, err := getOrCreateSection(file, "tui")
-	if err != nil {
-		return err
-	}
-	setKey(tuiSection, "theme", settings.Theme)
-	setKey(tuiSection, "mouse", formatBool(settings.Mouse))
-	setKey(tuiSection, "crt_mode", formatBool(settings.CRTMode))
-	setKey(tuiSection, "on_screen_keyboard", formatBool(settings.OnScreenKeyboard))
-
-	if err := retainINIComments(data, file); err != nil {
-		return err
-	}
-	return writeINIAtomically(path, file)
-}
-
-// The INI parser replaces attached comments when loading shadow keys. Keep
-// otherwise lost full-line notes as file comments, even when a key is removed.
-func retainINIComments(original []byte, file *ini.File) error {
-	var rendered strings.Builder
-	if _, err := file.WriteTo(&rendered); err != nil {
-		return fmt.Errorf("render Favorites configuration comments: %w", err)
-	}
-	present := make(map[string]bool)
-	for _, line := range strings.Split(rendered.String(), "\n") {
-		present[strings.TrimSpace(line)] = true
-	}
-	for _, line := range strings.Split(string(original), "\n") {
-		line = strings.TrimSpace(line)
-		if (strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#")) && !present[line] {
-			section := file.Section(ini.DefaultSection)
-			section.Comment = strings.TrimSpace(section.Comment + "\n" + line)
-			present[line] = true
+	err := config.UpdateINI(path, func(file *ini.File) error {
+		favoritesSection, sectionErr := config.GetOrCreateSection(file, "favorites")
+		if sectionErr != nil {
+			return fmt.Errorf("get favorites section: %w", sectionErr)
 		}
-	}
-	return nil
-}
-
-func getOrCreateSection(file *ini.File, name string) (*ini.Section, error) {
-	section, err := file.GetSection(name)
-	if err == nil {
-		return section, nil
-	}
-	section, err = file.NewSection(name)
-	if err != nil {
-		return nil, fmt.Errorf("create %s configuration section: %w", name, err)
-	}
-	return section, nil
-}
-
-func setKey(section *ini.Section, name, value string) {
-	section.Key(name).SetValue(value)
-}
-
-func setShadowKeys(section *ini.Section, name string, values []string) error {
-	comment := ""
-	if existing, err := section.GetKey(name); err == nil {
-		comment = existing.Comment
-	}
-	section.DeleteKey(name)
-	if len(values) == 0 {
-		// Keep notes on cleared roots without leaving an active empty key.
-		if comment != "" {
-			section.Comment = strings.TrimSpace(section.Comment + "\n" + comment)
+		config.SetKey(favoritesSection, "default_folder", settings.DefaultFolder)
+		config.SetKey(favoritesSection, "folder_name_contains", strings.Join(settings.FolderNameContains, ","))
+		config.SetKey(favoritesSection, "create_default_folder", config.FormatBool(settings.CreateDefaultFolder))
+		config.SetKey(favoritesSection, "manage_arcade_core_links", config.FormatBool(settings.ManageArcadeCoreLinks))
+		config.SetKey(favoritesSection, "hide_root_files", config.FormatBool(settings.HideRootFiles))
+		config.SetKey(favoritesSection, "external_folder", settings.ExternalFolder)
+		config.SetKey(favoritesSection, "core_prefix", settings.CorePrefix)
+		if shadowErr := config.SetShadowKeys(
+			favoritesSection, "games_folder", settings.GamesFolders,
+		); shadowErr != nil {
+			return fmt.Errorf("set games folders: %w", shadowErr)
 		}
+
+		coresSection, sectionErr := config.GetOrCreateSection(file, "cores")
+		if sectionErr != nil {
+			return fmt.Errorf("get cores section: %w", sectionErr)
+		}
+		config.SetKey(coresSection, "all", settings.AlternateCore)
+
+		tuiSection, sectionErr := config.GetOrCreateSection(file, "tui")
+		if sectionErr != nil {
+			return fmt.Errorf("get TUI section: %w", sectionErr)
+		}
+		config.SetKey(tuiSection, "theme", settings.Theme)
+		config.SetKey(tuiSection, "mouse", config.FormatBool(settings.Mouse))
+		config.SetKey(tuiSection, "crt_mode", config.FormatBool(settings.CRTMode))
+		config.SetKey(tuiSection, "on_screen_keyboard", config.FormatBool(settings.OnScreenKeyboard))
 		return nil
-	}
-	key, err := section.NewKey(name, values[0])
+	})
 	if err != nil {
-		return fmt.Errorf("create %s setting: %w", name, err)
+		return fmt.Errorf("save Favorites settings: %w", err)
 	}
-	key.Comment = comment
-	for _, value := range values[1:] {
-		if err := key.AddShadow(value); err != nil {
-			return fmt.Errorf("add %s setting: %w", name, err)
-		}
-	}
-	return nil
-}
-
-func formatBool(value bool) string {
-	if value {
-		return "true"
-	}
-	return "false"
-}
-
-func writeINIAtomically(path string, file *ini.File) error {
-	directory := filepath.Dir(path)
-	temporary, err := os.CreateTemp(directory, ".favorites-*.ini")
-	if err != nil {
-		return fmt.Errorf("create temporary Favorites configuration: %w", err)
-	}
-	temporaryPath := temporary.Name()
-	removeTemporary := true
-	defer func() {
-		_ = temporary.Close()
-		if removeTemporary {
-			_ = os.Remove(temporaryPath)
-		}
-	}()
-	if _, err := file.WriteTo(temporary); err != nil {
-		return fmt.Errorf("write temporary Favorites configuration: %w", err)
-	}
-	if err := temporary.Sync(); err != nil {
-		return fmt.Errorf("sync temporary Favorites configuration: %w", err)
-	}
-	if err := temporary.Chmod(0o644); err != nil {
-		return fmt.Errorf("set Favorites configuration permissions: %w", err)
-	}
-	if err := temporary.Close(); err != nil {
-		return fmt.Errorf("close temporary Favorites configuration: %w", err)
-	}
-	// #nosec G703 -- destination is the explicit Favorites configuration path.
-	if err := os.Rename(temporaryPath, filepath.Clean(path)); err != nil {
-		return fmt.Errorf("replace Favorites configuration: %w", err)
-	}
-	removeTemporary = false
 	return nil
 }
 
