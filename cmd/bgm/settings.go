@@ -74,6 +74,17 @@ func (s *settingsPage) show(selection int) {
 		}
 	})
 
+	s.addText("Startup sound delay", bgm.FormatDelay(s.staged.BootDelay), func(value string) error {
+		if _, err := bgm.ParseBootDelay(value); err != nil {
+			return fmt.Errorf("invalid startup delay: %w", err)
+		}
+		return nil
+	}, func(value string) {
+		if parsed, err := bgm.ParseBootDelay(value); err == nil {
+			s.staged.BootDelay = parsed
+		}
+	})
+
 	s.list.AddHeader("Volume")
 	s.addVolume("Menu volume", menuVolumeHelp, &s.staged.MenuVolume, true)
 	s.addVolume("Default volume", defaultVolumeHelp, &s.staged.DefaultVolume, false)

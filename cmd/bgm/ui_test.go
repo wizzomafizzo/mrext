@@ -242,6 +242,28 @@ func TestRefreshDiscardsStatusFetchedBeforeACommand(t *testing.T) {
 	player.StopPlaylist()
 }
 
+func TestStartupDelaySettingsAreStagedAndSaved(t *testing.T) {
+	view, _ := newWorkflowUI(t)
+	page := newSettingsPage(view)
+	page.show(0)
+	page.staged.BootDelay = 1.25
+	if view.cfg.BootDelay != 0 {
+		t.Fatal("unsaved delay applied")
+	}
+	page.back()
+	if !view.pages.HasPage("tui_confirm_modal") {
+		t.Fatal("discard confirmation missing")
+	}
+	if strings.Contains(readINI(t, view), "bootdelay = 1.25") {
+		t.Fatal("unsaved delay persisted")
+	}
+	page.show(0)
+	page.save()
+	if view.cfg.BootDelay != 1.25 || !strings.Contains(readINI(t, view), "bootdelay = 1.25\n") {
+		t.Fatal("saved startup delay not applied and persisted")
+	}
+}
+
 func TestSettingsSaveWritesINIAndUpdatesService(t *testing.T) {
 	view, player := newWorkflowUI(t)
 	view.startSettings()

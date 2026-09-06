@@ -41,6 +41,7 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Optional `bootdelay` waits before initial automatic audio on each service start. It defaults to zero, preserving immediate startup playback. Shutdown cancels the wait.
 
 ## Music folder
 
@@ -78,6 +79,10 @@ Create a subfolder in `music` and fill it with tracks; it appears in the control
 
 Prefix a file with `_` to mark it as a boot sound (for example `_Startup.mp3`). One boot sound is picked at random from the active playlist's top level when MiSTer starts, and `_` files are excluded from normal playback. Files placed directly in `music/boot` are global boot sounds that apply to every playlist and need no prefix.
 
+To allow a display to sync before initial audio, set `bootdelay = 2.5` in `[bgm]`, or edit **Startup sound delay** in Settings and Save. The value is seconds; fractional values and zero are supported. Negative, non-finite, invalid, or timer-overflowing values in the INI fall back to zero.
+
+The delay applies on every BGM service start, including a manual restart, before startup sounds and the initial playlist (even when no boot sound exists). It does not repeat on later core/menu changes, and does not change `corebootdelay`. Saved changes apply the next time BGM starts. The control socket remains available during the wait; explicit playback commands can start audio sooner. Shutdown cancels the wait without playing the startup sound.
+
 ### Core boot sounds
 
 Create a folder inside `music/boot` named after a core, such as `music/boot/SNES`, and add tracks. One is played when that core launches. The match is case-insensitive and also triggers for `.mgl` launches of the core. `corebootdelay` in `bgm.ini` waits the given number of seconds (decimals allowed) before playing, to allow a display to sync.
@@ -108,6 +113,7 @@ playlist = none
 startup = yes
 playincore = no
 corebootdelay = 0
+bootdelay = 0
 menuvolume = -1
 defaultvolume = -1
 debug = no
@@ -118,6 +124,7 @@ debug = no
 - `startup`: start the service from `user-startup.sh` on boot.
 - `playincore`: keep playing music while a core runs.
 - `corebootdelay`: seconds to wait before core boot sounds.
+- `bootdelay`: seconds before initial automatic audio on service start; defaults to `0`.
 - `menuvolume`, `defaultvolume`: `-1` to `7`, see Volume control.
 - `debug`: print service output and append it to `/tmp/bgm.log`. Re-read on every log line, so it can be toggled while the service runs.
 
@@ -135,13 +142,13 @@ crt_mode = yes
 on_screen_keyboard = yes
 ```
 
-Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `monogreen`. `crt_mode` uses MiSTer's 75×15 layout. `on_screen_keyboard` enables controller-friendly text entry for the core boot delay.
+Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `monogreen`. `crt_mode` uses MiSTer's 75×15 layout. `on_screen_keyboard` enables controller-friendly text entry for both boot delays.
 
 ## Control screen
 
 The main screen shows the current track, playback type and playlist, followed by `Skip current track`, `Start playing`/`Stop playing`, the playback types and the playlists. The active playback type and playlist are marked `[ACTIVE]`. Up and Down select a row, Left and Right select `Select`, `Settings` or `Exit`, and Enter activates the selected button. The screen refreshes itself while music plays.
 
-`Settings` opens a staged page for start on boot, play music in cores, core boot delay, menu and default volume, debug logging, theme, mouse, CRT mode and the on-screen keyboard. Changing the menu volume applies it to MiSTer immediately so it can be heard. Nothing is written until `Save`; `Cancel` or Escape asks before discarding changes.
+`Settings` opens a staged page for start on boot, play music in cores, startup sound delay, core boot delay, menu and default volume, debug logging, theme, mouse, CRT mode and the on-screen keyboard. Changing the menu volume applies it to MiSTer immediately so it can be heard. Nothing is written until `Save`; `Cancel` or Escape asks before discarding changes.
 
 ## Commands
 
