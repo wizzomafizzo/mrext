@@ -37,6 +37,23 @@ Core-update repair now recognizes the date in the symlink target rather than req
 
 Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
 
+## Moving to another SD card
+
+Favorites are stored directly in menu folders, not in a separate database. The default folder is `/media/fat/_@Favorites` (shown as `@Favorites` in MiSTer's menu). Also copy any custom top-level Favorites folders recognized by your `default_folder` and `folder_name_contains` settings, including their subfolders. Keep `/media/fat/Scripts/favorites.ini` to preserve those settings.
+
+These folders contain generated `.mgl` files and symbolic links to existing cores or launchers. Arcade favorites can also depend on a `cores` link. Copy links as links, not as copies of their targets, and preserve the referenced games, cores, and folder layout. A copied target can still appear in MiSTer's menu without behaving like the original favorite.
+
+Keep the original card or a backup until the new card is verified. Use a copy tool's preserve-symbolic-links option, not its follow-links option. On systems where both filesystems expose and support symbolic links, `cp -a` preserves them; this is not a guarantee for every macOS/Windows SD-card copy workflow. Verify the result on MiSTer rather than relying only on the desktop file browser.
+
+After migration:
+
+- Check the actual folder names and `favorites.ini` if entries appear in MiSTer's menu but not in Favorites.
+- Inspect a known link with `ls -l` or `readlink` on MiSTer and compare its target with the original. Not every entry is a link: generated `.mgl` files are regular files.
+- Confirm linked targets exist at the same MiSTer paths, including any USB or network storage, then test representative game, core, and arcade shortcuts.
+- If links became regular copies, restore them from the original card with link-preserving copying or recreate the affected favorites. Back up the migrated folders before removing duplicates.
+
+The `refresh` command repairs supported broken core links; it does not reconstruct links that a copy tool replaced with regular files or rewrite every game path after storage moves.
+
 ## Settings screen
 
 Choose `Settings` from the main screen's bottom action bar. Up and Down select a setting; Left and Right select `Change`, `Save`, or `Cancel`. The footer shows one sentence explaining the selected setting. `Change` toggles boolean values, opens an alternate-core or theme picker, or opens the appropriate editor. Pickers highlight the current value and do not change it when canceled.
