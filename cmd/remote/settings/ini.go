@@ -58,6 +58,9 @@ func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			return
 		}
 
+		if !checkIniFilename(w, r, mi) {
+			return
+		}
 		err = mi.Load()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,7 +111,7 @@ func saveAndRelaunch(mi *mister.MisterIni, relaunch func() error) error {
 }
 
 func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("load ini request: %d", reqID)
 
 		mi, err := mister.GetMisterIni(reqID)
@@ -118,6 +121,9 @@ func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			return
 		}
 
+		if !checkIniFilename(w, r, mi) {
+			return
+		}
 		err = mi.Load()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -195,6 +201,16 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
+// Optional identity guard extends the API without changing existing JSON shapes.
+func checkIniFilename(w http.ResponseWriter, r *http.Request, mi mister.MisterIni) bool {
+	expected := r.Header.Get(mister.IniFilenameHeader)
+	if expected != "" && expected != mi.Filename {
+		http.Error(w, "INI filename no longer matches this slot; reload settings", http.StatusConflict)
+		return false
+	}
+	return true
+}
+
 type SetActiveIniRequest struct {
 	Ini int `json:"ini"`
 }
@@ -216,16 +232,14 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		availableInis, err := mister.GetAllWithDefaultMisterIni()
+		selectedIni, err := mister.GetMisterIni(args.Ini)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list mister.inis: %s", err)
 			return
 		}
 
-		if args.Ini > len(availableInis) {
-			http.Error(w, "ini does not exist", http.StatusInternalServerError)
-			logger.Error("ini does not exist")
+		if !checkIniFilename(w, r, selectedIni) {
 			return
 		}
 

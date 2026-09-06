@@ -20,12 +20,28 @@
 package settings
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
+
+func TestExpectedFilenameGuard(t *testing.T) {
+	mi := mister.MisterIni{Id: 4, Filename: "MiSTer_ultrawide.ini"}
+	for _, expected := range []string{"", mi.Filename, "MiSTer_auto.ini"} {
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/settings/inis/4", http.NoBody)
+		request.Header.Set(mister.IniFilenameHeader, expected)
+		response := httptest.NewRecorder()
+		accepted := checkIniFilename(response, request, mi)
+		want := expected == "" || expected == mi.Filename
+		if accepted != want || (!want && response.Code != http.StatusConflict) {
+			t.Fatalf("expected=%q accepted=%t status=%d", expected, accepted, response.Code)
+		}
+	}
+}
 
 func TestRelaunchOnlyAfterSuccessfulINISave(t *testing.T) {
 	root := t.TempDir()

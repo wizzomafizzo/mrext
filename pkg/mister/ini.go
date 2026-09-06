@@ -24,7 +24,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
@@ -43,76 +46,113 @@ type MisterIni struct {
 	Id          int       `json:"id"` //nolint:revive // Legacy public field name.
 }
 
+type iniLayout struct {
+	names       []string
+	mu          sync.Mutex
+	initialized bool
+}
+
+var currentIniLayout iniLayout
+
+func (layout *iniLayout) accept(names []string) bool {
+	layout.mu.Lock()
+	defer layout.mu.Unlock()
+	if !layout.initialized {
+		layout.names = slices.Clone(names)
+		layout.initialized = true
+	}
+	return slices.Equal(layout.names, names)
+}
+
 func GetAllMisterIni() ([]MisterIni, error) {
-	return getAllMisterIniAt(config.SdFolder)
+	return discoverMisterInis(config.SdFolder, &currentIniLayout)
 }
 
 func getAllMisterIniAt(root string) ([]MisterIni, error) {
-	inis := []MisterIni{{
-		Id: 1, DisplayName: "Main", Filename: DefaultIniFilename,
-		Path: filepath.Join(root, DefaultIniFilename),
-	}}
+	return discoverMisterInis(root, nil)
+}
 
-	files, err := os.ReadDir(root)
+func discoverMisterInis(root string, layout *iniLayout) ([]MisterIni, error) {
+	// os.ReadDir sorts names; MiSTer's cfg.cpp cfg_get_name first selects
+	// three candidates in readdir order, THEN sorts that subset ignoring case.
+	// #nosec G304 -- configured MiSTer root, or an injected temporary fixture root.
+	dir, err := os.Open(root)
+	if err != nil {
+		return nil, fmt.Errorf("open MiSTer root: %w", err)
+	}
+	defer func() { _ = dir.Close() }()
+	names, err := dir.Readdirnames(-1)
 	if err != nil {
 		return nil, fmt.Errorf("read MiSTer root: %w", err)
 	}
+	slots := alternateIniNames(names)
+	if layout != nil && !layout.accept(slots) {
+		return nil, errors.New("INI slot layout changed; restart MiSTer and Remote before editing settings")
+	}
+	return iniEntries(root, names, slots), nil
+}
 
-	var iniFilenames []string
+// MiSTer's C-locale strcasecmp folds ASCII bytes, not Unicode case variants.
+func iniASCIILower(name string) string {
+	lower := []byte(name)
+	for i, b := range lower {
+		if b >= 'A' && b <= 'Z' {
+			lower[i] = b + ('a' - 'A')
+		}
+	}
+	return string(lower)
+}
 
-	for _, file := range files {
-		if file.IsDir() || strings.EqualFold(file.Name(), ExampleIniFilename) {
+func alternateIniNames(names []string) []string {
+	slots := make([]string, 0, 3)
+	for _, name := range names {
+		lower := iniASCIILower(name)
+		if strings.HasPrefix(lower, "mister_") && strings.HasSuffix(lower, ".ini") {
+			// Match MiSTer's 64-byte name buffer, including its terminator.
+			if len(name) > 63 {
+				name = name[:63]
+			}
+			slots = append(slots, name)
+			if len(slots) == 3 {
+				break
+			}
+		}
+	}
+	sort.SliceStable(slots, func(i, j int) bool { return iniASCIILower(slots[i]) < iniASCIILower(slots[j]) })
+	return slots
+}
+
+func iniEntries(root string, names, slots []string) []MisterIni {
+	main := DefaultIniFilename
+	for _, name := range names {
+		if strings.EqualFold(name, DefaultIniFilename) {
+			main = name
+			break
+		}
+	}
+	inis := []MisterIni{{Id: 1, DisplayName: "Main", Filename: main, Path: filepath.Join(root, main)}}
+	for i, filename := range slots {
+		// The example consumes a MiSTer slot but must never become editable.
+		// Do not compact IDs when omitting it or an unusable filename.
+		if strings.EqualFold(filename, ExampleIniFilename) || !strings.EqualFold(filepath.Ext(filename), ".ini") {
 			continue
 		}
-
-		if filepath.Ext(strings.ToLower(file.Name())) == ".ini" {
-			iniFilenames = append(iniFilenames, file.Name())
+		label := strings.TrimSuffix(filename[7:], filepath.Ext(filename))
+		switch strings.ToLower(label) {
+		case "alt_1":
+			label = "Alt1"
+		case "alt_2":
+			label = "Alt2"
+		case "alt_3":
+			label = "Alt3"
+		case "":
+			label = " -- "
 		}
+		inis = append(inis, MisterIni{
+			Id: i + 2, DisplayName: label, Filename: filename, Path: filepath.Join(root, filename),
+		})
 	}
-
-	currentID := 2
-
-	for _, filename := range iniFilenames {
-		lower := strings.ToLower(filename)
-
-		if strings.EqualFold(lower, DefaultIniFilename) {
-			inis[0].Filename = filename
-			inis[0].Path = filepath.Join(root, filename)
-		} else if strings.HasPrefix(lower, "mister_") {
-			iniFile := MisterIni{
-				Id:          currentID,
-				DisplayName: "",
-				Filename:    filename,
-				Path:        filepath.Join(root, filename),
-			}
-
-			iniFile.DisplayName = filename[7:]
-			iniFile.DisplayName = strings.TrimSuffix(iniFile.DisplayName, filepath.Ext(iniFile.DisplayName))
-
-			switch iniFile.DisplayName {
-			case "":
-				iniFile.DisplayName = " -- "
-			case "alt_1":
-				iniFile.DisplayName = "Alt1"
-			case "alt_2":
-				iniFile.DisplayName = "Alt2"
-			case "alt_3":
-				iniFile.DisplayName = "Alt3"
-			}
-
-			if len(iniFile.DisplayName) > 4 {
-				iniFile.DisplayName = iniFile.DisplayName[0:4]
-			}
-
-			if len(inis) < 4 {
-				inis = append(inis, iniFile)
-			}
-
-			currentID++
-		}
-	}
-
-	return inis, nil
+	return inis
 }
 
 func GetActiveMisterIni() (MisterIni, error) {
@@ -130,11 +170,7 @@ func GetActiveMisterIni() (MisterIni, error) {
 		return MisterIni{}, err
 	}
 
-	if activeID < 1 || activeID > len(inis) {
-		return MisterIni{}, fmt.Errorf("active ini id is out of range: %d (%d)", activeID, len(inis))
-	}
-
-	return inis[activeID-1], nil
+	return iniByID(inis, activeID)
 }
 
 func GetMisterIni(id int) (MisterIni, error) {
@@ -143,11 +179,16 @@ func GetMisterIni(id int) (MisterIni, error) {
 		return MisterIni{}, err
 	}
 
-	if id < 1 || id > len(inis) {
-		return MisterIni{}, fmt.Errorf("ini id is out of range: %d (%d)", id, len(inis))
-	}
+	return iniByID(inis, id)
+}
 
-	return inis[id-1], nil
+func iniByID(inis []MisterIni, id int) (MisterIni, error) {
+	for i := range inis {
+		if inis[i].Id == id {
+			return inis[i], nil
+		}
+	}
+	return MisterIni{}, fmt.Errorf("INI slot %d is unavailable for editing", id)
 }
 
 // GetAllWithDefaultMisterIni includes Main even when its file does not exist.
