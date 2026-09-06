@@ -147,11 +147,9 @@ Example response:
 
 #### Take new screenshot
 
-Request main to take a new screenshot of the current core using the `/dev/MiSTer_cmd` interface.
+Request MiSTer to take a normal screenshot using the same keyboard shortcut as Control's Screenshot action (`Alt+Scroll Lock`), rather than the command-interface capture path. This keeps both actions on the capture path reported to preserve PSX image shape. Like Control, it requires MiSTer to accept the shortcut; PS/2 keyboard mode can disable it.
 
-*Due to limitations with main, this method cannot report on errors during screenshot, when the screenshot is complete or
-which file is the taken screenshot. Check for newest screenshot from the full list after a delay to see taken
-screenshot. The method includes an artificial delay which has been reliable.*
+Capture is asynchronous. A successful request does not confirm that MiSTer accepted the shortcut or finished writing a file. The method retains its one-second delay; check the screenshot list for new files afterward.
 
 ```plaintext
 POST /screenshots
@@ -159,7 +157,7 @@ POST /screenshots
 
 This method takes no arguments.
 
-On success, returns `200`.
+On success, returns `200` with the existing empty screenshot payload. If sending the keyboard shortcut fails, returns `500`.
 
 Example request:
 
