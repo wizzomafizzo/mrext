@@ -33,7 +33,7 @@ The Go version preserves Python Favorites' folder discovery, top-level destinati
 
 Arcade link management creates missing `cores` links when the interactive app opens and when it creates a Favorites folder. Existing files, directories, and symlinks named `cores` are preserved, not repaired or replaced. If an older Favorites folder uses a copied `cores` directory or an incorrect link, back it up and move it aside before reopening Favorites. MRAs that require a custom cores directory rather than `_Arcade/cores` are not automatically supported; Favorites does not merge multiple core directories.
 
-Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog.
+Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
 
 ## Settings screen
 

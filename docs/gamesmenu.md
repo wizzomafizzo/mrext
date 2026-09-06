@@ -37,9 +37,17 @@ The ZIP filename adds no folder level. Duplicate game basenames in the same outp
 
 Progress shows the current source folder and shortcut count. Completion reports created, skipped and failed shortcuts, removed folders, and up to ten error details. Long summaries and errors also scroll with Up/Down. Leave GamesMenu running until it finishes; progress is not cancellable.
 
+### NeoGeo Darksoft sets
+
+GamesMenu recognizes extracted NeoGeo set folders and whole-set ZIPs by their names in `romsets.xml`, including comma-separated aliases and case differences. Place the XML file at the top of a discovered `NEOGEO` games folder; its filename is also matched case-insensitively. Definitions are shared across discovered NeoGeo roots, so an SD mapping can describe sets on USB or network storage. Earlier roots win when definitions conflict.
+
+A matching folder or ZIP produces one shortcut named from its `altname`, with unsafe filename characters sanitized using the same rules as `names.txt`. Parent folders remain mirrored, but the set's individual ROM components are not added. Ordinary `.neo` files keep their filenames; ZIPs not identified as sets retain normal collection scanning. A missing mapping is allowed; malformed mappings are reported and never used partially. An entry needs a nonempty `altname` to be recognized. Recognition does not verify that every required ROM component is present.
+
+For example, a `romset` with `name="mslug" altname="Metal Slug"` recognizes `/media/usb0/games/NEOGEO/mslug/` and creates `_Games/_NEOGEO/Metal Slug.mgl` on SD. No ROM conversion or Zaparoo Core installation is required. Newly generated set shortcuts use the catalog's NeoGeo ROM slot and honor `set_core`; runtime hooks are not executed.
+
 ## Clean Up
 
-Clean Up asks for confirmation, then checks `.mgl` targets. It removes shortcuts when the referenced file or ZIP member is missing, and prunes empty nested menu folders. System-level folders remain so toggle state is preserved. Both Go-generated shortcuts and legacy Python shortcuts with absolute paths and raw ampersands are understood.
+Clean Up asks for confirmation, then checks `.mgl` targets. It removes shortcuts when the referenced file, NeoGeo set directory, or ZIP member is missing, and prunes empty nested menu folders. System-level folders remain so toggle state is preserved. Both Go-generated shortcuts and legacy Python shortcuts with absolute paths and raw ampersands are understood.
 
 Malformed, unreadable or ambiguous shortcuts, invalid/unreadable archives, and core-only launchers are kept. Cleanup checks every file target in custom multi-file MGLs; an unknown target prevents deletion. Menu symlinks are not traversed. The summary reports checked and removed shortcuts, pruned folders and unreadable paths.
 
@@ -93,6 +101,7 @@ Intentional differences:
 - Existing `_NeoGeo` and `_ATARI2600` folder spelling survives catalog casing differences. Source directory symlinks are followed with loop protection. Additional network and configured roots are supported.
 - Dotfiles, AppleDouble files and hidden ZIP members are skipped. Absolute and parent-traversing ZIP paths are rejected, but harmless `./` and repeated separators are accepted. Exact ZIP member names and Python's `_.`/`_` menu-folder quirks are preserved (for example, `./game.nes` creates `_./game.mgl`). Output writes are confined to the SD root; symlinks escaping it fail rather than writing elsewhere. Exclusive file creation protects existing shortcuts against concurrent writers.
 - Optional `gamesmenu.ini` and explicit, conservative Clean Up are new. Errors are reported rather than silently discarded (invalid source ZIPs are still silently ignored).
+- NeoGeo Darksoft set folders and ZIPs mapped by `romsets.xml` are now supported as single games. This is a stock-MiSTer compatibility extension using the catalog's existing NeoGeo mount parameters, not a separate system catalog. Recognized set folders are treated as game entries in their parent directory's name order.
 
 ## Uninstall
 
