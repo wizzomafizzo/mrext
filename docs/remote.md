@@ -49,6 +49,14 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Rebuilding the search index
+
+Use the regenerate button in Search after moving, renaming, or deleting games. A successful rebuild replaces all names and system metadata in `/media/fat/Scripts/.config/mrext/games.db`, shared with Search and LaunchSync. The legacy root-level `search.db` is not the current index.
+
+Progress and failures appear in the existing indexing status flow. If regeneration fails, the previous index remains usable and the error stays visible until another attempt. Rebuilds stream game matches into bounded database batches on SD rather than keeping a whole-library list in RAM. Directory/ZIP listings and directory-cycle tracking still use memory.
+
+A rebuild needs space beside `games.db` for a replacement index. Do not delete the adjacent `games.db.lock` while any app is indexing; it serializes writers across index replacement. Failed attempts normally clean up their temporary `.games-index-*` files. After a hard interruption, leftover files with that prefix can be removed only when no indexer is running. Mount the libraries you want included before regenerating: absent libraries are omitted from a successful full rebuild.
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.

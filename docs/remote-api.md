@@ -1790,7 +1790,7 @@ Format: `indexStatus:{exists},{inProgress},{totalSteps},{currentStep},{currentSt
 | `currentStep`            | number  | Current step in the index generation process. Split by system.            |
 | `currentStepDescription` | string  | Description of current step in the index generation process. System name. |
 
-Steps are used for displaying detailed indexing status to the user.
+Steps are used for displaying detailed indexing status to the user. On failure, `inProgress` becomes `n`, step counters reset to zero, and `currentStepDescription` retains an `Index failed: ...` message until the next indexing attempt. Commas and line breaks in descriptions are replaced to preserve the existing five-field format. `exists` continues to describe the published index: a failed regeneration preserves the previous working index, while a failed first build leaves it absent. Successful completion clears the description. An indexing request received while Remote is already indexing does not start a second build.
 
 #### Core status
 
