@@ -25,6 +25,7 @@ package service
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -81,5 +82,13 @@ func TestServicePIDValidation(t *testing.T) {
 	}
 	if pid, err := readServicePID(path); err != nil || pid != 42 {
 		t.Fatalf("valid legacy PID: %d %v", pid, err)
+	}
+}
+
+func TestStopReportsNotRunningWithoutPIDFile(t *testing.T) {
+	svc := &Service{Name: "mrext-stop-" + filepath.Base(t.TempDir())}
+	err := svc.Stop()
+	if err == nil || !strings.Contains(err.Error(), "service not running") {
+		t.Fatalf("expected not-running error, got %v", err)
 	}
 }

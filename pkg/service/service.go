@@ -287,6 +287,11 @@ func (s *Service) Stop() error {
 		return fmt.Errorf("read service PID: %w", err)
 	}
 
+	// No PID file at all is the ordinary stopped case, not a mismatched PID.
+	if pid == 0 {
+		return fmt.Errorf("%s service not running", s.Name)
+	}
+
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("find service process: %w", err)
