@@ -51,3 +51,8 @@ const GamesDB = ScriptsConfigFolder + "/mrext/games.db"
 const GamesDBLockSuffix = ".lock"
 
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
+
+const NeoGeoRomsetsFile = "romsets.xml"
+
+// BGMDefaultBootFolder holds opt-in core boot sounds under BGM's boot directory.
+const BGMDefaultBootFolder = "default"

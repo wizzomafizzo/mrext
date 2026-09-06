@@ -39,6 +39,17 @@ LaunchSync indexes each required system once, regardless of how many playlist en
 
 Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/mrext/games.db`; unrelated Search/Remote entries are retained. A successful refresh removes stale entries for the requested systems. Failed scans or writes leave the previous index intact. Allow free SD space for a replacement index and do not remove `games.db.lock` while an app is indexing. Playlist matching rules and generated shortcut formats are unchanged.
 
+## Uninstall
+
+Remove LaunchSync's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Let any update finish and exit LaunchSync. It installs no startup service; remove any scheduled or startup invocations you added yourself.
+2. Delete `/media/fat/Scripts/launchsync.sh`. Optionally back up and remove `/media/fat/Scripts/launchsync.ini` if present, respecting any shared configuration override.
+3. Preserve your `.sync` files by default: they contain subscriptions or authored game lists. To unsubscribe permanently, remove only the `.sync` files you no longer want from their actual locations.
+4. Generated folders live beside each `.sync` file, named from its top-level `name` field with an underscore prefix. Keep them to retain static shortcuts, or inspect and remove their generated `.mgl` files, arcade `.mra` links, and `[NOT FOUND].mgl` placeholders. Do not remove unrelated files or follow `cores` symlinks into the real arcade cores directory. Removing a `.sync` file does not by itself remove its generated folder.
+
+The game index at `/media/fat/Scripts/.config/mrext/games.db` is shared with Search and Remote; leave it in place when either remains installed. Keep original games, arcade MRAs, and shared metadata. There is no separate LaunchSync service database to delete.
+
 ## Creating Sync Files
 
 *NOTE: Check the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page to see what cores are supported. Most consoles are, most computers aren't. Use the ID or Alias listed on that page for the `system` field.*
