@@ -35,6 +35,9 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/play
 
 From this point, PlayLog will always run on boot and silently track game playing stats in the background. At any point you can run `playlog` again and see a summary report of the stats.
 
+<<<<<<< HEAD
+Service status and stop commands verify the recorded PID's executable and daemon arguments before trusting it, so an unrelated process reusing a stale PID is not treated as PlayLog. The PID-file format is unchanged.
+=======
 ## Uninstall
 
 Remove PlayLog's Downloader subscription if configured, so updates do not reinstall it.
@@ -44,6 +47,7 @@ Remove PlayLog's Downloader subscription if configured, so updates do not reinst
 3. **Preserve `/media/fat/playlog.db` unless you intend to erase your play history and totals.** After the service stops, back up the database together with any `playlog.db-wal`, `playlog.db-shm`, or `playlog.db-journal` sidecars present. Keep that set together; do not delete sidecars independently. Only discard the database and remaining sidecars when intentionally removing all history.
 
 PlayLog generates no menu folder. Custom scripts referenced by its state hooks belong to you and may be shared; removing PlayLog does not require deleting them. Keep MiSTer recents/configuration and shared `/tmp/ACTIVEGAME`. After shutdown, `/tmp/playlog.pid`, `/tmp/playlog.log`, and `/tmp/playlog.sh` are optional cleanup.
+>>>>>>> origin/main
 
 ## Configuration
 

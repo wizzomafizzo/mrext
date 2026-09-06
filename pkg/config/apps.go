@@ -58,3 +58,9 @@ const NeoGeoRomsetsFile = "romsets.xml"
 const BGMDefaultBootFolder = "default"
 
 const SAMActivityFile = TempFolder + "/.SAM_tmp/SAM_Joy_Activity"
+
+const (
+	ServiceProcFolder       = "/proc"
+	RemoteWatchAttempts     = 6
+	RemoteWatchRetrySeconds = 1
+)

@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -187,6 +188,24 @@ func parseMouseCoords(args string) (x, y int, err error) {
 }
 
 func startService(logger *service.Logger, cfg *config.UserConfig) (func() error, error) {
+	return startServiceWithListener(logger, cfg, net.Listen)
+}
+
+func startServiceWithListener(
+	logger *service.Logger, cfg *config.UserConfig, listen func(string, string) (net.Listener, error),
+) (func() error, error) {
+	// Bind before reporting success or allocating devices. Bind errors then use
+	// the service harness's normal startup-error logging and PID cleanup.
+	listener, err := listen("tcp", ":"+strconv.Itoa(appPort))
+	if err != nil {
+		return nil, fmt.Errorf("bind Remote HTTP listener: %w", err)
+	}
+	started := false
+	defer func() {
+		if !started {
+			_ = listener.Close()
+		}
+	}()
 	kbd, err := input.NewKeyboard()
 	if err != nil {
 		logger.Error("failed to initialize keyboard: %s", err)
@@ -240,8 +259,9 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		ReadTimeout:  15 * time.Second,
 	}
 
+	started = true
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("critical server error: %s", err)
 			os.Exit(1)
 		}

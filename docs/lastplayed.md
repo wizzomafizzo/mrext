@@ -26,6 +26,9 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/last
 
 Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.
 
+<<<<<<< HEAD
+Service status and stop commands verify the recorded PID's executable and daemon arguments before trusting it, so an unrelated process reusing a stale PID is not treated as LastPlayed. The PID-file format is unchanged.
+=======
 ## Arcade games
 
 LastPlayed creates `.mra` links for arcade games in Last Played and Recently Played, including MRAs in nested installed arcade folders. The shared tracker uses Arcade Database to recognize the active set name, then confirms it against each candidate MRA's `<setname>`; display names alone do not select a launcher. Symlink aliases to the same file count once. Multiple distinct matching MRAs are treated as ambiguous rather than choosing one arbitrarily.
@@ -46,6 +49,7 @@ Remove LastPlayed's Downloader subscription if configured, so updates do not rei
 4. Optionally remove `/media/fat/Last Played.mgl` and generated entries in `/media/fat/_Recently Played/`. Use the actual configured names (`last_played_name`, legacy `name`, and `recent_folder_name`) if customized. Inspect the folder for user-added files before deleting anything. Keeping the shortcuts is allowed; they will stop updating.
 
 LastPlayed has no separate database. Keep MiSTer's recents files under `config/` and shared `/tmp/ACTIVEGAME`. After shutdown, `/tmp/lastplayed.pid`, `/tmp/lastplayed.log`, and `/tmp/lastplayed.sh` are optional cleanup.
+>>>>>>> origin/main
 
 ## Configuration
 
