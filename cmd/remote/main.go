@@ -307,12 +307,12 @@ func setupAPI(
 	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd, mouse)))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
-	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
+	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(kbd, logger)).Methods("POST")
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.ViewScreenshot(logger)).Methods("GET")
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 
 	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
-	sub.HandleFunc("/systems/{id}", systems.LaunchCore(cfg, logger)).Methods("POST")
+	sub.HandleFunc("/systems/{id}", withSAMActivity(systems.LaunchCore(cfg, logger), logger)).Methods("POST")
 
 	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapersHandler(logger)).Methods("GET")
 	sub.HandleFunc("/wallpapers", wallpapers.UnsetWallpaperHandler(logger)).Methods("DELETE")
@@ -329,14 +329,14 @@ func setupAPI(
 
 	sub.HandleFunc("/games/search", games.Search(logger)).Methods("POST")
 	sub.HandleFunc("/games/search/systems", games.ListSystems(logger)).Methods("GET")
-	sub.HandleFunc("/games/launch", games.LaunchGame(logger, cfg)).Methods("POST")
+	sub.HandleFunc("/games/launch", withSAMActivity(games.LaunchGame(logger, cfg), logger)).Methods("POST")
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 	sub.HandleFunc("/games/view", games.ListGamesFolder(logger)).Methods("POST")
 
-	sub.HandleFunc("/l/{data:.*}", games.LaunchToken(logger, cfg, kbd)).Methods("GET")
+	sub.HandleFunc("/l/{data:.*}", withSAMActivity(games.LaunchToken(logger, cfg, kbd), logger)).Methods("GET")
 
-	sub.HandleFunc("/launch", games.LaunchFile(logger, cfg)).Methods("POST")
+	sub.HandleFunc("/launch", withSAMActivity(games.LaunchFile(logger, cfg), logger)).Methods("POST")
 	sub.HandleFunc("/launch/menu", games.LaunchMenu).Methods("POST")
 	sub.HandleFunc("/launch/new", games.CreateLauncher(logger, cfg)).Methods("POST")
 

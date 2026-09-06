@@ -33,6 +33,23 @@ LaunchSync must be run manually whenever you want to update subscribed files or 
 
 LaunchSync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
 
+## Indexing large playlists
+
+LaunchSync indexes each required system once, regardless of how many playlist entries use it. Repeated or symlinked references to the same system root are scanned once. Matches stream into bounded batches in a temporary database on SD; they are not accumulated as a whole-library filename list or buffered in `/tmp`. The scanner still needs memory for individual directory/ZIP listings and visited-directory tracking.
+
+Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/mrext/games.db`; unrelated Search/Remote entries are retained. A successful refresh removes stale entries for the requested systems. Failed scans or writes leave the previous index intact. Allow free SD space for a replacement index and do not remove `games.db.lock` while an app is indexing. Playlist matching rules and generated shortcut formats are unchanged.
+
+## Uninstall
+
+Remove LaunchSync's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Let any update finish and exit LaunchSync. It installs no startup service; remove any scheduled or startup invocations you added yourself.
+2. Delete `/media/fat/Scripts/launchsync.sh`. Optionally back up and remove `/media/fat/Scripts/launchsync.ini` if present, respecting any shared configuration override.
+3. Preserve your `.sync` files by default: they contain subscriptions or authored game lists. To unsubscribe permanently, remove only the `.sync` files you no longer want from their actual locations.
+4. Generated folders live beside each `.sync` file, named from its top-level `name` field with an underscore prefix. Keep them to retain static shortcuts, or inspect and remove their generated `.mgl` files, arcade `.mra` links, and `[NOT FOUND].mgl` placeholders. Do not remove unrelated files or follow `cores` symlinks into the real arcade cores directory. Removing a `.sync` file does not by itself remove its generated folder.
+
+The game index at `/media/fat/Scripts/.config/mrext/games.db` is shared with Search and Remote; leave it in place when either remains installed. Keep original games, arcade MRAs, and shared metadata. There is no separate LaunchSync service database to delete.
+
 ## Creating Sync Files
 
 *NOTE: Check the [Systems](https://github.com/wizzomafizzo/mrext/blob/main/docs/systems.md) page to see what cores are supported. Most consoles are, most computers aren't. Use the ID or Alias listed on that page for the `system` field.*
