@@ -228,17 +228,24 @@ func updateSyncFile(sync *syncFile) (syncFile, bool, error) {
 	return newSync, true, nil
 }
 
-func makeIndex(cfg *config.UserConfig, syncs []syncFile) error {
-	// restrict index to necessary systems
+func requiredSystems(syncs []syncFile) []games.System {
 	var systems []games.System
+	seen := make(map[string]bool)
 	for syncIndex := range syncs {
 		sync := &syncs[syncIndex]
 		for gameIndex := range sync.games {
 			game := &sync.games[gameIndex]
-			systems = append(systems, *game.system)
+			if !seen[game.system.Id] {
+				seen[game.system.Id] = true
+				systems = append(systems, *game.system)
+			}
 		}
 	}
+	return systems
+}
 
+func makeIndex(cfg *config.UserConfig, syncs []syncFile) error {
+	systems := requiredSystems(syncs)
 	if len(systems) == 0 {
 		return nil
 	}

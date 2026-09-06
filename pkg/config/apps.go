@@ -47,4 +47,14 @@ const (
 
 const GamesDB = ScriptsConfigFolder + "/mrext/games.db"
 
+// GamesDBLockSuffix names the persistent writer lock beside the shared index.
+const GamesDBLockSuffix = ".lock"
+
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
+
+const NeoGeoRomsetsFile = "romsets.xml"
+
+// BGMDefaultBootFolder holds opt-in core boot sounds under BGM's boot directory.
+const BGMDefaultBootFolder = "default"
+
+const SAMActivityFile = TempFolder + "/.SAM_tmp/SAM_Joy_Activity"

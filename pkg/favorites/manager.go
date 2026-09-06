@@ -553,13 +553,12 @@ func (m *Manager) Refresh() error {
 		if err := os.Remove(favorite.Path); err != nil {
 			return fmt.Errorf("remove broken favorite: %w", err)
 		}
-		if !versionedCorePattern.MatchString(favorite.Path) {
+		// Users can rename a core favorite without retaining its date suffix.
+		// The target identifies the installed core, not the display name.
+		if !versionedCorePattern.MatchString(filepath.Base(resolvedTarget)) {
 			continue
 		}
-		if !filepath.IsAbs(target) {
-			target = filepath.Join(filepath.Dir(favorite.Path), target)
-		}
-		if err := refreshVersionedCore(favorite.Path, target); err != nil {
+		if err := refreshVersionedCore(favorite.Path, resolvedTarget); err != nil {
 			return err
 		}
 	}
@@ -567,10 +566,6 @@ func (m *Manager) Refresh() error {
 }
 
 func refreshVersionedCore(linkPath, oldTarget string) error {
-	linkPrefix := strings.TrimSuffix(linkPath, filepath.Ext(linkPath))
-	if underscore := strings.LastIndex(linkPrefix, "_"); underscore >= 0 {
-		linkPrefix = linkPrefix[:underscore]
-	}
 	targetPrefix := oldTarget
 	if underscore := strings.LastIndex(targetPrefix, "_"); underscore >= 0 {
 		targetPrefix = targetPrefix[:underscore]
@@ -588,7 +583,12 @@ func refreshVersionedCore(linkPath, oldTarget string) error {
 	if underscore < 0 {
 		return nil
 	}
-	newLink := linkPrefix + newTarget[underscore:]
+	newLink := linkPath
+	if versionedCorePattern.MatchString(filepath.Base(linkPath)) {
+		linkPrefix := strings.TrimSuffix(linkPath, filepath.Ext(linkPath))
+		linkPrefix = linkPrefix[:strings.LastIndex(linkPrefix, "_")]
+		newLink = linkPrefix + newTarget[underscore:]
+	}
 	if err := os.Symlink(newTarget, newLink); err != nil {
 		return fmt.Errorf("link updated core: %w", err)
 	}
