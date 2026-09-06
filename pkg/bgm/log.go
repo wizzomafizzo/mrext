@@ -48,15 +48,20 @@ func NewLoggerTo(paths *Paths, out io.Writer) *Logger {
 }
 
 // Log records a debug message.
-func (l *Logger) Log(msg string) { l.write(msg, false) }
+func (l *Logger) Log(msg string) { l.write(msg, false, false) }
 
 // Logf records a formatted debug message.
-func (l *Logger) Logf(format string, args ...any) { l.write(fmt.Sprintf(format, args...), false) }
+func (l *Logger) Logf(format string, args ...any) {
+	l.write(fmt.Sprintf(format, args...), false, false)
+}
 
 // Print records a message that is always shown to the user.
-func (l *Logger) Print(msg string) { l.write(msg, true) }
+func (l *Logger) Print(msg string) { l.write(msg, true, false) }
 
-func (l *Logger) write(msg string, always bool) {
+// Error records actionable failures even when daemon stdout is discarded.
+func (l *Logger) Error(msg string) { l.write(msg, true, true) }
+
+func (l *Logger) write(msg string, always, persist bool) {
 	cfg, _ := LoadConfig(&l.paths)
 	if msg == "" {
 		return
@@ -66,7 +71,7 @@ func (l *Logger) write(msg string, always bool) {
 	if always || cfg.Debug {
 		_, _ = fmt.Fprintln(l.out, msg)
 	}
-	if !cfg.Debug {
+	if !cfg.Debug && !persist {
 		return
 	}
 	// #nosec G302,G304 -- the log lives in MiSTer's world-readable /tmp.

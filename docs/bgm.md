@@ -41,6 +41,7 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Radio streams use Go's HTTP/HTTPS client and feed audio to `mpg123` through stdin, avoiding dependence on the installed player's HTTPS support. Short-lived radio attempts are spaced at least five seconds apart and remain interruptible. Radio failures are logged even with debug off; identical failures for a station are suppressed until the error changes or playback succeeds.
 
 ## Music folder
 
@@ -63,6 +64,14 @@ BGM plays `.mp3`, `.ogg`, `.wav`, `.mid`, `.vgm`, `.vgz` and `.vgm.gz` files thr
 ### Internet radio
 
 Internet radio stations are played from `.pls` files containing a stream URL. The best way to manage these is a playlist folder with a single `.pls` file. Multiple `.pls` files in a folder are only moved on by skipping. The `all` playlist excludes `.pls` files.
+
+Radio requires a direct MP3/MPEG audio stream. A `.pls` file is only a URL container: AAC/AAC+, HLS playlists, web pages, and other codecs are not made playable by putting their URL in it. BGM reports unsupported response types before starting the player; mislabeled or unrecognized audio can still fail in `mpg123`.
+
+Both HTTP and HTTPS URLs are supported by BGM itself. HTTPS certificates are verified using the device's trust store; check its clock and CA certificates if verification fails. BGM does not silently follow redirects from HTTPS to HTTP or disable certificate checks. Stations must support ordinary HTTP responses and honor the request for audio without ICY metadata; metadata-bearing responses are rejected rather than fed to the decoder as audio.
+
+If a station is silent, check `/tmp/bgm.log` for transport, HTTP status, format, or player errors. Set `debug = yes` for full player output. A failed or immediately closed stream cannot cause a rapid reconnect loop; Stop and Skip cancel network requests and retry waits. Header and connection setup have timeouts; an established silent stream remains connected until the station closes it or playback is stopped/skipped.
+
+Changing `bgm.ini` manually requires restarting BGM to reload playback and playlist settings; the control screen applies those changes directly without a MiSTer reboot.
 
 ### Playback types
 
@@ -182,7 +191,7 @@ Commands are processed one at a time and wait while a core boot sound plays, exa
 
 ## Logging
 
-With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players.
+With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players. Actionable radio failures are also logged with debug off, with identical repeated failures suppressed.
 
 ## Local development
 

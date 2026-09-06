@@ -110,6 +110,8 @@ func newTestLogger(paths *Paths) (*Logger, *syncBuffer) {
 const stubScript = `#!/bin/sh
 printf '%s\n' "$(basename "$0") $*" >> "$BGM_STUB_LOG"
 if [ -n "$BGM_STUB_FINISH" ]; then echo "[0:03] Decoding of track finished."; fi
+if [ -n "$BGM_STUB_FAIL" ]; then echo "unsupported audio encoding" >&2; exit 1; fi
+if [ -n "$BGM_STUB_INPUT" ]; then cat > "$BGM_STUB_INPUT"; fi
 if [ -n "$BGM_STUB_EXIT" ]; then exit 0; fi
 exec sleep "${BGM_STUB_SLEEP:-30}"
 `
@@ -129,6 +131,8 @@ func installStubPlayers(t *testing.T) string {
 	t.Setenv("BGM_STUB_FINISH", "")
 	t.Setenv("BGM_STUB_EXIT", "")
 	t.Setenv("BGM_STUB_SLEEP", "")
+	t.Setenv("BGM_STUB_INPUT", "")
+	t.Setenv("BGM_STUB_FAIL", "")
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return logPath
 }
