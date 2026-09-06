@@ -49,6 +49,10 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Arcade tracking
+
+Remote's shared tracker now supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value.
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.

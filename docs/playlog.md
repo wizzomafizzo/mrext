@@ -9,6 +9,10 @@ PlayLog is an application to track and store stats of what games and cores you p
 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/playlog.sh"><img src="images/download.svg" alt="Download PlayLog" title="Download PlayLog" width="140"></a>
 
+## Arcade tracking
+
+When Arcade Database recognizes a running arcade set name, the shared tracker resolves a unique installed MRA by its XML `<setname>`, including nested arcade folders. Game-start events and game state include that path while retaining the set name as the game identifier. Ambiguous or unreadable matches leave the path empty rather than guessing. The legacy arcade value in `/tmp/ACTIVEGAME` remains the set name. Existing history is not backfilled.
+
 ## Install
 
 Enable the `recents` option in your `MiSTer.ini` file and reboot your MiSTer.
