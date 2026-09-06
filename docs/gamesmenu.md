@@ -103,6 +103,16 @@ Intentional differences:
 - Optional `gamesmenu.ini` and explicit, conservative Clean Up are new. Errors are reported rather than silently discarded (invalid source ZIPs are still silently ignored).
 - NeoGeo Darksoft set folders and ZIPs mapped by `romsets.xml` are now supported as single games. This is a stock-MiSTer compatibility extension using the catalog's existing NeoGeo mount parameters, not a separate system catalog. Recognized set folders are treated as game entries in their parent directory's name order.
 
+## Uninstall
+
+Remove GamesMenu's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Let generation or cleanup finish, then exit GamesMenu. It installs no startup service; remove any launch commands you added manually.
+2. Delete `/media/fat/Scripts/gamesmenu.sh`. Optionally back up and remove `/media/fat/Scripts/gamesmenu.ini` to discard settings, respecting any shared `MREXT_CONFIG` override.
+3. Keep `/media/fat/_Games` if you still want its shortcuts: they do not need GamesMenu to launch. If removing the menu, inspect and back up the folder first, then remove only entries you no longer want. It may contain hand-edited shortcuts or unrelated user files. Do not use Generate with everything deselected as an uninstall shortcut unless you intend to delete the whole tree.
+
+GamesMenu has no persistent database. Keep `names.txt`, original games, ZIP archives, BIOS files, and shared mrext state. Removing shortcuts does not require deleting their targets.
+
 ## Local development
 
 Use a disposable filesystem, not a mounted live MiSTer:
