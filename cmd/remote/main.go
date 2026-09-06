@@ -287,7 +287,7 @@ func setupAPI(
 	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd, mouse)))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
-	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(logger)).Methods("POST")
+	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(kbd, logger)).Methods("POST")
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.ViewScreenshot(logger)).Methods("GET")
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 

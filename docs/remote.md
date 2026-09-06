@@ -49,6 +49,12 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Screenshot compatibility notes
+
+The Screenshots-page camera and `POST /screenshots` use the same normal screenshot shortcut as Control's Screenshot button. This avoids the separate command-interface capture path reported to stretch PSX images. Raw Screenshot remains a separate Control action.
+
+Both normal screenshot actions depend on MiSTer accepting `Alt+Scroll Lock`; PS/2 keyboard mode can disable that shortcut. The API reports keyboard-send failures, but its one-second delay does not confirm a screenshot was saved. Check the screenshot list afterward.
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.
