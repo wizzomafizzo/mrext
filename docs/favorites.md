@@ -31,6 +31,8 @@ Run `favorites` from MiSTer's Scripts menu.
 
 The Go version preserves Python Favorites' folder discovery, top-level destinations, nested folder management, startup refresh hook, LLAPI/YC selection, root filtering, external-drive shortcut, ZIP traversal, NeoGeo names and relative paths, dated-core repair, and safe link-based core favorites. Symlinked game directories remain browsable.
 
+Core-update repair now recognizes the date in the symlink target rather than requiring it in the favorite's name. Renaming a core favorite no longer prevents its repair after an update.
+
 Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog.
 
 ## Settings screen
@@ -142,7 +144,7 @@ Favorites preserves non-interactive startup behavior:
 /media/fat/Scripts/favorites.sh refresh
 ```
 
-This removes broken unversioned core shortcuts and relinks broken dated shortcuts when an updated matching core exists. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
+Refresh repairs shortcuts whose target is a dated core (such as `NES_20260101.rbf`), even when the favorite has a custom name such as `Nintendo.rbf`. Custom names are preserved; dated favorite names follow the replacement core's date. Both absolute and relative symlink targets are supported. Broken shortcuts without a replacement are removed. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
 
 ## Safety
 
