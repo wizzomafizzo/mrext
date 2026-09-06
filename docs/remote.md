@@ -51,20 +51,28 @@ From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The 
 
 ## Uninstall
 
-After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.
+Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
 
-### Manual
+### Built-in uninstall
 
-To manually uninstall Remote from your MiSTer, delete these files from the SD card:
+The Scripts-menu interface offers **Uninstall**. The console equivalent is `/media/fat/Scripts/remote.sh -uninstall`.
 
-* `Scripts/remote.sh`
-* `Scripts/remote.ini` (if present)
-* `search.db` (this file is also used by Search if you have it installed)
+This requests service shutdown, removes the `mrext/remote` startup entry, deletes legacy `/media/fat/search.db` if present, and removes `menu.jpg`/`menu.png` **when they are symlinks**. It does not check who created those links. Back up the legacy database if older apps still use it; choose manual uninstall below if you want to retain the active wallpaper links. Original wallpaper images are not removed.
 
-If you have an active wallpaper set by Remote, you will also need to remove `menu.png` or `menu.jpg`. These are just links to the actual file in the `wallpapers` folder.
+The command leaves `Scripts/remote.sh`, `Scripts/remote.ini`, and the current shared `Scripts/.config/mrext/games.db` in place. Check reported errors and confirm the service has stopped, then remove the binary yourself and optionally preserve or delete its INI. Keep any INI selected through `MREXT_CONFIG` if another app uses it.
 
-Finally, remove the following lines from `linux/user-startup.sh`:
-```
-# mrext/remote
-[[ -e /media/fat/Scripts/remote.sh ]] && /media/fat/Scripts/remote.sh -service $1
-```
+### Manual uninstall
+
+1. Run `/media/fat/Scripts/remote.sh -service stop` and wait for shutdown. Close Remote's browser interface.
+2. Back up `/media/fat/linux/user-startup.sh`, then remove only this block (paths may be quoted or customized):
+
+   ```sh
+   # mrext/remote
+   [[ -e /media/fat/Scripts/remote.sh ]] && /media/fat/Scripts/remote.sh -service $1
+   ```
+
+3. Delete `/media/fat/Scripts/remote.sh`. Optionally back up and remove `/media/fat/Scripts/remote.ini` to discard settings, respecting any shared configuration override.
+4. Keep `/media/fat/Scripts/.config/mrext/games.db` for Search or LaunchSync. The legacy `/media/fat/search.db` is optional cleanup only when no older app needs it. Do not delete the shared `.config/mrext` directory.
+5. Keep wallpaper images, screenshots, and menu shortcuts you created through Remote. If you no longer want the active wallpaper, remove only verified `menu.png`/`menu.jpg` symlinks, not their targets or regular files at those paths. Check `cores` links before removing any generated MRA shortcuts; other menu entries may still need them.
+
+After shutdown, `/tmp/remote.pid`, `/tmp/remote.log`, and `/tmp/remote.sh` are optional cleanup. Uninstall does not reset MiSTer settings, network settings, or SSH authorization; keep shared INIs and `authorized_keys` files.

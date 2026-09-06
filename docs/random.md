@@ -36,6 +36,16 @@ Example of Commodore 64 being ignored: `random.sh -filter all -ignore c64`
 
 A `-noscan` flag is also available which will use a slightly faster but less random method to pick a game. It instead traverses folders at random until it finds a game, meaning results will be weighted by folder depth.
 
+## Uninstall
+
+Remove Random's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Let any Random invocation finish. It installs no startup service; remove custom startup, scheduled, or wrapper-script invocations you added yourself.
+2. Delete `/media/fat/Scripts/random.sh`. Optionally back up and remove `/media/fat/Scripts/random.ini` if present, respecting any shared configuration override.
+3. Remove only custom Random wrapper scripts you created and no longer need. Random has no dedicated persistent game database or generated menu tree to delete; keep original games and other apps' shortcuts.
+
+Keep shared `.LASTLAUNCH.mgl` and `Scripts/.config/mrext/` files for other mrext apps. Removing Random does not stop a core it already launched.
+
 ## Custom Launchers
 
 Random can be customised by creating your own shell scripts which call `random.sh` with the above arguments.
