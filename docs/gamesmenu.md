@@ -13,6 +13,7 @@ Download [gamesmenu.sh](https://github.com/wizzomafizzo/mrext/releases/latest/do
 Each row represents an existing games folder supported by the Zaparoo MiSTer catalog's MGL definitions. Shared folders appear once. Names are sorted by folder key and displayed using `names.txt` replacements. The footer shows the selected row's source paths.
 
 - **Toggle** changes `[x]` (include) to `[ ]` (exclude), or back.
+- **All/None** selects every folder if any are unselected; otherwise it clears every selection. It changes selection only, not files. Generate still asks for confirmation before deleting deselected folders or the whole menu.
 - **Generate** creates missing shortcuts for selected folders.
 - **Clean Up** explicitly removes broken shortcuts.
 - **Settings** opens staged interface settings.
