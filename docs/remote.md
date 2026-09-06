@@ -49,6 +49,14 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## MiSTer SAM compatibility
+
+After successful game, core, file, or launch-token requests, Remote signals user activity through SAM's existing `/tmp/.SAM_tmp/SAM_Joy_Activity` file. Current SAM MCP recognizes the `zaparoo` message as external activity: in normal mode it resets idle and exits attract mode while keeping the current game, rather than returning to Menu. This supports stock MiSTer without requiring Zaparoo Core.
+
+Remote never creates the activity file or starts SAM. A missing file is ignored; notification errors are logged without failing the launch. SAM must be running with its activity handling enabled (`listenjoy`); M82/kiosk mode retains its own behavior. Delivery is best-effort, not acknowledged. Older SAM versions using a different path are not targeted.
+
+The protocol is implemented in [SAM MCP's activity poller and action handler](https://github.com/mrchrisster/MiSTer_SAM/blob/45af68dd7a7e1b15337c2b04c79f196e7dd6da47/.MiSTer_SAM/MiSTer_SAM_MCP.py).
+
 ## Uninstall
 
 After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.
