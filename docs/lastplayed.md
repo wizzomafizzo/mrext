@@ -32,6 +32,8 @@ LastPlayed creates `.mra` links for arcade games in Last Played and Recently Pla
 
 If Arcade Database is unavailable, or no unique readable MRA can be found, existing shortcuts remain untouched. Successful resolutions are cached until the tracker's name map is reloaded or the service restarts, and cached files are revalidated before use. Restart after adding duplicate or replacement MRAs to force a fresh scan.
 
+Arcade shortcuts are `.mra` links, so the Last Played shortcut becomes `Last Played.mra` after an arcade game and `Last Played.mgl` after any other game. Only one is kept: the other extension is removed so a stale shortcut cannot linger in the menu or be launched by `bootcore`. Set `bootcore` to the extension you actually use.
+
 Recently Played numbers `.mra` and `.mgl` shortcuts together. Replaying a game refreshes its entry without deleting the newly numbered shortcut. `/tmp/ACTIVEGAME` continues to contain the legacy arcade set name; tracker events carry the resolved launchable path separately. This works on stock MiSTer without Zaparoo Core.
 
 ## Uninstall
