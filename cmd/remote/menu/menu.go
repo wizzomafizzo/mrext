@@ -35,8 +35,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
-// TODO: should be in config
-const namesTxtPath = "/media/fat/names.txt"
+const namesTxtPath = config.NamesFile
 
 type MenuSystem struct {
 	ID       string `json:"id"`

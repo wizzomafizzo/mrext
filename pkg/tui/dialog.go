@@ -41,6 +41,7 @@ type Dialog struct {
 	done     func(int)
 	text     string
 	buttons  []string
+	overflow bool
 }
 
 func NewDialog() *Dialog {
@@ -77,7 +78,7 @@ func NewDialog() *Dialog {
 
 func (d *Dialog) SetText(text string) *Dialog {
 	d.text = text
-	d.textView.SetText(text)
+	d.textView.SetText(text).ScrollToBeginning()
 	return d
 }
 
@@ -107,6 +108,16 @@ func (d *Dialog) AddButtons(labels []string) *Dialog {
 		})
 		button := d.form.GetButton(d.form.GetButtonCount() - 1)
 		button.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			// Keep scrolling separate from button selection and activation.
+			if d.overflow {
+				switch event.Key() {
+				case tcell.KeyUp, tcell.KeyDown, tcell.KeyPgUp, tcell.KeyPgDn, tcell.KeyHome, tcell.KeyEnd:
+					d.textView.InputHandler()(event, func(tview.Primitive) {})
+					return nil
+				default:
+					// Confirmation keys must still reach the focused button.
+				}
+			}
 			switch event.Key() {
 			case tcell.KeyDown, tcell.KeyRight:
 				return tcell.NewEventKey(tcell.KeyTab, 0, tcell.ModNone)
@@ -152,15 +163,25 @@ func (d *Dialog) Draw(screen tcell.Screen) {
 	if len(d.buttons) > 0 {
 		buttonRows = 2
 	}
-	dialogHeight := min(len(tview.WordWrap(d.text, textWidth))+buttonRows+2, height)
+	textLines := len(tview.WordWrap(d.text, textWidth))
+	d.overflow = textLines+buttonRows+2 > height
+	hintRows := 0
+	if d.overflow && len(d.buttons) > 0 {
+		hintRows = 1
+	}
+	dialogHeight := min(textLines+buttonRows+hintRows+2, height)
 
 	d.frame.SetRect(x+(width-dialogWidth)/2, y+(height-dialogHeight)/2, dialogWidth, dialogHeight)
 	d.frame.Draw(screen)
 
 	innerX, innerY, innerWidth, innerHeight := d.frame.GetInnerRect()
-	if textHeight := innerHeight - buttonRows; textHeight > 0 {
+	if textHeight := innerHeight - buttonRows - hintRows; textHeight > 0 {
 		d.textView.SetRect(innerX+1, innerY, max(innerWidth-2, 1), textHeight)
 		d.textView.Draw(screen)
+	}
+	if hintRows > 0 && innerHeight > buttonRows {
+		tview.Print(screen, "Up/Down: scroll  Left/Right: buttons", innerX, innerY+innerHeight-buttonRows-1,
+			innerWidth, tview.AlignCenter, CurrentTheme().SecondaryTextColor)
 	}
 	if buttonRows > 0 && innerHeight > 0 {
 		d.form.SetRect(innerX, innerY+innerHeight-1, innerWidth, 1)

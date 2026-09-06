@@ -299,6 +299,64 @@ func TestButtonBarNavigationAndActivation(t *testing.T) {
 	}
 }
 
+func TestLongDialogScrollsWhileKeepingButtonsIndependent(t *testing.T) {
+	for _, size := range [][2]int{{75, 15}, {100, 30}} {
+		screen := tcell.NewSimulationScreen("UTF-8")
+		if err := screen.Init(); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(screen.Fini)
+		screen.SetSize(size[0], size[1])
+		app := tview.NewApplication()
+		selected := -1
+		dialog := NewDialog().SetText("First line\n" + strings.Repeat("Summary detail\n", 50) + "Last line").
+			AddButtons([]string{"Yes", "No"}).SetDoneFunc(func(index int) { selected = index })
+		app.SetRoot(dialog, true)
+		dialog.SetRect(0, 0, size[0], size[1])
+		draw := func() string {
+			screen.Clear()
+			dialog.Draw(screen)
+			var text strings.Builder
+			for y := range size[1] {
+				for x := range size[0] {
+					value, _, _ := screen.Get(x, y)
+					_, _ = text.WriteString(value)
+				}
+			}
+			return text.String()
+		}
+		press := func(key tcell.Key) {
+			dialog.InputHandler()(tcell.NewEventKey(key, 0, tcell.ModNone), func(p tview.Primitive) { app.SetFocus(p) })
+		}
+		if text := draw(); !strings.Contains(text, "First line") || !strings.Contains(text, "scroll") {
+			t.Fatalf("missing initial message/help at %v: %s", size, text)
+		}
+		press(tcell.KeyEnd)
+		if text := draw(); !strings.Contains(text, "Last line") || selected != -1 {
+			t.Fatalf("could not scroll summary safely at %v: %s", size, text)
+		}
+		press(tcell.KeyHome)
+		if text := draw(); !strings.Contains(text, "First line") {
+			t.Fatalf("could not scroll back at %v: %s", size, text)
+		}
+		press(tcell.KeyRight)
+		press(tcell.KeyEnter)
+		if selected != 1 {
+			t.Fatalf("button selection changed while scrolling: %d", selected)
+		}
+		// Short dialogs retain the original Up/Down button navigation.
+		dialog.SetText("Short message")
+		if text := draw(); strings.Contains(text, "scroll") {
+			t.Fatalf("short dialog still shows scrolling help: %s", text)
+		}
+		press(tcell.KeyUp)
+		press(tcell.KeyEnter)
+		if selected != 0 {
+			t.Fatalf("short dialog navigation changed: %d", selected)
+		}
+	}
+}
+
 func TestModalDismissalRestoresPageFocus(t *testing.T) {
 	type harness struct {
 		app   *tview.Application

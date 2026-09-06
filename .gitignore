@@ -20,3 +20,4 @@ pkg/games/system_metadata.json
 pkg/games/system_metadata.gen.json
 .DS_Store
 .pi/
+/CLAUDE.md

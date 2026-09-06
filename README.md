@@ -59,8 +59,8 @@ Create and manage shortcuts for favorite games and cores in MiSTer menu.
 
 Browse a game collection from MiSTer menu. GamesMenu scans games and creates launchers matching collection folder layout.
 
-<a href="https://github.com/wizzomafizzo/mrext/raw/main/scripts/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
-<a href="https://github.com/wizzomafizzo/mrext#gamesmenu"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/gamesmenu.sh"><img src="docs/images/download.svg" alt="Download GamesMenu" title="Download GamesMenu" width="140"></a>
+<a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/gamesmenu.md"><img src="docs/images/readme.svg" alt="Readme GamesMenu" title="Readme GamesMenu" width="140"></a>
 
 ## LastPlayed
 
