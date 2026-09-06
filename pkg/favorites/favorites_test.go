@@ -834,6 +834,47 @@ func TestAlternateCoreAndCorePrefix(t *testing.T) {
 	}
 }
 
+func TestArcadeLinksExposeNewCoresWithoutRefresh(t *testing.T) {
+	manager, _, root := newTestManager(t)
+	folder := filepath.Join(root, "_@Favorites")
+	nested := filepath.Join(folder, "_Arcade Picks")
+	if err := os.MkdirAll(nested, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.SetupArcadeLinks(); err != nil {
+		t.Fatal(err)
+	}
+	created, err := manager.CreateFolder(folder, "_New Picks")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Downloader adds cores after Favorites has already prepared its menu folders.
+	const coreName = "RTypeII_20220918.rbf"
+	const coreData = "new arcade core"
+	corePath := filepath.Join(manager.paths.ArcadeCoresFolder, coreName)
+	if err := os.WriteFile(corePath, []byte(coreData), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, destination := range []string{root, folder, nested, created} {
+		link := filepath.Join(destination, "cores")
+		target, readErr := os.Readlink(link)
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if target != manager.paths.ArcadeCoresFolder {
+			t.Fatalf("%s target = %q, want %q", link, target, manager.paths.ArcadeCoresFolder)
+		}
+		data, readErr := os.ReadFile(filepath.Join(link, coreName))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if string(data) != coreData {
+			t.Fatalf("new core unavailable through %s: %q", link, data)
+		}
+	}
+}
+
 func TestArcadeLinksDoNotReplaceExistingContent(t *testing.T) {
 	manager, _, root := newTestManager(t)
 	folder := filepath.Join(root, "_@Favorites")
