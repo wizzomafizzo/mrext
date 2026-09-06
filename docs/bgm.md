@@ -41,6 +41,7 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Optional `bootinplaylist = yes` includes boot sounds in normal playback without changing the selected playlist. It defaults to `no`, preserving existing behavior. When enabled, random playback avoids immediately repeating a track whenever another candidate exists, including small playlists.
 
 ## Music folder
 
@@ -78,6 +79,10 @@ Create a subfolder in `music` and fill it with tracks; it appears in the control
 
 Prefix a file with `_` to mark it as a boot sound (for example `_Startup.mp3`). One boot sound is picked at random from the active playlist's top level when MiSTer starts, and `_` files are excluded from normal playback. Files placed directly in `music/boot` are global boot sounds that apply to every playlist and need no prefix.
 
+To keep boot sounds in normal rotation, enable **Boot sounds in rotation** in Settings and Save, or set `bootinplaylist = yes` in `[bgm]` and restart BGM. This includes underscore-prefixed tracks within the selected playlist and files directly inside `music/boot`; no copies or renaming are needed. It does not add unrelated playlists or core-specific boot folders (unless already included by `all`). Startup selection remains unchanged. Global tracks already present in `all` are not added twice.
+
+Settings changes apply to subsequent track selections without interrupting the current track. Random playback avoids an immediate repeat when another candidate exists; a one-track playlist can repeat. Loop playback still repeats its chosen track until the playlist restarts. Disabled playback still plays only boot sounds.
+
 ### Core boot sounds
 
 Create a folder inside `music/boot` named after a core, such as `music/boot/SNES`, and add tracks. One is played when that core launches. The match is case-insensitive and also triggers for `.mgl` launches of the core. `corebootdelay` in `bgm.ini` waits the given number of seconds (decimals allowed) before playing, to allow a display to sync.
@@ -107,6 +112,7 @@ playback = random
 playlist = none
 startup = yes
 playincore = no
+bootinplaylist = no
 corebootdelay = 0
 menuvolume = -1
 defaultvolume = -1
@@ -117,6 +123,7 @@ debug = no
 - `playlist`: `none`, `all` or a folder name inside `music`.
 - `startup`: start the service from `user-startup.sh` on boot.
 - `playincore`: keep playing music while a core runs.
+- `bootinplaylist`: include boot sounds in normal playlist playback; defaults to `no`.
 - `corebootdelay`: seconds to wait before core boot sounds.
 - `menuvolume`, `defaultvolume`: `-1` to `7`, see Volume control.
 - `debug`: print service output and append it to `/tmp/bgm.log`. Re-read on every log line, so it can be toggled while the service runs.
@@ -173,6 +180,7 @@ The service listens on the unix socket `/tmp/bgm.sock`. Each connection carries 
 | `set playback <type>` | none; unknown types play random tracks but are reported verbatim |
 | `set playlist <name>` | none; `none` clears the playlist, names may contain spaces |
 | `set playincore yes` / `set playincore no` | none |
+| `set bootinplaylist yes` / `set bootinplaylist no` | none; applies to subsequent track selections |
 | `get playback`, `get playincore` | the value |
 | `get playlist` | the name; nothing when no playlist is set |
 | `pid` | the service process id |

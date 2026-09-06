@@ -63,6 +63,7 @@ func (s *settingsPage) show(selection int) {
 	s.list.AddHeader("Playback")
 	s.addToggle("Start on boot", &s.staged.Startup)
 	s.addToggle("Play music in cores", &s.staged.PlayInCore)
+	s.addToggle("Boot sounds in rotation", &s.staged.BootInPlaylist)
 	s.addText("Core boot delay", bgm.FormatDelay(s.staged.CoreBootDelay), func(value string) error {
 		if _, err := bgm.ParseDelay(value); err != nil {
 			return fmt.Errorf("invalid core boot delay: %w", err)
@@ -229,6 +230,16 @@ func (s *settingsPage) save() {
 	// The file is written, so the in-memory configuration follows it even
 	// when the running service cannot be told about the change.
 	s.apply()
+	if s.staged.BootInPlaylist != s.original.BootInPlaylist {
+		message := "set bootinplaylist no"
+		if s.staged.BootInPlaylist {
+			message = "set bootinplaylist yes"
+		}
+		if _, _, err := s.ui.send(message); err != nil {
+			s.ui.showError(err, s.ui.mustShowMain)
+			return
+		}
+	}
 	if s.staged.PlayInCore != s.original.PlayInCore {
 		message := "set playincore no"
 		if s.staged.PlayInCore {
