@@ -49,6 +49,20 @@ This service must be running to use Remote's web UI or API.
 
 From a web browser, navigate to `http://<mister_ip>:8182` to access Remote. The `remote` app in the `Scripts` menu will display the exact address to use if you're not sure.
 
+## Rebuilding the search index
+
+Use the regenerate button in Search after moving, renaming, or deleting games. A successful rebuild replaces all names and system metadata in `/media/fat/Scripts/.config/mrext/games.db`, shared with Search and LaunchSync. The legacy root-level `search.db` is not the current index.
+
+Progress and failures appear in the existing indexing status flow. If regeneration fails, the previous index remains usable and the error stays visible until another attempt. Rebuilds stream game matches into bounded database batches on SD rather than keeping a whole-library list in RAM. Directory/ZIP listings and directory-cycle tracking still use memory.
+
+A rebuild needs space beside `games.db` for a replacement index. Do not delete the adjacent `games.db.lock` while any app is indexing; it serializes writers across index replacement. Failed attempts normally clean up their temporary `.games-index-*` files. After a hard interruption, leftover files with that prefix can be removed only when no indexer is running. Mount the libraries you want included before regenerating: absent libraries are omitted from a successful full rebuild.
+
+## Screenshot compatibility notes
+
+The Screenshots-page camera and `POST /screenshots` use the same normal screenshot shortcut as Control's Screenshot button. This avoids the separate command-interface capture path reported to stretch PSX images. Raw Screenshot remains a separate Control action.
+
+Both normal screenshot actions depend on MiSTer accepting `Alt+Scroll Lock`; PS/2 keyboard mode can disable that shortcut. The API reports keyboard-send failures, but its one-second delay does not confirm a screenshot was saved. Check the screenshot list afterward.
+
 ## MiSTer SAM compatibility
 
 After successful game, core, file, or launch-token requests, Remote signals user activity through SAM's existing `/tmp/.SAM_tmp/SAM_Joy_Activity` file. Current SAM MCP recognizes the `zaparoo` message as external activity: in normal mode it resets idle and exits attract mode while keeping the current game, rather than returning to Menu. This supports stock MiSTer without requiring Zaparoo Core.
@@ -59,20 +73,28 @@ The protocol is implemented in [SAM MCP's activity poller and action handler](ht
 
 ## Uninstall
 
-After opening `remote` from the `Scripts` menu, there is an option available to uninstall Remote called `Uninstall`. You can also run `remote.sh -uninstall` from the console or via SSH.
+Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
 
-### Manual
+### Built-in uninstall
 
-To manually uninstall Remote from your MiSTer, delete these files from the SD card:
+The Scripts-menu interface offers **Uninstall**. The console equivalent is `/media/fat/Scripts/remote.sh -uninstall`.
 
-* `Scripts/remote.sh`
-* `Scripts/remote.ini` (if present)
-* `search.db` (this file is also used by Search if you have it installed)
+This requests service shutdown, removes the `mrext/remote` startup entry, deletes legacy `/media/fat/search.db` if present, and removes `menu.jpg`/`menu.png` **when they are symlinks**. It does not check who created those links. Back up the legacy database if older apps still use it; choose manual uninstall below if you want to retain the active wallpaper links. Original wallpaper images are not removed.
 
-If you have an active wallpaper set by Remote, you will also need to remove `menu.png` or `menu.jpg`. These are just links to the actual file in the `wallpapers` folder.
+The command leaves `Scripts/remote.sh`, `Scripts/remote.ini`, and the current shared `Scripts/.config/mrext/games.db` in place. Check reported errors and confirm the service has stopped, then remove the binary yourself and optionally preserve or delete its INI. Keep any INI selected through `MREXT_CONFIG` if another app uses it.
 
-Finally, remove the following lines from `linux/user-startup.sh`:
-```
-# mrext/remote
-[[ -e /media/fat/Scripts/remote.sh ]] && /media/fat/Scripts/remote.sh -service $1
-```
+### Manual uninstall
+
+1. Run `/media/fat/Scripts/remote.sh -service stop` and wait for shutdown. Close Remote's browser interface.
+2. Back up `/media/fat/linux/user-startup.sh`, then remove only this block (paths may be quoted or customized):
+
+   ```sh
+   # mrext/remote
+   [[ -e /media/fat/Scripts/remote.sh ]] && /media/fat/Scripts/remote.sh -service $1
+   ```
+
+3. Delete `/media/fat/Scripts/remote.sh`. Optionally back up and remove `/media/fat/Scripts/remote.ini` to discard settings, respecting any shared configuration override.
+4. Keep `/media/fat/Scripts/.config/mrext/games.db` for Search or LaunchSync. The legacy `/media/fat/search.db` is optional cleanup only when no older app needs it. Do not delete the shared `.config/mrext` directory.
+5. Keep wallpaper images, screenshots, and menu shortcuts you created through Remote. If you no longer want the active wallpaper, remove only verified `menu.png`/`menu.jpg` symlinks, not their targets or regular files at those paths. Check `cores` links before removing any generated MRA shortcuts; other menu entries may still need them.
+
+After shutdown, `/tmp/remote.pid`, `/tmp/remote.log`, and `/tmp/remote.sh` are optional cleanup. Uninstall does not reset MiSTer settings, network settings, or SSH authorization; keep shared INIs and `authorized_keys` files.

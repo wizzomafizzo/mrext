@@ -29,6 +29,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
@@ -136,6 +137,7 @@ func (m *Manager) Generate(selected []Entry, progress func(Progress)) (GenerateR
 	for index := range selected {
 		entry := &selected[index]
 		scan.entry, scan.rules = entry, extensionRules(entry.Systems)
+		scan.prepareNeoGeo()
 		scan.visited = make(map[string]bool)
 		for _, folder := range entry.Paths {
 			scan.folder = folder
@@ -163,6 +165,8 @@ type menuScanner struct {
 	menu        string
 	result      *ScanResult
 	entry       *Entry
+	neoGeo      *games.System
+	neoGeoNames map[string]string
 	rules       []extensionRule
 	folder      string
 	visited     map[string]bool
@@ -197,16 +201,19 @@ func (s *menuScanner) walk(dir string) {
 			s.result.fail(fmt.Errorf("stat game %s: %w", full, err))
 			continue
 		}
-		if info.IsDir() {
-			directories = append(directories, full)
-			continue
-		}
-		if !info.Mode().IsRegular() {
+		if !info.IsDir() && !info.Mode().IsRegular() {
 			continue
 		}
 		relative, err := filepath.Rel(s.folder, dir)
 		if err != nil {
 			s.result.fail(fmt.Errorf("resolve game folder: %w", err))
+			continue
+		}
+		if s.writeNeoGeoSet(full, relative, info.IsDir()) {
+			continue
+		}
+		if info.IsDir() {
+			directories = append(directories, full)
 			continue
 		}
 		if strings.EqualFold(filepath.Ext(full), ".zip") {
@@ -288,11 +295,18 @@ func (s *menuScanner) write(full string, folders []string, name string) {
 	if system == nil {
 		return
 	}
+	s.writeShortcut(full, folders, strings.TrimSuffix(name, filepath.Ext(name))+".mgl", system, "")
+}
+
+func (s *menuScanner) writeShortcut(
+	full string, folders []string, filename string, system *games.System, override string,
+) {
 	s.processed++
 	if s.processed%250 == 0 {
 		s.notify()
 	}
-	components := []string{s.menu, s.entry.MenuFolder}
+	components := make([]string, 0, 2+len(folders))
+	components = append(components, s.menu, s.entry.MenuFolder)
 	for _, component := range folders {
 		components = append(components, s.manager.names.FolderName(component))
 	}
@@ -302,13 +316,12 @@ func (s *menuScanner) write(full string, folders []string, name string) {
 		s.result.fail(err)
 		return
 	}
-	filename := strings.TrimSuffix(name, filepath.Ext(name)) + ".mgl"
 	key := strings.ToLower(filename)
 	if existing[key] {
 		s.result.Skipped++
 		return
 	}
-	data, err := mister.GenerateMgl(s.manager.cfg, system, full, "")
+	data, err := mister.GenerateMgl(s.manager.cfg, system, full, override)
 	if err != nil {
 		s.result.fail(fmt.Errorf("generate shortcut for %s: %w", full, err))
 		return

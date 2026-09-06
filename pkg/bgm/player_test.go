@@ -473,6 +473,49 @@ func TestPlayCoreBoot(t *testing.T) {
 	}
 }
 
+func TestPlayCoreBootDefaultFallback(t *testing.T) {
+	paths := newTestPaths(t)
+	logPath := installStubPlayers(t)
+	t.Setenv("BGM_STUB_EXIT", "1")
+	writeINI(t, &paths, "[bgm]\ncorebootdelay = 1.5\n")
+	player := newTestPlayer(t, &paths, ptr(DefaultConfig()))
+	var slept time.Duration
+	player.sleep = func(duration time.Duration) { slept += duration }
+	touchTracks(t, filepath.Join(paths.BootFolder, "DeFaUlT"), "fallback.wav")
+	touchTracks(t, filepath.Join(paths.BootFolder, "Genesis"), "specific.wav")
+	touchTracks(t, filepath.Join(paths.BootFolder, "Empty"), "notes.txt")
+	touchTracks(t, paths.BootFolder, "startup.wav")
+
+	player.PlayCoreBoot("SNES")
+	got := stubInvocations(t, logPath)
+	if len(got) != 1 || !strings.HasSuffix(got[0], "fallback.wav") {
+		t.Fatalf("missing core folder must use fallback: %v", got)
+	}
+	if slept != 1500*time.Millisecond {
+		t.Fatalf("fallback delay = %v", slept)
+	}
+	player.PlayCoreBoot("genesis")
+	got = stubInvocations(t, logPath)
+	if len(got) != 2 || !strings.HasSuffix(got[1], "specific.wav") {
+		t.Fatalf("core-specific track must take priority: %v", got)
+	}
+	player.PlayCoreBoot("empty")
+	player.PlayCoreBoot("")
+	if got := stubInvocations(t, logPath); len(got) != 2 {
+		t.Fatalf("empty core folders and unknown core state must remain silent: %v", got)
+	}
+	if slept != 3*time.Second {
+		t.Fatalf("silent core boots must not delay: %v", slept)
+	}
+	if err := os.Remove(filepath.Join(paths.BootFolder, "DeFaUlT", "fallback.wav")); err != nil {
+		t.Fatal(err)
+	}
+	player.PlayCoreBoot("SNES")
+	if got := stubInvocations(t, logPath); len(got) != 2 {
+		t.Fatalf("empty fallback must not reuse startup tracks: %v", got)
+	}
+}
+
 func TestPlaylistTrackStartedAfterStopIsKilledImmediately(t *testing.T) {
 	paths := newTestPaths(t)
 	logPath := installStubPlayers(t)

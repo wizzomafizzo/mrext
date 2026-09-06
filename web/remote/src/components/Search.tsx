@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
 
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -227,6 +228,26 @@ export default function Search() {
     );
   }, [searchGames.data, selectedGame]);
 
+  const wasIndexing = useRef(false);
+  useEffect(() => {
+    if (
+      wasIndexing.current &&
+      !serverState.search.indexing &&
+      !serverState.search.currentDesc
+    ) {
+      searchGames.reset();
+      setSearchSystem("all");
+      void systems.refetch();
+    }
+    wasIndexing.current = serverState.search.indexing;
+  }, [serverState.search.indexing, serverState.search.currentDesc]);
+
+  const indexError = serverState.search.currentDesc ? (
+    <Alert severity="error" sx={{ mb: 2 }}>
+      {serverState.search.currentDesc}
+    </Alert>
+  ) : null;
+
   if (ws.readyState !== WebSocket.OPEN) {
     return <></>;
   }
@@ -254,6 +275,7 @@ export default function Search() {
   if (!serverState.search.ready) {
     return (
       <Box m={2} sx={{ textAlign: "center" }}>
+        {indexError}
         <Typography sx={{ marginBottom: 2 }}>
           Searching needs an index of game files to be created. This is only
           required on first setup, or if the games on disk have changed.
@@ -281,6 +303,7 @@ export default function Search() {
 
   return (
     <Box m={2}>
+      {indexError}
       <Grid
         container
         sx={{ alignItems: "center" }}

@@ -26,6 +26,17 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/last
 
 Once installed, run `lastplayed` from the MiSTer `Scripts` menu, and a prompt will offer to enable LastPlayed as a startup service.
 
+## Uninstall
+
+Remove LastPlayed's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Run `/media/fat/Scripts/lastplayed.sh -service stop` and wait for shutdown. Remove the `# mrext/lastplayed` block and its `lastplayed.sh -service $1` command from `/media/fat/linux/user-startup.sh`.
+2. If `bootcore` in any MiSTer INI points at the Last Played shortcut, disable or change that setting before removing the shortcut. Do not delete the INI or disable `recents` just to uninstall LastPlayed; other apps may use it.
+3. Delete `/media/fat/Scripts/lastplayed.sh`. Optionally back up and remove `/media/fat/Scripts/lastplayed.ini` to discard settings.
+4. Optionally remove `/media/fat/Last Played.mgl` and generated entries in `/media/fat/_Recently Played/`. Use the actual configured names (`last_played_name`, legacy `name`, and `recent_folder_name`) if customized. Inspect the folder for user-added files before deleting anything. Keeping the shortcuts is allowed; they will stop updating.
+
+LastPlayed has no separate database. Keep MiSTer's recents files under `config/` and shared `/tmp/ACTIVEGAME`. After shutdown, `/tmp/lastplayed.pid`, `/tmp/lastplayed.log`, and `/tmp/lastplayed.sh` are optional cleanup.
+
 ## Configuration
 
 LastPlayed can be configured by creating a `lastplayed.ini` file in the `/media/fat/Scripts` folder where you put `lastplayed.sh`. For example:
