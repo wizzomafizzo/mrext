@@ -39,7 +39,7 @@ core_prefix =
 ; games_folder = /media/network
 
 [cores]
-; Supported values: llapi, yc, or blank for standard cores.
+; Supported values: llapi, yc, ra, or blank for standard cores.
 all =
 
 [tui]
@@ -115,7 +115,7 @@ func ValidateConfig(cfg *config.UserConfig) error {
 		}
 	}
 	switch strings.ToLower(strings.TrimSpace(cfg.FavoritesCores.All)) {
-	case "", "llapi", "yc":
+	case "", "llapi", "yc", "ra":
 	default:
 		return fmt.Errorf("unsupported cores.all value: %s", cfg.FavoritesCores.All)
 	}

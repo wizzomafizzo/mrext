@@ -769,6 +769,118 @@ func TestCanonicalCatalogCoversLegacyAndNewSystems(t *testing.T) {
 	}
 }
 
+func TestRACoreMappingsAndFallback(t *testing.T) {
+	manager, cfg, root := newTestManager(t)
+	cfg.FavoritesCores.All = "ra"
+	cfg.Favorites.CorePrefix = "_Custom/"
+	if err := ValidateConfig(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for id, variant := range raCores {
+		t.Run(id, func(t *testing.T) {
+			source, err := games.GetSystem(id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			corePath := filepath.Join(root, config.RACoresFolder, variant.name+"_20260101.rbf")
+			if err = os.MkdirAll(filepath.Dir(corePath), 0o750); err != nil {
+				t.Fatal(err)
+			}
+			if err = os.WriteFile(corePath, nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			resolved := *source
+			if err = manager.configureRACore(&resolved); err != nil {
+				t.Fatal(err)
+			}
+			if resolved.Rbf != filepath.Join(config.RACoresFolder, variant.name) ||
+				resolved.SetName != variant.setName || resolved.SetNameSameDir != variant.sameDir {
+				t.Fatalf("RA metadata: %+v", resolved)
+			}
+			if strings.HasPrefix(source.SetName, "RA_") {
+				t.Fatal("shared catalog mutated")
+			}
+			if err = os.Remove(corePath); err != nil {
+				t.Fatal(err)
+			}
+			fallback := *source
+			fallback.Rbf = manager.resolveCore(source)
+			if err = manager.configureRACore(&fallback); err != nil {
+				t.Fatal(err)
+			}
+			if fallback.Rbf != "_Custom/"+source.Rbf || fallback.SetName != source.SetName {
+				t.Fatalf("fallback changed metadata: %+v", fallback)
+			}
+		})
+	}
+}
+
+func TestRAIgnoresNonmatchingCoreFiles(t *testing.T) {
+	manager, cfg, root := newTestManager(t)
+	cfg.FavoritesCores.All = "ra"
+	folder := filepath.Join(root, config.RACoresFolder)
+	if err := os.MkdirAll(folder, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "NES2.rbf"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	source, err := games.GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved := *source
+	if err = manager.configureRACore(&resolved); err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Rbf != source.Rbf || resolved.SetName != source.SetName {
+		t.Fatal("selected unrelated RA core")
+	}
+}
+
+func TestRAGameFavoritesUseSetNamesAndCatalogSlots(t *testing.T) {
+	for _, tc := range []struct{ id, file, core, setname, slot string }{
+		{"NES", "game.nes", "NES", `<setname same_dir="1">RA_NES</setname>`, `type="f" index="1"`},
+		{"FDS", "game.fds", "NES", `<setname>RA_FDS</setname>`, `type="f" index="1"`},
+		{"GameboyColor", "game.gbc", "Gameboy", `<setname>RA_GBC</setname>`, `type="f" index="1"`},
+		{"Atari2600", "game.a26", "Atari7800", `<setname same_dir="1">RA_Atari7800</setname>`, `type="f" index="1"`},
+		{"Genesis", "game.md", "MegaDrive", `<setname same_dir="1">RA_MegaDrive</setname>`, `type="f" index="1"`},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			manager, cfg, root := newTestManager(t)
+			cfg.FavoritesCores.All = "ra"
+			folder := filepath.Join(root, "_@Favorites")
+			cores := filepath.Join(root, config.RACoresFolder)
+			for _, dir := range []string{folder, cores} {
+				if err := os.MkdirAll(dir, 0o750); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(filepath.Join(cores, tc.core+".rbf"), nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			system, err := games.GetSystem(tc.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			media := filepath.Join(root, "games", system.Folder[0], tc.file)
+			path, err := manager.CreateGameFavorite(system, media, folder, "RA game")
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, part := range []string{"<rbf>_RA_Cores/Cores/" + tc.core + "</rbf>", tc.setname, tc.slot, media} {
+				if !strings.Contains(string(data), part) {
+					t.Fatalf("missing %s in %s", part, data)
+				}
+			}
+		})
+	}
+}
+
 func TestAlternateCoreAndCorePrefix(t *testing.T) {
 	manager, cfg, root := newTestManager(t)
 	folder := filepath.Join(root, "_@Favorites")

@@ -317,18 +317,18 @@ func TestSettingsPageStagesAndSavesChanges(t *testing.T) {
 	page.actions[12]()
 	sendUIKey(view, tcell.KeyDown, 0)
 	sendUIKey(view, tcell.KeyEnter, 0)
-	if page.staged.HideRootFiles || page.staged.AlternateCore != "yc" || page.staged.Theme != "high_contrast" {
+	if page.staged.HideRootFiles || page.staged.AlternateCore != "ra" || page.staged.Theme != "high_contrast" {
 		t.Fatalf("staged settings = %#v", page.staged)
 	}
 	page.save()
-	if cfg.Favorites.HideRootFiles || cfg.FavoritesCores.All != "yc" || cfg.TUI.Theme != "high_contrast" {
+	if cfg.Favorites.HideRootFiles || cfg.FavoritesCores.All != "ra" || cfg.TUI.Theme != "high_contrast" {
 		t.Fatalf("applied settings = %#v", favorites.SettingsFromConfig(cfg))
 	}
 	loaded, err := favorites.LoadConfigAt(cfg.IniPath, cfg.AppPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.Favorites.HideRootFiles || loaded.FavoritesCores.All != "yc" || loaded.TUI.Theme != "high_contrast" {
+	if loaded.Favorites.HideRootFiles || loaded.FavoritesCores.All != "ra" || loaded.TUI.Theme != "high_contrast" {
 		t.Fatalf("saved settings = %#v", favorites.SettingsFromConfig(loaded))
 	}
 }

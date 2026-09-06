@@ -145,6 +145,35 @@ func TestDiscoverKeysRootsCaseAndSelection(t *testing.T) {
 	}
 }
 
+func TestGenerate3DOAndJaguar(t *testing.T) {
+	for _, fixtureCase := range []struct{ folder, extension, slot, reset string }{
+		{"3DO", ".chd", `type="s" index="0"`, ""},
+		{"Jaguar", ".jag", `type="f" index="0"`, `<reset delay="1" hold="1"/>`},
+	} {
+		t.Run(fixtureCase.folder, func(t *testing.T) {
+			m := fixture(t)
+			media := filepath.Join(m.paths.SDRoot, "games", fixtureCase.folder, "Game"+fixtureCase.extension)
+			put(t, media, "fixture")
+			entries := discover(t, m)
+			if len(entries) != 1 || entries[0].Key != fixtureCase.folder || !entries[0].Selected {
+				t.Fatalf("discovery: %+v", entries)
+			}
+			result := generate(t, m, entries)
+			if result.Scan.Created != 1 {
+				t.Fatalf("generation: %+v", result)
+			}
+			data := read(t, filepath.Join(m.paths.MenuFolder, entries[0].MenuFolder, "Game.mgl"))
+			for _, fragment := range []string{
+				"<rbf>_Console/" + fixtureCase.folder + "</rbf>", fixtureCase.slot, fixtureCase.reset, media,
+			} {
+				if !strings.Contains(data, fragment) {
+					t.Fatalf("missing %q: %s", fragment, data)
+				}
+			}
+		})
+	}
+}
+
 func TestGenerateSharedFolderAndNeverOverwrite(t *testing.T) {
 	m := fixture(t)
 	folder := filepath.Join(m.paths.SDRoot, "games", "GAMEBOY")
