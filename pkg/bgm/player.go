@@ -32,6 +32,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 // HistorySize is the ratio of total tracks kept in the recently-played list.
@@ -576,14 +578,26 @@ func (p *Player) PlayBoot() {
 	p.Play(track)
 }
 
-// PlayCoreBoot mirrors play_core_boot(): a case-insensitive folder match in
-// music/boot plays one random track after the configured delay. An empty
-// matching folder ends the search; a played one lets it continue.
+// PlayCoreBoot plays a random core-specific boot track after the configured
+// delay. The default folder is used only when no core-specific directory exists;
+// an empty core-specific directory deliberately suppresses the fallback.
 func (p *Player) PlayCoreBoot(core string) {
+	if core == "" {
+		return
+	}
 	entries, err := os.ReadDir(p.paths.BootFolder)
 	if err != nil {
 		return
 	}
+	if !p.playCoreBootFolder(entries, core) {
+		p.playCoreBootFolder(entries, config.BGMDefaultBootFolder)
+	}
+}
+
+// playCoreBootFolder preserves case-insensitive matching, including multiple
+// matching directories. Its result reports directory presence, not playback.
+func (p *Player) playCoreBootFolder(entries []fs.DirEntry, core string) bool {
+	found := false
 	for _, entry := range entries {
 		if !strings.EqualFold(entry.Name(), core) {
 			continue
@@ -593,6 +607,7 @@ func (p *Player) PlayCoreBoot(core string) {
 		if statErr != nil || !info.IsDir() {
 			continue
 		}
+		found = true
 		files, readErr := os.ReadDir(folder)
 		if readErr != nil {
 			continue
@@ -604,11 +619,12 @@ func (p *Player) PlayCoreBoot(core string) {
 			}
 		}
 		if len(tracks) == 0 {
-			return
+			return true
 		}
 		cfg, _ := LoadConfig(&p.paths)
 		p.sleep(time.Duration(cfg.CoreBootDelay * float64(time.Second)))
 		p.logger.Log("Playing core boot track...")
 		p.Play(tracks[p.randIndex(len(tracks))])
 	}
+	return found
 }
