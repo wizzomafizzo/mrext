@@ -29,8 +29,14 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/sear
 
 ## Updating the Index
 
-At the moment, re-indexing of games must be triggered manually. You might need to do this if you've made changes to the games on your MiSTer.
+To force a rebuild, first exit Search and LaunchSync and stop Remote if it is running. After all users have stopped, remove the current shared index at `/media/fat/Scripts/.config/mrext/games.db`, then launch Search to rebuild it. This affects Search, Remote, and LaunchSync, not your game files. `/media/fat/search.db` is a legacy index, not the current database.
 
-Just delete this file: `/media/fat/search.db`
+## Uninstall
 
-Search will create a new database next time you launch it.
+Remove Search's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Finish any indexing operation and exit Search. It installs no startup service; remove launch commands you added manually, if any.
+2. Delete `/media/fat/Scripts/search.sh`. Optionally back up and remove `/media/fat/Scripts/search.ini` if present, respecting any shared configuration override.
+3. Keep `/media/fat/Scripts/.config/mrext/games.db` while Remote or LaunchSync uses it. If none of those apps remain, the index can be removed after they have stopped; it contains rebuildable game names and paths, not ROMs. Older releases may still use `/media/fat/search.db`, so check before deleting that legacy file.
+
+Search creates no dedicated menu tree or history database. Preserve your games, existing shortcuts, shared `.LASTLAUNCH.mgl`, and `Scripts/.config/mrext/ArcadeDatabase.csv`.
