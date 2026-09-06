@@ -71,6 +71,10 @@ Remote never creates the activity file or starts SAM. A missing file is ignored;
 
 The protocol is implemented in [SAM MCP's activity poller and action handler](https://github.com/mrchrisster/MiSTer_SAM/blob/45af68dd7a7e1b15337c2b04c79f196e7dd6da47/.MiSTer_SAM/MiSTer_SAM_MCP.py).
 
+## Arcade tracking
+
+Remote's shared tracker now supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
