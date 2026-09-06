@@ -48,3 +48,6 @@ const (
 const GamesDB = ScriptsConfigFolder + "/mrext/games.db"
 
 const LastLaunchFile = SdFolder + "/.LASTLAUNCH.mgl"
+
+// BGMDefaultBootFolder holds opt-in core boot sounds under BGM's boot directory.
+const BGMDefaultBootFolder = "default"
