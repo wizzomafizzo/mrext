@@ -29,7 +29,9 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/sear
 
 ## Updating the Index
 
-To force a rebuild, first exit Search and LaunchSync and stop Remote if it is running. After all users have stopped, remove the current shared index at `/media/fat/Scripts/.config/mrext/games.db`, then launch Search to rebuild it. This affects Search, Remote, and LaunchSync, not your game files. `/media/fat/search.db` is a legacy index, not the current database.
+The current shared index is `/media/fat/Scripts/.config/mrext/games.db`, not the legacy `/media/fat/search.db`. If Remote is installed, use its Search regenerate button to rebuild without first deleting the working index. Otherwise, exit Search and LaunchSync, stop Remote if running, then remove `games.db` and reopen Search to create a fresh index. Manual deletion gives up the previous-index fallback, so keep a backup if needed.
+
+Full rebuilds remove stale game names and system metadata only after a successful scan. They stage bounded batches on SD before publishing the replacement, leaving an existing working index intact if regeneration fails. Mount all desired game libraries first and allow enough free space for a second index. Leave the adjacent `games.db.lock` in place while any app is indexing; it is shared writer-coordination state.
 
 ## Uninstall
 

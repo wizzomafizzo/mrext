@@ -33,6 +33,12 @@ LaunchSync must be run manually whenever you want to update subscribed files or 
 
 LaunchSync requires sync files to actually do anything. These are text files ending in `.sync` which define the name of a playlist, the games in it and how to find them on your own system. You can create your own or find sync files other people have created. An example is the [Discord Game of the Month](https://raw.githubusercontent.com/wizzomafizzo/mrext/main/cmd/launchsync/examples/Discord%20Game%20of%20the%20Month.sync) playlist hosted here.
 
+## Indexing large playlists
+
+LaunchSync indexes each required system once, regardless of how many playlist entries use it. Repeated or symlinked references to the same system root are scanned once. Matches stream into bounded batches in a temporary database on SD; they are not accumulated as a whole-library filename list or buffered in `/tmp`. The scanner still needs memory for individual directory/ZIP listings and visited-directory tracking.
+
+Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/mrext/games.db`; unrelated Search/Remote entries are retained. A successful refresh removes stale entries for the requested systems. Failed scans or writes leave the previous index intact. Allow free SD space for a replacement index and do not remove `games.db.lock` while an app is indexing. Playlist matching rules and generated shortcut formats are unchanged.
+
 ## Uninstall
 
 Remove LaunchSync's Downloader subscription if configured, so updates do not reinstall it.
