@@ -73,6 +73,32 @@ func TestUpdateINIRetainsCommentsAndUnknownContent(t *testing.T) {
 	}
 }
 
+func TestUpdateINIRetainsRepeatedComments(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "app.ini")
+	const note = "; shared root note"
+	initial := "[systems]\n" + note + "\ngames_folder = /mnt/old\n" +
+		note + "\ngames_folder = /mnt/second\n"
+	if err := os.WriteFile(path, []byte(initial), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Repeated saves must neither lose identical notes nor add more copies.
+	for range 2 {
+		err := UpdateINI(path, func(file *ini.File) error {
+			return SetShadowKeys(file.Section("systems"), "games_folder", []string{"/mnt/new", "/mnt/second"})
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count := strings.Count(string(data), note); count != 2 {
+			t.Fatalf("retained %d identical comments, want 2:\n%s", count, data)
+		}
+	}
+}
+
 func TestUpdateINIRepeatedKeysRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "app.ini")
 	if err := os.WriteFile(path, []byte("[systems]\n; roots\ngames_folder = /mnt/old\n"), 0o600); err != nil {

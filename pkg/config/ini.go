@@ -57,17 +57,21 @@ func RetainINIComments(original []byte, file *ini.File) error {
 	if _, err := file.WriteTo(&rendered); err != nil {
 		return fmt.Errorf("render configuration comments: %w", err)
 	}
-	present := make(map[string]bool)
+	present := make(map[string]int)
 	for _, line := range strings.Split(rendered.String(), "\n") {
-		present[strings.TrimSpace(line)] = true
+		present[strings.TrimSpace(line)]++
 	}
 	for _, line := range strings.Split(string(original), "\n") {
 		line = strings.TrimSpace(line)
-		if (strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#")) && !present[line] {
-			section := file.Section(ini.DefaultSection)
-			section.Comment = strings.TrimSpace(section.Comment + "\n" + line)
-			present[line] = true
+		if !strings.HasPrefix(line, ";") && !strings.HasPrefix(line, "#") {
+			continue
 		}
+		if present[line] > 0 {
+			present[line]--
+			continue
+		}
+		section := file.Section(ini.DefaultSection)
+		section.Comment = strings.TrimSpace(section.Comment + "\n" + line)
 	}
 	return nil
 }
