@@ -63,6 +63,14 @@ The Screenshots-page camera and `POST /screenshots` use the same normal screensh
 
 Both normal screenshot actions depend on MiSTer accepting `Alt+Scroll Lock`; PS/2 keyboard mode can disable that shortcut. The API reports keyboard-send failures, but its one-second delay does not confirm a screenshot was saved. Check the screenshot list afterward.
 
+## MiSTer SAM compatibility
+
+After successful game, core, file, or launch-token requests, Remote signals user activity through SAM's existing `/tmp/.SAM_tmp/SAM_Joy_Activity` file. Current SAM MCP recognizes the `zaparoo` message as external activity: in normal mode it resets idle and exits attract mode while keeping the current game, rather than returning to Menu. This supports stock MiSTer without requiring Zaparoo Core.
+
+Remote never creates the activity file or starts SAM. A missing file is ignored; notification errors are logged without failing the launch. SAM must be running with its activity handling enabled (`listenjoy`); M82/kiosk mode retains its own behavior. Delivery is best-effort, not acknowledged. Older SAM versions using a different path are not targeted.
+
+The protocol is implemented in [SAM MCP's activity poller and action handler](https://github.com/mrchrisster/MiSTer_SAM/blob/45af68dd7a7e1b15337c2b04c79f196e7dd6da47/.MiSTer_SAM/MiSTer_SAM_MCP.py).
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
