@@ -184,6 +184,17 @@ Commands are processed one at a time and wait while a core boot sound plays, exa
 
 With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players.
 
+## Uninstall
+
+Remove BGM's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Close the control screen, then run `/media/fat/Scripts/bgm.sh stop` and wait for the service and audio player to exit. Do not reopen the screen afterward: it can start the service again.
+2. Remove the `# Startup BGM` comment and its `bgm.sh $1` command from `/media/fat/linux/user-startup.sh`. Preserve all other startup entries.
+3. Delete `/media/fat/Scripts/bgm.sh`. Optionally back up and remove `/media/fat/music/bgm.ini` to discard BGM settings.
+4. Keep `/media/fat/music/`: tracks, playlists, `.pls` subscriptions, and `boot/` sounds are user content. BGM has no separate persistent database or generated menu tree to remove.
+
+After shutdown, leftover `/tmp/bgm.sock`, `/tmp/bgm.log`, and `/tmp/bgm.sh` can be removed or left until reboot. Keep MiSTer's audio players installed.
+
 ## Local development
 
 Run BGM against a temporary MiSTer root without touching `/media/fat`:

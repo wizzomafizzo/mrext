@@ -144,6 +144,17 @@ Favorites preserves non-interactive startup behavior:
 
 This removes broken unversioned core shortcuts and relinks broken dated shortcuts when an updated matching core exists. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
 
+## Uninstall
+
+Remove Favorites' Downloader subscription if configured, so updates do not reinstall it.
+
+1. Exit Favorites and let any refresh finish. There is no persistent Favorites service to stop.
+2. Remove the `# Startup favorites` comment and its `favorites.sh refresh` command from `/media/fat/linux/user-startup.sh`.
+3. Delete `/media/fat/Scripts/favorites.sh`. Optionally back up and remove `/media/fat/Scripts/favorites.ini` to discard settings, respecting any shared `MREXT_CONFIG` override.
+4. Keep `/media/fat/_@Favorites` and other favorite folders unless you want to remove your curated shortcuts. The folder can be renamed through `default_folder`, and favorites may also be at the SD root or in other menu folders. There is no Favorites database to delete.
+
+If discarding generated entries, remove only selected `.mgl` files and symlinks after inspecting their contents and ownership. Favorites can create `cores` symlinks in the SD root and favorite subfolders. Leave these if other MRA shortcuts use them; otherwise remove only the links, never their `_Arcade/cores` target. Remove symlinks themselves, not their destinations. Keep real core files and custom content.
+
 ## Safety
 
 Favorites never recursively deletes a folder containing user files. Folder deletion succeeds only when folder is empty or contains only managed `cores` symlink. Existing configuration files, non-symlink `cores` entries, and unrelated menu content are left untouched.
