@@ -33,6 +33,8 @@ The Go version preserves Python Favorites' folder discovery, top-level destinati
 
 Arcade link management creates missing `cores` links when the interactive app opens and when it creates a Favorites folder. Existing files, directories, and symlinks named `cores` are preserved, not repaired or replaced. If an older Favorites folder uses a copied `cores` directory or an incorrect link, back it up and move it aside before reopening Favorites. MRAs that require a custom cores directory rather than `_Arcade/cores` are not automatically supported; Favorites does not merge multiple core directories.
 
+Core-update repair now recognizes the date in the symlink target rather than requiring it in the favorite's name. Renaming a core favorite no longer prevents its repair after an update.
+
 Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
 
 ## Settings screen
@@ -144,7 +146,7 @@ Favorites preserves non-interactive startup behavior:
 /media/fat/Scripts/favorites.sh refresh
 ```
 
-This removes broken unversioned core shortcuts and relinks broken dated shortcuts when an updated matching core exists. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
+Refresh repairs shortcuts whose target is a dated core (such as `NES_20260101.rbf`), even when the favorite has a custom name such as `Nintendo.rbf`. Custom names are preserved; dated favorite names follow the replacement core's date. Both absolute and relative symlink targets are supported. Broken shortcuts without a replacement are removed. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
 
 ## Uninstall
 
