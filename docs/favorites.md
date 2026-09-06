@@ -24,12 +24,14 @@ Run `favorites` from MiSTer's Scripts menu.
 - Preserve NeoGeo ZIP naming from `romsets.xml` and relative NeoGeo launcher paths.
 - Create, rename, move, and remove Favorites folders and entries.
 - Refresh broken dated core symlinks after core updates.
-- Maintain arcade `cores` links needed by MRA favorites.
+- Maintain arcade `cores` links needed by MRA favorites. These link directly to `/media/fat/_Arcade/cores`, so newly downloaded cores are available without refreshing Favorites.
 - Operate with a controller through an on-screen keyboard.
 
 ## Compatibility notes
 
 The Go version preserves Python Favorites' folder discovery, top-level destinations, nested folder management, startup refresh hook, LLAPI/YC selection, root filtering, external-drive shortcut, ZIP traversal, NeoGeo names and relative paths, dated-core repair, and safe link-based core favorites. Symlinked game directories remain browsable.
+
+Arcade link management creates missing `cores` links when the interactive app opens and when it creates a Favorites folder. Existing files, directories, and symlinks named `cores` are preserved, not repaired or replaced. If an older Favorites folder uses a copied `cores` directory or an incorrect link, back it up and move it aside before reopening Favorites. MRAs that require a custom cores directory rather than `_Arcade/cores` are not automatically supported; Favorites does not merge multiple core directories.
 
 Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog.
 
