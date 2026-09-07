@@ -55,6 +55,9 @@ const CoresRecentFile = CoreConfigFolder + "/cores_recent.cfg"
 
 const MenuCore = "MENU"
 
+// RACoresFolder is the isolated RetroAchievements core directory relative to SD root.
+const RACoresFolder = "_RA_Cores/Cores"
+
 const (
 	CmdInterface      = "/dev/MiSTer_cmd"
 	SSHConfigFolder   = "/root/.ssh"

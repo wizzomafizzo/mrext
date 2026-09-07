@@ -54,6 +54,8 @@ After migration:
 
 The `refresh` command repairs supported broken core links; it does not reconstruct links that a copy tool replaced with regular files or rewrite every game path after storage moves.
 
+The new opt-in `ra` alternate-core mode adds RetroAchievements game shortcuts. Standard, LLAPI, and YC behavior remains unchanged; no existing favorites are migrated automatically.
+
 ## Settings screen
 
 Choose `Settings` from the main screen's bottom action bar. Up and Down select a setting; Left and Right select `Change`, `Save`, or `Cancel`. The footer shows one sentence explaining the selected setting. `Change` toggles boolean values, opens an alternate-core or theme picker, or opens the appropriate editor. Pickers highlight the current value and do not change it when canceled.
@@ -115,8 +117,15 @@ on_screen_keyboard = true
 - blank: standard cores
 - `llapi`: use matching LLAPI variants when installed
 - `yc`: use matching YC variants when installed
+- `ra`: use installed RetroAchievements variants from `_RA_Cores/Cores`
 
-Favorites falls back to standard catalog core when requested variant is unavailable.
+Favorites falls back to standard catalog core when requested variant is unavailable. Select **RetroAchievements** in Settings, or use `[cores]` with `all = ra`. This affects newly created game favorites; existing shortcuts are not rewritten.
+
+RA paths and setnames follow Zaparoo Core's MiSTer launcher mappings. Generated shortcuts include the appropriate `RA_*` setname and `same_dir` behavior, including separate FDS/GBC/Game Gear/Super Game Boy/NeoGeo CD/TurboGrafx-CD names. Atari 2600 uses the RA Atari7800 core's loading slot. Standard catalog data continues to supply media formats and loading parameters.
+
+Install and configure a compatible RetroAchievements MiSTer binary and RA cores first. Favorites does not install binaries, edit `MiSTer.ini`, or handle credentials. An installation that selects `MiSTer_RA` using `[RA_*]` must already have that rule configured. Availability of a core file does not prove that achievements or hardcore mode work on the device.
+
+The RA adaptation is sourced from Zaparoo Core `pkg/platforms/mister/launchers.go` (revision `7cae7f1f`); it can move to a shared library when Core exposes these variant mappings. Ordinary core-file favorites remain direct links to the file selected by the user.
 
 ### TUI settings
 

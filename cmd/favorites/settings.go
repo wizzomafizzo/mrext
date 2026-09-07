@@ -72,11 +72,12 @@ func (s *settingsPage) show(selection int) {
 	})
 
 	s.list.AddHeader("Cores")
-	modes := []string{"", "llapi", "yc"}
+	modes := []string{"", "llapi", "yc", "ra"}
 	s.addChoice("Alternate core", alternateCoreLabel(s.staged.AlternateCore), []tui.Choice{
 		{Label: "Standard", Help: "Use standard MiSTer cores."},
 		{Label: "LLAPI", Help: "Use installed LLAPI cores; otherwise use standard cores."},
 		{Label: "YC", Help: "Use installed YC cores; otherwise use standard cores."},
+		{Label: "RetroAchievements", Help: "Use installed RA cores; otherwise use standard cores."},
 	}, slices.Index(modes, s.staged.AlternateCore), func(index int) {
 		s.staged.AlternateCore = modes[index]
 	})
@@ -242,6 +243,8 @@ func alternateCoreLabel(mode string) string {
 		return "LLAPI"
 	case "yc":
 		return "YC"
+	case "ra":
+		return "RetroAchievements"
 	default:
 		return "Standard"
 	}

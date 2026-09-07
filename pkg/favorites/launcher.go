@@ -133,6 +133,11 @@ func (m *Manager) CreateGameFavorite(
 
 	resolvedSystem := *system
 	resolvedSystem.Rbf = m.resolveCore(&resolvedSystem)
+	if strings.EqualFold(strings.TrimSpace(m.cfg.FavoritesCores.All), "ra") {
+		if err := m.configureRACore(&resolvedSystem); err != nil {
+			return "", err
+		}
+	}
 	launcher, err := m.generateMGL(&resolvedSystem, mediaPath)
 	if err != nil {
 		return "", err
