@@ -315,7 +315,7 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		}
 	}
 
-	watcher, err := tracker.StartFileWatch(tr)
+	watcher, err := tracker.StartFileWatchWithRetry(tr)
 	if err != nil {
 		tr.Logger.Error("error starting file watch: %s", err)
 		os.Exit(1)

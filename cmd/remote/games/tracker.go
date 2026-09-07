@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
@@ -159,7 +160,57 @@ type AnnounceGamePayload struct {
 	GameName     string `json:"gameName"`
 }
 
+// announceQueueSize bounds the backlog of pending webhook posts. Dropping the
+// oldest news is better than growing without limit behind a dead endpoint.
+const announceQueueSize = 16
+
+type announceRequest struct {
+	logger *service.Logger
+	url    string
+	body   []byte
+}
+
+var (
+	announceOnce  sync.Once
+	announceQueue chan announceRequest
+)
+
+func announceWorker() {
+	for request := range announceQueue {
+		postAnnounce(request)
+	}
+}
+
+func postAnnounce(request announceRequest) {
+	req, err := http.NewRequestWithContext(
+		context.Background(), http.MethodPost, request.url, bytes.NewReader(request.body),
+	)
+	if err != nil {
+		request.logger.Error("error creating announce request: %s", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		request.logger.Error("error sending announce payload: %s", err)
+		return
+	}
+	_ = resp.Body.Close()
+}
+
+// SendAnnounceGame queues the configured webhook and returns immediately.
+//
+// It is called from tracker.addEvent with the tracker mutex held. Posting
+// inline meant an announce_game_url pointing at a host that had gone offline
+// froze all core and game tracking for the full 15-second HTTP timeout on
+// every core change: /api/games/playing hung and websocket updates stalled.
 func SendAnnounceGame(cfg *config.UserConfig, logger *service.Logger, ev *tracker.EventAction) {
+	url := cfg.Remote.AnnounceGameURL
+	if url == "" {
+		return
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = ""
@@ -176,28 +227,20 @@ func SendAnnounceGame(cfg *config.UserConfig, logger *service.Logger, ev *tracke
 		GameName:     ev.ActiveGame.Name,
 	}
 
-	url := cfg.Remote.AnnounceGameURL
 	data, err := json.Marshal(announce)
 	if err != nil {
 		logger.Error("error marshalling announce payload: %s", err)
 		return
 	}
 
-	if url != "" {
-		req, requestErr := http.NewRequestWithContext(
-			context.Background(), http.MethodPost, url, bytes.NewReader(data),
-		)
-		if requestErr != nil {
-			logger.Error("error creating announce request: %s", requestErr)
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		client := &http.Client{Timeout: 15 * time.Second}
-		resp, requestErr := client.Do(req)
-		if requestErr != nil {
-			logger.Error("error sending announce payload: %s", requestErr)
-			return
-		}
-		_ = resp.Body.Close()
+	announceOnce.Do(func() {
+		announceQueue = make(chan announceRequest, announceQueueSize)
+		go announceWorker()
+	})
+
+	select {
+	case announceQueue <- announceRequest{logger: logger, url: url, body: data}:
+	default:
+		logger.Warn("announce endpoint is not keeping up, dropping event for %s", url)
 	}
 }
