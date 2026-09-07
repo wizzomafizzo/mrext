@@ -136,3 +136,95 @@ func TestPlayLogReadsLegacyGoSQLiteTimestamp(t *testing.T) {
 		t.Fatal("expected legacy timestamp event to be recovered")
 	}
 }
+
+func TestMenuNavigationIsNotPersisted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "playlog.db")
+	db, err := openPlayLogDbAt(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.db.Close() })
+
+	// The tracker emits menu navigation on every write to /tmp/CURRENTPATH.
+	// Persisting it put an SD-card write behind every cursor move, for rows no
+	// query in this file ever selects.
+	for range 50 {
+		event := tracker.EventAction{
+			Timestamp: time.Now(),
+			Action:    tracker.EventActionMenuNavigation,
+			Target:    "Console/NES",
+		}
+		if addErr := db.AddEvent(&event); addErr != nil {
+			t.Fatal(addErr)
+		}
+	}
+	played := tracker.EventAction{
+		Timestamp: time.Now(),
+		Action:    tracker.EventActionGameStart,
+		Target:    "Super Mario Bros",
+	}
+	if addErr := db.AddEvent(&played); addErr != nil {
+		t.Fatal(addErr)
+	}
+
+	if got := countEvents(t, db); got != 1 {
+		t.Fatalf("events table holds %d rows, want only the game start", got)
+	}
+}
+
+func TestExistingMenuNavigationRowsArePrunedOnOpen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "playlog.db")
+	db, err := openPlayLogDbAt(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Simulate a database written by an older version, which stored these.
+	for range 20 {
+		if _, execErr := db.db.ExecContext(
+			t.Context(),
+			"insert into events (timestamp, action, target, total_time) values (?, ?, ?, ?)",
+			time.Now(), tracker.EventActionMenuNavigation, "Console/NES", 0,
+		); execErr != nil {
+			t.Fatal(execErr)
+		}
+	}
+	keep := tracker.EventAction{
+		Timestamp: time.Now(),
+		Action:    tracker.EventActionCoreStart,
+		Target:    "NES",
+	}
+	if addErr := db.AddEvent(&keep); addErr != nil {
+		t.Fatal(addErr)
+	}
+	if closeErr := db.db.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	reopened, err := openPlayLogDbAt(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = reopened.db.Close() })
+
+	if got := countEvents(t, reopened); got != 1 {
+		t.Fatalf("events table holds %d rows after pruning, want only the core start", got)
+	}
+	// Play history and totals must survive the prune untouched.
+	last, err := reopened.lastEvent(tracker.EventActionCoreStart, tracker.EventActionCoreStop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if last.Target != "NES" {
+		t.Fatalf("last core event target = %q, want NES", last.Target)
+	}
+}
+
+func countEvents(t *testing.T, db *playLogDb) int {
+	t.Helper()
+	var count int
+	if err := db.db.QueryRowContext(t.Context(), "select count(*) from events").Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	return count
+}
