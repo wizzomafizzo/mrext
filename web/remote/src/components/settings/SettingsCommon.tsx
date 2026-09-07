@@ -97,6 +97,10 @@ export function SaveButton() {
 
   return (
     <>
+      <Typography variant="caption" component="p" sx={{ px: 2 }}>
+        Saving Main creates MiSTer.ini if it is missing. MiSTer_example.ini is
+        never edited.
+      </Typography>
       <Paper
         sx={{
           boxShadow: 2,

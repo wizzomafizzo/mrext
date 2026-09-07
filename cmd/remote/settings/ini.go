@@ -21,6 +21,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -88,20 +89,22 @@ func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			logger.Info("update mister.ini: %s=%s", key, value)
 		}
 
-		err = mi.Save()
-		if err != nil {
+		if err = saveAndRelaunch(&mi, mister.RelaunchIfInMenu); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("save mister.ini: %s", err)
-			return
-		}
-
-		err = mister.RelaunchIfInMenu()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("relaunch mister: %s", err)
+			logger.Error("save settings: %s", err)
 			return
 		}
 	}
+}
+
+func saveAndRelaunch(mi *mister.MisterIni, relaunch func() error) error {
+	if err := mi.Save(); err != nil {
+		return fmt.Errorf("save MiSTer INI: %w", err)
+	}
+	if err := relaunch(); err != nil {
+		return fmt.Errorf("relaunch MiSTer: %w", err)
+	}
+	return nil
 }
 
 func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
