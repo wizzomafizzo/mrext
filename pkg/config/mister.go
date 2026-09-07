@@ -75,6 +75,21 @@ const NamesFile = SdFolder + "/names.txt"
 // GamesMenuFolder is the stock-menu folder GamesMenu mirrors game libraries into.
 const GamesMenuFolder = SdFolder + "/_Games"
 
+// StorageRoots are the removable and network mount points games can live
+// under. Everything below one of these is only reachable while that storage is
+// attached; an unmounted mount point is left behind as an empty directory.
+// Paths on the SD card are not listed because it is always present.
+var StorageRoots = []string{
+	"/media/usb0",
+	"/media/usb1",
+	"/media/usb2",
+	"/media/usb3",
+	"/media/usb4",
+	"/media/usb5",
+	"/media/network",
+	"/media/fat/cifs",
+}
+
 // TODO: not the order mister actually checks, it does games folders second, but this is simpler for checking prefix
 var GamesFolders = []string{
 	"/media/usb0/games",

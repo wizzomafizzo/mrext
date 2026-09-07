@@ -285,6 +285,9 @@ func (u *ui) cleanUp() {
 		}
 		text := fmt.Sprintf("Checked: %d\nRemoved: %d\nEmpty folders pruned: %d\nUnreadable: %d",
 			result.Checked, result.Removed, result.PrunedFolders, result.Unreadable)
+		if result.Unavailable > 0 {
+			text += fmt.Sprintf("\nSkipped (storage not attached): %d", result.Unavailable)
+		}
 		text += errorSummary(result.Errors, result.ErrorsDropped)
 		tui.ShowInfoModal(u.pages, u.app, "Clean Up complete", tview.Escape(text), u.mustShowMain)
 	})

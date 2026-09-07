@@ -1124,3 +1124,47 @@ func createZip(path string, files map[string]string) error {
 	}
 	return nil
 }
+
+func TestRefreshKeepsFavoritesWhenStorageIsDetached(t *testing.T) {
+	manager, _, root := newTestManager(t)
+	folder := filepath.Join(root, "_@Favorites")
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Refresh also runs from user-startup.sh, before USB and network mounts
+	// settle, so a favorite pointing at an unplugged drive must survive.
+	media := t.TempDir()
+	attached := filepath.Join(media, "usb0")
+	detached := filepath.Join(media, "usb1")
+	if err := os.MkdirAll(filepath.Join(attached, "games"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(detached, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	previous := config.StorageRoots
+	config.StorageRoots = []string{attached, detached}
+	t.Cleanup(func() { config.StorageRoots = previous })
+
+	onDetached := filepath.Join(folder, "Unplugged.mgl")
+	if err := os.Symlink(filepath.Join(detached, "games", "game.mgl"), onDetached); err != nil {
+		t.Fatal(err)
+	}
+	onAttached := filepath.Join(folder, "Deleted.mgl")
+	if err := os.Symlink(filepath.Join(attached, "games", "gone.mgl"), onAttached); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := manager.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Lstat(onDetached); err != nil {
+		t.Errorf("favorite on an unplugged drive was removed: %v", err)
+	}
+	if _, err := os.Lstat(onAttached); !os.IsNotExist(err) {
+		t.Errorf("favorite for a genuinely deleted game survived: %v", err)
+	}
+}

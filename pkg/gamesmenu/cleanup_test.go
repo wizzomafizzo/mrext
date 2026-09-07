@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 )
 
@@ -134,5 +135,55 @@ func TestCleanUpStatErrorsAreNotMissing(t *testing.T) {
 	}
 	if _, err := os.Stat(output); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCleanUpKeepsShortcutsWhenStorageIsDetached(t *testing.T) {
+	m := fixture(t)
+
+	// Two removable drives: one attached with the game deleted from it, one
+	// unplugged. An unmounted mount point is left behind as an empty directory,
+	// so both targets stat as ENOENT and only the attached one is a real
+	// deletion.
+	media := t.TempDir()
+	attached := filepath.Join(media, "usb0")
+	detached := filepath.Join(media, "usb1")
+	put(t, filepath.Join(attached, "games", "NES", "kept.nes"), "")
+	if err := os.Mkdir(detached, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	previous := config.StorageRoots
+	config.StorageRoots = []string{attached, detached}
+	t.Cleanup(func() { config.StorageRoots = previous })
+
+	output := filepath.Join(m.paths.MenuFolder, "_NES")
+	shortcut := func(name, target string) string {
+		path := filepath.Join(output, name+".mgl")
+		put(t, path, `<mistergamedescription><rbf>_Console/NES</rbf><file path="`+target+`"/></mistergamedescription>`)
+		return path
+	}
+	onDetached := shortcut("detached", filepath.Join(detached, "games", "NES", "game.nes"))
+	onAttached := shortcut("deleted", filepath.Join(attached, "games", "NES", "gone.nes"))
+
+	result, err := m.CleanUp(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, statErr := os.Stat(onDetached); statErr != nil {
+		t.Errorf("shortcut for an unplugged drive was removed: %v", statErr)
+	}
+	if _, statErr := os.Stat(onAttached); !os.IsNotExist(statErr) {
+		t.Errorf("shortcut for a genuinely deleted game survived: %v", statErr)
+	}
+	if result.Removed != 1 {
+		t.Errorf("Removed = %d, want 1", result.Removed)
+	}
+	if result.Unavailable != 1 {
+		t.Errorf("Unavailable = %d, want 1", result.Unavailable)
+	}
+	if result.Unreadable != 0 {
+		t.Errorf("Unreadable = %d, want 0: %v", result.Unreadable, result.Errors)
 	}
 }

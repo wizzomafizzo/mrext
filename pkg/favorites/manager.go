@@ -550,6 +550,13 @@ func (m *Manager) Refresh() error {
 		} else if !os.IsNotExist(statErr) {
 			return fmt.Errorf("inspect favorite target: %w", statErr)
 		}
+		// A target on detached storage is out of reach, not deleted. Refresh
+		// also runs from user-startup.sh, before USB and network mounts
+		// settle, so removing here would wipe every favorite pointing at a
+		// drive that is merely unplugged or a NAS that is powered off.
+		if !mister.TargetAvailable(resolvedTarget) {
+			continue
+		}
 		if err := os.Remove(favorite.Path); err != nil {
 			return fmt.Errorf("remove broken favorite: %w", err)
 		}

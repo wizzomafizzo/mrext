@@ -31,16 +31,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
 type CleanupProgress struct{ Checked, Removed int }
 
 type CleanupResult struct {
-	Errors                                      []error
-	Checked, Removed, Unreadable, PrunedFolders int
-	ErrorsDropped                               int
+	Errors                                                   []error
+	Checked, Removed, Unreadable, PrunedFolders, Unavailable int
+	ErrorsDropped                                            int
 }
+
+// errStorageUnavailable marks a shortcut whose target lives on storage that is
+// not attached. The game is out of reach, not gone, so the shortcut stays.
+var errStorageUnavailable = errors.New("target storage is not available")
 
 func (r *CleanupResult) unreadable(err error) {
 	r.Unreadable++
@@ -94,9 +99,14 @@ func (m *Manager) CleanUp(progress func(CleanupProgress)) (CleanupResult, error)
 		}
 		result.Checked++
 		missing, checkErr := checkShortcut(root, name, archives)
-		if checkErr != nil {
+		switch {
+		case errors.Is(checkErr, errStorageUnavailable):
+			// A drive that is merely unplugged must not cost the user their
+			// shortcuts. Count it so the summary can say what was skipped.
+			result.Unavailable++
+		case checkErr != nil:
 			result.unreadable(fmt.Errorf("check shortcut %s: %w", name, checkErr))
-		} else if missing {
+		case missing:
 			if removeErr := root.Remove(name); removeErr != nil {
 				result.unreadable(fmt.Errorf("remove shortcut %s: %w", name, removeErr))
 			} else {
@@ -198,6 +208,9 @@ func missingTarget(target string, archives map[string]zipContents) (bool, error)
 		if !ok {
 			info, err := os.Stat(archive)
 			if errors.Is(err, fs.ErrNotExist) {
+				if !mister.TargetAvailable(archive) {
+					return false, fmt.Errorf("%w: %s", errStorageUnavailable, archive)
+				}
 				return true, nil
 			}
 			if err != nil {
@@ -225,6 +238,9 @@ func missingTarget(target string, archives map[string]zipContents) (bool, error)
 	}
 	_, err := os.Stat(target)
 	if errors.Is(err, fs.ErrNotExist) {
+		if !mister.TargetAvailable(target) {
+			return false, fmt.Errorf("%w: %s", errStorageUnavailable, target)
+		}
 		return true, nil
 	}
 	if err != nil {
