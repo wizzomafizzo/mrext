@@ -157,13 +157,15 @@ func TestSaveSettingsPreservesUnknownEntriesAndFormat(t *testing.T) {
 	writeINI(t, &paths, "[bgm]\nplayback = loop\ncustom = keep\nstartup = yes\n[extra]\nfoo = bar\n")
 	settings := Settings{
 		Theme: "nord", CoreBootDelay: 0.5, BootDelay: 1.25, MenuVolume: 5, DefaultVolume: -1,
-		Startup: false, PlayInCore: true, Debug: true, Mouse: false, CRTMode: true, OnScreenKeyboard: true,
+		Startup: false, PlayInCore: true, BootInPlaylist: true, Debug: true,
+		Mouse: false, CRTMode: true, OnScreenKeyboard: true,
 	}
 	if err := SaveSettings(paths.IniFile, &settings); err != nil {
 		t.Fatal(err)
 	}
-	want := "[bgm]\nplayback = loop\ncustom = keep\nstartup = no\nplayincore = yes\ncorebootdelay = 0.5\n" +
-		"bootdelay = 1.25\nmenuvolume = 5\ndefaultvolume = -1\ndebug = yes\n\n[extra]\nfoo = bar\n\n" +
+	want := "[bgm]\nplayback = loop\ncustom = keep\nstartup = no\nplayincore = yes\n" +
+		"bootinplaylist = yes\ncorebootdelay = 0.5\nbootdelay = 1.25\n" +
+		"menuvolume = 5\ndefaultvolume = -1\ndebug = yes\n\n[extra]\nfoo = bar\n\n" +
 		"[tui]\ntheme = nord\nmouse = no\ncrt_mode = yes\non_screen_keyboard = yes\n\n"
 	if got := readFile(t, paths.IniFile); got != want {
 		t.Fatalf("saved:\n%q\nwant:\n%q", got, want)

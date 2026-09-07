@@ -21,6 +21,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -57,6 +58,9 @@ func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			return
 		}
 
+		if !checkIniFilename(w, r, mi) {
+			return
+		}
 		err = mi.Load()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,24 +92,26 @@ func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			logger.Info("update mister.ini: %s=%s", key, value)
 		}
 
-		err = mi.Save()
-		if err != nil {
+		if err = saveAndRelaunch(&mi, mister.RelaunchIfInMenu); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("save mister.ini: %s", err)
-			return
-		}
-
-		err = mister.RelaunchIfInMenu()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error("relaunch mister: %s", err)
+			logger.Error("save settings: %s", err)
 			return
 		}
 	}
 }
 
+func saveAndRelaunch(mi *mister.MisterIni, relaunch func() error) error {
+	if err := mi.Save(); err != nil {
+		return fmt.Errorf("save MiSTer INI: %w", err)
+	}
+	if err := relaunch(); err != nil {
+		return fmt.Errorf("relaunch MiSTer: %w", err)
+	}
+	return nil
+}
+
 func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("load ini request: %d", reqID)
 
 		mi, err := mister.GetMisterIni(reqID)
@@ -115,6 +121,9 @@ func HandleLoadIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			return
 		}
 
+		if !checkIniFilename(w, r, mi) {
+			return
+		}
 		err = mi.Load()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -192,6 +201,16 @@ func HandleListInis(logger *service.Logger) http.HandlerFunc {
 	}
 }
 
+// Optional identity guard extends the API without changing existing JSON shapes.
+func checkIniFilename(w http.ResponseWriter, r *http.Request, mi mister.MisterIni) bool {
+	expected := r.Header.Get(mister.IniFilenameHeader)
+	if expected != "" && expected != mi.Filename {
+		http.Error(w, "INI filename no longer matches this slot; reload settings", http.StatusConflict)
+		return false
+	}
+	return true
+}
+
 type SetActiveIniRequest struct {
 	Ini int `json:"ini"`
 }
@@ -213,16 +232,14 @@ func HandleSetActiveIni(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		availableInis, err := mister.GetAllWithDefaultMisterIni()
+		selectedIni, err := mister.GetMisterIni(args.Ini)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list mister.inis: %s", err)
 			return
 		}
 
-		if args.Ini > len(availableInis) {
-			http.Error(w, "ini does not exist", http.StatusInternalServerError)
-			logger.Error("ini does not exist")
+		if !checkIniFilename(w, r, selectedIni) {
 			return
 		}
 

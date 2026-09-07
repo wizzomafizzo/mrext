@@ -33,7 +33,7 @@ import (
 
 // DefaultINI is written only when bgm.ini is missing.
 const DefaultINI = "[bgm]\nplayback = random\nplaylist = none\nstartup = yes\nplayincore = no\n" +
-	"corebootdelay = 0\nbootdelay = 0\nmenuvolume = -1\ndefaultvolume = -1\ndebug = no\n"
+	"bootinplaylist = no\ncorebootdelay = 0\nbootdelay = 0\nmenuvolume = -1\ndefaultvolume = -1\ndebug = no\n"
 
 const (
 	iniSectionBGM = "bgm"
@@ -96,16 +96,17 @@ type TUIOptions struct {
 
 // Config is the typed view of bgm.ini with Python's defaults applied.
 type Config struct {
-	Playback      string
-	Playlist      Playlist
-	TUI           TUIOptions
-	CoreBootDelay float64
-	BootDelay     float64
-	MenuVolume    int
-	DefaultVolume int
-	Startup       bool
-	PlayInCore    bool
-	Debug         bool
+	Playback       string
+	Playlist       Playlist
+	TUI            TUIOptions
+	CoreBootDelay  float64
+	BootDelay      float64
+	MenuVolume     int
+	DefaultVolume  int
+	Startup        bool
+	PlayInCore     bool
+	BootInPlaylist bool
+	Debug          bool
 }
 
 // DefaultConfig returns the values used when keys are missing.
@@ -168,6 +169,7 @@ func ConfigFromDocument(doc *Document) Config {
 	}
 	cfg.Startup = docBool(doc, iniSectionBGM, "startup", cfg.Startup)
 	cfg.PlayInCore = docBool(doc, iniSectionBGM, "playincore", cfg.PlayInCore)
+	cfg.BootInPlaylist = docBool(doc, iniSectionBGM, "bootinplaylist", cfg.BootInPlaylist)
 	cfg.Debug = docBool(doc, iniSectionBGM, "debug", cfg.Debug)
 	cfg.MenuVolume = docInt(doc, iniSectionBGM, "menuvolume", cfg.MenuVolume)
 	cfg.DefaultVolume = docInt(doc, iniSectionBGM, "defaultvolume", cfg.DefaultVolume)
@@ -289,6 +291,7 @@ type Settings struct {
 	DefaultVolume    int
 	Startup          bool
 	PlayInCore       bool
+	BootInPlaylist   bool
 	Debug            bool
 	Mouse            bool
 	CRTMode          bool
@@ -305,6 +308,7 @@ func SettingsFromConfig(cfg *Config) Settings {
 		DefaultVolume:    cfg.DefaultVolume,
 		Startup:          cfg.Startup,
 		PlayInCore:       cfg.PlayInCore,
+		BootInPlaylist:   cfg.BootInPlaylist,
 		Debug:            cfg.Debug,
 		Mouse:            cfg.TUI.Mouse,
 		CRTMode:          cfg.TUI.CRTMode,
@@ -321,6 +325,7 @@ func (s *Settings) ApplyTo(cfg *Config) {
 	cfg.DefaultVolume = s.DefaultVolume
 	cfg.Startup = s.Startup
 	cfg.PlayInCore = s.PlayInCore
+	cfg.BootInPlaylist = s.BootInPlaylist
 	cfg.Debug = s.Debug
 	cfg.TUI.Mouse = s.Mouse
 	cfg.TUI.CRTMode = s.CRTMode
@@ -360,6 +365,7 @@ func SaveSettings(path string, settings *Settings) error {
 	return UpdateINI(path, func(doc *Document) {
 		doc.Set(iniSectionBGM, "startup", formatYesNo(settings.Startup))
 		doc.Set(iniSectionBGM, "playincore", formatYesNo(settings.PlayInCore))
+		doc.Set(iniSectionBGM, "bootinplaylist", formatYesNo(settings.BootInPlaylist))
 		doc.Set(iniSectionBGM, "corebootdelay", FormatDelay(settings.CoreBootDelay))
 		doc.Set(iniSectionBGM, "bootdelay", FormatDelay(settings.BootDelay))
 		doc.Set(iniSectionBGM, "menuvolume", strconv.Itoa(settings.MenuVolume))

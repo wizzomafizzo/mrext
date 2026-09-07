@@ -20,15 +20,16 @@
 package main
 
 var settingsHelp = map[string]string{
-	"Startup sound delay": "Seconds before initial audio; applies next time BGM starts.",
-	"Start on boot":       "Start the BGM service automatically when MiSTer boots.",
-	"Play music in cores": "Keep playing music while a core is running instead of only in the menu.",
-	"Core boot delay":     "Seconds to wait before a core boot sound plays, for slow display sync.",
-	"Menu volume":         "MiSTer volume while the menu is open; needs Default volume too.",
-	"Default volume":      "MiSTer volume restored when a core runs; needs Menu volume too.",
-	"Debug logging":       "Write detailed service output to /tmp/bgm.log.",
-	"Theme":               "Choose a color palette to apply after saving.",
-	"Mouse":               "Enable mouse input alongside keyboard and controller navigation.",
-	"CRT mode":            "Use a compact 75-column, 15-row layout for CRT displays.",
-	"On-screen keyboard":  "Use controller-friendly text entry; Off needs a physical keyboard.",
+	"Startup sound delay":     "Seconds before initial audio; applies next time BGM starts.",
+	"Boot sounds in rotation": "Add playlist and global boot sounds to normal playback after saving.",
+	"Start on boot":           "Start the BGM service automatically when MiSTer boots.",
+	"Play music in cores":     "Keep playing music while a core is running instead of only in the menu.",
+	"Core boot delay":         "Seconds to wait before a core boot sound plays, for slow display sync.",
+	"Menu volume":             "MiSTer volume while the menu is open; needs Default volume too.",
+	"Default volume":          "MiSTer volume restored when a core runs; needs Menu volume too.",
+	"Debug logging":           "Write detailed service output to /tmp/bgm.log.",
+	"Theme":                   "Choose a color palette to apply after saving.",
+	"Mouse":                   "Enable mouse input alongside keyboard and controller navigation.",
+	"CRT mode":                "Use a compact 75-column, 15-row layout for CRT displays.",
+	"On-screen keyboard":      "Use controller-friendly text entry; Off needs a physical keyboard.",
 }

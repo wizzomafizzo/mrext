@@ -36,7 +36,11 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import Dialog from "@mui/material/Dialog";
 import Typography from "@mui/material/Typography";
 import { ControlApi } from "../../lib/api";
-import { loadMisterIni, useIniSettingsStore } from "../../lib/ini";
+import {
+  iniErrorMessage,
+  loadMisterIni,
+  useIniSettingsStore,
+} from "../../lib/ini";
 
 function SettingsPageLink(props: {
   page: SettingsPageId;
@@ -66,13 +70,25 @@ function IniSwitcher() {
   const iniSettings = useIniSettingsStore();
 
   const changeIni = async (id: number) => {
+    const target = inis.data?.inis.find((ini) => ini.id === id);
+    if (!target) return;
+    if (
+      iniSettings.modified.length &&
+      !window.confirm("Discard unsaved settings before switching INI?")
+    )
+      return;
     setChangingIni(true);
     try {
-      await api.setMisterIni({ ini: id });
+      await api.setMisterIni({ ini: id }, target.filename);
       setIniDialogOpen(false);
-      await Promise.all([inis.refetch(), loadMisterIni(id, iniSettings, true)]);
+      await Promise.all([
+        inis.refetch(),
+        loadMisterIni(id, iniSettings, true).catch(() => {}),
+      ]);
     } catch (error) {
-      console.error(error);
+      useIniSettingsStore.setState({
+        iniError: iniErrorMessage(error),
+      });
     } finally {
       setChangingIni(false);
     }
@@ -92,7 +108,9 @@ function IniSwitcher() {
       id = inis.data.active;
     }
 
-    activeIni.name = inis.data.inis[id - 1].displayName;
+    activeIni.name =
+      inis.data.inis.find((ini) => ini.id === id)?.displayName ??
+      `Unavailable slot ${id}`;
     activeIni.id = id;
   }
 
@@ -113,19 +131,13 @@ function IniSwitcher() {
               </Typography>
             </ListItem>
             {(inis.data?.inis || []).map(
-              (
-                ini: {
-                  filename: string;
-                  displayName: string;
-                },
-                i: number,
-              ) => (
+              (ini: { id: number; filename: string; displayName: string }) => (
                 <ListItem key={ini.filename} disableGutters>
                   <Button
                     fullWidth
-                    variant={activeIni.id == i + 1 ? "contained" : "outlined"}
-                    disabled={changingIni}
-                    onClick={() => void changeIni(i + 1)}
+                    variant={activeIni.id === ini.id ? "contained" : "outlined"}
+                    disabled={changingIni || iniSettings.loadingIni}
+                    onClick={() => void changeIni(ini.id)}
                   >
                     {ini.displayName}
                   </Button>
@@ -146,6 +158,22 @@ function IniSwitcher() {
           Active INI: {activeIni.name}
         </Button>
       </ListItem>
+      {iniSettings.loadedIni && (
+        <ListItem>
+          <Typography>
+            Editing: {iniSettings.loadedIni.displayName} (
+            {iniSettings.loadedIni.filename})
+          </Typography>
+        </ListItem>
+      )}
+      {(iniSettings.iniError || inis.error) && (
+        <ListItem>
+          <Typography color="error">
+            {iniSettings.iniError ||
+              "Unable to list INI slots. Restart MiSTer and Remote if the INI layout changed."}
+          </Typography>
+        </ListItem>
+      )}
     </>
   );
 }
@@ -213,17 +241,9 @@ export default function Settings() {
   const iniSettingsStore = useIniSettingsStore();
 
   useEffect(() => {
-    const api = new ControlApi();
-    api.listMisterInis().then((inis) => {
-      let id: number;
-      if (inis.active === 0) {
-        id = 1;
-      } else {
-        id = inis.active;
-      }
-
-      loadMisterIni(id, iniSettingsStore).catch((err) => console.error(err));
-    });
+    // Active-slot discovery belongs to the guarded load, so a late listing
+    // cannot undo a newer explicit switch. The loader owns its error state.
+    void loadMisterIni(undefined, iniSettingsStore).catch(() => {});
   }, []);
 
   const page = (() => {

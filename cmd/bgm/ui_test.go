@@ -264,6 +264,34 @@ func TestStartupDelaySettingsAreStagedAndSaved(t *testing.T) {
 	}
 }
 
+func TestBootRotationSettingsAreStagedAndApplied(t *testing.T) {
+	view, player := newWorkflowUI(t)
+	view.startSettings()
+	sendUIKey(view, tcell.KeyDown, 0)
+	sendUIKey(view, tcell.KeyDown, 0) // Boot sounds in rotation
+	sendUIKey(view, tcell.KeyEnter, 0)
+	if player.BootInPlaylist() || view.cfg.BootInPlaylist {
+		t.Fatal("unsaved setting applied")
+	}
+	sendUIKey(view, tcell.KeyRight, 0) // Save
+	sendUIKey(view, tcell.KeyEnter, 0)
+	if !player.BootInPlaylist() || !view.cfg.BootInPlaylist {
+		t.Fatal("saved setting not applied")
+	}
+	if !strings.Contains(readINI(t, view), "bootinplaylist = yes\n") {
+		t.Fatal("setting not persisted")
+	}
+	view.startSettings()
+	sendUIKey(view, tcell.KeyDown, 0)
+	sendUIKey(view, tcell.KeyDown, 0)
+	sendUIKey(view, tcell.KeyEnter, 0)
+	sendUIKey(view, tcell.KeyRight, 0)
+	sendUIKey(view, tcell.KeyEnter, 0)
+	if player.BootInPlaylist() || view.cfg.BootInPlaylist {
+		t.Fatal("disable not applied")
+	}
+}
+
 func TestSettingsSaveWritesINIAndUpdatesService(t *testing.T) {
 	view, player := newWorkflowUI(t)
 	view.startSettings()

@@ -98,12 +98,21 @@ type Db interface {
 	NoResults(err error) bool
 }
 
+type trackerLogger interface {
+	Info(string, ...any)
+	Warn(string, ...any)
+	Error(string, ...any)
+}
+
 type Tracker struct {
 	Db               Db
-	Logger           *service.Logger
+	Logger           trackerLogger
 	Config           *config.UserConfig
 	GameTimes        map[string]GameTime
 	CoreTimes        map[string]CoreTime
+	arcadePaths      map[string]string
+	arcadeRoots      func() []string
+	setActiveGame    func(string) error
 	ActiveGamePath   string
 	ActiveSystemName string
 	ActiveGame       string
@@ -115,7 +124,7 @@ type Tracker struct {
 	mu               sync.Mutex
 }
 
-func generateNameMap(logger *service.Logger) []NameMapping {
+func generateNameMap(logger trackerLogger) []NameMapping {
 	nameMap := make([]NameMapping, 0)
 
 	for id := range games.Systems {
@@ -194,6 +203,7 @@ func (tr *Tracker) ReloadNameMap() {
 	nameMap := generateNameMap(tr.Logger)
 	tr.Logger.Info("loaded %d name mappings", len(nameMap))
 	tr.NameMap = nameMap
+	tr.arcadePaths = nil
 }
 
 func (tr *Tracker) LookupName(name, game string) NameMapping {
@@ -204,6 +214,10 @@ func (tr *Tracker) LookupName(name, game string) NameMapping {
 
 		if !strings.EqualFold(mapping.CoreName, name) {
 			continue
+		}
+
+		if mapping.System == ArcadeSystem {
+			return mapping
 		}
 
 		sys, err := games.BestSystemMatch(tr.Config, game)
@@ -316,13 +330,10 @@ func (tr *Tracker) stopCore() bool {
 		}
 	}
 
-	tr.addEvent(EventActionCoreStop, tr.ActiveCore)
-
-	if tr.ActiveCore == ArcadeSystem {
-		tr.ActiveGame = ""
-		tr.ActiveGameName = ""
-		tr.addEvent(EventActionGameStop, ArcadeSystem)
+	if tr.ActiveSystem == ArcadeSystem {
+		tr.stopGame()
 	}
+	tr.addEvent(EventActionCoreStop, tr.ActiveCore)
 
 	tr.ActiveCore = ""
 	tr.ActiveSystem = ""
@@ -360,8 +371,17 @@ func (tr *Tracker) LoadCore() {
 		return
 	}
 
+	tr.processCore(coreName)
+}
+
+// processCore runs under the tracker lock; separated from device reads for tests.
+func (tr *Tracker) processCore(coreName string) {
+	publish := tr.setActiveGame
+	if publish == nil {
+		publish = mister.SetActiveGame
+	}
 	if coreName == config.MenuCore {
-		err := mister.SetActiveGame("")
+		err := publish("")
 		if err != nil {
 			tr.Logger.Error("error setting active game: %s", err)
 		}
@@ -384,12 +404,9 @@ func (tr *Tracker) LoadCore() {
 
 			switch result.System {
 			case ArcadeSystem:
-				if err := mister.SetActiveGame(coreName); err != nil {
+				if err := publish(coreName); err != nil {
 					tr.Logger.Error("error setting active arcade game: %s", err)
 				}
-				tr.ActiveGame = coreName
-				tr.ActiveGameName = result.ArcadeName
-				tr.addEvent(EventActionGameStart, coreName)
 			case "":
 				tr.ActiveSystem = coreName
 				tr.ActiveSystemName = coreName
@@ -415,6 +432,9 @@ func (tr *Tracker) LoadCore() {
 		}
 
 		tr.addEvent(EventActionCoreStart, coreName)
+		if result.System == ArcadeSystem {
+			tr.startArcade(result)
+		}
 	}
 }
 
@@ -432,6 +452,7 @@ func (tr *Tracker) stopGame() bool {
 	target := tr.ActiveGame
 	tr.ActiveGame = ""
 	tr.ActiveGameName = ""
+	tr.ActiveGamePath = ""
 	tr.addEvent(EventActionGameStop, target)
 	return true
 }
@@ -447,9 +468,23 @@ func (tr *Tracker) loadGame() {
 		tr.stopGame()
 		return
 	}
+	tr.processGame(activeGame)
+}
+
+// processGame runs under the tracker lock, with the compatibility signal supplied
+// by loadGame. Arcade set names must not be interpreted as relative filenames.
+func (tr *Tracker) processGame(activeGame string) {
 	if activeGame == "" {
 		tr.stopGame()
 		return
+	}
+
+	if tr.ActiveSystem == ArcadeSystem {
+		mapping := tr.LookupName(tr.ActiveCore, activeGame)
+		if mapping.System == ArcadeSystem {
+			tr.startArcade(mapping)
+			return
+		}
 	}
 
 	path := mister.ResolvePath(activeGame)

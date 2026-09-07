@@ -23,8 +23,13 @@ import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 
 import { useUIStateStore, SettingsPageId } from "../../lib/store";
-import { saveMisterIni, useIniSettingsStore } from "../../lib/ini";
-import { ControlApi } from "../../lib/api";
+import {
+  iniErrorMessage,
+  loadMisterIni,
+  saveMisterIni,
+  useIniSettingsStore,
+} from "../../lib/ini";
+import Alert from "@mui/material/Alert";
 import { ListInisPayload } from "../../lib/models";
 
 export function activeIniId(inis: ListInisPayload): number {
@@ -97,6 +102,30 @@ export function SaveButton() {
 
   return (
     <>
+      <Typography variant="body2" sx={{ px: 2 }}>
+        {store.loadedIni
+          ? `Editing: ${store.loadedIni.displayName} (${store.loadedIni.filename})`
+          : "No INI loaded"}
+      </Typography>
+      {store.iniError && (
+        <Alert severity="error">
+          {store.iniError}
+          {store.loadedIni && (
+            <Button
+              disabled={store.loadingIni}
+              onClick={() => {
+                void loadMisterIni(store.loadedIni!.id, store).catch(() => {});
+              }}
+            >
+              Reload settings
+            </Button>
+          )}
+        </Alert>
+      )}
+      <Typography variant="caption" component="p" sx={{ px: 2 }}>
+        Saving Main creates MiSTer.ini if it is missing. MiSTer_example.ini is
+        never edited.
+      </Typography>
       <Paper
         sx={{
           boxShadow: 2,
@@ -113,14 +142,25 @@ export function SaveButton() {
             <Button
               variant="contained"
               onClick={() => {
-                const api = new ControlApi();
-                api.listMisterInis().then((inis) => {
-                  saveMisterIni(activeIniId(inis), store).catch((err) =>
-                    console.error(err),
-                  );
+                if (!store.loadedIni) return;
+                void saveMisterIni(store.loadedIni.id, store).catch((error) => {
+                  if (
+                    useIniSettingsStore.getState().loadedIni?.filename ===
+                    store.loadedIni?.filename
+                  ) {
+                    useIniSettingsStore.setState({
+                      iniError: iniErrorMessage(error),
+                    });
+                  }
                 });
               }}
-              disabled={modified.length === 0}
+              disabled={
+                modified.length === 0 ||
+                !store.loadedIni ||
+                store.loadingIni ||
+                store.savingIni ||
+                !!store.iniError
+              }
               color="success"
               fullWidth
             >

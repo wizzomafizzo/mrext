@@ -166,40 +166,19 @@ func (m *Manager) generateMGL(system *games.System, mediaPath string) (string, e
 		return "", fmt.Errorf("resolve NeoGeo favorite path: %w", err)
 	}
 	core := games.CatalogCore(system)
-	params, err := catalog.PathToMGLDef(&core, mediaPath)
-	if err != nil {
-		if !strings.EqualFold(filepath.Ext(mediaPath), ".zip") {
-			return "", fmt.Errorf("resolve NeoGeo MGL parameters: %w", err)
-		}
-		// NeoGeo ZIP sets are supported by Favorites but are not yet present in
-		// the published standalone catalog module.
-		params = &catalog.MGLParams{Delay: 1, Method: "f", Index: 1}
+	if _, slotErr := catalog.PathToMGLDef(&core, mediaPath); slotErr != nil &&
+		!strings.EqualFold(filepath.Ext(mediaPath), ".zip") {
+		return "", fmt.Errorf("resolve NeoGeo MGL parameters: %w", slotErr)
 	}
-	//nolint:gocritic // Explicit XML quoting is required after attribute escaping.
-	override := fmt.Sprintf(
-		"\t<file delay=\"%d\" type=%q index=\"%d\" path=\"%s\"/>\n",
-		params.Delay,
-		params.Method,
-		params.Index,
-		escapeAttribute(filepath.ToSlash(relativePath)),
-	)
-	if params.ResetDelay > 0 {
-		override += fmt.Sprintf("\t<reset delay=\"%d\" hold=\"%d\"/>\n", params.ResetDelay, params.ResetHold)
+	override, err := games.NeoGeoMGLOverride(system, filepath.ToSlash(relativePath))
+	if err != nil {
+		return "", fmt.Errorf("generate NeoGeo favorite mount: %w", err)
 	}
 	launcher, err := mglgen.Generate(&core, core.RBF, mediaPath, override)
 	if err != nil {
 		return "", fmt.Errorf("generate relative NeoGeo favorite MGL: %w", err)
 	}
 	return launcher, nil
-}
-
-func escapeAttribute(value string) string {
-	return strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&quot;",
-	).Replace(value)
 }
 
 func (m *Manager) resolveCore(system *games.System) string {

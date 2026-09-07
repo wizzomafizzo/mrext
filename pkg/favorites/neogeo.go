@@ -21,13 +21,11 @@ package favorites
 
 import (
 	"bytes"
-	"encoding/xml"
-	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
@@ -41,7 +39,7 @@ func (m *Manager) NeoGeoTitle(path string) string {
 	}
 	folder := filepath.Dir(path)
 	for {
-		xmlPath := filepath.Join(folder, "romsets.xml")
+		xmlPath := filepath.Join(folder, config.NeoGeoRomsetsFile)
 		if info, err := os.Stat(xmlPath); err == nil && !info.IsDir() {
 			names := m.loadNeoGeoNames(xmlPath)
 			return names[strings.ToLower(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))]
@@ -108,38 +106,6 @@ func (m *Manager) loadNeoGeoNames(path string) map[string]string {
 	if err != nil {
 		return names
 	}
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	for {
-		token, tokenErr := decoder.Token()
-		if errors.Is(tokenErr, io.EOF) {
-			break
-		}
-		if tokenErr != nil {
-			clear(names)
-			return names
-		}
-		start, ok := token.(xml.StartElement)
-		if !ok || start.Name.Local != "romset" {
-			continue
-		}
-		var rawNames, title string
-		for _, attribute := range start.Attr {
-			switch attribute.Name.Local {
-			case "name":
-				rawNames = attribute.Value
-			case "altname":
-				title = strings.TrimSpace(attribute.Value)
-			}
-		}
-		if rawNames == "" || title == "" {
-			continue
-		}
-		for _, rawName := range strings.Split(rawNames, ",") {
-			name := strings.ToLower(strings.TrimSpace(rawName))
-			if name != "" {
-				names[name] = title
-			}
-		}
-	}
+	names, _ = games.ReadNeoGeoNames(bytes.NewReader(data))
 	return names
 }

@@ -21,6 +21,8 @@
 package bgm
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -35,6 +37,8 @@ func newTestPlayer(t *testing.T, paths *Paths, cfg *Config) *Player {
 	player := NewPlayer(paths, logger, cfg)
 	player.randIndex = func(int) int { return 0 }
 	player.sleep = func(time.Duration) {}
+	player.radioRetryDelay = 0
+	t.Cleanup(func() { player.radioClient.CloseIdleConnections() })
 	t.Cleanup(player.StopPlaylist)
 	return player
 }
@@ -89,6 +93,77 @@ func layoutMusic(t *testing.T, paths *Paths) {
 	touchTracks(t, filepath.Join(paths.BootFolder, "SNES"), "snes.mp3")
 	if err := os.MkdirAll(filepath.Join(paths.MusicFolder, "folder.mp3"), 0o755); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestBootRotationPreservesSelectedPlaylist(t *testing.T) {
+	paths := newTestPaths(t)
+	layoutMusic(t, &paths)
+	cfg := DefaultConfig()
+	cfg.Playlist = NamedPlaylist("chip")
+	player := newTestPlayer(t, &paths, &cfg)
+	before := player.Tracks(cfg.Playlist, false)
+	player.SetBootInPlaylist(true)
+	got := relativeTracks(t, &paths, player.Tracks(cfg.Playlist, false))
+	for _, name := range []string{"chip/_intro.wav", "chip/one.ogg", "chip/deep/two.vgm", "boot/global.wav"} {
+		if !slices.Contains(got, name) {
+			t.Fatalf("missing %s in %v", name, got)
+		}
+	}
+	for _, name := range []string{"_boot.mp3", "top.mp3", "boot/SNES/snes.mp3"} {
+		if slices.Contains(got, name) {
+			t.Fatalf("unrelated track %s in %v", name, got)
+		}
+	}
+	if player.Playlist() != cfg.Playlist {
+		t.Fatal("selected playlist changed")
+	}
+	player.SetBootInPlaylist(false)
+	if !slices.Equal(before, player.Tracks(cfg.Playlist, false)) {
+		t.Fatal("disabling did not restore tracks")
+	}
+	player.SetBootInPlaylist(true)
+	player.playlist = NamedPlaylist("all")
+	all := player.Tracks(player.Playlist(), false)
+	count := 0
+	for _, name := range all {
+		if name == filepath.Join(paths.BootFolder, "global.wav") {
+			count++
+		}
+		if IsPLS(name) {
+			t.Fatalf("all unexpectedly includes radio: %s", name)
+		}
+	}
+	if count != 1 {
+		t.Fatalf("global boot track appears %d times", count)
+	}
+}
+
+func TestBootRotationAvoidsImmediateRepeat(t *testing.T) {
+	paths := newTestPaths(t)
+	touchTracks(t, paths.MusicFolder, "_boot.wav", "song.wav")
+	cfg := DefaultConfig()
+	cfg.BootInPlaylist = true
+	player := newTestPlayer(t, &paths, &cfg)
+	player.randIndex = func(int) int { return 0 }
+	boot := filepath.Join(paths.MusicFolder, "_boot.wav")
+	song := filepath.Join(paths.MusicFolder, "song.wav")
+	player.addHistory(boot)
+	for range 4 {
+		if got, ok := player.randomTrack(); !ok || got != song {
+			t.Fatalf("after boot: %q %v", got, ok)
+		}
+		player.addHistory(song)
+		if got, ok := player.randomTrack(); !ok || got != boot {
+			t.Fatalf("after song: %q %v", got, ok)
+		}
+		player.addHistory(boot)
+	}
+	if err := os.Remove(song); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := player.randomTrack(); !ok || got != boot {
+		t.Fatalf("single track: %q %v", got, ok)
 	}
 }
 
@@ -235,11 +310,15 @@ func TestPlayerCommandsAndArguments(t *testing.T) {
 	logPath := installStubPlayers(t)
 	t.Setenv("BGM_STUB_EXIT", "1")
 	player := newTestPlayer(t, &paths, ptr(DefaultConfig()))
-	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1=http://example.com/live\n")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "audio/mpeg")
+		_, _ = w.Write([]byte("test audio"))
+	}))
+	t.Cleanup(server.Close)
 	for _, name := range []string{"a.ogg", "b.wav", "c.mid", "d.vgz", "radio.pls"} {
 		touchTracks(t, paths.MusicFolder, name)
 	}
-	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1=http://example.com/live\n")
+	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1="+server.URL+"\n")
 	for _, name := range []string{"a.ogg", "b.wav", "c.mid", "d.vgz", "radio.pls"} {
 		player.Play(filepath.Join(paths.MusicFolder, name))
 	}
@@ -249,7 +328,7 @@ func TestPlayerCommandsAndArguments(t *testing.T) {
 		"aplay " + filepath.Join(paths.MusicFolder, "b.wav"),
 		"aplaymidi " + filepath.Join(paths.MusicFolder, "c.mid") + " --port=128:0",
 		"vgmplay " + filepath.Join(paths.MusicFolder, "d.vgz"),
-		"mpg123 --no-control http://example.com/live",
+		"mpg123 --no-control -",
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("invocations %v want %v", got, want)
@@ -470,6 +549,49 @@ func TestPlayCoreBoot(t *testing.T) {
 	player.PlayCoreBoot("")
 	if got := stubInvocations(t, logPath); len(got) != 1 {
 		t.Fatalf("empty folders and files must not play: %v", got)
+	}
+}
+
+func TestPlayCoreBootDefaultFallback(t *testing.T) {
+	paths := newTestPaths(t)
+	logPath := installStubPlayers(t)
+	t.Setenv("BGM_STUB_EXIT", "1")
+	writeINI(t, &paths, "[bgm]\ncorebootdelay = 1.5\n")
+	player := newTestPlayer(t, &paths, ptr(DefaultConfig()))
+	var slept time.Duration
+	player.sleep = func(duration time.Duration) { slept += duration }
+	touchTracks(t, filepath.Join(paths.BootFolder, "DeFaUlT"), "fallback.wav")
+	touchTracks(t, filepath.Join(paths.BootFolder, "Genesis"), "specific.wav")
+	touchTracks(t, filepath.Join(paths.BootFolder, "Empty"), "notes.txt")
+	touchTracks(t, paths.BootFolder, "startup.wav")
+
+	player.PlayCoreBoot("SNES")
+	got := stubInvocations(t, logPath)
+	if len(got) != 1 || !strings.HasSuffix(got[0], "fallback.wav") {
+		t.Fatalf("missing core folder must use fallback: %v", got)
+	}
+	if slept != 1500*time.Millisecond {
+		t.Fatalf("fallback delay = %v", slept)
+	}
+	player.PlayCoreBoot("genesis")
+	got = stubInvocations(t, logPath)
+	if len(got) != 2 || !strings.HasSuffix(got[1], "specific.wav") {
+		t.Fatalf("core-specific track must take priority: %v", got)
+	}
+	player.PlayCoreBoot("empty")
+	player.PlayCoreBoot("")
+	if got := stubInvocations(t, logPath); len(got) != 2 {
+		t.Fatalf("empty core folders and unknown core state must remain silent: %v", got)
+	}
+	if slept != 3*time.Second {
+		t.Fatalf("silent core boots must not delay: %v", slept)
+	}
+	if err := os.Remove(filepath.Join(paths.BootFolder, "DeFaUlT", "fallback.wav")); err != nil {
+		t.Fatal(err)
+	}
+	player.PlayCoreBoot("SNES")
+	if got := stubInvocations(t, logPath); len(got) != 2 {
+		t.Fatalf("empty fallback must not reuse startup tracks: %v", got)
 	}
 }
 

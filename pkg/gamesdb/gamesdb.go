@@ -30,9 +30,7 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
 	bolt "go.etcd.io/bbolt"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -54,13 +52,33 @@ func DBExists() bool {
 // Open the gamesdb with the given options. If the database does not exist it
 // will be created and the buckets will be initialized.
 func open(options *bolt.Options) (*bolt.DB, error) {
-	if err := os.MkdirAll(filepath.Dir(config.GamesDB), 0o750); err != nil {
-		return nil, fmt.Errorf("create games database directory: %w", err)
+	return openAt(config.GamesDB, options)
+}
+
+func openAt(path string, options *bolt.Options) (*bolt.DB, error) {
+	readOnly := options != nil && options.ReadOnly
+	if !readOnly {
+		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+			return nil, fmt.Errorf("create games database directory: %w", err)
+		}
 	}
 
-	db, err := bolt.Open(config.GamesDB, 0o600, options)
+	db, err := bolt.Open(path, 0o600, options)
 	if err != nil {
 		return nil, fmt.Errorf("open games database: %w", err)
+	}
+
+	if readOnly {
+		if err := db.View(func(tx *bolt.Tx) error {
+			if tx.Bucket([]byte(BucketNames)) == nil {
+				return errors.New("games database has no names index")
+			}
+			return nil
+		}); err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("validate games database: %w", err)
+		}
+		return db, nil
 	}
 
 	if err := db.Update(func(txn *bolt.Tx) error {
@@ -78,21 +96,13 @@ func open(options *bolt.Options) (*bolt.DB, error) {
 	return db, nil
 }
 
-// Open the gamesdb with default options for generating names index.
-func openNames() (*bolt.DB, error) {
-	return open(&bolt.Options{
-		NoSync:         true,
-		NoFreelistSync: true,
-	})
-}
-
 func readIndexedSystems(db *bolt.DB) ([]string, error) {
 	var systems []string
 
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BucketNames))
 		v := b.Get([]byte(indexedSystemsKey))
-		if v != nil {
+		if len(v) != 0 {
 			systems = strings.Split(string(v), ",")
 		}
 		return nil
@@ -103,154 +113,11 @@ func readIndexedSystems(db *bolt.DB) ([]string, error) {
 	return systems, nil
 }
 
-func writeIndexedSystems(db *bolt.DB, systems []string) error {
-	if err := db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(BucketNames))
-		v := b.Get([]byte(indexedSystemsKey))
-		if v == nil {
-			v = []byte(strings.Join(systems, ","))
-			if err := b.Put([]byte(indexedSystemsKey), v); err != nil {
-				return fmt.Errorf("write indexed systems: %w", err)
-			}
-			return nil
-		}
-
-		existing := strings.Split(string(v), ",")
-		for _, system := range systems {
-			if !utils.Contains(existing, system) {
-				existing = append(existing, system)
-			}
-		}
-		if err := b.Put([]byte(indexedSystemsKey), []byte(strings.Join(existing, ","))); err != nil {
-			return fmt.Errorf("update indexed systems: %w", err)
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("update indexed systems transaction: %w", err)
-	}
-	return nil
-}
-
-type fileInfo struct {
-	SystemID string
-	Path     string
-}
-
-// Update the names index with the given files.
-func updateNames(db *bolt.DB, files []fileInfo) error {
-	if err := db.Batch(func(tx *bolt.Tx) error {
-		bns := tx.Bucket([]byte(BucketNames))
-
-		for _, file := range files {
-			base := filepath.Base(file.Path)
-			name := strings.TrimSuffix(base, filepath.Ext(base))
-
-			nk := NameKey(file.SystemID, name)
-			if err := bns.Put([]byte(nk), []byte(file.Path)); err != nil {
-				return fmt.Errorf("index game name: %w", err)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("update names transaction: %w", err)
-	}
-	return nil
-}
-
 type IndexStatus struct {
 	SystemID string
 	Total    int
 	Step     int
 	Files    int
-}
-
-// Given a list of systems, index all valid game files on disk and write a
-// names index to the DB. Overwrites any existing names index, but does not
-// clean up old missing files.
-//
-// Takes a function which will be called with the current status of the index
-// during key steps.
-//
-// Returns the total number of files indexed.
-func NewNamesIndex(
-	cfg *config.UserConfig,
-	systems []games.System,
-	update func(IndexStatus),
-) (int, error) {
-	status := IndexStatus{
-		Total: len(systems) + 1,
-		Step:  1,
-	}
-
-	db, err := openNames()
-	if err != nil {
-		return status.Files, fmt.Errorf("error opening gamesdb: %w", err)
-	}
-	defer func() { _ = db.Close() }()
-
-	update(status)
-	systemPaths := make(map[string][]string, 0)
-	paths := games.GetSystemPaths(cfg, systems)
-	for i := range paths {
-		systemPaths[paths[i].System.Id] = append(systemPaths[paths[i].System.Id], paths[i].Path)
-	}
-
-	g := new(errgroup.Group)
-
-	for _, k := range utils.AlphaMapKeys(systemPaths) {
-		status.SystemID = k
-		status.Step++
-		update(status)
-
-		files := make([]fileInfo, 0)
-
-		for _, path := range systemPaths[k] {
-			pathFiles, filesErr := games.GetFiles(k, path)
-			if filesErr != nil {
-				return status.Files, fmt.Errorf("error getting files: %w", filesErr)
-			}
-
-			if len(pathFiles) == 0 {
-				continue
-			}
-
-			for pf := range pathFiles {
-				files = append(files, fileInfo{SystemID: k, Path: pathFiles[pf]})
-			}
-		}
-
-		if len(files) == 0 {
-			continue
-		}
-
-		status.Files += len(files)
-
-		g.Go(func() error {
-			return updateNames(db, files)
-		})
-	}
-
-	status.Step++
-	status.SystemID = ""
-	update(status)
-
-	err = g.Wait()
-	if err != nil {
-		return status.Files, fmt.Errorf("error updating names index: %w", err)
-	}
-
-	err = writeIndexedSystems(db, utils.AlphaMapKeys(systemPaths))
-	if err != nil {
-		return status.Files, fmt.Errorf("error writing indexed systems: %w", err)
-	}
-
-	err = db.Sync()
-	if err != nil {
-		return status.Files, fmt.Errorf("error syncing database: %w", err)
-	}
-
-	return status.Files, nil
 }
 
 type SearchResult struct {
@@ -265,11 +132,13 @@ func searchNamesGeneric(
 	query string,
 	test func(string, string) bool,
 ) ([]SearchResult, error) {
-	if !DBExists() {
-		return nil, errors.New("gamesdb does not exist")
-	}
+	return searchNamesAt(config.GamesDB, systems, query, test)
+}
 
-	db, err := open(&bolt.Options{ReadOnly: true})
+func searchNamesAt(
+	path string, systems []games.System, query string, test func(string, string) bool,
+) ([]SearchResult, error) {
+	db, err := openAt(path, &bolt.Options{ReadOnly: true})
 	if err != nil {
 		return nil, fmt.Errorf("open games database for search: %w", err)
 	}
