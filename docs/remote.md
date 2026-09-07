@@ -99,6 +99,8 @@ Remote retains its first observed slot layout and refuses further access if it d
 
 The `announce_game_url` webhook is sent in the background. Earlier versions posted it inline while the tracker was locked, so an endpoint that had gone offline froze core and game tracking for the full 15-second timeout on every core change. Requests are queued; if the endpoint cannot keep up, events are dropped and logged rather than delaying tracking.
 
+Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh` already has, so a `#!/bin/bash` script is not rewritten to `#!/bin/sh`. Uninstalling when Remote is the only entry now succeeds; it previously reported "no startup entries to save" and left the entry in place, so the service returned on the next boot.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
