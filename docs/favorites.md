@@ -172,7 +172,7 @@ Favorites preserves non-interactive startup behavior:
 /media/fat/Scripts/favorites.sh refresh
 ```
 
-Refresh repairs shortcuts whose target is a dated core (such as `NES_20260101.rbf`), even when the favorite has a custom name such as `Nintendo.rbf`. Custom names are preserved; dated favorite names follow the replacement core's date. Both absolute and relative symlink targets are supported. Broken shortcuts without a replacement are removed. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
+Refresh repairs shortcuts whose target is a dated core (such as `NES_20260101.rbf`), even when the favorite has a custom name such as `Nintendo.rbf`. Custom names are preserved; dated favorite names follow the replacement core's date. Both absolute and relative symlink targets are supported. Broken shortcuts without a replacement are removed, unless the target lives on a removable or network drive that is not attached: refresh also runs at boot, before USB and network mounts settle, so favorites pointing at an unplugged drive or a powered-off NAS are left alone rather than deleted. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
 
 ## Uninstall
 

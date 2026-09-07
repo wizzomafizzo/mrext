@@ -52,7 +52,9 @@ Clean Up asks for confirmation, then checks `.mgl` targets. It removes shortcuts
 
 Malformed, unreadable or ambiguous shortcuts, invalid/unreadable archives, and core-only launchers are kept. Cleanup checks every file target in custom multi-file MGLs; an unknown target prevents deletion. Menu symlinks are not traversed. The summary reports checked and removed shortcuts, pruned folders and unreadable paths.
 
-**Reconnect removable drives and mount network libraries before cleanup.** A disconnected library can look like missing games. Cleanup is never automatic and has no undo; back up custom shortcuts first.
+Shortcuts pointing at a removable or network drive that is not attached are skipped, not removed, and counted in the summary as "Skipped (storage not attached)". An unmounted drive leaves its mount point behind as an empty directory, so a missing target there means the drive is absent rather than the game deleted.
+
+**Reconnect removable drives and mount network libraries before cleanup** if you want those libraries checked. Cleanup is never automatic and has no undo; back up custom shortcuts first.
 
 ## Settings and configuration
 
