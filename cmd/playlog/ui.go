@@ -170,25 +170,45 @@ func confirmUninstall(pages *tview.Pages, app *tview.Application, svc *service.S
 		done)
 }
 
+// uninstallService keeps the blocking half off the event goroutine. Stopping a
+// service waits for the process to exit and rewriting user-startup.sh is disk
+// I/O, and doing either inline froze the screen for as long as it took.
+// ServicePage.run already keeps Start, Stop and Restart off it, but Uninstall
+// is called straight from its button and has to arrange this itself.
 func uninstallService(pages *tview.Pages, app *tview.Application, svc *service.Service, done func()) {
-	var report strings.Builder
-	if svc.Running() {
-		if err := svc.Stop(); err != nil {
-			_, _ = fmt.Fprintf(&report, "Could not stop the service: %s\n", err)
-		} else {
-			_, _ = report.WriteString("Stopped the service.\n")
-		}
+	report := &strings.Builder{}
+	options := tui.ProgressOptions{Initial: tui.ProgressUpdate{Text: "Stopping the service..."}}
+	tui.ShowProgressModal(pages, app, options, func(update func(tui.ProgressUpdate)) error {
+		stopService(svc, report)
+		update(tui.ProgressUpdate{Text: "Removing the startup entry..."})
+		clearStartupEntry(report)
+		return nil
+	}, func(error) {
+		// playlog.db is never touched here: it is the user's play history, and
+		// the docs are explicit that it should outlive an uninstall.
+		_, _ = fmt.Fprintf(report, "\nYour history is still in %s.\n", config.PlayLogDbFile)
+		_, _ = fmt.Fprintf(report, "Delete %s/playlog.sh to finish.", config.ScriptsFolder)
+		tui.ShowInfoModal(pages, app, "Uninstall "+appTitle, report.String(), done)
+	})
+}
+
+func stopService(svc *service.Service, report *strings.Builder) {
+	if !svc.Running() {
+		return
 	}
+	if err := svc.Stop(); err != nil {
+		_, _ = fmt.Fprintf(report, "Could not stop the service: %s\n", err)
+		return
+	}
+	_, _ = report.WriteString("Stopped the service.\n")
+}
+
+func clearStartupEntry(report *strings.Builder) {
 	if err := removeFromStartup(); err != nil {
-		_, _ = fmt.Fprintf(&report, "Could not remove the startup entry: %s\n", err)
-	} else {
-		_, _ = report.WriteString("Removed the startup entry.\n")
+		_, _ = fmt.Fprintf(report, "Could not remove the startup entry: %s\n", err)
+		return
 	}
-	// playlog.db is never touched here: it is the user's play history, and the
-	// docs are explicit that it should outlive an uninstall.
-	_, _ = fmt.Fprintf(&report, "\nYour history is still in %s.\n", config.PlayLogDbFile)
-	_, _ = fmt.Fprintf(&report, "Delete %s/playlog.sh to finish.", config.ScriptsFolder)
-	tui.ShowInfoModal(pages, app, "Uninstall "+appTitle, report.String(), done)
+	_, _ = report.WriteString("Removed the startup entry.\n")
 }
 
 func startupInstalled() (bool, error) {

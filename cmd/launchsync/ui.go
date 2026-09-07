@@ -77,11 +77,16 @@ func showSyncScreen(cfg *config.UserConfig) (started bool, err error) {
 				}
 				return nil
 			}, func(syncErr error) {
+				summary := func() { showSummary(pages, app, outcomes, lines) }
 				if syncErr != nil {
-					tui.ShowErrorModal(pages, app, syncErr.Error(), app.Stop)
+					// Go to the summary afterwards rather than stopping. A sync
+					// that fails partway has already linked games, and Details is
+					// the only place the log exists when the console path is not
+					// the one being used.
+					tui.ShowErrorModal(pages, app, syncErr.Error(), summary)
 					return
 				}
-				showSummary(pages, app, outcomes, lines)
+				summary()
 			})
 		})
 		return app, nil

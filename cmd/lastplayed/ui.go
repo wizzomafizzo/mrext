@@ -126,26 +126,45 @@ func confirmUninstall(
 		done)
 }
 
+// uninstallService keeps the blocking half off the event goroutine. Stopping a
+// service waits for the process to exit and rewriting user-startup.sh is disk
+// I/O, and doing either inline froze the screen for as long as it took.
+// ServicePage.run already keeps Start, Stop and Restart off it, but Uninstall
+// is called straight from its button and has to arrange this itself.
 func uninstallService(
 	pages *tview.Pages, app *tview.Application, svc *service.Service, cfg *config.UserConfig, done func(),
 ) {
-	var report strings.Builder
-	if svc.Running() {
-		if err := svc.Stop(); err != nil {
-			_, _ = fmt.Fprintf(&report, "Could not stop the service: %s\n", err)
-		} else {
-			_, _ = report.WriteString("Stopped the service.\n")
-		}
-	}
-	if err := removeFromStartup(); err != nil {
-		_, _ = fmt.Fprintf(&report, "Could not remove the startup entry: %s\n", err)
-	} else {
-		_, _ = report.WriteString("Removed the startup entry.\n")
-	}
+	report := &strings.Builder{}
+	options := tui.ProgressOptions{Initial: tui.ProgressUpdate{Text: "Stopping the service..."}}
+	tui.ShowProgressModal(pages, app, options, func(update func(tui.ProgressUpdate)) error {
+		stopService(svc, report)
+		update(tui.ProgressUpdate{Text: "Removing the startup entry..."})
+		clearStartupEntry(report)
+		return nil
+	}, func(error) {
+		// Config and generated menu entries are asked about separately, and only
+		// after the service is actually stopped.
+		askRemoveShortcuts(pages, app, cfg, report, done)
+	})
+}
 
-	// Config and generated menu entries are asked about separately, and only
-	// after the service is actually stopped.
-	askRemoveShortcuts(pages, app, cfg, &report, done)
+func stopService(svc *service.Service, report *strings.Builder) {
+	if !svc.Running() {
+		return
+	}
+	if err := svc.Stop(); err != nil {
+		_, _ = fmt.Fprintf(report, "Could not stop the service: %s\n", err)
+		return
+	}
+	_, _ = report.WriteString("Stopped the service.\n")
+}
+
+func clearStartupEntry(report *strings.Builder) {
+	if err := removeFromStartup(); err != nil {
+		_, _ = fmt.Fprintf(report, "Could not remove the startup entry: %s\n", err)
+		return
+	}
+	_, _ = report.WriteString("Removed the startup entry.\n")
 }
 
 func askRemoveShortcuts(
@@ -158,8 +177,11 @@ func askRemoveShortcuts(
 	tui.ShowConfirmModal(pages, app, "Remove shortcuts",
 		"Also delete the generated Last Played shortcut and Recently Played folder?",
 		func() {
-			removeGenerated(cfg, report)
-			finish()
+			options := tui.ProgressOptions{Initial: tui.ProgressUpdate{Text: "Removing shortcuts..."}}
+			tui.ShowProgressModal(pages, app, options, func(func(tui.ProgressUpdate)) error {
+				removeGenerated(cfg, report)
+				return nil
+			}, func(error) { finish() })
 		},
 		finish)
 }
