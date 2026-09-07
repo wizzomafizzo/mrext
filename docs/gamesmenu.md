@@ -77,6 +77,14 @@ Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `mon
 
 To add libraries, repeat `games_folder` under `[systems]`. Each root and its `games` subfolder are considered. Built-in roots remain enabled on MiSTer. Shared `[systems] set_core` overrides are honored when generating new shortcuts, for example `set_core = NES:_Console/Custom`. Existing shortcuts are not rewritten when overrides change.
 
+### Shared interface settings
+
+Theme, mouse, CRT mode and on-screen keyboard can be set once for every mrext app instead of app by app.
+
+Each app reads these in order: its own `[tui]` section, then `/media/fat/Scripts/.config/mrext/tui.ini`, then the built-in defaults. An app's own INI still wins for any key it declares, so nothing changes until you ask for it.
+
+The settings screen has a **Use in all apps** row. It writes the current interface settings to the shared file and removes those four keys from this app's INI, so this app follows the shared file from then on. Other apps pick it up the next time they start, unless their own INI still sets those keys.
+
 ## names.txt
 
 `/media/fat/names.txt` supplies display and menu folder names:

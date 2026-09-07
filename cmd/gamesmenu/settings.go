@@ -20,9 +20,6 @@
 package main
 
 import (
-	"fmt"
-	"sort"
-
 	"github.com/wizzomafizzo/mrext/pkg/gamesmenu"
 	"github.com/wizzomafizzo/mrext/pkg/tui"
 )
@@ -51,27 +48,44 @@ func (s *settingsPage) show(selection int) {
 	s.list.AddHeader("Interface")
 	s.actions = append(s.actions, nil)
 	s.help = append(s.help, "Controller-friendly interface and display options")
-	s.addRow("Theme", themeLabel(s.staged.Theme), func() {
-		names := make([]string, 0, len(tui.AvailableThemes))
-		for name := range tui.AvailableThemes {
-			names = append(names, name)
-		}
-		sort.Strings(names)
-		choices := make([]tui.Choice, len(names))
+	// tui.ThemeNames, not sorted map keys: the picker has to offer the themes
+	// in the same order here as it does in BGM and Favorites.
+	s.addRow("Theme", tui.ThemeLabel(s.staged.Theme), func() {
+		choices := make([]tui.Choice, len(tui.ThemeNames))
 		selected := 0
-		for index, name := range names {
-			choices[index] = tui.Choice{Label: themeLabel(name), Help: "Use the " + themeLabel(name) + " color theme"}
+		for index, name := range tui.ThemeNames {
+			choices[index] = tui.Choice{Label: tui.ThemeLabel(name), Help: "Applied after saving settings."}
 			if name == s.staged.Theme {
 				selected = index
 			}
 		}
 		tui.ShowChoiceModal(s.ui.pages, s.ui.app, "Theme", choices, selected, func(index int) {
-			s.staged.Theme = names[index]
+			s.staged.Theme = tui.ThemeNames[index]
 			s.show(1)
 		}, func() { s.show(1) })
 	})
-	s.addRow("Mouse", boolLabel(s.staged.Mouse), func() { s.staged.Mouse = !s.staged.Mouse; s.show(2) })
-	s.addRow("CRT mode", boolLabel(s.staged.CRTMode), func() { s.staged.CRTMode = !s.staged.CRTMode; s.show(3) })
+	s.addRow("Mouse", tui.BoolLabel(s.staged.Mouse), func() { s.staged.Mouse = !s.staged.Mouse; s.show(2) })
+	s.addRow("CRT mode", tui.BoolLabel(s.staged.CRTMode), func() { s.staged.CRTMode = !s.staged.CRTMode; s.show(3) })
+	// GamesMenu has no text entry, so it has no on-screen keyboard setting;
+	// sharing still carries the value it inherited so other apps keep theirs.
+	s.addRow(tui.ShareInterfaceSettingsLabel, "", func() {
+		row := s.list.GetCurrentItem()
+		options := tui.ApplicationOptions{
+			Theme:            s.staged.Theme,
+			Mouse:            s.staged.Mouse,
+			CRTMode:          s.staged.CRTMode,
+			OnScreenKeyboard: s.ui.cfg.TUI.OnScreenKeyboard,
+		}
+		tui.ConfirmShareInterfaceSettings(s.ui.pages, s.ui.app, s.ui.cfg.IniPath, options,
+			func(err error) {
+				if err != nil {
+					s.ui.showError(err, func() { s.show(row) })
+					return
+				}
+				s.show(row)
+			},
+			func() { s.show(row) })
+	})
 	activate := func() {
 		if action := s.actions[s.list.GetCurrentItem()]; action != nil {
 			action()
@@ -79,10 +93,10 @@ func (s *settingsPage) show(selection int) {
 	}
 	s.list.SetSelectedFunc(func(int, string, string, rune) { activate() })
 	bar := tui.NewButtonBar(s.ui.app).
-		AddButtonWithHelp("Change", "Change the selected setting", activate).
-		AddButtonWithHelp("Save", "Save settings and return to GamesMenu", s.save).
-		AddButtonWithHelp("Cancel", "Return without saving settings", s.back).SetupNavigation(s.back)
-	frame := tui.NewPageFrame(s.ui.app).SetTitle("GamesMenu Settings").
+		AddButtonWithHelp("Change", "Change selected setting", activate).
+		AddButtonWithHelp("Save", "Save settings and return", s.save).
+		AddButtonWithHelp("Cancel", "Discard changes and return", s.back).SetupNavigation(s.back)
+	frame := tui.NewPageFrame(s.ui.app).SetTitle(appTitle, "Settings").
 		SetContent(s.list).SetButtonBar(bar).SetOnEscape(s.back)
 	bar.SetHelpCallback(func(text string) { frame.SetHelpText(text) })
 	s.list.SetRowChangedFunc(func(index int) {
@@ -98,7 +112,11 @@ func (s *settingsPage) show(selection int) {
 }
 
 func (s *settingsPage) addRow(label, value string, action func()) {
-	s.list.AddRow(fmt.Sprintf("%s: %s", label, value), tui.MenuRowItem)
+	text := label
+	if value != "" {
+		text = label + ": " + value
+	}
+	s.list.AddRow(text, tui.MenuRowAction)
 	s.actions = append(s.actions, action)
 	s.help = append(s.help, settingHelp(label))
 }
@@ -123,22 +141,6 @@ func (s *settingsPage) save() {
 	s.ui.options = tui.ApplicationOptions{
 		Theme: s.ui.cfg.TUI.Theme, Mouse: s.ui.cfg.TUI.Mouse, CRTMode: s.ui.cfg.TUI.CRTMode,
 	}
-	_ = tui.SetCurrentTheme(s.ui.options.Theme)
-	s.ui.app.EnableMouse(s.ui.options.Mouse)
-	s.ui.app.SetRoot(tui.WrapRoot(s.ui.options, s.ui.pages), true)
+	tui.ApplyOptions(s.ui.app, s.ui.pages, s.ui.options)
 	s.ui.renderMain()
-}
-
-func themeLabel(name string) string {
-	if theme := tui.AvailableThemes[name]; theme != nil {
-		return theme.DisplayName
-	}
-	return name
-}
-
-func boolLabel(value bool) string {
-	if value {
-		return "Yes"
-	}
-	return "No"
 }

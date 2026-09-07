@@ -210,6 +210,14 @@ Commands are processed one at a time and wait while a core boot sound plays, exa
 
 A playlist stops itself if nothing will play. Tracks that return immediately, because the file is invalid or the player for its format is not installed, are retried with a pause and then abandoned after five in a row. Earlier versions looped on them as fast as the CPU allowed and filled the log.
 
+### Shared interface settings
+
+Theme, mouse, CRT mode and on-screen keyboard can be set once for every mrext app instead of app by app.
+
+Each app reads these in order: its own `[tui]` section, then `/media/fat/Scripts/.config/mrext/tui.ini`, then the built-in defaults. An app's own INI still wins for any key it declares, so nothing changes until you ask for it.
+
+The settings screen has a **Use in all apps** row. It writes the current interface settings to the shared file and removes those four keys from this app's INI, so this app follows the shared file from then on. Other apps pick it up the next time they start, unless their own INI still sets those keys.
+
 ## Logging
 
 With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players. Actionable radio failures are also logged with debug off, with identical repeated failures suppressed.

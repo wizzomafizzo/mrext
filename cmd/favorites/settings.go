@@ -85,15 +85,16 @@ func (s *settingsPage) show(selection int) {
 	s.list.AddHeader("Interface")
 	themes := make([]tui.Choice, 0, len(tui.ThemeNames))
 	for _, name := range tui.ThemeNames {
-		themes = append(themes, tui.Choice{Label: themeLabel(name), Help: "Applied after saving settings."})
+		themes = append(themes, tui.Choice{Label: tui.ThemeLabel(name), Help: "Applied after saving settings."})
 	}
 	themeIndex := slices.Index(tui.ThemeNames, s.staged.Theme)
-	s.addChoice("Theme", themeLabel(s.staged.Theme), themes, themeIndex, func(index int) {
+	s.addChoice("Theme", tui.ThemeLabel(s.staged.Theme), themes, themeIndex, func(index int) {
 		s.staged.Theme = tui.ThemeNames[index]
 	})
 	s.addToggle("Mouse", &s.staged.Mouse)
 	s.addToggle("CRT mode", &s.staged.CRTMode)
 	s.addToggle("On-screen keyboard", &s.staged.OnScreenKeyboard)
+	s.addShareRow()
 
 	s.list.SetCurrentItem(selection)
 	change := func() {
@@ -109,7 +110,7 @@ func (s *settingsPage) show(selection int) {
 		AddButtonWithHelp("Cancel", "Discard changes and return", back).
 		SetupNavigation(back)
 	frame := tui.NewPageFrame(s.ui.app).
-		SetTitle("Favorites Manager", "Settings").
+		SetTitle(appTitle, "Settings").
 		SetContent(s.list).
 		SetHelpText("Change settings, then save or cancel.").
 		SetButtonBar(bar).
@@ -120,6 +121,31 @@ func (s *settingsPage) show(selection int) {
 	frame.SetupContentToButtonNavigation()
 	s.ui.pages.AddAndSwitchToPage(pageSettings, frame, true)
 	s.ui.app.SetFocus(s.list)
+}
+
+// addShareRow offers the staged interface settings to every other mrext app.
+func (s *settingsPage) addShareRow() {
+	index := s.list.GetItemCount()
+	s.list.AddRow(tui.ShareInterfaceSettingsLabel, tui.MenuRowAction)
+	s.help[index] = tui.ShareInterfaceSettingsHelp
+	s.actions[index] = func() {
+		selection := s.list.GetCurrentItem()
+		options := tui.ApplicationOptions{
+			Theme:            s.staged.Theme,
+			Mouse:            s.staged.Mouse,
+			CRTMode:          s.staged.CRTMode,
+			OnScreenKeyboard: s.staged.OnScreenKeyboard,
+		}
+		tui.ConfirmShareInterfaceSettings(s.ui.pages, s.ui.app, s.ui.cfg.IniPath, options,
+			func(err error) {
+				if err != nil {
+					s.ui.showError(err, func() { s.show(selection) })
+					return
+				}
+				s.show(selection)
+			},
+			func() { s.show(selection) })
+	}
 }
 
 func (s *settingsPage) addRow(label, value string, action func()) {
@@ -232,9 +258,7 @@ func (s *settingsPage) apply() {
 		CRTMode:          s.ui.cfg.TUI.CRTMode,
 		OnScreenKeyboard: s.ui.cfg.TUI.OnScreenKeyboard,
 	}
-	_ = tui.SetCurrentTheme(s.ui.options.Theme)
-	s.ui.app.EnableMouse(s.ui.options.Mouse)
-	s.ui.app.SetRoot(tui.WrapRoot(s.ui.options, s.ui.pages), true)
+	tui.ApplyOptions(s.ui.app, s.ui.pages, s.ui.options)
 }
 
 func alternateCoreLabel(mode string) string {
@@ -248,11 +272,4 @@ func alternateCoreLabel(mode string) string {
 	default:
 		return "Standard"
 	}
-}
-
-func themeLabel(name string) string {
-	if theme := tui.AvailableThemes[name]; theme != nil {
-		return theme.DisplayName
-	}
-	return name
 }

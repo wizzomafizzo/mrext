@@ -19,6 +19,8 @@
 
 package main
 
+import "github.com/wizzomafizzo/mrext/pkg/tui"
+
 var settingsHelp = map[string]string{
 	"Default folder":          "Folder created at startup when no Favorites folders exist.",
 	"Folder name matches":     "Name fragments used to find Favorites folders, such as fav.",
@@ -29,8 +31,11 @@ var settingsHelp = map[string]string{
 	"Core prefix":             "Prefix standard RBF paths for custom setups; normally leave empty.",
 	"Additional game folders": "Extra game-library roots to recognize alongside SD and USB roots.",
 	"Alternate core":          "Choose Standard, LLAPI, YC or RetroAchievements for new game favorites.",
-	"Theme":                   "Choose a color palette to apply after saving.",
-	"Mouse":                   "Enable mouse input alongside keyboard and controller navigation.",
-	"CRT mode":                "Use a compact 75-column, 15-row layout for CRT displays.",
-	"On-screen keyboard":      "Use controller-friendly text entry; Off needs a physical keyboard.",
+}
+
+func init() {
+	// The four interface settings read the same in every app.
+	for label, help := range tui.InterfaceSettingsHelp {
+		settingsHelp[label] = help
+	}
 }

@@ -153,6 +153,15 @@ func LoadUserConfigAt(iniPath, appPath string, defaultConfig *UserConfig) (*User
 	defaultConfig.AppPath = appPath
 	defaultConfig.IniPath = iniPath
 
+	// Layer the shared [tui] file under the app's own INI. go-ini only assigns
+	// fields the file actually declares, so seeding here and mapping the app
+	// INI over it gives: app INI, then shared file, then built-in defaults.
+	shared, sharedErr := LoadSharedTUI(defaultConfig.TUI)
+	if sharedErr != nil {
+		return defaultConfig, sharedErr
+	}
+	defaultConfig.TUI = shared
+
 	// #nosec G703 -- configuration path is explicitly selected by caller.
 	if _, statErr := os.Stat(iniPath); statErr != nil {
 		if os.IsNotExist(statErr) {

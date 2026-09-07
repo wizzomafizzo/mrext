@@ -101,3 +101,29 @@ func (r *responsiveWrapper) MouseHandler() func(
 ) (bool, tview.Primitive) {
 	return r.child.MouseHandler()
 }
+
+// BoolLabel renders a toggle. One spelling across every app: GamesMenu used to
+// say Yes/No while BGM and Favorites said On/Off for the same kind of setting.
+func BoolLabel(value bool) string {
+	if value {
+		return "On"
+	}
+	return "Off"
+}
+
+// ApplyOptions applies saved interface settings to a running application.
+// Every settings page repeated this same three-step block after saving.
+func ApplyOptions(app *tview.Application, root tview.Primitive, options ApplicationOptions) {
+	_ = SetCurrentTheme(options.Theme)
+	app.EnableMouse(options.Mouse)
+	app.SetRoot(WrapRoot(options, root), true)
+}
+
+// InterfaceSettingsHelp is the footer help for the shared [tui] settings, so
+// the same setting reads the same way in every app.
+var InterfaceSettingsHelp = map[string]string{
+	"Theme":              "Choose a color palette to apply after saving.",
+	"Mouse":              "Enable mouse input alongside keyboard and controller navigation.",
+	"CRT mode":           "Use a compact 75-column, 15-row layout for CRT displays.",
+	"On-screen keyboard": "Use controller-friendly text entry; Off needs a physical keyboard.",
+}

@@ -298,7 +298,7 @@ func TestSettingsStageSaveHelpAndDiscard(t *testing.T) {
 	view := newWorkflowUI(t, false)
 	settings := newSettingsPage(view)
 	settings.show(1)
-	if len(settings.actions) != 4 {
+	if len(settings.actions) != 5 {
 		t.Fatalf("rows: %d", len(settings.actions))
 	}
 	for index, help := range settings.help {

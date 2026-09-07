@@ -32,7 +32,9 @@ import (
 )
 
 const (
-	pageMain    = "favorites_main"
+	pageMain = "favorites_main"
+	// appTitle is the first segment of every page title.
+	appTitle    = "Favorites Manager"
 	pageBrowser = "favorites_browser"
 	pageFolder  = "favorites_folder"
 	pageModify  = "favorites_modify"
@@ -132,7 +134,7 @@ func (u *ui) showMain() error {
 		AddButtonWithHelp("Exit", "Exit Favorites Manager", u.app.Stop).
 		SetupNavigation(u.app.Stop)
 	frame := tui.NewPageFrame(u.app).
-		SetTitle("Favorites Manager").
+		SetTitle(appTitle).
 		SetContent(list).
 		SetHelpText("Add a new favorite or select an existing one to modify.").
 		SetButtonBar(bar).
@@ -259,7 +261,7 @@ func (u *ui) showBrowser(folder string) {
 		AddButtonWithHelp("Cancel", "Return to Favorites Manager", u.mustShowMain).
 		SetupNavigation(back)
 	frame := tui.NewPageFrame(u.app).
-		SetTitle("Favorites Manager", "Select Favorite").
+		SetTitle(appTitle, "Select Favorite").
 		SetContent(list).
 		SetHelpText(folder).
 		SetButtonBar(bar).
@@ -352,7 +354,7 @@ func (u *ui) showFolderPicker(
 	bar.AddButtonWithHelp("Cancel", "Cancel folder selection", onCancel).
 		SetupNavigation(onCancel)
 	frame := tui.NewPageFrame(u.app).
-		SetTitle("Favorites Manager", title).
+		SetTitle(appTitle, title).
 		SetContent(list).
 		SetHelpText(title + ".").
 		SetButtonBar(bar).
@@ -406,7 +408,7 @@ func (u *ui) showModify(item *favorites.Favorite) {
 		AddItem(details, 7, 0, false).
 		AddItem(list, 0, 1, true)
 	frame := tui.NewPageFrame(u.app).
-		SetTitle("Favorites Manager", "Modify").
+		SetTitle(appTitle, "Modify").
 		SetContent(content).
 		SetFocusTarget(list).
 		SetHelpText("Select an action.").
