@@ -4,12 +4,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	_ "github.com/joho/godotenv/autoload"
 
@@ -351,4 +353,50 @@ func Coverage() {
 func GenSystemsDoc() {
 	mg.Deps(GenerateSystemMetadata)
 	_ = sh.RunV("go", "run", "./internal/gensystemsdoc")
+}
+
+// conflictMarkers are the markers git leaves in a file when a merge is not
+// finished. One reached main once already, so this is checked, not trusted.
+var conflictMarkers = []string{"<<<<<<< ", "=======", ">>>>>>> "}
+
+// CheckConflicts fails when a tracked text file still contains merge conflict
+// markers. Only "=======" paired with one of the other two counts, so tables
+// and setext headings in Markdown do not trip it.
+func CheckConflicts() error {
+	tracked, err := sh.Output("git", "ls-files", "-z")
+	if err != nil {
+		return fmt.Errorf("list tracked files: %w", err)
+	}
+
+	var found []string
+	for _, name := range strings.Split(tracked, "\x00") {
+		if name == "" {
+			continue
+		}
+		contents, readErr := os.ReadFile(name)
+		if readErr != nil {
+			// Unreadable or removed from the work tree; nothing to check.
+			continue
+		}
+		if bytes.IndexByte(contents, 0) >= 0 {
+			continue
+		}
+		var opened, separated bool
+		for index, line := range strings.Split(string(contents), "\n") {
+			switch {
+			case strings.HasPrefix(line, conflictMarkers[0]):
+				opened = true
+			case opened && strings.TrimRight(line, "\r") == conflictMarkers[1]:
+				separated = true
+			case separated && strings.HasPrefix(line, conflictMarkers[2]):
+				found = append(found, fmt.Sprintf("%s:%d", name, index+1))
+				opened, separated = false, false
+			}
+		}
+	}
+
+	if len(found) > 0 {
+		return fmt.Errorf("merge conflict markers in tracked files: %s", strings.Join(found, ", "))
+	}
+	return nil
 }
