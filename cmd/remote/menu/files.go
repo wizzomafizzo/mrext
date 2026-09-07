@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -34,11 +33,11 @@ import (
 
 const CreateTypeFolder = "folder"
 
-func cleanPath(path string) string {
-	path = filepath.Clean(path)
-	path = removeRoot.ReplaceAllLiteralString(path, "")
-	path = filepath.Join(config.SdFolder, path)
-	return path
+// rejectBadPath reports a path that does not resolve inside the menu root, or
+// names something MiSTer needs to boot, and answers the request.
+func rejectBadPath(w http.ResponseWriter, logger *service.Logger, action string, err error) {
+	http.Error(w, err.Error(), http.StatusBadRequest)
+	logger.Error("rejected %s request: %s", action, err)
 }
 
 func HandleCreateFile(logger *service.Logger) http.HandlerFunc {
@@ -59,7 +58,11 @@ func HandleCreateFile(logger *service.Logger) http.HandlerFunc {
 		}
 
 		if args.Type == CreateTypeFolder {
-			folder := cleanPath(args.Folder)
+			folder, pathErr := resolveMenuPath(args.Folder)
+			if pathErr != nil {
+				rejectBadPath(w, logger, "create menu file", pathErr)
+				return
+			}
 			name := "_" + utils.StripBadFileChars(args.Name)
 			path := filepath.Join(folder, name)
 			logger.Info("creating folder: %s", path)
@@ -90,8 +93,16 @@ func HandleRenameFile(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		fromPath := cleanPath(args.FromPath)
-		toPath := cleanPath(args.ToPath)
+		fromPath, pathErr := resolveMenuPath(args.FromPath)
+		if pathErr != nil {
+			rejectBadPath(w, logger, "rename menu file", pathErr)
+			return
+		}
+		toPath, pathErr := resolveMenuPath(args.ToPath)
+		if pathErr != nil {
+			rejectBadPath(w, logger, "rename menu file", pathErr)
+			return
+		}
 
 		toParent := filepath.Dir(toPath)
 		toFilename := filepath.Base(toPath)
@@ -153,7 +164,11 @@ func HandleDeleteFile(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		path := cleanPath(args.Path)
+		path, pathErr := resolveMenuPath(args.Path)
+		if pathErr != nil {
+			rejectBadPath(w, logger, "delete menu file", pathErr)
+			return
+		}
 
 		file, err := os.Stat(path)
 		if err != nil {
@@ -166,13 +181,13 @@ func HandleDeleteFile(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
+		// resolveMenuPath has already rejected anything outside the SD root
+		// and every protected boot file. What is left is the root itself,
+		// which resolves cleanly, and the rule that only menu folders may be
+		// removed as a tree.
 		invalidPath := false
 		switch {
 		case path == "", path == config.SdFolder, path == config.SdFolder+"/":
-			invalidPath = true
-		case strings.HasPrefix(path, config.SdFolder+"/MiSTer"):
-			invalidPath = true
-		case path == config.SdFolder+"/menu.rbf":
 			invalidPath = true
 		case file.IsDir() && file.Name() != "" && file.Name()[0] != '_':
 			invalidPath = true
