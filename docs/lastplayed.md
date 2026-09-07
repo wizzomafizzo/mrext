@@ -89,7 +89,7 @@ If set to `yes`, the last played shortcut will not be created.
 |------------------------|-------------------|
 | `recent_folder_name`   | Recently Played   |
 
-The name of the folder which contains the recently played games.
+The name of the folder which contains the recently played games. LastPlayed adds the menu prefix `_` on disk: `recent_folder_name = Game History` creates `/media/fat/_Game History`. Restart the LastPlayed service after changing `lastplayed.ini`; it is not reloaded while running. Changing this setting creates/uses the new folder and does not move or delete the old folder.
 
 Keep in mind these characters are not allowed in a filename: `\/:*?"<>|`
 
@@ -100,6 +100,14 @@ Keep in mind these characters are not allowed in a filename: `\/:*?"<>|`
 | `disable_recent_folder`  | no      |
 
 If set to `yes`, the recent folder will not be created.
+
+## Troubleshooting recent launchers
+
+Current MiSTer resolves MGL media paths from the core's games directory, not from the directory containing the MGL. RBF paths are resolved from the MiSTer root. Moving a current generated launcher into Recently Played therefore does not require adding another `../` to its paths. Root and recent shortcuts use the same shared generator.
+
+After updating LastPlayed, launch an affected game normally to regenerate its Last Played and recent shortcuts. This refreshes that game's entry, not every existing shortcut. Back up old entries before manual changes; there is no need to delete the entire recent folder. Unnumbered user launchers are left alone.
+
+If a recent shortcut still loads only the core, keep a copy of the failing MGL before replaying the game. Compare it with the regenerated root shortcut, and report both files, their locations, the full media path, and the MiSTer/core versions. Local regression fixtures cover NES/PSX, renamed folders, deep media paths, spaces/punctuation, and replay regeneration; they do not replace a device reproduction of a location-sensitive failure.
 
 ## Launching Last Played Game on MiSTer Startup
 
