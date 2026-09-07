@@ -37,7 +37,10 @@ import (
 func tryAddStartup() error {
 	var startup mister.Startup
 	if err := startup.Load(); err != nil {
+		// Continuing with a zero-value Startup would rewrite user-startup.sh
+		// from scratch and drop every other entry in it.
 		logger.Error("failed to load startup file: %s", err)
+		return fmt.Errorf("load startup configuration: %w", err)
 	}
 	if startup.Exists("mrext/" + appName) {
 		return nil

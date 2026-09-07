@@ -20,7 +20,6 @@
 package mister
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -31,8 +30,27 @@ import (
 // TODO: delete entry from startup
 // TODO: enable/disable entry in startup
 
+// defaultShebang is used only when the script does not exist yet or has none.
+// It stays as it has always been; the fix here is to stop overwriting the one
+// a user already has, not to pick a different one for them.
+const defaultShebang = "#!/bin/sh"
+
+//nolint:govet // Entries stays first: it is the field callers construct.
 type Startup struct {
 	Entries []StartupEntry
+	// Path overrides config.StartupFile, so tests can work on a temp root.
+	Path string
+	// shebang is whatever the file already began with. MiSTer's own docs use
+	// #!/bin/bash and the generated entries use bash-only [[ ]] tests, so
+	// rewriting it to #!/bin/sh on every save could break a user's script.
+	shebang string
+}
+
+func (s *Startup) path() string {
+	if s.Path != "" {
+		return s.Path
+	}
+	return config.StartupFile
 }
 
 type StartupEntry struct {
@@ -44,7 +62,7 @@ type StartupEntry struct {
 func (s *Startup) Load() error {
 	var entries []StartupEntry
 
-	contents, err := os.ReadFile(config.StartupFile)
+	contents, err := os.ReadFile(s.path())
 	if os.IsNotExist(err) {
 		contents = []byte{}
 	} else if err != nil {
@@ -57,6 +75,7 @@ func (s *Startup) Load() error {
 	section := make([]string, 0)
 	for i, line := range lines {
 		if i == 0 && strings.HasPrefix(line, "#!") {
+			s.shebang = line
 			continue
 		}
 
@@ -103,13 +122,17 @@ func (s *Startup) Load() error {
 	return nil
 }
 
+// Save rewrites the startup script. An empty entry list is a valid state:
+// removing the last entry is what uninstalling the final mrext app does, and
+// refusing it left the entry in place while reporting a failure.
 func (s *Startup) Save() error {
-	if len(s.Entries) == 0 {
-		return errors.New("no startup entries to save")
+	shebang := s.shebang
+	if shebang == "" {
+		shebang = defaultShebang
 	}
 
 	var contents strings.Builder
-	_, _ = contents.WriteString("#!/bin/sh\n\n")
+	_, _ = fmt.Fprintf(&contents, "%s\n\n", shebang)
 	for i := range s.Entries {
 		entry := &s.Entries[i]
 		if entry.Name != "" {
@@ -122,7 +145,7 @@ func (s *Startup) Save() error {
 	}
 
 	// #nosec G306 -- MiSTer startup script must remain readable by system tooling.
-	if err := os.WriteFile(config.StartupFile, []byte(contents.String()), 0o644); err != nil {
+	if err := os.WriteFile(s.path(), []byte(contents.String()), 0o644); err != nil {
 		return fmt.Errorf("write startup script: %w", err)
 	}
 	return nil

@@ -97,6 +97,8 @@ Each settings page shows the file being edited. Save targets that loaded filenam
 
 Remote retains its first observed slot layout and refuses further access if it detects a change. **After adding, removing, or renaming alternate INIs, restart both MiSTer and Remote before editing.** MiSTer caches its mapping internally; Remote cannot reconstruct a different mapping cached before Remote started. Older firmware with different ordering is not verified. No INI files are renamed to force an order.
 
+Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh` already has, so a `#!/bin/bash` script is not rewritten to `#!/bin/sh`. Uninstalling when Remote is the only entry now succeeds; it previously reported "no startup entries to save" and left the entry in place, so the service returned on the next boot.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
