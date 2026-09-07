@@ -64,6 +64,10 @@ func ListZip(path string) ([]string, error) {
 	return files, nil
 }
 
+// CopyFile copies a file, leaving the destination untouched if anything goes
+// wrong. It writes beside the destination and renames into place: os.Create
+// truncates first, so a copy that ran out of space part way through used to
+// destroy the previous contents and leave a partial file behind.
 func CopyFile(sourcePath, destPath string) error {
 	// #nosec G304 -- both paths are explicit inputs to this filesystem utility.
 	inputFile, err := os.Open(sourcePath)
@@ -72,12 +76,18 @@ func CopyFile(sourcePath, destPath string) error {
 	}
 	defer func() { _ = inputFile.Close() }()
 
-	// #nosec G304 -- both paths are explicit inputs to this filesystem utility.
-	outputFile, err := os.Create(destPath)
+	outputFile, err := os.CreateTemp(filepath.Dir(destPath), "."+filepath.Base(destPath)+"-*")
 	if err != nil {
 		return fmt.Errorf("create destination file: %w", err)
 	}
-	defer func() { _ = outputFile.Close() }()
+	temporary := outputFile.Name()
+	published := false
+	defer func() {
+		_ = outputFile.Close()
+		if !published {
+			_ = os.Remove(temporary)
+		}
+	}()
 
 	if _, err := io.Copy(outputFile, inputFile); err != nil {
 		return fmt.Errorf("copy file data: %w", err)
@@ -88,6 +98,16 @@ func CopyFile(sourcePath, destPath string) error {
 	if err := outputFile.Close(); err != nil {
 		return fmt.Errorf("close destination file: %w", err)
 	}
+	// CreateTemp makes the file 0600 and copies here are read by other MiSTer
+	// tooling, so widen it. Best effort on purpose: /media/fat is exFAT, where
+	// the mode comes from the mount and chmod reports EPERM. Failing here
+	// would break every copy on the device for a mode the filesystem ignores.
+	// #nosec G302 -- game lists and menu assets must stay world-readable.
+	_ = os.Chmod(temporary, 0o644)
+	if err := os.Rename(temporary, destPath); err != nil {
+		return fmt.Errorf("publish destination file: %w", err)
+	}
+	published = true
 
 	return nil
 }
