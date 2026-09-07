@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -59,15 +60,21 @@ type Index struct {
 }
 
 func GetIndexingStatus() string {
+	return IndexInstance.status(gamesdb.DBExists())
+}
+
+func (s *Index) status(exists bool) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	status := "indexStatus:"
 
-	if gamesdb.DBExists() {
+	if exists {
 		status += "y,"
 	} else {
 		status += "n,"
 	}
 
-	if IndexInstance.Indexing {
+	if s.Indexing {
 		status += "y,"
 	} else {
 		status += "n,"
@@ -75,28 +82,38 @@ func GetIndexingStatus() string {
 
 	status += fmt.Sprintf(
 		"%d,%d,%s",
-		IndexInstance.TotalSteps,
-		IndexInstance.CurrentStep,
-		IndexInstance.CurrentDesc,
+		s.TotalSteps,
+		s.CurrentStep,
+		strings.NewReplacer(",", ";", "\n", " ", "\r", " ").Replace(s.CurrentDesc),
 	)
 
 	return status
 }
 
 func (s *Index) GenerateIndex(logger *service.Logger, cfg *config.UserConfig) {
-	if s.Indexing {
-		return
-	}
+	s.start(func(update func(gamesdb.IndexStatus)) (int, error) {
+		return gamesdb.RebuildNamesIndex(cfg, games.AllSystems(), update)
+	}, func() {
+		websocket.Broadcast(logger, s.status(gamesdb.DBExists()))
+	}, func(err error) {
+		logger.Error("generate index: indexing: %s", err)
+	})
+}
 
+func (s *Index) start(build func(func(gamesdb.IndexStatus)) (int, error), publish func(), failed func(error)) bool {
 	s.mu.Lock()
+	if s.Indexing {
+		s.mu.Unlock()
+		return false
+	}
 	s.Indexing = true
-
-	websocket.Broadcast(logger, GetIndexingStatus())
-
+	s.TotalSteps, s.CurrentStep = 0, 0
+	s.CurrentDesc = "Finding games folders..."
+	s.mu.Unlock()
+	publish()
 	go func() {
-		defer s.mu.Unlock()
-
-		_, err := gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
+		_, err := build(func(status gamesdb.IndexStatus) {
+			s.mu.Lock()
 			s.TotalSteps = status.Total
 			s.CurrentStep = status.Step
 			switch status.Step {
@@ -105,25 +122,30 @@ func (s *Index) GenerateIndex(logger *service.Logger, cfg *config.UserConfig) {
 			case status.Total:
 				s.CurrentDesc = "Writing database... (" + strconv.Itoa(status.Files) + " games)"
 			default:
-				system, err := games.GetSystem(status.SystemID)
-				if err != nil {
+				system, lookupErr := games.GetSystem(status.SystemID)
+				if lookupErr != nil {
 					s.CurrentDesc = "Indexing " + status.SystemID + "..."
 				} else {
 					s.CurrentDesc = "Indexing " + system.Name + "..."
 				}
 			}
-			websocket.Broadcast(logger, GetIndexingStatus())
+			s.mu.Unlock()
+			publish()
 		})
 		if err != nil {
-			logger.Error("generate index: indexing: %s", err)
+			failed(err)
 		}
-
+		s.mu.Lock()
 		s.Indexing = false
-		s.TotalSteps = 0
-		s.CurrentStep = 0
+		s.TotalSteps, s.CurrentStep = 0, 0
 		s.CurrentDesc = ""
-		websocket.Broadcast(logger, GetIndexingStatus())
+		if err != nil {
+			s.CurrentDesc = "Index failed: " + err.Error()
+		}
+		s.mu.Unlock()
+		publish()
 	}()
+	return true
 }
 
 func NewIndex() *Index {

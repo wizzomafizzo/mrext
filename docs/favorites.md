@@ -24,14 +24,35 @@ Run `favorites` from MiSTer's Scripts menu.
 - Preserve NeoGeo ZIP naming from `romsets.xml` and relative NeoGeo launcher paths.
 - Create, rename, move, and remove Favorites folders and entries.
 - Refresh broken dated core symlinks after core updates.
-- Maintain arcade `cores` links needed by MRA favorites.
+- Maintain arcade `cores` links needed by MRA favorites. These link directly to `/media/fat/_Arcade/cores`, so newly downloaded cores are available without refreshing Favorites.
 - Operate with a controller through an on-screen keyboard.
 
 ## Compatibility notes
 
 The Go version preserves Python Favorites' folder discovery, top-level destinations, nested folder management, startup refresh hook, LLAPI/YC selection, root filtering, external-drive shortcut, ZIP traversal, NeoGeo names and relative paths, dated-core repair, and safe link-based core favorites. Symlinked game directories remain browsable.
 
-Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog.
+Arcade link management creates missing `cores` links when the interactive app opens and when it creates a Favorites folder. Existing files, directories, and symlinks named `cores` are preserved, not repaired or replaced. If an older Favorites folder uses a copied `cores` directory or an incorrect link, back it up and move it aside before reopening Favorites. MRAs that require a custom cores directory rather than `_Arcade/cores` are not automatically supported; Favorites does not merge multiple core directories.
+
+Core-update repair now recognizes the date in the symlink target rather than requiring it in the favorite's name. Renaming a core favorite no longer prevents its repair after an update.
+
+Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
+
+## Moving to another SD card
+
+Favorites are stored directly in menu folders, not in a separate database. The default folder is `/media/fat/_@Favorites` (shown as `@Favorites` in MiSTer's menu). Also copy any custom top-level Favorites folders recognized by your `default_folder` and `folder_name_contains` settings, including their subfolders. Keep `/media/fat/Scripts/favorites.ini` to preserve those settings.
+
+These folders contain generated `.mgl` files and symbolic links to existing cores or launchers. Arcade favorites can also depend on a `cores` link. Copy links as links, not as copies of their targets, and preserve the referenced games, cores, and folder layout. A copied target can still appear in MiSTer's menu without behaving like the original favorite.
+
+Keep the original card or a backup until the new card is verified. Use a copy tool's preserve-symbolic-links option, not its follow-links option. On systems where both filesystems expose and support symbolic links, `cp -a` preserves them; this is not a guarantee for every macOS/Windows SD-card copy workflow. Verify the result on MiSTer rather than relying only on the desktop file browser.
+
+After migration:
+
+- Check the actual folder names and `favorites.ini` if entries appear in MiSTer's menu but not in Favorites.
+- Inspect a known link with `ls -l` or `readlink` on MiSTer and compare its target with the original. Not every entry is a link: generated `.mgl` files are regular files.
+- Confirm linked targets exist at the same MiSTer paths, including any USB or network storage, then test representative game, core, and arcade shortcuts.
+- If links became regular copies, restore them from the original card with link-preserving copying or recreate the affected favorites. Back up the migrated folders before removing duplicates.
+
+The `refresh` command repairs supported broken core links; it does not reconstruct links that a copy tool replaced with regular files or rewrite every game path after storage moves.
 
 The new opt-in `ra` alternate-core mode adds RetroAchievements game shortcuts. Standard, LLAPI, and YC behavior remains unchanged; no existing favorites are migrated automatically.
 
@@ -151,7 +172,18 @@ Favorites preserves non-interactive startup behavior:
 /media/fat/Scripts/favorites.sh refresh
 ```
 
-This removes broken unversioned core shortcuts and relinks broken dated shortcuts when an updated matching core exists. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
+Refresh repairs shortcuts whose target is a dated core (such as `NES_20260101.rbf`), even when the favorite has a custom name such as `Nintendo.rbf`. Custom names are preserved; dated favorite names follow the replacement core's date. Both absolute and relative symlink targets are supported. Broken shortcuts without a replacement are removed. Interactive launch adds the same command to an existing `linux/user-startup.sh` only when no Favorites startup entry exists.
+
+## Uninstall
+
+Remove Favorites' Downloader subscription if configured, so updates do not reinstall it.
+
+1. Exit Favorites and let any refresh finish. There is no persistent Favorites service to stop.
+2. Remove the `# Startup favorites` comment and its `favorites.sh refresh` command from `/media/fat/linux/user-startup.sh`.
+3. Delete `/media/fat/Scripts/favorites.sh`. Optionally back up and remove `/media/fat/Scripts/favorites.ini` to discard settings, respecting any shared `MREXT_CONFIG` override.
+4. Keep `/media/fat/_@Favorites` and other favorite folders unless you want to remove your curated shortcuts. The folder can be renamed through `default_folder`, and favorites may also be at the SD root or in other menu folders. There is no Favorites database to delete.
+
+If discarding generated entries, remove only selected `.mgl` files and symlinks after inspecting their contents and ownership. Favorites can create `cores` symlinks in the SD root and favorite subfolders. Leave these if other MRA shortcuts use them; otherwise remove only the links, never their `_Arcade/cores` target. Remove symlinks themselves, not their destinations. Keep real core files and custom content.
 
 ## Safety
 

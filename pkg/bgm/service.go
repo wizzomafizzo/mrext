@@ -25,6 +25,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Service is the long-running "exec" process: boot sound, remote socket and
@@ -34,6 +35,7 @@ type Service struct {
 	player      *Player
 	remote      *Remote
 	watcher     *CoreWatcher
+	shutdown    chan struct{}
 	paths       Paths
 	cleanupOnce sync.Once
 }
@@ -42,10 +44,11 @@ type Service struct {
 func NewService(paths *Paths, logger *Logger) *Service {
 	cfg, _ := LoadConfig(paths)
 	return &Service{
-		paths:   *paths,
-		logger:  logger,
-		player:  NewPlayer(paths, logger, &cfg),
-		watcher: NewCoreWatcher(paths, logger),
+		paths:    *paths,
+		logger:   logger,
+		player:   NewPlayer(paths, logger, &cfg),
+		watcher:  NewCoreWatcher(paths, logger),
+		shutdown: make(chan struct{}),
 	}
 }
 
@@ -69,6 +72,9 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 	s.remote = remote
 
+	if err := s.waitBootDelay(ctx, cfg.BootDelay); err != nil {
+		return err
+	}
 	if cfg.ShouldChangeVolume() {
 		VolumeSet(&s.paths, s.logger, cfg.MenuVolume)
 		s.player.PlayBoot()
@@ -113,6 +119,35 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 }
 
+func (s *Service) waitBootDelay(ctx context.Context, seconds float64) error {
+	delay, err := bootDelayDuration(seconds)
+	if err != nil {
+		return err
+	}
+	if delay > 0 {
+		s.logger.Logf("Waiting %s before startup audio", delay)
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("BGM startup stopped: %w", ctx.Err())
+	case <-s.shutdown:
+		return fmt.Errorf("BGM startup stopped: %w", context.Canceled)
+	case <-timer.C:
+	}
+	// Cancellation takes precedence when both timer and shutdown are ready.
+	select {
+	case <-s.shutdown:
+		return fmt.Errorf("BGM startup stopped: %w", context.Canceled)
+	default:
+	}
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("BGM startup stopped: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) enterMenu(cfg *Config) {
 	s.logger.Log("Switched to menu core, starting playlist...")
 	s.logger.Log("Grabbing mutex")
@@ -151,6 +186,7 @@ func (s *Service) enterCore(cfg *Config, core string) {
 // It is safe to call more than once and from a signal handler.
 func (s *Service) Cleanup() {
 	s.cleanupOnce.Do(func() {
+		close(s.shutdown)
 		s.player.StopPlaylist()
 		if s.remote != nil {
 			s.remote.Close()

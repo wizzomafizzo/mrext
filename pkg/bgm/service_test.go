@@ -58,6 +58,74 @@ func setCore(t *testing.T, paths *Paths, core string) {
 	writeFile(t, paths.CoreNameFile, core)
 }
 
+func TestStartupDelayPrecedesBootAndOrdinaryAudio(t *testing.T) {
+	for _, boot := range []bool{true, false} {
+		name := "playlist"
+		if boot {
+			name = "boot"
+		}
+		t.Run(name, func(t *testing.T) {
+			paths := newTestPaths(t)
+			logPath := installStubPlayers(t)
+			playback := "loop"
+			track := "song.wav"
+			if boot {
+				playback = "disabled"
+				track = "_boot.wav"
+				t.Setenv("BGM_STUB_EXIT", "1")
+			}
+			writeINI(t, &paths, "[bgm]\nbootdelay = 0.1\nplayback = "+playback+"\n")
+			touchTracks(t, paths.MusicFolder, track)
+			setCore(t, &paths, MenuCore)
+			service, _ := newTestService(t, &paths)
+			started := time.Now()
+			cancel, errs := runService(t, service)
+			waitFor(t, func() bool { return len(stubInvocations(t, logPath)) > 0 })
+			if time.Since(started) < 100*time.Millisecond {
+				t.Fatal("audio started before delay")
+			}
+			cancel()
+			if err := <-errs; !errors.Is(err, context.Canceled) {
+				t.Fatalf("shutdown: %v", err)
+			}
+		})
+	}
+}
+
+func TestStartupDelayCancelsWithoutPlaying(t *testing.T) {
+	for _, cleanup := range []bool{false, true} {
+		name := "context"
+		if cleanup {
+			name = "cleanup"
+		}
+		t.Run(name, func(t *testing.T) {
+			paths := newTestPaths(t)
+			logPath := installStubPlayers(t)
+			writeINI(t, &paths, "[bgm]\nbootdelay = 3600\ndebug = yes\n")
+			touchTracks(t, paths.MusicFolder, "_boot.wav")
+			service, out := newTestService(t, &paths)
+			cancel, errs := runService(t, service)
+			waitFor(t, func() bool { return strings.Contains(out.String(), "before startup audio") })
+			if cleanup {
+				service.Cleanup()
+			} else {
+				cancel()
+			}
+			select {
+			case err := <-errs:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("shutdown: %v", err)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("shutdown waited for startup timer")
+			}
+			if len(stubInvocations(t, logPath)) != 0 {
+				t.Fatal("audio started during canceled delay")
+			}
+		})
+	}
+}
+
 func TestServiceFollowsCoreChanges(t *testing.T) {
 	paths := newTestPaths(t)
 	logPath := installStubPlayers(t)

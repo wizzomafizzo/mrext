@@ -126,17 +126,45 @@ func TestLoadConfigWritesDefaultOnlyWhenMusicFolderExists(t *testing.T) {
 	}
 }
 
+func TestBootDelayValidationAndDefaults(t *testing.T) {
+	for _, value := range []string{"-1", "NaN", "Inf", "1e99", "9223372036.854776", "invalid"} {
+		if _, err := ParseBootDelay(value); err == nil {
+			t.Fatalf("accepted %q", value)
+		}
+		cfg := ConfigFromDocument(ParseINI("[bgm]\nbootdelay = " + value + "\n"))
+		if cfg.BootDelay != 0 {
+			t.Fatalf("invalid delay did not fall back: %v", cfg.BootDelay)
+		}
+	}
+	cfg := ConfigFromDocument(ParseINI("[bgm]\nbootdelay = 1.25\ncorebootdelay = 3\n"))
+	if cfg.BootDelay != 1.25 || cfg.CoreBootDelay != 3 {
+		t.Fatalf("independent delays: %+v", cfg)
+	}
+	settings := SettingsFromConfig(&cfg)
+	settings.BootDelay = -1
+	if err := settings.Validate(); err == nil {
+		t.Fatal("invalid staged startup delay accepted")
+	}
+	settings.BootDelay = 0.5
+	settings.ApplyTo(&cfg)
+	if cfg.BootDelay != 0.5 || cfg.CoreBootDelay != 3 {
+		t.Fatal("startup delay changed core delay")
+	}
+}
+
 func TestSaveSettingsPreservesUnknownEntriesAndFormat(t *testing.T) {
 	paths := newTestPaths(t)
 	writeINI(t, &paths, "[bgm]\nplayback = loop\ncustom = keep\nstartup = yes\n[extra]\nfoo = bar\n")
 	settings := Settings{
-		Theme: "nord", CoreBootDelay: 0.5, MenuVolume: 5, DefaultVolume: -1,
-		Startup: false, PlayInCore: true, Debug: true, Mouse: false, CRTMode: true, OnScreenKeyboard: true,
+		Theme: "nord", CoreBootDelay: 0.5, BootDelay: 1.25, MenuVolume: 5, DefaultVolume: -1,
+		Startup: false, PlayInCore: true, BootInPlaylist: true, Debug: true,
+		Mouse: false, CRTMode: true, OnScreenKeyboard: true,
 	}
 	if err := SaveSettings(paths.IniFile, &settings); err != nil {
 		t.Fatal(err)
 	}
-	want := "[bgm]\nplayback = loop\ncustom = keep\nstartup = no\nplayincore = yes\ncorebootdelay = 0.5\n" +
+	want := "[bgm]\nplayback = loop\ncustom = keep\nstartup = no\nplayincore = yes\n" +
+		"bootinplaylist = yes\ncorebootdelay = 0.5\nbootdelay = 1.25\n" +
 		"menuvolume = 5\ndefaultvolume = -1\ndebug = yes\n\n[extra]\nfoo = bar\n\n" +
 		"[tui]\ntheme = nord\nmouse = no\ncrt_mode = yes\non_screen_keyboard = yes\n\n"
 	if got := readFile(t, paths.IniFile); got != want {

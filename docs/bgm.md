@@ -41,6 +41,10 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Optional `music/boot/default/` tracks provide a generic core boot sound when no core-specific boot directory exists. Existing empty core-specific directories remain silent.
+- Optional `bootinplaylist = yes` includes boot sounds in normal playback without changing the selected playlist. It defaults to `no`, preserving existing behavior. When enabled, random playback avoids immediately repeating a track whenever another candidate exists, including small playlists.
+- Radio streams use Go's HTTP/HTTPS client and feed audio to `mpg123` through stdin, avoiding dependence on the installed player's HTTPS support. Short-lived radio attempts are spaced at least five seconds apart and remain interruptible. Radio failures are logged even with debug off; identical failures for a station are suppressed until the error changes or playback succeeds.
+- Optional `bootdelay` waits before initial automatic audio on each service start. It defaults to zero, preserving immediate startup playback. Shutdown cancels the wait.
 
 ## Music folder
 
@@ -54,7 +58,10 @@ Intentional differences:
   Radio/station.pls    an internet radio playlist
   boot/                global boot sounds, no prefix needed
   boot/SNES/           boot sounds played when the SNES core launches
+  boot/default/        optional fallback for cores without their own boot folder
 ```
+
+Core boot folders are matched case-insensitively. BGM chooses a random supported track from the matching folder's top level and applies `corebootdelay`. If no core-specific directory exists, it uses `boot/default/` with the same selection and delay rules. A core-specific folder with no supported tracks suppresses the fallback. Missing or empty fallback folders remain silent; startup tracks directly inside `boot/` are not reused for core launches. No INI changes are needed to enable this: add tracks to `boot/default/`.
 
 ### Supported files
 
@@ -63,6 +70,14 @@ BGM plays `.mp3`, `.ogg`, `.wav`, `.mid`, `.vgm`, `.vgz` and `.vgm.gz` files thr
 ### Internet radio
 
 Internet radio stations are played from `.pls` files containing a stream URL. The best way to manage these is a playlist folder with a single `.pls` file. Multiple `.pls` files in a folder are only moved on by skipping. The `all` playlist excludes `.pls` files.
+
+Radio requires a direct MP3/MPEG audio stream. A `.pls` file is only a URL container: AAC/AAC+, HLS playlists, web pages, and other codecs are not made playable by putting their URL in it. BGM reports unsupported response types before starting the player; mislabeled or unrecognized audio can still fail in `mpg123`.
+
+Both HTTP and HTTPS URLs are supported by BGM itself. HTTPS certificates are verified using the device's trust store; check its clock and CA certificates if verification fails. BGM does not silently follow redirects from HTTPS to HTTP or disable certificate checks. Stations must support ordinary HTTP responses and honor the request for audio without ICY metadata; metadata-bearing responses are rejected rather than fed to the decoder as audio.
+
+If a station is silent, check `/tmp/bgm.log` for transport, HTTP status, format, or player errors. Set `debug = yes` for full player output. A failed or immediately closed stream cannot cause a rapid reconnect loop; Stop and Skip cancel network requests and retry waits. Header and connection setup have timeouts; an established silent stream remains connected until the station closes it or playback is stopped/skipped.
+
+Changing `bgm.ini` manually requires restarting BGM to reload playback and playlist settings; the control screen applies those changes directly without a MiSTer reboot.
 
 ### Playback types
 
@@ -77,6 +92,14 @@ Create a subfolder in `music` and fill it with tracks; it appears in the control
 ### Boot sounds
 
 Prefix a file with `_` to mark it as a boot sound (for example `_Startup.mp3`). One boot sound is picked at random from the active playlist's top level when MiSTer starts, and `_` files are excluded from normal playback. Files placed directly in `music/boot` are global boot sounds that apply to every playlist and need no prefix.
+
+To keep boot sounds in normal rotation, enable **Boot sounds in rotation** in Settings and Save, or set `bootinplaylist = yes` in `[bgm]` and restart BGM. This includes underscore-prefixed tracks within the selected playlist and files directly inside `music/boot`; no copies or renaming are needed. It does not add unrelated playlists or core-specific boot folders (unless already included by `all`). Startup selection remains unchanged. Global tracks already present in `all` are not added twice.
+
+Settings changes apply to subsequent track selections without interrupting the current track. Random playback avoids an immediate repeat when another candidate exists; a one-track playlist can repeat. Loop playback still repeats its chosen track until the playlist restarts. Disabled playback still plays only boot sounds.
+
+To allow a display to sync before initial audio, set `bootdelay = 2.5` in `[bgm]`, or edit **Startup sound delay** in Settings and Save. The value is seconds; fractional values and zero are supported. Negative, non-finite, invalid, or timer-overflowing values in the INI fall back to zero.
+
+The delay applies on every BGM service start, including a manual restart, before startup sounds and the initial playlist (even when no boot sound exists). It does not repeat on later core/menu changes, and does not change `corebootdelay`. Saved changes apply the next time BGM starts. The control socket remains available during the wait; explicit playback commands can start audio sooner. Shutdown cancels the wait without playing the startup sound.
 
 ### Core boot sounds
 
@@ -107,7 +130,9 @@ playback = random
 playlist = none
 startup = yes
 playincore = no
+bootinplaylist = no
 corebootdelay = 0
+bootdelay = 0
 menuvolume = -1
 defaultvolume = -1
 debug = no
@@ -117,7 +142,9 @@ debug = no
 - `playlist`: `none`, `all` or a folder name inside `music`.
 - `startup`: start the service from `user-startup.sh` on boot.
 - `playincore`: keep playing music while a core runs.
+- `bootinplaylist`: include boot sounds in normal playlist playback; defaults to `no`.
 - `corebootdelay`: seconds to wait before core boot sounds.
+- `bootdelay`: seconds before initial automatic audio on service start; defaults to `0`.
 - `menuvolume`, `defaultvolume`: `-1` to `7`, see Volume control.
 - `debug`: print service output and append it to `/tmp/bgm.log`. Re-read on every log line, so it can be toggled while the service runs.
 
@@ -135,13 +162,13 @@ crt_mode = yes
 on_screen_keyboard = yes
 ```
 
-Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `monogreen`. `crt_mode` uses MiSTer's 75×15 layout. `on_screen_keyboard` enables controller-friendly text entry for the core boot delay.
+Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `monogreen`. `crt_mode` uses MiSTer's 75×15 layout. `on_screen_keyboard` enables controller-friendly text entry for both boot delays.
 
 ## Control screen
 
 The main screen shows the current track, playback type and playlist, followed by `Skip current track`, `Start playing`/`Stop playing`, the playback types and the playlists. The active playback type and playlist are marked `[ACTIVE]`. Up and Down select a row, Left and Right select `Select`, `Settings` or `Exit`, and Enter activates the selected button. The screen refreshes itself while music plays.
 
-`Settings` opens a staged page for start on boot, play music in cores, core boot delay, menu and default volume, debug logging, theme, mouse, CRT mode and the on-screen keyboard. Changing the menu volume applies it to MiSTer immediately so it can be heard. Nothing is written until `Save`; `Cancel` or Escape asks before discarding changes.
+`Settings` opens a staged page for start on boot, play music in cores, startup sound delay, core boot delay, menu and default volume, debug logging, theme, mouse, CRT mode and the on-screen keyboard. Changing the menu volume applies it to MiSTer immediately so it can be heard. Nothing is written until `Save`; `Cancel` or Escape asks before discarding changes.
 
 ## Commands
 
@@ -173,6 +200,7 @@ The service listens on the unix socket `/tmp/bgm.sock`. Each connection carries 
 | `set playback <type>` | none; unknown types play random tracks but are reported verbatim |
 | `set playlist <name>` | none; `none` clears the playlist, names may contain spaces |
 | `set playincore yes` / `set playincore no` | none |
+| `set bootinplaylist yes` / `set bootinplaylist no` | none; applies to subsequent track selections |
 | `get playback`, `get playincore` | the value |
 | `get playlist` | the name; nothing when no playlist is set |
 | `pid` | the service process id |
@@ -182,7 +210,18 @@ Commands are processed one at a time and wait while a core boot sound plays, exa
 
 ## Logging
 
-With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players.
+With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players. Actionable radio failures are also logged with debug off, with identical repeated failures suppressed.
+
+## Uninstall
+
+Remove BGM's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Close the control screen, then run `/media/fat/Scripts/bgm.sh stop` and wait for the service and audio player to exit. Do not reopen the screen afterward: it can start the service again.
+2. Remove the `# Startup BGM` comment and its `bgm.sh $1` command from `/media/fat/linux/user-startup.sh`. Preserve all other startup entries.
+3. Delete `/media/fat/Scripts/bgm.sh`. Optionally back up and remove `/media/fat/music/bgm.ini` to discard BGM settings.
+4. Keep `/media/fat/music/`: tracks, playlists, `.pls` subscriptions, and `boot/` sounds are user content. BGM has no separate persistent database or generated menu tree to remove.
+
+After shutdown, leftover `/tmp/bgm.sock`, `/tmp/bgm.log`, and `/tmp/bgm.sh` can be removed or left until reboot. Keep MiSTer's audio players installed.
 
 ## Local development
 
