@@ -1,5 +1,16 @@
 import { ControlApi } from "./api";
+import { IniResponse } from "./models";
+
 import { create } from "zustand";
+import { isAxiosError } from "axios";
+
+let loadSequence = 0;
+
+export function iniErrorMessage(error: unknown): string {
+  if (isAxiosError(error) && typeof error.response?.data === "string")
+    return error.response.data.trim();
+  return error instanceof Error ? error.message : String(error);
+}
 
 const iniKeyMap: { [key: string]: string } = {
   ypbpr: "ypbpr",
@@ -313,6 +324,10 @@ type IniStore = IniState &
   IniActions & {
     original: IniState;
     modified: string[];
+    loadedIni: IniResponse | null;
+    loadingIni: boolean;
+    savingIni: boolean;
+    iniError: string;
   };
 
 const initialState: IniState = {
@@ -448,13 +463,28 @@ export const useIniSettingsStore = create<IniStore>()((set) => ({
 
   original: initialState,
   modified: [],
+  loadedIni: null,
+  loadingIni: false,
+  savingIni: false,
+  iniError: "",
 
   setAttribute: (key: string, value: string) =>
     set(() => ({
       [key]: value,
     })),
 
-  reset: () => set(initialState),
+  reset: () => {
+    loadSequence++;
+    set({
+      ...initialState,
+      original: initialState,
+      modified: [],
+      loadedIni: null,
+      loadingIni: false,
+      savingIni: false,
+      iniError: "",
+    });
+  },
   resetModified: () => set({ modified: [] }),
 
   setOriginal: (ini: IniState) => set({ original: ini }),
@@ -594,75 +624,111 @@ function newIniRequest(state: IniStore): {
 }
 
 export function saveMisterIni(id: number, state: IniStore) {
-  const changes = newIniRequest(state);
+  const target = state.loadedIni;
+  const live = useIniSettingsStore.getState();
+  if (
+    !target ||
+    target.id !== id ||
+    live.loadedIni?.filename !== target.filename ||
+    live.loadedIni?.id !== target.id ||
+    live.loadingIni ||
+    live.savingIni ||
+    live.iniError
+  ) {
+    return Promise.reject(new Error("Load a valid INI before saving settings"));
+  }
+  const sequence = loadSequence;
+  const changes = newIniRequest(live);
   const api = new ControlApi();
-  return api.saveMisterIni(id, changes).then(() => {
-    const current = useIniSettingsStore.getState();
-    const newOriginal = { ...current.original };
-    const savedUnchanged = new Set<string>();
+  useIniSettingsStore.setState({ savingIni: true });
+  return api
+    .saveMisterIni(target.id, changes, target.filename)
+    .then(() => {
+      const current = useIniSettingsStore.getState();
+      if (
+        sequence !== loadSequence ||
+        current.loadedIni?.filename !== target.filename
+      )
+        return;
+      const newOriginal = { ...current.original };
+      const savedUnchanged = new Set<string>();
 
-    for (const key in changes) {
-      if (!(key in iniKeyMapReverse)) {
-        console.warn(`Unknown ini key ${key}`);
-        continue;
+      for (const key in changes) {
+        if (!(key in iniKeyMapReverse)) {
+          console.warn(`Unknown ini key ${key}`);
+          continue;
+        }
+
+        const mKey = iniKeyMapReverse[key];
+        (newOriginal as Indexable)[mKey] = changes[key];
+        if ((current as Indexable)[mKey] === changes[key]) {
+          savedUnchanged.add(mKey);
+        }
       }
 
-      const mKey = iniKeyMapReverse[key];
-      (newOriginal as Indexable)[mKey] = changes[key];
-      if ((current as Indexable)[mKey] === changes[key]) {
-        savedUnchanged.add(mKey);
-      }
-    }
-
-    useIniSettingsStore.setState({
-      modified: current.modified.filter((key) => !savedUnchanged.has(key)),
-      original: newOriginal,
-    });
-  });
+      useIniSettingsStore.setState({
+        modified: current.modified.filter((key) => !savedUnchanged.has(key)),
+        original: newOriginal,
+      });
+    })
+    .finally(() => useIniSettingsStore.setState({ savingIni: false }));
 }
 
-export function loadMisterIni(id: number, _state: IniStore, reset = false) {
+export async function loadMisterIni(
+  id: number | undefined,
+  _state: IniStore,
+  reset = false,
+) {
+  const sequence = ++loadSequence;
   const api = new ControlApi();
-  return api
-    .loadMisterIni(id)
-    .then((data) => {
-      console.log("Loading MiSTer.ini data...");
-      const newState = { ...initialState };
-
-      for (const key in data) {
-        if (key in iniKeyMapReverse) {
-          const mKey = iniKeyMapReverse[key];
-          (newState as Indexable)[mKey] = data[key];
-        } else {
-          console.warn(`Unknown ini key ${key}`);
-        }
-      }
-
-      let current = useIniSettingsStore.getState();
-      current.setOriginal(newState);
-
-      if (reset) {
-        current.resetModified();
-        current = useIniSettingsStore.getState();
-      }
-
-      for (const key in data) {
-        if (key in iniKeyMapReverse) {
-          const mKey = iniKeyMapReverse[key];
-
-          if (current.modified.includes(mKey)) {
-            console.log(`Skipping ini key ${mKey} as ${key} is modified`);
-            continue;
-          }
-
-          console.log(`Setting ini key ${mKey} to ${data[key]}`);
-          current.setAttribute(mKey, data[key]);
-        } else {
-          console.warn(`Unknown ini key ${key}`);
-        }
-      }
-    })
-    .catch((e) => {
-      console.error(e);
+  useIniSettingsStore.setState({ loadingIni: true, iniError: "" });
+  try {
+    const listing = await api.listMisterInis();
+    if (sequence !== loadSequence) return;
+    const selectedID = id ?? (listing.active || 1);
+    const target = listing.inis.find((ini) => ini.id === selectedID);
+    if (!target)
+      throw new Error(`INI slot ${selectedID} is unavailable for editing`);
+    const before = useIniSettingsStore.getState();
+    if (
+      !reset &&
+      before.loadedIni &&
+      before.loadedIni.filename !== target.filename &&
+      before.modified.length
+    ) {
+      throw new Error(
+        "Unsaved settings belong to another INI; switch explicitly or revert first",
+      );
+    }
+    const data = await api.loadMisterIni(target.id, target.filename);
+    if (sequence !== loadSequence) return;
+    const original = { ...initialState };
+    for (const key in data) {
+      const mapped = iniKeyMapReverse[key];
+      if (mapped) (original as Indexable)[mapped] = data[key];
+    }
+    const current = useIniSettingsStore.getState();
+    const sameFile =
+      !current.loadedIni || current.loadedIni.filename === target.filename;
+    const modified = !reset && sameFile ? current.modified : [];
+    const values = { ...original };
+    for (const key of modified)
+      (values as Indexable)[key] = (current as Indexable)[key];
+    useIniSettingsStore.setState({
+      ...values,
+      original,
+      modified,
+      loadedIni: target,
+      loadingIni: false,
+      iniError: "",
     });
+  } catch (error) {
+    if (sequence === loadSequence) {
+      useIniSettingsStore.setState({
+        loadingIni: false,
+        iniError: iniErrorMessage(error),
+      });
+    }
+    throw error;
+  }
 }

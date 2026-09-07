@@ -111,13 +111,13 @@ func (u *ui) renderMain() {
 		list.SetCurrentItem(min(u.mainSelection, len(u.entries)-1))
 	}
 	bar := tui.NewButtonBar(u.app)
-	toggle := func() {
+	updateSelection := func(update func()) {
 		if len(u.entries) == 0 {
 			return
 		}
 		u.mainSelection, u.mainButton = list.GetCurrentItem(), bar.FocusedIndex()
 		buttonFocus := bar.HasFocus()
-		u.entries[u.mainSelection].Selected = !u.entries[u.mainSelection].Selected
+		update()
 		u.renderMain()
 		if buttonFocus {
 			_, primitive := u.pages.GetFrontPage()
@@ -127,11 +127,29 @@ func (u *ui) renderMain() {
 			}
 		}
 	}
+	toggle := func() {
+		updateSelection(func() { u.entries[u.mainSelection].Selected = !u.entries[u.mainSelection].Selected })
+	}
+	bulk := func() {
+		updateSelection(func() {
+			selectAll := false
+			for _, entry := range u.entries {
+				if !entry.Selected {
+					selectAll = true
+					break
+				}
+			}
+			for i := range u.entries {
+				u.entries[i].Selected = selectAll
+			}
+		})
+	}
 	remember := func(action func()) func() {
 		return func() { u.mainSelection, u.mainButton = list.GetCurrentItem(), bar.FocusedIndex(); action() }
 	}
 	list.SetSelectedFunc(func(int, string, string, rune) { toggle() })
 	bar.AddButtonWithHelp("Toggle", "Include or exclude this games folder", toggle).
+		AddButtonWithHelp("All/None", "Select all folders, or clear selection when all are selected", bulk).
 		AddButtonWithHelp("Generate", "Create shortcuts; confirm folder removal", remember(u.startGenerate)).
 		AddButtonWithHelp("Clean Up", "Remove shortcuts whose game is gone", remember(u.startCleanUp)).
 		AddButtonWithHelp("Settings", "Configure GamesMenu interface", remember(u.startSettings)).
