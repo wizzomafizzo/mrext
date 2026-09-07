@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gocarina/gocsv"
@@ -130,7 +131,12 @@ func UpdateArcadeDB() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("parse arcade database date: %w", err)
 	}
-	if latestFileDate.Before(dbAge) {
+	// Skip only when the local copy is already at least as new. This compares
+	// against the date stamped on the local file below, not its modification
+	// time: using mtime meant every download made the file look newer than any
+	// remote filename, so a copy truncated by a power cut or a full disk was
+	// never replaced and arcade names stayed blank for good.
+	if !latestFileDate.After(dbAge) {
 		return false, nil
 	}
 
@@ -138,11 +144,49 @@ func UpdateArcadeDB() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if err := os.WriteFile(config.ArcadeDBFile, body, 0o600); err != nil {
-		return false, fmt.Errorf("write arcade database: %w", err)
+	if err := writeArcadeDB(body, latestFileDate); err != nil {
+		return false, err
 	}
 
 	return true, nil
+}
+
+// writeArcadeDB stages the download beside the destination and renames it over,
+// then stamps it with the date the remote file carries so the freshness check
+// above has something truthful to compare against.
+func writeArcadeDB(body []byte, stamp time.Time) error {
+	path := config.ArcadeDBFile
+	temporary, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+"-*")
+	if err != nil {
+		return fmt.Errorf("create staged arcade database: %w", err)
+	}
+	staged := temporary.Name()
+	published := false
+	defer func() {
+		_ = temporary.Close()
+		if !published {
+			_ = os.Remove(staged)
+		}
+	}()
+
+	if _, err := temporary.Write(body); err != nil {
+		return fmt.Errorf("write staged arcade database: %w", err)
+	}
+	if err := temporary.Sync(); err != nil {
+		return fmt.Errorf("sync staged arcade database: %w", err)
+	}
+	if err := temporary.Close(); err != nil {
+		return fmt.Errorf("close staged arcade database: %w", err)
+	}
+	if err := os.Chtimes(staged, stamp, stamp); err != nil {
+		return fmt.Errorf("stamp staged arcade database: %w", err)
+	}
+	// #nosec G703 -- destination is the fixed arcade database path.
+	if err := os.Rename(staged, path); err != nil {
+		return fmt.Errorf("publish arcade database: %w", err)
+	}
+	published = true
+	return nil
 }
 
 func ReadArcadeDB() ([]ArcadeDBEntry, error) {

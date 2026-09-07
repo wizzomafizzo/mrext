@@ -528,17 +528,49 @@ func (p *Player) beginPlaylist() chan struct{} {
 	return done
 }
 
+// A track that cannot play returns from playTrack immediately: the file is
+// invalid, or the player binary for its format is not installed, or the music
+// folder has gone with an unplugged drive. Without these bounds the playlist
+// loops spun a CPU core flat and filled /tmp/bgm.log for as long as the
+// service ran.
+const (
+	playlistMinTrackTime = 250 * time.Millisecond
+	playlistRetryDelay   = 2 * time.Second
+	playlistMaxFailures  = 5
+)
+
+// playedTooFast reports a track that returned so quickly it cannot have
+// played, and paces the retry.
+func (p *Player) playedTooFast(started time.Time) bool {
+	if time.Since(started) >= playlistMinTrackTime {
+		return false
+	}
+	p.sleep(playlistRetryDelay)
+	return true
+}
+
 func (p *Player) startRandomPlaylist() {
 	p.logger.Log("Starting random playlist...")
 	done := p.beginPlaylist()
 	go func() {
 		defer close(done)
+		failures := 0
 		for p.InPlaylist() {
 			track, ok := p.randomTrack()
 			if !ok {
 				break
 			}
+			started := time.Now()
 			p.playTrack(track, true)
+			if !p.playedTooFast(started) {
+				failures = 0
+				continue
+			}
+			failures++
+			if failures >= playlistMaxFailures {
+				p.logger.Log("Random playlist stopped: no track would play")
+				break
+			}
 		}
 		p.logger.Log("Random playlist ended")
 	}()
@@ -550,8 +582,19 @@ func (p *Player) startLoopPlaylist() {
 	track, ok := p.randomTrack()
 	go func() {
 		defer close(done)
+		failures := 0
 		for p.InPlaylist() && ok {
+			started := time.Now()
 			p.playTrack(track, true)
+			if !p.playedTooFast(started) {
+				failures = 0
+				continue
+			}
+			failures++
+			if failures >= playlistMaxFailures {
+				p.logger.Log("Loop playlist stopped: " + track + " would not play")
+				break
+			}
 		}
 		p.logger.Log("Loop playlist ended")
 	}()

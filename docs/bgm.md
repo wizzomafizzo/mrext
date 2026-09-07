@@ -208,6 +208,8 @@ The service listens on the unix socket `/tmp/bgm.sock`. Each connection carries 
 
 Commands are processed one at a time and wait while a core boot sound plays, exactly as before.
 
+A playlist stops itself if nothing will play. Tracks that return immediately, because the file is invalid or the player for its format is not installed, are retried with a pause and then abandoned after five in a row. Earlier versions looped on them as fast as the CPU allowed and filled the log.
+
 ## Logging
 
 With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players. Actionable radio failures are also logged with debug off, with identical repeated failures suppressed.

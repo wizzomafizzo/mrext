@@ -20,9 +20,7 @@
 package games
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -126,187 +124,24 @@ func AllSystems() []System {
 	return systems
 }
 
-type resultsStack [][]string
-
-func (r *resultsStack) new() {
-	*r = append(*r, []string{})
-}
-
-func (r *resultsStack) pop() {
-	if len(*r) == 0 {
-		return
-	}
-	*r = (*r)[:len(*r)-1]
-}
-
-func (r *resultsStack) get() (*[]string, error) {
-	if len(*r) == 0 {
-		return nil, errors.New("nothing on stack")
-	}
-	return &(*r)[len(*r)-1], nil
-}
-
-// GetFiles searches for all valid games in a given path and return a list of
-// files. This function deep searches .zip files and handles symlinks at all
-// levels.
+// GetFiles searches for all valid games in a given path and returns a list of
+// files. It deep searches .zip files and handles symlinks at all levels.
+//
+// This used to walk the tree itself, calling os.Chdir so relative symlink
+// targets resolved. os.Chdir is process-global, and this runs inside Remote's
+// daemon alongside HTTP handlers and the tracker goroutine, so a random-game
+// launch could move the working directory out from under another request.
+// WalkFiles was written to do the same scan without that, and
+// TestWalkFilesMatchesGetFiles pinned the two to the same results.
 func GetFiles(systemID, path string) ([]string, error) {
-	var allResults []string
-	var stack resultsStack
-	visited := make(map[string]struct{})
-
-	system, err := GetSystem(systemID)
-	if err != nil {
-		return nil, err
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("get working directory: %w", err)
-	}
-	defer func() { _ = os.Chdir(cwd) }()
-
-	var scanner func(path string, file fs.DirEntry, err error) error
-	scanner = func(path string, file fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return fmt.Errorf("scan game path: %w", walkErr)
-		}
-		// avoid recursive symlinks
-		if file.IsDir() {
-			if _, ok := visited[path]; ok {
-				return filepath.SkipDir
-			}
-			visited[path] = struct{}{}
-		}
-
-		// handle symlinked directories
-		if file.Type()&os.ModeSymlink != 0 {
-			err = os.Chdir(filepath.Dir(path))
-			if err != nil {
-				return fmt.Errorf("enter symlink parent directory: %w", err)
-			}
-
-			realPath, resolveErr := filepath.EvalSymlinks(path)
-			if resolveErr != nil {
-				return fmt.Errorf("resolve game symlink: %w", resolveErr)
-			}
-
-			file, statErr := os.Stat(realPath)
-			if statErr != nil {
-				return fmt.Errorf("stat game symlink target: %w", statErr)
-			}
-
-			if file.IsDir() {
-				err = os.Chdir(path)
-				if err != nil {
-					return fmt.Errorf("enter symlinked game directory: %w", err)
-				}
-
-				stack.new()
-				defer stack.pop()
-
-				err = filepath.WalkDir(realPath, scanner)
-				if err != nil {
-					return fmt.Errorf("scan symlinked game directory: %w", err)
-				}
-
-				results, stackErr := stack.get()
-				if stackErr != nil {
-					return stackErr
-				}
-
-				for i := range *results {
-					allResults = append(allResults, strings.Replace((*results)[i], realPath, path, 1))
-				}
-
-				return nil
-			}
-		}
-
-		results, stackErr := stack.get()
-		if stackErr != nil {
-			return stackErr
-		}
-
-		if strings.HasSuffix(strings.ToLower(path), ".zip") {
-			// zip files
-			zipFiles, zipErr := utils.ListZip(path)
-			if zipErr != nil {
-				// skip invalid zip files
-				return nil
-			}
-
-			for i := range zipFiles {
-				if MatchSystemFile(system, zipFiles[i]) {
-					abs := filepath.Join(path, zipFiles[i])
-					*results = append(*results, abs)
-				}
-			}
-		} else if MatchSystemFile(system, path) {
-			// regular files
-			*results = append(*results, path)
-		}
-
+	var results []string
+	if err := WalkFiles(systemID, path, func(file string) error {
+		results = append(results, file)
 		return nil
-	}
-
-	stack.new()
-	defer stack.pop()
-
-	root, err := os.Lstat(path)
-	if err != nil {
-		return nil, fmt.Errorf("inspect game root: %w", err)
-	}
-
-	err = os.Chdir(filepath.Dir(path))
-	if err != nil {
-		return nil, fmt.Errorf("enter game root parent: %w", err)
-	}
-
-	// handle symlinks on root game folder because WalkDir fails silently on them
-	var realPath string
-	if root.Mode()&os.ModeSymlink == 0 {
-		realPath = path
-	} else {
-		realPath, err = filepath.EvalSymlinks(path)
-		if err != nil {
-			return nil, fmt.Errorf("resolve game root: %w", err)
-		}
-	}
-
-	realRoot, err := os.Stat(realPath)
-	if err != nil {
-		return nil, fmt.Errorf("stat game root: %w", err)
-	}
-
-	if !realRoot.IsDir() {
-		return nil, errors.New("root is not a directory")
-	}
-
-	err = filepath.WalkDir(realPath, scanner)
-	if err != nil {
-		return nil, fmt.Errorf("scan game root: %w", err)
-	}
-
-	results, err := stack.get()
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
-
-	allResults = append(allResults, *results...)
-
-	// change root back to symlink
-	if realPath != path {
-		for i := range allResults {
-			allResults[i] = strings.Replace(allResults[i], realPath, path, 1)
-		}
-	}
-
-	err = os.Chdir(cwd)
-	if err != nil {
-		return nil, fmt.Errorf("restore working directory: %w", err)
-	}
-
-	return allResults, nil
+	return results, nil
 }
 
 func FilterUniqueFilenames(files []string) []string {
