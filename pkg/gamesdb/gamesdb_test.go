@@ -327,3 +327,105 @@ func TestEmptyFullRebuildClearsIndex(t *testing.T) {
 		t.Fatalf("empty metadata = %v, %v", indexed, err)
 	}
 }
+
+func TestSecondIndexerReportsBusyInsteadOfHanging(t *testing.T) {
+	db, systems, paths := indexFixture(t)
+	ctx, release := context.WithCancel(context.Background())
+	defer release()
+	started := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		_, err := indexNames(db, systems[:1], paths[:1], func(_, path string, visit func(string) error) error {
+			close(started)
+			<-ctx.Done()
+			return visit(filepath.Join(path, "new.nes"))
+		}, nil, true)
+		done <- err
+	}()
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("first writer did not start")
+	}
+
+	previous := indexLockTimeout
+	indexLockTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { indexLockTimeout = previous })
+
+	// bbolt's zero default timeout waits forever, so this call used to block
+	// before its first progress callback: Remote's rebuild and search.sh at the
+	// same time left one of them on a frozen screen with nothing to explain it.
+	progressed := false
+	_, err := indexNames(db, systems[:1], paths[:1],
+		func(_, path string, visit func(string) error) error { return visit(filepath.Join(path, "other.nes")) },
+		func(IndexStatus) { progressed = true }, true)
+	if !errors.Is(err, ErrIndexBusy) {
+		t.Fatalf("second indexer error = %v, want ErrIndexBusy", err)
+	}
+	if progressed {
+		t.Error("second indexer reported progress it never made")
+	}
+
+	release()
+	select {
+	case buildErr := <-done:
+		if buildErr != nil {
+			t.Fatal(buildErr)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("first writer did not finish")
+	}
+}
+
+func TestDanglingSymlinksDoNotAbortTheIndex(t *testing.T) {
+	db, systems, paths := indexFixture(t)
+
+	// One broken link in a library used to abort the whole run with
+	// "resolve game symlink", so nothing was indexed at all, including every
+	// system that would have scanned cleanly.
+	broken := filepath.Join(paths[0].Path, "unplugged.nes")
+	if err := os.Symlink(filepath.Join(t.TempDir(), "never-existed.nes"), broken); err != nil {
+		t.Fatal(err)
+	}
+
+	files, err := indexNames(db, systems, paths, games.WalkFiles, nil, true)
+	if err != nil {
+		t.Fatalf("a dangling symlink aborted the index: %v", err)
+	}
+	names := namesSnapshot(t, db)
+	if len(names) == 0 {
+		t.Fatal("nothing was indexed")
+	}
+	for _, name := range names {
+		if strings.Contains(name, "unplugged") {
+			t.Errorf("a broken link was indexed as a game: %s", name)
+		}
+	}
+	if files == 0 {
+		t.Fatal("no files counted")
+	}
+}
+
+func TestUnresolvableRootsAreSkippedAndCounted(t *testing.T) {
+	root := t.TempDir()
+	present := filepath.Join(root, "NES")
+	if err := os.Mkdir(present, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	system, err := games.GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths := []games.PathResult{
+		{System: *system, Path: present},
+		{System: *system, Path: filepath.Join(root, "not-mounted")},
+	}
+
+	unique, skipped := uniquePaths(paths)
+	if skipped != 1 {
+		t.Errorf("skipped = %d, want 1", skipped)
+	}
+	if got := len(unique["NES"]); got != 1 {
+		t.Errorf("kept %d roots, want the one that resolves", got)
+	}
+}

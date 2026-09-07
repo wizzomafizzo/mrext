@@ -20,6 +20,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -54,11 +55,18 @@ func generateIndexWindow(cfg *config.UserConfig) error {
 			}
 			update(tui.ProgressUpdate{Text: text, Current: status.Step, Total: status.Total})
 		})
+		if errors.Is(err, gamesdb.ErrIndexBusy) {
+			return fmt.Errorf("%w", err)
+		}
 		if err != nil {
 			return fmt.Errorf("build game-name index: %w", err)
 		}
 		return nil
 	})
+	if errors.Is(err, gamesdb.ErrIndexBusy) {
+		// Already a complete sentence, and the cause is not this window.
+		return fmt.Errorf("%w", err)
+	}
 	if err != nil {
 		return fmt.Errorf("show index progress: %w", err)
 	}
