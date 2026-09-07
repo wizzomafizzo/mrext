@@ -78,24 +78,25 @@ func (s *Service) removePidFile() error {
 
 // Return the process ID of the current running service daemon.
 func (s *Service) Pid() (int, error) {
-	pidPath := fmt.Sprintf(config.PidFileTemplate, s.Name)
-	pid := 0
+	return readServicePID(s.pidFilePath())
+}
 
-	if _, err := os.Stat(pidPath); err == nil {
-		// #nosec G304 -- path is derived from configured service name and PID template.
-		pidFile, err := os.ReadFile(pidPath)
-		if err != nil {
-			return pid, fmt.Errorf("error reading pid file: %w", err)
-		}
-
-		pidInt, err := strconv.Atoi(string(pidFile))
-		if err != nil {
-			return pid, fmt.Errorf("error parsing pid: %w", err)
-		}
-
-		pid = pidInt
+func readServicePID(path string) (int, error) {
+	// #nosec G304 -- configured PID path in production; temporary fixture in tests.
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return 0, nil
 	}
-
+	if err != nil {
+		return 0, fmt.Errorf("read service PID: %w", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return 0, fmt.Errorf("parse service PID: %w", err)
+	}
+	if pid <= 1 {
+		return 0, errors.New("invalid service PID: must be greater than 1")
+	}
 	return pid, nil
 }
 
@@ -115,9 +116,8 @@ func (s *Service) Running() bool {
 		return false
 	}
 
-	err = process.Signal(syscall.Signal(0))
-
-	return err == nil
+	defer func() { _ = process.Release() }()
+	return s.matchesDaemon(pid) && process.Signal(syscall.Signal(0)) == nil
 }
 
 func (s *Service) stopService() error {
@@ -198,8 +198,8 @@ func (s *Service) startService() {
 		os.Exit(1)
 	}
 
-	s.setupStopService()
 	s.stop = stop
+	s.setupStopService()
 
 	if !s.daemon {
 		err := s.stopService()
@@ -282,18 +282,24 @@ func (s *Service) Start() error {
 
 // Stop the service daemon.
 func (s *Service) Stop() error {
-	if !s.Running() {
-		return fmt.Errorf("%s service not running", s.Name)
-	}
-
 	pid, err := s.Pid()
 	if err != nil {
 		return fmt.Errorf("read service PID: %w", err)
 	}
 
+	// No PID file at all is the ordinary stopped case, not a mismatched PID.
+	if pid == 0 {
+		return fmt.Errorf("%s service not running", s.Name)
+	}
+
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("find service process: %w", err)
+	}
+
+	defer func() { _ = process.Release() }()
+	if !s.matchesDaemon(pid) {
+		return fmt.Errorf("%s PID does not identify its service daemon", s.Name)
 	}
 
 	err = process.Signal(syscall.SIGTERM)

@@ -213,16 +213,21 @@ export class ControlApi {
   async saveMisterIni(
     id: number,
     data: { [key: string]: string },
+    filename?: string,
   ): Promise<void> {
-    await axios.put(`/settings/inis/${id}`, data);
+    await axios.put(`/settings/inis/${id}`, data, {
+      headers: filename ? { "X-Mrext-Ini-Filename": filename } : {},
+    });
   }
 
   async listMisterInis(): Promise<ListInisPayload> {
     return (await axios.get<ListInisPayload>(`/settings/inis`)).data;
   }
 
-  async setMisterIni(data: { ini: number }): Promise<void> {
-    await axios.put(`/settings/inis`, data);
+  async setMisterIni(data: { ini: number }, filename?: string): Promise<void> {
+    await axios.put(`/settings/inis`, data, {
+      headers: filename ? { "X-Mrext-Ini-Filename": filename } : {},
+    });
   }
 
   async setMenuBackgroundMode(data: { mode: number }): Promise<void> {
@@ -233,9 +238,15 @@ export class ControlApi {
     await axios.post(`/settings/remote/restart`);
   }
 
-  async loadMisterIni(id: number): Promise<{ [key: string]: string }> {
-    return (await axios.get<{ [key: string]: string }>(`/settings/inis/${id}`))
-      .data;
+  async loadMisterIni(
+    id: number,
+    filename?: string,
+  ): Promise<{ [key: string]: string }> {
+    return (
+      await axios.get<{ [key: string]: string }>(`/settings/inis/${id}`, {
+        headers: filename ? { "X-Mrext-Ini-Filename": filename } : {},
+      })
+    ).data;
   }
 
   async sysInfo(): Promise<SysInfoResponse> {

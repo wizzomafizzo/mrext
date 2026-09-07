@@ -41,6 +41,7 @@ Intentional differences:
 - A socket file left behind by a crashed service is removed automatically instead of blocking BGM until reboot. `restart` waits for the old service to exit before starting the new one.
 - Stopping a playlist waits for the running track to be killed, so a stopped playlist can never start one more track. Unknown command-line arguments print usage instead of opening the menu.
 - Playlist folders are listed alphabetically in the menu.
+- Optional `music/boot/default/` tracks provide a generic core boot sound when no core-specific boot directory exists. Existing empty core-specific directories remain silent.
 - Optional `bootinplaylist = yes` includes boot sounds in normal playback without changing the selected playlist. It defaults to `no`, preserving existing behavior. When enabled, random playback avoids immediately repeating a track whenever another candidate exists, including small playlists.
 
 ## Music folder
@@ -55,7 +56,10 @@ Intentional differences:
   Radio/station.pls    an internet radio playlist
   boot/                global boot sounds, no prefix needed
   boot/SNES/           boot sounds played when the SNES core launches
+  boot/default/        optional fallback for cores without their own boot folder
 ```
+
+Core boot folders are matched case-insensitively. BGM chooses a random supported track from the matching folder's top level and applies `corebootdelay`. If no core-specific directory exists, it uses `boot/default/` with the same selection and delay rules. A core-specific folder with no supported tracks suppresses the fallback. Missing or empty fallback folders remain silent; startup tracks directly inside `boot/` are not reused for core launches. No INI changes are needed to enable this: add tracks to `boot/default/`.
 
 ### Supported files
 
@@ -191,6 +195,17 @@ Commands are processed one at a time and wait while a core boot sound plays, exa
 ## Logging
 
 With `debug = yes`, every service message is printed and appended to `/tmp/bgm.log` with an ISO 8601 timestamp, including the output of the audio players.
+
+## Uninstall
+
+Remove BGM's Downloader subscription if configured, so updates do not reinstall it.
+
+1. Close the control screen, then run `/media/fat/Scripts/bgm.sh stop` and wait for the service and audio player to exit. Do not reopen the screen afterward: it can start the service again.
+2. Remove the `# Startup BGM` comment and its `bgm.sh $1` command from `/media/fat/linux/user-startup.sh`. Preserve all other startup entries.
+3. Delete `/media/fat/Scripts/bgm.sh`. Optionally back up and remove `/media/fat/music/bgm.ini` to discard BGM settings.
+4. Keep `/media/fat/music/`: tracks, playlists, `.pls` subscriptions, and `boot/` sounds are user content. BGM has no separate persistent database or generated menu tree to remove.
+
+After shutdown, leftover `/tmp/bgm.sock`, `/tmp/bgm.log`, and `/tmp/bgm.sh` can be removed or left until reboot. Keep MiSTer's audio players installed.
 
 ## Local development
 

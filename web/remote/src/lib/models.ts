@@ -126,7 +126,8 @@ export interface CreateLauncherRequest {
   name: string;
 }
 
-interface IniResponse {
+export interface IniResponse {
+  id: number;
   displayName: string;
   filename: string;
   path: string;
