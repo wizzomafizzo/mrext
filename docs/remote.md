@@ -105,6 +105,8 @@ Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh
 
 Changing the MAC address preserves the rest of `u-boot.txt` exactly, including comments and line order, and the value must be a valid MAC. Saving settings now reports which ones could not be applied instead of returning success regardless.
 
+`-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/remote.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.

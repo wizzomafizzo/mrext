@@ -106,6 +106,8 @@ In your `MiSTer.ini` file, look for the line starting with `bootcore=` and chang
 
 If you configured a custom name for the shortcut, use that instead of `Last Played.mgl`.
 
+`-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/lastplayed.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
+
 ## Uninstall
 
 Remove LastPlayed's Downloader subscription if configured, so updates do not reinstall it.
