@@ -17,12 +17,15 @@
 // You should have received a copy of the GNU General Public License
 // along with mrext. If not, see <http://www.gnu.org/licenses/>.
 
+//nolint:gosec // Tests only operate on temporary fixture paths.
 package utils
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -195,5 +198,65 @@ func TestMapKeys(t *testing.T) {
 		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("MapKeys(%v) = %v, want %v", tt.m, got, tt.want)
 		}
+	}
+}
+
+func TestCopyFileLeavesTheDestinationIntactOnFailure(t *testing.T) {
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "nes_gamelist.txt")
+	original := "the good game list\n"
+	if err := os.WriteFile(dest, []byte(original), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// A source that cannot be read stands in for a copy that fails part way
+	// through. os.Create truncated the destination before the copy could fail,
+	// so a full /tmp used to leave a zero-length gamelist behind and report
+	// success.
+	unreadable := filepath.Join(dir, "source")
+	if err := os.Mkdir(unreadable, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CopyFile(unreadable, dest); err == nil {
+		t.Fatal("copying a directory should fail")
+	}
+
+	got, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatalf("destination was destroyed: %v", err)
+	}
+	if string(got) != original {
+		t.Fatalf("destination = %q, want the original %q", got, original)
+	}
+}
+
+func TestCopyFileLeavesNoTemporaryFilesBehind(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source.txt")
+	if err := os.WriteFile(source, []byte("contents"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(dir, "dest.txt")
+
+	if err := CopyFile(source, dest); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyFile(filepath.Join(dir, "missing.txt"), dest); err == nil {
+		t.Fatal("copying a missing source should fail")
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".") {
+			t.Errorf("staged file left behind: %s", entry.Name())
+		}
+	}
+	got, err := os.ReadFile(dest)
+	if err != nil || string(got) != "contents" {
+		t.Fatalf("destination = %q, %v", got, err)
 	}
 }

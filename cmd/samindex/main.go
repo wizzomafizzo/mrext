@@ -90,23 +90,39 @@ func gamelistFilename(systemID string) string {
 }
 
 // Generate a gamelist file for a system with given results.
-func writeGamelist(gamelistDir, systemID string, files []string) {
+//
+// Every write, sync and close is checked. Discarding them meant a full /tmp,
+// which is easy to hit on MiSTer's small tmpfs with a large library, produced
+// a truncated gamelist that was copied over the good one and reported as
+// success, leaving SAM with no games for that system. cmd/contool has always
+// done this correctly; only this copy did not.
+func writeGamelist(gamelistDir, systemID string, files []string) error {
 	gamelistPath := filepath.Join(gamelistDir, gamelistFilename(systemID))
 	tmpPath, err := os.CreateTemp("", "gamelist-*.txt")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create temporary game list: %w", err)
 	}
+	defer func() {
+		_ = tmpPath.Close()
+		// Harmless once MoveFile has taken it; matters when we return early.
+		_ = os.Remove(tmpPath.Name())
+	}()
 
 	for _, file := range files {
-		_, _ = tmpPath.WriteString(file + "\n")
+		if _, writeErr := tmpPath.WriteString(file + "\n"); writeErr != nil {
+			return fmt.Errorf("write temporary game list: %w", writeErr)
+		}
 	}
-	_ = tmpPath.Sync()
-	_ = tmpPath.Close()
-
-	err = utils.MoveFile(tmpPath.Name(), gamelistPath)
-	if err != nil {
-		panic(err)
+	if syncErr := tmpPath.Sync(); syncErr != nil {
+		return fmt.Errorf("sync temporary game list: %w", syncErr)
 	}
+	if closeErr := tmpPath.Close(); closeErr != nil {
+		return fmt.Errorf("close temporary game list: %w", closeErr)
+	}
+	if moveErr := utils.MoveFile(tmpPath.Name(), gamelistPath); moveErr != nil {
+		return fmt.Errorf("install game list: %w", moveErr)
+	}
+	return nil
 }
 
 // Generate gamelists for all systems. Main workflow of app.
@@ -176,8 +192,11 @@ func createGamelists(
 		}
 
 		if len(systemFiles) > 0 {
+			if err := writeGamelist(gamelistDir, systemID, systemFiles); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "error writing game list for %s: %s\n", systemID, err)
+				continue
+			}
 			totalGames += len(systemFiles)
-			writeGamelist(gamelistDir, systemID, systemFiles)
 		}
 	}
 
