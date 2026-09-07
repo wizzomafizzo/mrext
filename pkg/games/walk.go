@@ -68,13 +68,19 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 				return nil
 			}
 			if entry.Type()&os.ModeSymlink != 0 {
+				// A symlink that does not resolve points at something that is
+				// not there: a drive left unplugged, or a game since deleted.
+				// That is not a scan failure. Treating it as one meant a single
+				// dangling link anywhere in a library aborted the whole index,
+				// so nothing at all got indexed and the user had no way to see
+				// which link was at fault.
 				target, resolveErr := filepath.EvalSymlinks(path)
 				if resolveErr != nil {
-					return fmt.Errorf("resolve game symlink: %w", resolveErr)
+					return nil //nolint:nilerr // A broken link is an absent file, not an error.
 				}
 				targetInfo, statErr := os.Stat(target)
 				if statErr != nil {
-					return fmt.Errorf("stat game symlink: %w", statErr)
+					return nil //nolint:nilerr // As above: unreachable target, not a scan failure.
 				}
 				if targetInfo.IsDir() {
 					return walk(target, display)

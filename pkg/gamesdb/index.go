@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
@@ -67,6 +68,14 @@ func generateNamesIndex(
 	return indexNames(config.GamesDB, unique, games.GetSystemPaths(cfg, unique), games.WalkFiles, update, replaceAll)
 }
 
+// indexLockTimeout bounds the wait for another indexer to finish. Long enough
+// to ride out a handover, short enough to tell the user what is happening.
+// A variable so tests need not wait it out.
+var indexLockTimeout = 5 * time.Second
+
+// ErrIndexBusy reports that another process is already writing the index.
+var ErrIndexBusy = errors.New("another indexer is already running; wait for it to finish and try again")
+
 // indexNames stages bounded batches beside the live database, never in /tmp.
 // A separate persistent lock serializes writers across atomic file replacement;
 // readers keep using the previous inode until they close their connection.
@@ -80,16 +89,20 @@ func indexNames(
 	if err := os.MkdirAll(filepath.Dir(filename), 0o750); err != nil {
 		return 0, fmt.Errorf("create index directory: %w", err)
 	}
-	lock, err := bolt.Open(filename+config.GamesDBLockSuffix, 0o600, nil)
+	// bbolt's default flock timeout is zero, which means wait forever. Two
+	// indexers, such as Remote's rebuild button and search.sh, would leave the
+	// second one blocked here before its first progress callback, so its UI
+	// sat on the opening message with nothing to show and no way to know why.
+	lock, err := bolt.Open(filename+config.GamesDBLockSuffix, 0o600, &bolt.Options{Timeout: indexLockTimeout})
 	if err != nil {
+		if errors.Is(err, bolt.ErrTimeout) {
+			return 0, ErrIndexBusy
+		}
 		return 0, fmt.Errorf("lock index writer: %w", err)
 	}
 	defer func() { _ = lock.Close() }()
-	systemPaths, err := uniquePaths(paths)
-	if err != nil {
-		return 0, err
-	}
-	status := IndexStatus{Total: len(systemPaths) + 2, Step: 1}
+	systemPaths, skipped := uniquePaths(paths)
+	status := IndexStatus{Total: len(systemPaths) + 2, Step: 1, Skipped: skipped}
 	update(status)
 	temporary, err := os.CreateTemp(filepath.Dir(filename), ".games-index-*")
 	if err != nil {
@@ -151,22 +164,27 @@ func indexNames(
 	return status.Files, nil
 }
 
-func uniquePaths(paths []games.PathResult) (map[string][]string, error) {
-	result := make(map[string][]string)
+// uniquePaths deduplicates game roots by their resolved location. A root that
+// cannot be resolved, such as a symlink into a drive that is not attached, is
+// skipped and counted: one bad symlink used to abort the run before anything
+// was indexed, including the systems that would have scanned cleanly.
+func uniquePaths(paths []games.PathResult) (roots map[string][]string, skippedRoots int) {
+	roots = make(map[string][]string)
 	seen := make(map[string]bool)
 	for i := range paths {
 		path := &paths[i]
 		resolved, err := filepath.EvalSymlinks(path.Path)
 		if err != nil {
-			return nil, fmt.Errorf("resolve index root %s: %w", path.Path, err)
+			skippedRoots++
+			continue
 		}
 		key := path.System.Id + ":" + resolved
 		if !seen[key] {
 			seen[key] = true
-			result[path.System.Id] = append(result[path.System.Id], path.Path)
+			roots[path.System.Id] = append(roots[path.System.Id], path.Path)
 		}
 	}
-	return result, nil
+	return roots, skippedRoots
 }
 
 func copyUnselected(filename string, systems []games.System, writer *indexWriter, indexed map[string]bool) error {

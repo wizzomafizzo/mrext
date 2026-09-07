@@ -33,6 +33,10 @@ The current shared index is `/media/fat/Scripts/.config/mrext/games.db`, not the
 
 Full rebuilds remove stale game names and system metadata only after a successful scan. They stage bounded batches on SD before publishing the replacement, leaving an existing working index intact if regeneration fails. Mount all desired game libraries first and allow enough free space for a second index. Leave the adjacent `games.db.lock` in place while any app is indexing; it is shared writer-coordination state.
 
+Only one indexer can write at a time. If Remote is already rebuilding the index, Search reports that another indexer is running instead of waiting; try again once it finishes.
+
+A game folder that cannot be reached, such as a symlink into a drive that is not attached, is skipped rather than failing the whole run. Broken symlinks inside a library are skipped the same way, so one dead link no longer prevents indexing.
+
 ## Uninstall
 
 Remove Search's Downloader subscription if configured, so updates do not reinstall it.

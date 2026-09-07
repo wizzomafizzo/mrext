@@ -118,6 +118,10 @@ type IndexStatus struct {
 	Total    int
 	Step     int
 	Files    int
+	// Skipped counts game roots that could not be scanned, such as a folder
+	// on a drive that is not attached. Those roots are reported rather than
+	// failing the whole run.
+	Skipped int
 }
 
 type SearchResult struct {
