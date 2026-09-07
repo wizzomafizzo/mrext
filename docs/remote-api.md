@@ -1141,6 +1141,10 @@ Arguments (JSON):
 |-----------|--------|----------|--------------------------------------------|
 | `path`    | string | Yes      | Path of menu folder (relative to SD card). |
 
+Paths must resolve inside the SD card root. A path that escapes it, or that
+names a file MiSTer needs to boot (`MiSTer*`, `menu.rbf`, `u-boot.img`,
+`u-boot.txt`, `linux/`, `config/`), returns `400`.
+
 On success, returns `200` and object:
 
 | Attribute | Type   | Description                       |
@@ -1214,6 +1218,10 @@ Arguments (JSON):
 
 On success, returns `200`.
 
+Paths must resolve inside the SD card root. A path that escapes it, or that
+names a file MiSTer needs to boot (`MiSTer*`, `menu.rbf`, `u-boot.img`,
+`u-boot.txt`, `linux/`, `config/`), returns `400`.
+
 Example request:
 
 ```shell
@@ -1237,6 +1245,10 @@ Arguments (JSON):
 
 On success, returns `200`.
 
+Paths must resolve inside the SD card root. A path that escapes it, or that
+names a file MiSTer needs to boot (`MiSTer*`, `menu.rbf`, `u-boot.img`,
+`u-boot.txt`, `linux/`, `config/`), returns `400`.
+
 Example request:
 
 ```shell
@@ -1258,6 +1270,10 @@ Arguments (JSON):
 | `path`    | string | Yes      | Path of file (relative to SD card). |
 
 On success, returns `200`.
+
+Paths must resolve inside the SD card root. A path that escapes it, or that
+names a file MiSTer needs to boot (`MiSTer*`, `menu.rbf`, `u-boot.img`,
+`u-boot.txt`, `linux/`, `config/`), returns `400`.
 
 Example request:
 

@@ -205,26 +205,16 @@ func ListFolder(logger *service.Logger) http.HandlerFunc {
 			return
 		}
 
-		args.Path = removeRoot.ReplaceAllString(args.Path, "")
-
-		var path string
-		if args.Path == "" {
-			path = config.SdFolder
-		} else {
-			parts := filepath.SplitList(args.Path)
-			cleaned := make([]string, 0)
-			cleaned = append(cleaned, config.SdFolder)
-
-			for _, part := range parts {
-				if part == "." || part == ".." {
-					continue
-				}
-
-				cleaned = append(cleaned, part)
-			}
-
-			path = filepath.Join(cleaned...)
+		// The previous filter here split on filepath.SplitList, which uses the
+		// PATH list separator, not "/". It saw one element for any ordinary
+		// path, so its ".." check never fired.
+		path, pathErr := resolveMenuPath(args.Path)
+		if pathErr != nil {
+			http.Error(w, pathErr.Error(), http.StatusBadRequest)
+			logger.Error("rejected list menu folder request: %s", pathErr)
+			return
 		}
+		args.Path = relativeMenuPath(args.Path)
 
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 			http.Error(w, statErr.Error(), http.StatusNotFound)
