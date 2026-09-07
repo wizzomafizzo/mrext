@@ -25,8 +25,10 @@ package service
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDaemonIdentityRejectsReusedPID(t *testing.T) {
@@ -90,5 +92,53 @@ func TestStopReportsNotRunningWithoutPIDFile(t *testing.T) {
 	err := svc.Stop()
 	if err == nil || !strings.Contains(err.Error(), "service not running") {
 		t.Fatalf("expected not-running error, got %v", err)
+	}
+}
+
+func TestKillIgnoresAProcessThatIsNotItsDaemon(t *testing.T) {
+	// Escalating to SIGKILL must be as careful as Stop is about PID reuse:
+	// the recorded PID may since belong to something else entirely.
+	svc := &Service{
+		Name:   "mrext-kill-" + filepath.Base(t.TempDir()),
+		Logger: NewLogger("mrext-kill-test"),
+	}
+
+	if err := svc.kill(); err != nil {
+		t.Fatalf("kill without a PID file should be a no-op, got %v", err)
+	}
+
+	// This test's own PID is live but is not the service daemon.
+	if err := os.WriteFile(svc.pidFilePath(), []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(svc.pidFilePath()) })
+
+	if err := svc.kill(); err != nil {
+		t.Fatalf("kill on a foreign PID should be a no-op, got %v", err)
+	}
+	// Still here, so nothing signalled us.
+}
+
+func TestRestartWaitIsBounded(t *testing.T) {
+	// The wait used to be an unbounded "for s.Running() { sleep }".
+	if stopTimeout <= 0 {
+		t.Fatal("stopTimeout must bound the wait")
+	}
+	previous := stopTimeout
+	stopTimeout = 10 * time.Millisecond
+	t.Cleanup(func() { stopTimeout = previous })
+
+	// Not running, so Restart goes straight to Start. Start fails here because
+	// the test binary is not a service; the point is that it returns at all.
+	svc := &Service{
+		Name:   "mrext-restart-" + filepath.Base(t.TempDir()),
+		Logger: NewLogger("mrext-restart-test"),
+	}
+	done := make(chan error, 1)
+	go func() { done <- svc.Restart() }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Restart did not return")
 	}
 }

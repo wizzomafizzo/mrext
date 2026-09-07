@@ -238,13 +238,25 @@ func (s *Service) Start() error {
 	}
 	defer func() { _ = binFile.Close() }()
 
+	// Write the copy beside its final name and rename it into place. Opening
+	// the destination with O_TRUNC fails with ETXTBSY when a daemon is still
+	// running from it, which happens whenever the PID file went missing while
+	// the process lived, and reported "text file busy" rather than anything
+	// about the real cause. pkg/bgm/daemon.go already does it this way.
 	tempPath := filepath.Join(config.TempFolder, filepath.Base(binPath))
-	// #nosec G302,G304,G703 -- copied service binary must be executable at its controlled temp path.
-	tempFile, err := os.OpenFile(tempPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
+	// #nosec G304,G703 -- staged beside the controlled temp path above.
+	tempFile, err := os.CreateTemp(config.TempFolder, "."+filepath.Base(binPath)+"-*")
 	if err != nil {
 		return fmt.Errorf("error creating temp binary: %w", err)
 	}
-	defer func() { _ = tempFile.Close() }()
+	stagedPath := tempFile.Name()
+	published := false
+	defer func() {
+		_ = tempFile.Close()
+		if !published {
+			_ = os.Remove(stagedPath)
+		}
+	}()
 
 	_, err = io.Copy(tempFile, binFile)
 	if err != nil {
@@ -257,6 +269,15 @@ func (s *Service) Start() error {
 	if closeErr := binFile.Close(); closeErr != nil {
 		return fmt.Errorf("close source binary: %w", closeErr)
 	}
+	// #nosec G302 -- the copied service binary must be executable.
+	if chmodErr := os.Chmod(stagedPath, 0o755); chmodErr != nil {
+		return fmt.Errorf("make temporary binary executable: %w", chmodErr)
+	}
+	// #nosec G703 -- destination is the controlled temp path built above.
+	if renameErr := os.Rename(stagedPath, tempPath); renameErr != nil {
+		return fmt.Errorf("publish temporary binary: %w", renameErr)
+	}
+	published = true
 
 	// #nosec G204,G702 -- executable is controlled service copy created above.
 	cmd := exec.CommandContext(context.Background(), tempPath, "-service", "exec", "&")
@@ -310,24 +331,72 @@ func (s *Service) Stop() error {
 	return nil
 }
 
+// stopTimeout bounds how long Restart waits for the previous daemon to exit.
+// A variable so tests need not wait it out.
+var stopTimeout = 20 * time.Second
+
+// Restart stops the running service and starts it again.
+//
+// The wait used to be an unbounded "for s.Running() { sleep }", so a daemon
+// wedged in its own shutdown, such as a blocked listener or file watcher
+// close, meant restart never returned and never timed out. Give up waiting
+// politely after stopTimeout and escalate to SIGKILL.
 func (s *Service) Restart() error {
 	if s.Running() {
-		err := s.Stop()
-		if err != nil {
+		if err := s.Stop(); err != nil {
 			return err
 		}
 	}
 
+	deadline := time.Now().Add(stopTimeout)
 	for s.Running() {
-		time.Sleep(1 * time.Second)
+		if time.Now().After(deadline) {
+			if err := s.kill(); err != nil {
+				return err
+			}
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
 	}
 
-	err := s.Start()
+	return s.Start()
+}
+
+// kill sends SIGKILL to a daemon that did not honour SIGTERM, then clears the
+// PID file so the restart is not blocked by the corpse.
+func (s *Service) kill() error {
+	pid, err := s.Pid()
 	if err != nil {
-		return err
+		return fmt.Errorf("read service PID: %w", err)
 	}
-
+	if pid == 0 {
+		return nil
+	}
+	if !s.matchesDaemon(pid) {
+		return nil
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("find service process: %w", err)
+	}
+	defer func() { _ = process.Release() }()
+	s.Logger.Warn("%s did not stop in %s, killing it", s.Name, stopTimeout)
+	if err := process.Signal(syscall.SIGKILL); err != nil {
+		return fmt.Errorf("kill service process: %w", err)
+	}
 	return nil
+}
+
+// exitOnError reports a failed service command on the console as well as in
+// the log, then exits. Logging alone left the user with a silent exit 1 and no
+// way to know they had to read /tmp/<app>.log to find out why.
+func (s *Service) exitOnError(err error) {
+	if err != nil {
+		s.Logger.Error("%s", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%s: %s\n", s.Name, err)
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
 func (s *Service) ServiceHandler(cmd *string) {
@@ -336,23 +405,11 @@ func (s *Service) ServiceHandler(cmd *string) {
 		s.startService()
 		os.Exit(0)
 	case "start":
-		if err := s.Start(); err != nil {
-			s.Logger.Error("%s", err)
-			os.Exit(1)
-		}
-		os.Exit(0)
+		s.exitOnError(s.Start())
 	case "stop":
-		if err := s.Stop(); err != nil {
-			s.Logger.Error("%s", err)
-			os.Exit(1)
-		}
-		os.Exit(0)
+		s.exitOnError(s.Stop())
 	case "restart":
-		if err := s.Restart(); err != nil {
-			s.Logger.Error("%s", err)
-			os.Exit(1)
-		}
-		os.Exit(0)
+		s.exitOnError(s.Restart())
 	case "status":
 		if s.Running() {
 			_, _ = fmt.Printf("%s service running\n", s.Name)

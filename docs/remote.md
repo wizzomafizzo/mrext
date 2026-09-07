@@ -105,6 +105,8 @@ Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh
 
 Changing the MAC address preserves the rest of `u-boot.txt` exactly, including comments and line order, and the value must be a valid MAC. Saving settings now reports which ones could not be applied instead of returning success regardless.
 
+`-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/remote.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
+
 Start, Stop and Restart on the Scripts-menu screen say what they are doing and redraw when the command finishes. They previously froze the screen for a fixed second and then redrew, which was both unresponsive and often too early to show the real state.
 
 ## Uninstall
