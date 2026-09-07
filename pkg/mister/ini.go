@@ -241,6 +241,16 @@ func (mi *MisterIni) Load() error {
 	return nil
 }
 
+// Save replaces the MiSTer INI, keeping one backup of the file as it was
+// before mrext first changed it.
+//
+// SaveTo truncates in place. This is the file that decides whether the board
+// produces a picture, and people turn a MiSTer off by pulling the power, so a
+// half-written one is a device that boots to a display it cannot show. Stage
+// the replacement and rename over it instead.
+//
+// The backup is written only when there is not one already: overwriting it on
+// every save meant two changes in a row lost the original.
 func (mi *MisterIni) Save() error {
 	if mi.File == nil {
 		return errors.New("ini file is not loaded")
@@ -249,23 +259,21 @@ func (mi *MisterIni) Save() error {
 	backupPath := mi.Path + ".backup"
 
 	backupData, err := os.ReadFile(mi.Path)
-	if os.IsNotExist(err) {
-		// skip backup if file doesn't exist
-		if saveErr := mi.File.SaveTo(mi.Path); saveErr != nil {
-			return fmt.Errorf("save MiSTer INI: %w", saveErr)
-		}
-		return nil
-	}
-	if err != nil {
+	switch {
+	case os.IsNotExist(err):
+		// Nothing to back up yet.
+	case err != nil:
 		return fmt.Errorf("read MiSTer INI for backup: %w", err)
+	default:
+		if _, statErr := os.Stat(backupPath); os.IsNotExist(statErr) {
+			// #nosec G306,G703 -- discovered MiSTer INI backup must remain world-readable.
+			if writeErr := os.WriteFile(backupPath, backupData, 0o644); writeErr != nil {
+				return fmt.Errorf("write MiSTer INI backup: %w", writeErr)
+			}
+		}
 	}
 
-	// #nosec G306,G703 -- discovered MiSTer INI backup must remain world-readable.
-	if err := os.WriteFile(backupPath, backupData, 0o644); err != nil {
-		return fmt.Errorf("write MiSTer INI backup: %w", err)
-	}
-
-	if err := mi.File.SaveTo(mi.Path); err != nil {
+	if err := config.WriteINIAtomically(mi.Path, mi.File); err != nil {
 		return fmt.Errorf("save MiSTer INI: %w", err)
 	}
 	return nil
