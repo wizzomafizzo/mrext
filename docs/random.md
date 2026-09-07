@@ -55,9 +55,11 @@ To create, for example, a launcher which only picks random PSX games:
 1. Create a new file in `/media/fat/Scripts` called `random_psx.sh` (or anything with `.sh` on the end)
 2. Set the contents of the file to:
 
-   ```
+   ```sh
    #!/bin/bash
-   random.sh -filter psx
+   /media/fat/Scripts/random.sh -filter psx
    ```
+
+Use the absolute path so the launcher works regardless of the current directory or whether `Scripts` is in `PATH`.
 
 And that's it, you'll have a new entry in your `Scripts` menu to launch a random PSX game.
