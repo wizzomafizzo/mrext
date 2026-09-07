@@ -59,6 +59,10 @@ These are the important commands:
 
   Cross-compiles a static Linux ARMv7 binary for MiSTer with `CGO_ENABLED=0`. Building `remote` or `all` also rebuilds its web UI.
 
+- `mage deploy <address>`
+
+  Builds every application for MiSTer and copies the binaries to `/media/fat/Scripts` on the device at `<address>` over SSH as `root`. The address is a plain hostname or IP. Because it builds everything, it also rebuilds Remote's web UI. Stop any running mrext service on the device first if you are replacing a binary it is executing.
+
 - `mage remoteWeb`
 
   Runs deterministic npm installation and builds `web/remote` into the ignored `cmd/remote/_client/build` directory.
