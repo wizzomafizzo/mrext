@@ -93,9 +93,26 @@ func createLastPlayedMgl(cfg *config.UserConfig, path, sdRoot string) error {
 		return err
 	}
 
-	_, err = mister.CreateLauncher(cfg, &system, path, sdRoot, mglName)
+	created, err := mister.CreateLauncher(cfg, &system, path, sdRoot, mglName)
 	if err != nil {
 		return fmt.Errorf("error creating mgl: %w", err)
+	}
+
+	return removeStaleLastPlayed(sdRoot, mglName, created)
+}
+
+// Arcade launchers are `.mra` links and everything else is a `.mgl` file, so a
+// system change leaves the previous extension behind. Remove it: a stale
+// shortcut keeps appearing in the menu and can boot the wrong game.
+func removeStaleLastPlayed(sdRoot, name, created string) error {
+	for _, extension := range []string{".mgl", ".mra"} {
+		stale := filepath.Join(sdRoot, name+extension)
+		if stale == created {
+			continue
+		}
+		if err := os.Remove(stale); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove stale last played launcher: %w", err)
+		}
 	}
 
 	return nil

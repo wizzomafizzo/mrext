@@ -137,3 +137,34 @@ func TestEmptyTargetCannotCreateLaunchers(t *testing.T) {
 		t.Fatalf("empty target mutated menu: %v %v", entries, err)
 	}
 }
+
+func TestLastPlayedKeepsOneLauncherAcrossSystems(t *testing.T) {
+	root := t.TempDir()
+	cfg := &config.UserConfig{}
+	cfg.Systems.GamesFolder = []string{root}
+	arcade := filepath.Join(root, "_Arcade", "Pooyan.mra")
+	console := filepath.Join(root, "games", "NES", "Mario.nes")
+	for _, path := range []string{arcade, console} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, step := range []struct{ path, kept, removed string }{
+		{console, "Last Played.mgl", "Last Played.mra"},
+		{arcade, "Last Played.mra", "Last Played.mgl"},
+		{console, "Last Played.mgl", "Last Played.mra"},
+	} {
+		if err := createLastPlayedMgl(cfg, step.path, root); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Lstat(filepath.Join(root, step.kept)); err != nil {
+			t.Fatalf("missing launcher for %s: %v", step.path, err)
+		}
+		if _, err := os.Lstat(filepath.Join(root, step.removed)); !os.IsNotExist(err) {
+			t.Fatalf("stale %s survived %s: %v", step.removed, step.path, err)
+		}
+	}
+}

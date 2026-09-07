@@ -23,15 +23,19 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"math/rand/v2"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 // HistorySize is the ratio of total tracks kept in the recently-played list.
@@ -48,23 +52,29 @@ type Player struct {
 
 	CmdMu sync.Mutex
 
-	mu           sync.Mutex
-	proc         *playerProcess
-	current      *playState
-	playback     string
-	playlist     Playlist
-	playInCore   bool
-	history      []string
-	endPlaylist  bool
-	playlistDone chan struct{}
-	nextToken    uint64
+	mu             sync.Mutex
+	proc           *playerProcess
+	current        *playState
+	playback       string
+	playlist       Playlist
+	playInCore     bool
+	bootInPlaylist bool
+	history        []string
+	endPlaylist    bool
+	playlistDone   chan struct{}
+	nextToken      uint64
 
 	// randIndex and sleep are replaced by tests.
-	randIndex func(n int) int
-	sleep     func(time.Duration)
+	randIndex       func(n int) int
+	sleep           func(time.Duration)
+	radioClient     *http.Client
+	radioRetryDelay time.Duration
+	radioErrors     map[string]string
 }
 
 type playState struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
 	filename   string
 	token      uint64
 	inPlaylist bool
@@ -78,13 +88,17 @@ type playerProcess struct {
 // NewPlayer initialises playback settings from the configuration.
 func NewPlayer(paths *Paths, logger *Logger, cfg *Config) *Player {
 	return &Player{
-		paths:      *paths,
-		logger:     logger,
-		playback:   cfg.Playback,
-		playlist:   cfg.Playlist,
-		playInCore: cfg.PlayInCore,
-		randIndex:  rand.IntN,
-		sleep:      time.Sleep,
+		paths:           *paths,
+		logger:          logger,
+		playback:        cfg.Playback,
+		playlist:        cfg.Playlist,
+		playInCore:      cfg.PlayInCore,
+		bootInPlaylist:  cfg.BootInPlaylist,
+		randIndex:       rand.IntN,
+		sleep:           time.Sleep,
+		radioClient:     newRadioClient(),
+		radioRetryDelay: radioRetryDelay,
+		radioErrors:     make(map[string]string),
 	}
 }
 
@@ -121,6 +135,20 @@ func (p *Player) SetPlayInCore(enabled bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.playInCore = enabled
+}
+
+// BootInPlaylist reports whether boot sounds participate in normal playback.
+func (p *Player) BootInPlaylist() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.bootInPlaylist
+}
+
+// SetBootInPlaylist applies the rotation preference without interrupting a track.
+func (p *Player) SetBootInPlaylist(enabled bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.bootInPlaylist = enabled
 }
 
 // Playing returns the path of the track being played, if any.
@@ -180,7 +208,7 @@ func (p *Player) filterTracks(names []string, includeBoot bool) []string {
 			tracks = append(tracks, name)
 			continue
 		}
-		if strings.HasPrefix(name, "_") {
+		if strings.HasPrefix(name, "_") && !p.BootInPlaylist() {
 			continue
 		}
 		if current.IsAll() && IsPLS(name) {
@@ -208,7 +236,7 @@ func (p *Player) Tracks(playlist Playlist, includeBoot bool) []string {
 		for _, name := range p.filterTracks(names, includeBoot) {
 			tracks = append(tracks, filepath.Join(folder, name))
 		}
-		return tracks
+		return p.withGlobalBootTracks(tracks, includeBoot)
 	}
 	byFolder := make(map[string][]string)
 	var order []string
@@ -231,6 +259,29 @@ func (p *Player) Tracks(playlist Playlist, includeBoot bool) []string {
 			tracks = append(tracks, filepath.Join(parent, name))
 		}
 	}
+	return p.withGlobalBootTracks(tracks, includeBoot)
+}
+
+func (p *Player) withGlobalBootTracks(tracks []string, includeBoot bool) []string {
+	if !p.BootInPlaylist() {
+		return tracks
+	}
+	entries, err := os.ReadDir(p.paths.BootFolder)
+	if err != nil {
+		return tracks
+	}
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			names = append(names, entry.Name())
+		}
+	}
+	for _, name := range p.filterTracks(names, includeBoot) {
+		path := filepath.Join(p.paths.BootFolder, name)
+		if !containsString(tracks, path) {
+			tracks = append(tracks, path)
+		}
+	}
 	return tracks
 }
 
@@ -251,6 +302,9 @@ func (p *Player) TotalTracks(playlist Playlist, includeBoot bool) int {
 
 func (p *Player) addHistory(filename string) {
 	size := int(math.Floor(float64(p.TotalTracks(p.Playlist(), false)) * HistorySize))
+	if p.BootInPlaylist() {
+		size = max(size, 1)
+	}
 	if size < 1 {
 		return
 	}
@@ -269,16 +323,17 @@ func (p *Player) History() []string {
 	return append([]string(nil), p.history...)
 }
 
-// Stop mirrors stop(): only when a player process exists is the current
-// track cleared and the process killed.
+// Stop cancels pending stream requests as well as running audio players.
 func (p *Player) Stop() {
 	p.mu.Lock()
 	proc := p.proc
-	if proc != nil {
-		p.current = nil
-		p.proc = nil
-	}
+	state := p.current
+	p.current = nil
+	p.proc = nil
 	p.mu.Unlock()
+	if state != nil {
+		state.cancel()
+	}
 	if proc != nil {
 		killPlayer(proc.cmd)
 		_ = proc.reader.Close()
@@ -299,7 +354,9 @@ func (p *Player) playTrack(filename string, inPlaylist bool) {
 	}
 	p.mu.Lock()
 	p.nextToken++
-	state := &playState{filename: filename, token: p.nextToken, inPlaylist: inPlaylist}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	state := &playState{ctx: ctx, cancel: cancel, filename: filename, token: p.nextToken, inPlaylist: inPlaylist}
 	p.current = state
 	p.mu.Unlock()
 	p.addHistory(filename)
@@ -308,7 +365,9 @@ func (p *Player) playTrack(filename string, inPlaylist bool) {
 	for loop := LoopAmount(filename); loop > 0 && p.shouldContinue(state); loop-- {
 		p.logger.Logf("Loop #%d", loop)
 		switch {
-		case IsMP3(filename), IsPLS(filename):
+		case IsPLS(filename):
+			p.playRadio(state, filename)
+		case IsMP3(filename):
 			p.playMP3(state, filename)
 		case IsOGG(filename):
 			p.playFile(state, "ogg123", filename)
@@ -339,9 +398,6 @@ func (p *Player) shouldContinue(state *playState) bool {
 // playMP3 runs mpg123, killing it as soon as it reports the track finished
 // to work around the hang the Python script describes.
 func (p *Player) playMP3(state *playState, filename string) {
-	if IsPLS(filename) {
-		filename = PLSURL(filename, p.logger)
-	}
 	proc, err := p.startProcess(state, "mpg123", "--no-control", filename)
 	if err != nil {
 		p.logger.Log(err.Error())
@@ -355,7 +411,7 @@ func (p *Player) playMP3(state *playState, filename string) {
 			break
 		}
 	}
-	p.finishProcess(proc)
+	_ = p.finishProcess(proc)
 }
 
 // playFile runs a player until it exits, logging its output.
@@ -369,16 +425,23 @@ func (p *Player) playFile(state *playState, name string, args ...string) {
 	for scanner.Scan() {
 		p.logger.Log(strings.TrimRight(scanner.Text(), " \t\r\n\f\v"))
 	}
-	p.finishProcess(proc)
+	_ = p.finishProcess(proc)
 }
 
 func (p *Player) startProcess(state *playState, name string, args ...string) (*playerProcess, error) {
+	return p.startProcessInput(state, nil, name, args...)
+}
+
+func (p *Player) startProcessInput(
+	state *playState, input io.Reader, name string, args ...string,
+) (*playerProcess, error) {
 	reader, writer, err := os.Pipe()
 	if err != nil {
 		return nil, fmt.Errorf("create %s output pipe: %w", name, err)
 	}
 	// #nosec G204 -- players are fixed MiSTer tools; arguments are music file paths.
 	cmd := exec.CommandContext(context.Background(), name, args...)
+	cmd.Stdin = input
 	cmd.Stdout = writer
 	cmd.Stderr = writer
 	cmd.SysProcAttr = playerAttributes()
@@ -390,8 +453,10 @@ func (p *Player) startProcess(state *playState, name string, args ...string) (*p
 	_ = writer.Close()
 	proc := &playerProcess{cmd: cmd, reader: reader}
 	p.mu.Lock()
-	p.proc = proc
-	ended := state.inPlaylist && p.endPlaylist
+	ended := p.current != state || (state.inPlaylist && p.endPlaylist)
+	if !ended {
+		p.proc = proc
+	}
 	p.mu.Unlock()
 	if ended {
 		// The playlist stopped while this player was starting.
@@ -401,7 +466,7 @@ func (p *Player) startProcess(state *playState, name string, args ...string) (*p
 }
 
 // finishProcess mirrors kill_player() for the process this call started.
-func (p *Player) finishProcess(proc *playerProcess) {
+func (p *Player) finishProcess(proc *playerProcess) error {
 	p.mu.Lock()
 	if p.proc == proc {
 		p.proc = nil
@@ -409,7 +474,10 @@ func (p *Player) finishProcess(proc *playerProcess) {
 	p.mu.Unlock()
 	killPlayer(proc.cmd)
 	_ = proc.reader.Close()
-	_ = proc.cmd.Wait()
+	if err := proc.cmd.Wait(); err != nil {
+		return fmt.Errorf("audio player exited: %w", err)
+	}
+	return nil
 }
 
 // randomTrack mirrors get_random_track() with a guard against the Python
@@ -428,6 +496,16 @@ func (p *Player) randomTrack() (string, bool) {
 	}
 	if len(candidates) == 0 {
 		candidates = tracks
+		// Exhausted history must not immediately repeat a boot sound when
+		// another track exists, including in very small playlists.
+		if p.BootInPlaylist() && len(history) > 0 && len(tracks) > 1 {
+			candidates = make([]string, 0, len(tracks))
+			for _, track := range tracks {
+				if track != history[len(history)-1] {
+					candidates = append(candidates, track)
+				}
+			}
+		}
 	}
 	return candidates[p.randIndex(len(candidates))], true
 }
@@ -576,14 +654,26 @@ func (p *Player) PlayBoot() {
 	p.Play(track)
 }
 
-// PlayCoreBoot mirrors play_core_boot(): a case-insensitive folder match in
-// music/boot plays one random track after the configured delay. An empty
-// matching folder ends the search; a played one lets it continue.
+// PlayCoreBoot plays a random core-specific boot track after the configured
+// delay. The default folder is used only when no core-specific directory exists;
+// an empty core-specific directory deliberately suppresses the fallback.
 func (p *Player) PlayCoreBoot(core string) {
+	if core == "" {
+		return
+	}
 	entries, err := os.ReadDir(p.paths.BootFolder)
 	if err != nil {
 		return
 	}
+	if !p.playCoreBootFolder(entries, core) {
+		p.playCoreBootFolder(entries, config.BGMDefaultBootFolder)
+	}
+}
+
+// playCoreBootFolder preserves case-insensitive matching, including multiple
+// matching directories. Its result reports directory presence, not playback.
+func (p *Player) playCoreBootFolder(entries []fs.DirEntry, core string) bool {
+	found := false
 	for _, entry := range entries {
 		if !strings.EqualFold(entry.Name(), core) {
 			continue
@@ -593,6 +683,7 @@ func (p *Player) PlayCoreBoot(core string) {
 		if statErr != nil || !info.IsDir() {
 			continue
 		}
+		found = true
 		files, readErr := os.ReadDir(folder)
 		if readErr != nil {
 			continue
@@ -604,11 +695,12 @@ func (p *Player) PlayCoreBoot(core string) {
 			}
 		}
 		if len(tracks) == 0 {
-			return
+			return true
 		}
 		cfg, _ := LoadConfig(&p.paths)
 		p.sleep(time.Duration(cfg.CoreBootDelay * float64(time.Second)))
 		p.logger.Log("Playing core boot track...")
 		p.Play(tracks[p.randIndex(len(tracks))])
 	}
+	return found
 }
