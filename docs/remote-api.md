@@ -1415,15 +1415,15 @@ On success, returns `200` and object:
 
 | Attribute | Type   | Description                                                                                                                                          |
 |-----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `active`  | number | `0` to `4`. This is the current active .ini file's ID in the list. `0` is a special value meaning no value has been set, which falls back on ID `1`. |
+| `active`  | number | Active MiSTer slot, `0` to `4`; `0` falls back to Main (`1`). An excluded/unavailable slot may not appear in `inis`. |
 | `inis`    | Ini[]  | List of Ini objects (see below).                                                                                                                     |
 
 Ini object:
 
 | Attribute     | Type   | Description                                        |
 |---------------|--------|----------------------------------------------------|
-| `id`          | number | ID of .ini file.                                   |
-| `displayName` | string | Name of the .ini file as it would show in the OSD. |
+| `id`          | number | MiSTer slot ID, not array position. IDs may have gaps. |
+| `displayName` | string | Descriptive INI name; custom names are no longer truncated to OSD label length. |
 | `filename`    | string | Filename of the .ini file.                         |
 | `path`        | string | Absolute path to the .ini file.                    |
 
@@ -1470,6 +1470,10 @@ Example request:
 ```shell
 curl --request PUT --url "http://mister:8182/api/settings/inis" --data '{"ini":1}'
 ```
+
+INI listing uses MiSTer's first-three-candidates-then-case-insensitive-sort rule. The example is excluded only after slot assignment. Clients must use each object's `id`, not its array index. Detected slot-layout changes fail requests; restart MiSTer and Remote together after changing alternate filenames.
+
+For loading, saving, or activating an INI, clients may send `X-Mrext-Ini-Filename` with the expected `filename` from the listing. A mismatch returns `409` before reading, saving, or activating another file. Existing JSON shapes are unchanged; the header is optional for legacy clients and always sent by the current UI. Editors should retain the loaded ID/filename rather than re-fetching the active slot at Save time.
 
 #### Get .ini file values
 

@@ -89,6 +89,14 @@ If startup fails, capture `/tmp/remote.log`, `/tmp/remote.pid` (if present), and
 
 Settings always offers Main, even if `MiSTer.ini` is absent. Loading it uses blank defaults without writing a file. Save creates `/media/fat/MiSTer.ini` with a `[MiSTer]` section and the selected settings; the Save screen explains this. `MiSTer_example.ini` is never offered as an active configuration or edited. Saving Main leaves alternate INIs unchanged, and the menu is relaunched only after saving succeeds.
 
+## INI slot identity
+
+Remote follows current MiSTer `cfg_get_name` ordering: take the first three `MiSTer_*.ini` names in filesystem directory order, then sort that subset case-insensitively. Main remains slot 1. The example file can consume a MiSTer slot but is not editable in Remote, so displayed IDs can have gaps. Custom names are shown in full rather than truncated to four characters.
+
+Each settings page shows the file being edited. Save targets that loaded filename even if the active slot changes elsewhere. Switching files asks before discarding edits; missing values in the new file return to defaults. Failed loads disable Save and report the error.
+
+Remote retains its first observed slot layout and refuses further access if it detects a change. **After adding, removing, or renaming alternate INIs, restart both MiSTer and Remote before editing.** MiSTer caches its mapping internally; Remote cannot reconstruct a different mapping cached before Remote started. Older firmware with different ordering is not verified. No INI files are renamed to force an order.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.

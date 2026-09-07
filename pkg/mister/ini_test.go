@@ -23,9 +23,58 @@ package mister
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestIniSlotsMatchMisterFirstThreeThenSort(t *testing.T) {
+	names := []string{"MiSTer_z.ini", "MiSTer_ultrawide.ini", "MiSTer_AUTO.ini", "MiSTer_aaa.ini"}
+	slots := alternateIniNames(names)
+	want := []string{"MiSTer_AUTO.ini", "MiSTer_ultrawide.ini", "MiSTer_z.ini"}
+	if !reflect.DeepEqual(slots, want) {
+		t.Fatalf("slots=%v want=%v", slots, want)
+	}
+	entries := iniEntries(t.TempDir(), names, slots)
+	if entries[2].DisplayName != "ultrawide" || entries[2].Id != 3 {
+		t.Fatalf("label or ID lost: %+v", entries[2])
+	}
+}
+
+func TestIniSlotsUseASCIICaseOrdering(t *testing.T) {
+	names := []string{"MiSTer_K.ini", "MiSTer_z.ini", "MiSTer_a.ini"}
+	want := []string{"MiSTer_a.ini", "MiSTer_z.ini", "MiSTer_K.ini"}
+	if got := alternateIniNames(names); !reflect.DeepEqual(got, want) {
+		t.Fatalf("slots=%v want=%v", got, want)
+	}
+}
+
+func TestExampleSlotIsNotReassigned(t *testing.T) {
+	names := []string{"MiSTer_ultrawide.ini", "MiSTer_example.ini", "MiSTer_auto.ini"}
+	entries := iniEntries(t.TempDir(), names, alternateIniNames(names))
+	if _, err := iniByID(entries, 3); err == nil {
+		t.Fatal("example slot reassigned to another file")
+	}
+	selected, err := iniByID(entries, 4)
+	if err != nil || selected.Filename != "MiSTer_ultrawide.ini" {
+		t.Fatalf("wrong slot identity: %+v %v", selected, err)
+	}
+}
+
+func TestIniLayoutRejectsDrift(t *testing.T) {
+	var layout iniLayout
+	names := []string{"MiSTer_auto.ini", "MiSTer_ultrawide.ini"}
+	if !layout.accept(names) {
+		t.Fatal("initial layout rejected")
+	}
+	if !layout.accept(names) {
+		t.Fatal("stable layout rejected")
+	}
+	names[0] = "MiSTer_another.ini"
+	if layout.accept(names) {
+		t.Fatal("changed slot layout accepted")
+	}
+}
 
 func TestExampleOnlyRootCreatesMainOnlyOnSave(t *testing.T) {
 	root := t.TempDir()

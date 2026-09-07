@@ -212,5 +212,6 @@ var ShadowedIniKeys = []string{
 const (
 	DefaultIniFilename = "MiSTer.ini"
 	ExampleIniFilename = "MiSTer_example.ini"
+	IniFilenameHeader  = "X-Mrext-Ini-Filename"
 	MainIniSection     = "MiSTer"
 )

@@ -248,6 +248,7 @@ func startServiceWithListener(
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
+		AllowedHeaders: []string{"Origin", "Accept", "Content-Type", "X-Requested-With", mister.IniFilenameHeader},
 		AllowedMethods: []string{"GET", "POST", "DELETE", "PUT"},
 	})
 
