@@ -30,6 +30,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 // SAM uses slightly different system IDs.
@@ -222,7 +223,12 @@ func main() {
 	quiet := flag.Bool("q", false, "suppress all status output")
 	detect := flag.Bool("d", false, "list active system folders")
 	noDupes := flag.Bool("nodupes", false, "filter out duplicate games")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "samindex", version.String())
+		return
+	}
 
 	// filter systems
 	var systems []games.System

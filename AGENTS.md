@@ -42,6 +42,7 @@ mage lintFix              # apply auto-fixes, then re-run mage lint
 mage build <app>          # host binary into _bin/<os>_<arch>/
 mage mister <app>         # static linux/arm GOARM=7 CGO_ENABLED=0 binary for MiSTer
 mage mister all           # every app; also rebuilds the Remote web UI
+mage deploy <ip>          # build everything and scp it to root@<ip>:/media/fat/Scripts
 mage generateSystemMetadata   # refresh pkg/games/system_metadata.gen.json
 mage genSystemsDoc        # regenerate docs/systems.md after a catalog bump
 npm ci --prefix web/remote && npm test --prefix web/remote && npm run build --prefix web/remote

@@ -102,6 +102,12 @@ func ShowConfirmModal(
 	app.SetFocus(dialog)
 }
 
+// InputOptions configures ShowInputModal. Prompt is drawn above the box, so it
+// should carry a rule or an example the Title does not already give: the page
+// behind the modal keeps drawing, which means the row being edited and its
+// footer help are still on screen next to the Title. A prompt that restates
+// any of those is the fourth way of saying one thing.
+//
 //nolint:govet // Field order keeps textual options readable at call sites.
 type InputOptions struct {
 	Title            string

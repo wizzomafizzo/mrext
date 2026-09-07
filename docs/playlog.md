@@ -41,6 +41,18 @@ PlayLog does not record menu navigation. Earlier versions wrote a database row f
 
 PlayLog waits for MiSTer's state files to appear when it starts, so launching it from `user-startup.sh` before MiSTer main has created them no longer makes the service exit. It also recovers when another script replaces `/tmp/ACTIVEGAME` or `/tmp/CORENAME` instead of writing over them, which previously left tracking silent until a restart.
 
+## Service screen
+
+Running `playlog` from the Scripts menu now opens a screen instead of printing a report that scrolls past. It shows whether the service is running and offers **Start**/**Stop**, **Restart**, **Uninstall**, **Exit** and **Stats**, with Exit selected by default.
+
+**Stats** is the same top ten cores and top ten games, with the same `Xh Ym` times, on a page that stays put.
+
+The question about adding PlayLog to MiSTer startup is the same question, asked in the shared dialog rather than as a raw `[DOWN=Yes/UP=No]` terminal prompt.
+
+**Uninstall** stops the service and removes the `# mrext/playlog` entry from `user-startup.sh`. It never touches `playlog.db`: that is your play history, and the summary points at where it still is.
+
+`playlog.sh -service start|stop|restart|status` is unchanged and stays headless, so `user-startup.sh` is unaffected.
+
 ## Configuration
 
 PlayLog can be configured by creating a `playlog.ini` file in the `/media/fat/Scripts` folder where you put `playlog.sh`. For example:

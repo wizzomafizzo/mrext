@@ -21,6 +21,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -32,6 +33,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/gamesdb"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 // TODO: handle filename being too long (255 chars)
@@ -124,7 +126,10 @@ func testSyncFile(cfg *config.UserConfig, path string) {
 	}
 }
 
-func findSyncFiles(verbose, update *bool) []syncFile {
+// findSyncFiles reports unreadable sync files through report rather than
+// printing them, so the same code serves the console log and the progress
+// modal without writing underneath a drawn screen.
+func findSyncFiles(report func(string)) []syncFile {
 	menuFolders := mister.GetMenuFolders(config.SdFolder)
 	menuFolders = append(menuFolders, config.SdFolder)
 	syncFiles := getSyncFiles(menuFolders)
@@ -133,9 +138,7 @@ func findSyncFiles(verbose, update *bool) []syncFile {
 	for _, path := range syncFiles {
 		sf, err := readSyncFile(path)
 		if err != nil {
-			if *verbose || !*update {
-				_, _ = fmt.Printf("Error reading %s: %s\n", path, err)
-			}
+			report(fmt.Sprintf("Error reading %s: %s", path, err))
 			continue
 		}
 		syncs = append(syncs, sf)
@@ -144,13 +147,97 @@ func findSyncFiles(verbose, update *bool) []syncFile {
 	return syncs
 }
 
+// syncOutcome is what one sync file produced, for the summary page.
+type syncOutcome struct {
+	name    string
+	found   int
+	missing int
+	failed  int
+}
+
+// runSync performs the whole sync, reporting each step as a complete line.
+// The console path prints those lines exactly as it always did; the TUI path
+// shows the latest one in a progress modal and the outcomes on a summary page.
+func runSync(cfg *config.UserConfig, report func(string)) ([]syncOutcome, error) {
+	report("Searching for sync files...")
+	syncs := findSyncFiles(report)
+	if len(syncs) == 0 {
+		return nil, errors.New("no sync files found")
+	}
+	report(fmt.Sprintf("Found %d sync file(s).", len(syncs)))
+
+	report("Checking for updates...")
+	for i := range syncs {
+		sync := &syncs[i]
+		newSync, updated, changeErr := checkForChanges(sync)
+		switch {
+		case changeErr != nil:
+			report(fmt.Sprintf("%d/%d: %s... error: %s", i+1, len(syncs), sync.name, changeErr))
+		case updated:
+			syncs[i] = newSync
+			report(fmt.Sprintf("%d/%d: %s... updated", i+1, len(syncs), sync.name))
+		default:
+			report(fmt.Sprintf("%d/%d: %s... no update", i+1, len(syncs), sync.name))
+		}
+	}
+
+	report("Building games index...")
+	if err := makeIndex(cfg, syncs); err != nil {
+		return nil, fmt.Errorf("error generating index: %w", err)
+	}
+	report("Building games index... done")
+
+	outcomes := make([]syncOutcome, 0, len(syncs))
+	for syncIndex := range syncs {
+		sync := &syncs[syncIndex]
+		report("---")
+		report("Name:    " + sync.name)
+		report("Author:  " + sync.author)
+		report("URL:     " + sync.url)
+		report(fmt.Sprintf("Updated: %s", sync.updated))
+		report("Folder:  " + sync.folder)
+		report("Games:")
+
+		// #nosec G301 -- generated launcher directory must remain world-readable.
+		if err := os.MkdirAll(sync.folder, 0o755); err != nil {
+			return outcomes, fmt.Errorf("error creating folder: %w", err)
+		}
+
+		outcome := syncOutcome{name: sync.name}
+		for gameIndex := range sync.games {
+			game := &sync.games[gameIndex]
+			file, found, err := tryLinkGame(cfg, sync, game)
+			switch {
+			case err != nil:
+				outcome.failed++
+				report("- " + game.name + "... error: " + err.Error())
+			case found:
+				outcome.found++
+				report("- " + game.name + "... found " + file)
+			default:
+				outcome.missing++
+				report("- " + game.name + "... not found")
+			}
+		}
+		outcomes = append(outcomes, outcome)
+	}
+	return outcomes, nil
+}
+
 func main() {
 	update := flag.Bool("update", false, "find, update and link all sync files on system")
 	verbose := flag.Bool("verbose", false, "print status information during update")
 	test := flag.String("test", "", "report if specified sync file is valid and display match results")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "launchsync", version.String())
+		return
+	}
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
+	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
+		TUI: config.TUIConfig{Theme: "default", Mouse: true, CRTMode: true},
+	})
 	if err != nil {
 		_, _ = fmt.Println("Error loading config file:", err)
 		os.Exit(1)
@@ -161,96 +248,41 @@ func main() {
 		return
 	}
 
-	if *verbose || !*update {
-		_, _ = fmt.Print("Searching for sync files... ")
+	// -update is how a script or a startup hook runs this, so it keeps the
+	// console log and never draws a screen. A plain run from the Scripts menu
+	// gets the shared interface.
+	if *update {
+		runConsole(cfg, *verbose)
+		return
 	}
-	syncs := findSyncFiles(verbose, update)
-
-	if len(syncs) == 0 {
-		if *verbose || !*update {
-			_, _ = fmt.Println("no sync files found")
-		}
+	started, screenErr := showSyncScreen(cfg)
+	if screenErr == nil {
+		return
+	}
+	if started {
+		// A screen came up and the sync ran inside it, so this is a real
+		// failure. Re-running here would rewrite every shortcut again.
+		_, _ = fmt.Fprintln(os.Stderr, screenErr)
 		os.Exit(1)
 	}
-	if *verbose || !*update {
-		_, _ = fmt.Printf("found %d\n", len(syncs))
-	}
+	// No screen was ever obtained and nothing ran, so this is a headless
+	// invocation: cron, ssh without a tty, a wrapper script. Behave the way a
+	// bare "launchsync" always did and print the log.
+	runConsole(cfg, true)
+}
 
-	if *verbose || !*update {
-		_, _ = fmt.Println("Checking for updates...")
-	}
-	for i := range syncs {
-		sync := &syncs[i]
-		if *verbose || !*update {
-			_, _ = fmt.Printf("%d/%d: %s... ", i+1, len(syncs), sync.name)
-		}
-		newSync, updated, changeErr := checkForChanges(sync)
-		switch {
-		case changeErr != nil:
-			if *verbose || !*update {
-				_, _ = fmt.Printf("error: %s\n", changeErr)
-			}
-		case updated:
-			syncs[i] = newSync
-			if *verbose || !*update {
-				_, _ = fmt.Println("updated")
-			}
-		case *verbose || !*update:
-			_, _ = fmt.Println("no update")
+// runConsole keeps the original non-interactive behaviour: the same lines, in
+// the same order, and exit 1 on failure.
+func runConsole(cfg *config.UserConfig, printLines bool) {
+	report := func(line string) {
+		if printLines {
+			_, _ = fmt.Println(line)
 		}
 	}
-
-	if *verbose || !*update {
-		_, _ = fmt.Print("Building games index... ")
-	}
-	err = makeIndex(cfg, syncs)
-	if err != nil {
-		if *verbose || !*update {
-			_, _ = fmt.Printf("error generating index: %s\n", err)
+	if _, err := runSync(cfg, report); err != nil {
+		if printLines {
+			_, _ = fmt.Println(err)
 		}
 		os.Exit(1)
-	}
-	if *verbose || !*update {
-		_, _ = fmt.Println("done")
-	}
-
-	for syncIndex := range syncs {
-		sync := &syncs[syncIndex]
-		if *verbose || !*update {
-			_, _ = fmt.Println("---")
-			_, _ = fmt.Printf("Name:    %s\n", sync.name)
-			_, _ = fmt.Printf("Author:  %s\n", sync.author)
-			_, _ = fmt.Printf("URL:     %s\n", sync.url)
-			_, _ = fmt.Printf("Updated: %s\n", sync.updated)
-			_, _ = fmt.Printf("Folder:  %s\n", sync.folder)
-			_, _ = fmt.Println("Games:")
-		}
-
-		// #nosec G301 -- generated launcher directory must remain world-readable.
-		err := os.MkdirAll(sync.folder, 0o755)
-		if err != nil {
-			if *verbose || !*update {
-				_, _ = fmt.Printf("error creating folder: %s\n", err)
-			}
-			os.Exit(1)
-		}
-
-		for gameIndex := range sync.games {
-			game := &sync.games[gameIndex]
-			if *verbose || !*update {
-				_, _ = fmt.Print("- " + game.name + "... ")
-			}
-			file, found, err := tryLinkGame(cfg, sync, game)
-			if *verbose || !*update {
-				switch {
-				case err != nil:
-					_, _ = fmt.Printf("error: %s\n", err)
-				case found:
-					_, _ = fmt.Printf("found %s\n", file)
-				default:
-					_, _ = fmt.Println("not found")
-				}
-			}
-		}
 	}
 }

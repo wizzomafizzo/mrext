@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -154,6 +155,30 @@ func GenerateSystemMetadata() error {
 	return sh.RunV("go", "run", "./internal/gensystemmetadata")
 }
 
+const versionPackage = "github.com/wizzomafizzo/mrext/pkg/version"
+
+// versionLdflags stamps the build so every binary can report what it is. The
+// package falls back to Go's own VCS stamps for a plain "go build", so this is
+// only about producing a clean tag name for a release.
+func versionLdflags() string {
+	describe, err := sh.Output("git", "describe", "--tags", "--always", "--dirty")
+	if err != nil {
+		describe = ""
+	}
+	commit, err := sh.Output("git", "rev-parse", "--short", "HEAD")
+	if err != nil {
+		commit = ""
+	}
+	flags := "-s -w"
+	if describe != "" {
+		flags += " -X " + versionPackage + ".Version=" + describe
+	}
+	if commit != "" {
+		flags += " -X " + versionPackage + ".Commit=" + commit
+	}
+	return flags
+}
+
 func buildApp(a app, out string, env map[string]string) error {
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err
@@ -165,7 +190,7 @@ func buildApp(a app, out string, env map[string]string) error {
 	for key, value := range env {
 		buildEnv[key] = value
 	}
-	return sh.RunWithV(buildEnv, "go", "build", "-trimpath", "-o", out, a.path)
+	return sh.RunWithV(buildEnv, "go", "build", "-trimpath", "-ldflags", versionLdflags(), "-o", out, a.path)
 }
 
 func buildApps(appName, platform string, env map[string]string) error {
@@ -209,6 +234,57 @@ func Mister(appName string) error {
 		"GOARCH": "arm",
 		"GOARM":  "7",
 	})
+}
+
+// deployUser is the only account on a stock MiSTer, and deployDir is where its
+// Scripts menu looks for executables.
+const (
+	deployUser = "root"
+	deployDir  = "/media/fat/Scripts"
+)
+
+// Deploy builds every MiSTer binary and copies it to a device over SSH. The
+// address is the device's hostname or IP.
+//
+// It builds through Mister("all"), so it also reinstalls and rebuilds Remote's
+// web UI. Everything in the output directory is copied, including the internal
+// contool and samindex tools; the Scripts menu only lists the ".sh" files, so
+// the extras are inert.
+func Deploy(address string) error {
+	address = strings.TrimSpace(address)
+	if address == "" {
+		return errors.New("no device address given: mage deploy <address>")
+	}
+	if strings.ContainsAny(address, " \t/@:") {
+		return fmt.Errorf("device address must be a plain hostname or IP: %s", address)
+	}
+
+	if err := Mister("all"); err != nil {
+		return err
+	}
+
+	outDir := filepath.Join(binDir, "linux_arm")
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		return fmt.Errorf("read built binaries: %w", err)
+	}
+	binaries := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		binaries = append(binaries, filepath.Join(outDir, entry.Name()))
+	}
+	if len(binaries) == 0 {
+		return fmt.Errorf("no binaries to deploy in %s", outDir)
+	}
+
+	target := deployUser + "@" + address + ":" + deployDir + "/"
+	fmt.Printf("Deploying %d binaries to %s\n", len(binaries), target)
+	if err := sh.RunV("scp", append(binaries, target)...); err != nil {
+		return fmt.Errorf("copy binaries to %s: %w", address, err)
+	}
+	return nil
 }
 
 type updateDbFile struct {

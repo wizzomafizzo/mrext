@@ -28,16 +28,19 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/favorites"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 type cliOptions struct {
-	root    string
-	command string
+	root        string
+	command     string
+	showVersion bool
 }
 
 func parseCLI(args []string) (cliOptions, error) {
 	flags := flag.NewFlagSet("favorites", flag.ContinueOnError)
 	root := flags.String("root", "", "use a local MiSTer filesystem root")
+	showVersion := flags.Bool("version", false, "print the version and exit")
 	if err := flags.Parse(args); err != nil {
 		return cliOptions{}, fmt.Errorf("parse arguments: %w", err)
 	}
@@ -45,7 +48,7 @@ func parseCLI(args []string) (cliOptions, error) {
 	if len(positionals) > 1 || len(positionals) == 1 && positionals[0] != "refresh" {
 		return cliOptions{}, errors.New("usage: favorites.sh [--root PATH] [refresh]")
 	}
-	options := cliOptions{root: *root}
+	options := cliOptions{root: *root, showVersion: *showVersion}
 	if len(positionals) == 1 {
 		options.command = positionals[0]
 	}
@@ -92,6 +95,10 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	if options.showVersion {
+		_, _ = fmt.Printf("favorites %s\n", version.String())
+		return nil
+	}
 	cfg, manager, err := loadRuntime(options.root)
 	if err != nil {
 		return fmt.Errorf("load Favorites configuration: %w", err)
@@ -123,13 +130,22 @@ func run(args []string) error {
 		}
 	}()
 
-	if setupErr := manager.SetupArcadeLinks(); setupErr != nil {
-		return fmt.Errorf("prepare arcade links: %w", setupErr)
-	}
-	if refreshErr := manager.Refresh(); refreshErr != nil {
-		return fmt.Errorf("refresh Favorites: %w", refreshErr)
-	}
-	return newUI(cfg, manager).Run()
+	// SetupArcadeLinks walks every favourites folder and Refresh stats every
+	// favourite, so both run inside the app behind a progress modal rather
+	// than as dead air before the first frame.
+	view := newUI(cfg, manager)
+	view.SetStartupWork(func(report func(string)) error {
+		report("Checking arcade core links...")
+		if setupErr := manager.SetupArcadeLinks(); setupErr != nil {
+			return fmt.Errorf("prepare arcade links: %w", setupErr)
+		}
+		report("Refreshing favorites...")
+		if refreshErr := manager.Refresh(); refreshErr != nil {
+			return fmt.Errorf("refresh Favorites: %w", refreshErr)
+		}
+		return nil
+	})
+	return view.Run()
 }
 
 func main() {

@@ -28,7 +28,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
-	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 // TODO: offer to enable recents option and reboot
@@ -80,34 +80,14 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}, nil
 }
 
-func tryAddStartup() error {
-	var startup mister.Startup
-
-	err := startup.Load()
-	if err != nil {
-		return fmt.Errorf("load startup configuration: %w", err)
-	}
-
-	if !startup.Exists("mrext/" + appName) {
-		if utils.YesOrNoPrompt("PlayLog must be set to run on MiSTer startup. Add it now?") {
-			err = startup.AddService("mrext/" + appName)
-			if err != nil {
-				return fmt.Errorf("add PlayLog startup service: %w", err)
-			}
-
-			err = startup.Save()
-			if err != nil {
-				return fmt.Errorf("save startup configuration: %w", err)
-			}
-		}
-	}
-
-	return nil
-}
-
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "playlog", version.String())
+		return
+	}
 
 	logger := service.NewLogger(appName)
 
@@ -151,13 +131,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// -service is how user-startup.sh and the shell invoke this, and it must
+	// stay headless. ServiceHandler exits for every command it recognises.
 	svc.ServiceHandler(svcOpt)
-
-	err = tryAddStartup()
-	if err != nil {
-		logger.Error("error adding startup: %s", err)
-		_, _ = fmt.Println("Error adding to startup:", err)
-	}
 
 	if !svc.Running() {
 		if startErr := svc.Start(); startErr != nil {
@@ -167,51 +143,11 @@ func main() {
 		}
 	}
 
-	db, err := openPlayLogDb()
-	if err != nil {
-		logger.Error("error opening db: %s", err)
-		_, _ = fmt.Println("Error opening database:", err)
+	// Interactive launch shows the service screen, with the play-time report
+	// on its own page instead of printed and scrolled past.
+	if screenErr := showServiceScreen(svc, cfg); screenErr != nil {
+		logger.Error("error showing service screen: %s", screenErr)
+		_, _ = fmt.Println(screenErr)
 		os.Exit(1)
-	}
-
-	cores, err := db.topCores(10)
-	if err != nil {
-		logger.Error("error getting top cores: %s", err)
-		_, _ = fmt.Println("Error getting top cores:", err)
-		os.Exit(1)
-	}
-	maxCoreLen := 0
-	for _, core := range cores {
-		if len(core.Name) > maxCoreLen {
-			maxCoreLen = len(core.Name)
-		}
-	}
-
-	games, err := db.topGames(10)
-	if err != nil {
-		logger.Error("error getting top games: %s", err)
-		_, _ = fmt.Println("Error getting top games:", err)
-		os.Exit(1)
-	}
-	maxGameLen := 0
-	for _, game := range games {
-		if len(game.Name) > maxGameLen {
-			maxGameLen = len(game.Name)
-		}
-	}
-
-	_, _ = fmt.Println("Top played cores:")
-	// TODO: convert names using names.txt
-	for _, core := range cores {
-		hours := core.Time / 3600
-		minutes := (core.Time % 3600) / 60
-		_, _ = fmt.Printf("%-*s  %dh %dm\n", maxCoreLen, core.Name, hours, minutes)
-	}
-	_, _ = fmt.Println()
-	_, _ = fmt.Println("Top played games:")
-	for _, game := range games {
-		hours := game.Time / 3600
-		minutes := (game.Time % 3600) / 60
-		_, _ = fmt.Printf("%-*s  %dh %dm\n", maxGameLen, game.Name, hours, minutes)
 	}
 }

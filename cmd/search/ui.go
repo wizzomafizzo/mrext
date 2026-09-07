@@ -79,7 +79,12 @@ func (u *ui) Run() error {
 		app.SetRoot(tui.WrapRoot(u.options, u.pages), true)
 		// Typing is still the first thing that happens, as it was when the
 		// keyboard was the whole first screen.
-		u.startIndexThenSearch()
+		//
+		// Deferred until this application is drawing, because BuildAndRetry
+		// builds a second one to retry on /dev/tty2 and this can start an
+		// index rebuild. Two of those would collide on the writer lock and
+		// report a spurious "another indexer is running".
+		tui.RunWhenStarted(app, u.startIndexThenSearch)
 		return app, nil
 	}
 	if err := tui.BuildAndRetry(builder); err != nil {

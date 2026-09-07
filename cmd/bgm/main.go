@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/bgm"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 const (
@@ -47,13 +48,15 @@ const (
 var serviceTimeout = 5 * time.Second
 
 type cliOptions struct {
-	root    string
-	command string
+	root        string
+	command     string
+	showVersion bool
 }
 
 func parseCLI(args []string) (cliOptions, error) {
 	flags := flag.NewFlagSet("bgm", flag.ContinueOnError)
 	root := flags.String("root", "", "use a local MiSTer filesystem root")
+	showVersion := flags.Bool("version", false, "print the version and exit")
 	if err := flags.Parse(args); err != nil {
 		return cliOptions{}, fmt.Errorf("parse arguments: %w", err)
 	}
@@ -61,7 +64,7 @@ func parseCLI(args []string) (cliOptions, error) {
 	if len(positionals) > 1 {
 		return cliOptions{}, errors.New(usage)
 	}
-	options := cliOptions{root: *root}
+	options := cliOptions{root: *root, showVersion: *showVersion}
 	if len(positionals) == 1 {
 		switch positionals[0] {
 		case commandExec, commandStart, commandStop, commandRestart:
@@ -124,6 +127,10 @@ func run(args []string, stdout io.Writer) error {
 	options, err := parseCLI(args)
 	if err != nil {
 		return err
+	}
+	if options.showVersion {
+		_, _ = fmt.Fprintf(stdout, "bgm %s\n", version.String())
+		return nil
 	}
 	application, err := newApp(options, stdout)
 	if err != nil {
