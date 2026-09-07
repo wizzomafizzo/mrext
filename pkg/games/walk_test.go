@@ -29,7 +29,11 @@ import (
 	"testing"
 )
 
-func TestWalkFilesMatchesLegacyScanner(t *testing.T) {
+// GetFiles is now a thin wrapper over WalkFiles, so comparing the two would
+// prove nothing. Assert the expected set directly: a plain game, a game reached
+// through a symlinked directory that links back to the root, and the one
+// matching member of a ZIP.
+func TestWalkFilesFindsGamesThroughSymlinksAndArchives(t *testing.T) {
 	root, external := t.TempDir(), t.TempDir()
 	for _, path := range []string{filepath.Join(root, "game.nes"), filepath.Join(external, "linked.nes")} {
 		if err := os.WriteFile(path, nil, 0o600); err != nil {
@@ -59,9 +63,10 @@ func TestWalkFilesMatchesLegacyScanner(t *testing.T) {
 	if closeErr := file.Close(); closeErr != nil {
 		t.Fatal(closeErr)
 	}
-	want, err := GetFiles("NES", root)
-	if err != nil {
-		t.Fatal(err)
+	want := []string{
+		filepath.Join(root, "game.nes"),
+		filepath.Join(root, "linked", "linked.nes"),
+		filepath.Join(root, "pack.zip", "nested", "zip.nes"),
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -74,8 +79,17 @@ func TestWalkFilesMatchesLegacyScanner(t *testing.T) {
 	}
 	slices.Sort(got)
 	slices.Sort(want)
-	if !reflect.DeepEqual(got, want) || len(got) != 3 {
-		t.Fatalf("streamed paths = %v, legacy = %v", got, want)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("scanned paths = %v, want %v", got, want)
+	}
+	// GetFiles must agree, since it is the same scan collected into a slice.
+	legacy, err := GetFiles("NES", root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(legacy)
+	if !reflect.DeepEqual(legacy, want) {
+		t.Fatalf("GetFiles = %v, want %v", legacy, want)
 	}
 	if after, cwdErr := os.Getwd(); cwdErr != nil || after != cwd {
 		t.Fatalf("scanner changed working directory: %q, %v", after, cwdErr)
