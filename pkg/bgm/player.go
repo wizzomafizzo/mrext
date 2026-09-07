@@ -23,9 +23,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"math/rand/v2"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,11 +65,16 @@ type Player struct {
 	nextToken      uint64
 
 	// randIndex and sleep are replaced by tests.
-	randIndex func(n int) int
-	sleep     func(time.Duration)
+	randIndex       func(n int) int
+	sleep           func(time.Duration)
+	radioClient     *http.Client
+	radioRetryDelay time.Duration
+	radioErrors     map[string]string
 }
 
 type playState struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
 	filename   string
 	token      uint64
 	inPlaylist bool
@@ -81,14 +88,17 @@ type playerProcess struct {
 // NewPlayer initialises playback settings from the configuration.
 func NewPlayer(paths *Paths, logger *Logger, cfg *Config) *Player {
 	return &Player{
-		paths:          *paths,
-		logger:         logger,
-		playback:       cfg.Playback,
-		playlist:       cfg.Playlist,
-		playInCore:     cfg.PlayInCore,
-		bootInPlaylist: cfg.BootInPlaylist,
-		randIndex:      rand.IntN,
-		sleep:          time.Sleep,
+		paths:           *paths,
+		logger:          logger,
+		playback:        cfg.Playback,
+		playlist:        cfg.Playlist,
+		playInCore:      cfg.PlayInCore,
+		bootInPlaylist:  cfg.BootInPlaylist,
+		randIndex:       rand.IntN,
+		sleep:           time.Sleep,
+		radioClient:     newRadioClient(),
+		radioRetryDelay: radioRetryDelay,
+		radioErrors:     make(map[string]string),
 	}
 }
 
@@ -313,16 +323,17 @@ func (p *Player) History() []string {
 	return append([]string(nil), p.history...)
 }
 
-// Stop mirrors stop(): only when a player process exists is the current
-// track cleared and the process killed.
+// Stop cancels pending stream requests as well as running audio players.
 func (p *Player) Stop() {
 	p.mu.Lock()
 	proc := p.proc
-	if proc != nil {
-		p.current = nil
-		p.proc = nil
-	}
+	state := p.current
+	p.current = nil
+	p.proc = nil
 	p.mu.Unlock()
+	if state != nil {
+		state.cancel()
+	}
 	if proc != nil {
 		killPlayer(proc.cmd)
 		_ = proc.reader.Close()
@@ -343,7 +354,9 @@ func (p *Player) playTrack(filename string, inPlaylist bool) {
 	}
 	p.mu.Lock()
 	p.nextToken++
-	state := &playState{filename: filename, token: p.nextToken, inPlaylist: inPlaylist}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	state := &playState{ctx: ctx, cancel: cancel, filename: filename, token: p.nextToken, inPlaylist: inPlaylist}
 	p.current = state
 	p.mu.Unlock()
 	p.addHistory(filename)
@@ -352,7 +365,9 @@ func (p *Player) playTrack(filename string, inPlaylist bool) {
 	for loop := LoopAmount(filename); loop > 0 && p.shouldContinue(state); loop-- {
 		p.logger.Logf("Loop #%d", loop)
 		switch {
-		case IsMP3(filename), IsPLS(filename):
+		case IsPLS(filename):
+			p.playRadio(state, filename)
+		case IsMP3(filename):
 			p.playMP3(state, filename)
 		case IsOGG(filename):
 			p.playFile(state, "ogg123", filename)
@@ -383,9 +398,6 @@ func (p *Player) shouldContinue(state *playState) bool {
 // playMP3 runs mpg123, killing it as soon as it reports the track finished
 // to work around the hang the Python script describes.
 func (p *Player) playMP3(state *playState, filename string) {
-	if IsPLS(filename) {
-		filename = PLSURL(filename, p.logger)
-	}
 	proc, err := p.startProcess(state, "mpg123", "--no-control", filename)
 	if err != nil {
 		p.logger.Log(err.Error())
@@ -399,7 +411,7 @@ func (p *Player) playMP3(state *playState, filename string) {
 			break
 		}
 	}
-	p.finishProcess(proc)
+	_ = p.finishProcess(proc)
 }
 
 // playFile runs a player until it exits, logging its output.
@@ -413,16 +425,23 @@ func (p *Player) playFile(state *playState, name string, args ...string) {
 	for scanner.Scan() {
 		p.logger.Log(strings.TrimRight(scanner.Text(), " \t\r\n\f\v"))
 	}
-	p.finishProcess(proc)
+	_ = p.finishProcess(proc)
 }
 
 func (p *Player) startProcess(state *playState, name string, args ...string) (*playerProcess, error) {
+	return p.startProcessInput(state, nil, name, args...)
+}
+
+func (p *Player) startProcessInput(
+	state *playState, input io.Reader, name string, args ...string,
+) (*playerProcess, error) {
 	reader, writer, err := os.Pipe()
 	if err != nil {
 		return nil, fmt.Errorf("create %s output pipe: %w", name, err)
 	}
 	// #nosec G204 -- players are fixed MiSTer tools; arguments are music file paths.
 	cmd := exec.CommandContext(context.Background(), name, args...)
+	cmd.Stdin = input
 	cmd.Stdout = writer
 	cmd.Stderr = writer
 	cmd.SysProcAttr = playerAttributes()
@@ -434,8 +453,10 @@ func (p *Player) startProcess(state *playState, name string, args ...string) (*p
 	_ = writer.Close()
 	proc := &playerProcess{cmd: cmd, reader: reader}
 	p.mu.Lock()
-	p.proc = proc
-	ended := state.inPlaylist && p.endPlaylist
+	ended := p.current != state || (state.inPlaylist && p.endPlaylist)
+	if !ended {
+		p.proc = proc
+	}
 	p.mu.Unlock()
 	if ended {
 		// The playlist stopped while this player was starting.
@@ -445,7 +466,7 @@ func (p *Player) startProcess(state *playState, name string, args ...string) (*p
 }
 
 // finishProcess mirrors kill_player() for the process this call started.
-func (p *Player) finishProcess(proc *playerProcess) {
+func (p *Player) finishProcess(proc *playerProcess) error {
 	p.mu.Lock()
 	if p.proc == proc {
 		p.proc = nil
@@ -453,7 +474,10 @@ func (p *Player) finishProcess(proc *playerProcess) {
 	p.mu.Unlock()
 	killPlayer(proc.cmd)
 	_ = proc.reader.Close()
-	_ = proc.cmd.Wait()
+	if err := proc.cmd.Wait(); err != nil {
+		return fmt.Errorf("audio player exited: %w", err)
+	}
+	return nil
 }
 
 // randomTrack mirrors get_random_track() with a guard against the Python

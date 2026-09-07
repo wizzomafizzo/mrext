@@ -21,6 +21,8 @@
 package bgm
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -35,6 +37,8 @@ func newTestPlayer(t *testing.T, paths *Paths, cfg *Config) *Player {
 	player := NewPlayer(paths, logger, cfg)
 	player.randIndex = func(int) int { return 0 }
 	player.sleep = func(time.Duration) {}
+	player.radioRetryDelay = 0
+	t.Cleanup(func() { player.radioClient.CloseIdleConnections() })
 	t.Cleanup(player.StopPlaylist)
 	return player
 }
@@ -306,11 +310,15 @@ func TestPlayerCommandsAndArguments(t *testing.T) {
 	logPath := installStubPlayers(t)
 	t.Setenv("BGM_STUB_EXIT", "1")
 	player := newTestPlayer(t, &paths, ptr(DefaultConfig()))
-	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1=http://example.com/live\n")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "audio/mpeg")
+		_, _ = w.Write([]byte("test audio"))
+	}))
+	t.Cleanup(server.Close)
 	for _, name := range []string{"a.ogg", "b.wav", "c.mid", "d.vgz", "radio.pls"} {
 		touchTracks(t, paths.MusicFolder, name)
 	}
-	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1=http://example.com/live\n")
+	writeFile(t, filepath.Join(paths.MusicFolder, "radio.pls"), "File1="+server.URL+"\n")
 	for _, name := range []string{"a.ogg", "b.wav", "c.mid", "d.vgz", "radio.pls"} {
 		player.Play(filepath.Join(paths.MusicFolder, name))
 	}
@@ -320,7 +328,7 @@ func TestPlayerCommandsAndArguments(t *testing.T) {
 		"aplay " + filepath.Join(paths.MusicFolder, "b.wav"),
 		"aplaymidi " + filepath.Join(paths.MusicFolder, "c.mid") + " --port=128:0",
 		"vgmplay " + filepath.Join(paths.MusicFolder, "d.vgz"),
-		"mpg123 --no-control http://example.com/live",
+		"mpg123 --no-control -",
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("invocations %v want %v", got, want)
