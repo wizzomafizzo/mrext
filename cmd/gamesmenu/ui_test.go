@@ -100,7 +100,8 @@ func TestMainPageRendersAndPreservesToggleFocus(t *testing.T) {
 	view := newWorkflowUI(t, false)
 	for _, size := range [][2]int{{75, 15}, {100, 30}} {
 		text := drawText(t, view, size[0], size[1])
-		for _, label := range []string{"[x] NES", "[x] SNES", "Toggle", "Generate", "Clean Up", "Settings", "Exit"} {
+		labels := []string{"[x] NES", "[x] SNES", "Toggle", "All/None", "Generate", "Clean Up", "Settings", "Exit"}
+		for _, label := range labels {
 			if !strings.Contains(text, label) {
 				t.Errorf("missing %q:\n%s", label, text)
 			}
@@ -131,6 +132,73 @@ func TestMainPageRendersAndPreservesToggleFocus(t *testing.T) {
 	}
 	if bar, ok := view.app.GetFocus().(*tui.ButtonBar); !ok || bar.FocusedIndex() != 0 {
 		t.Fatal("button focus lost")
+	}
+}
+
+func TestBulkSelectionPreservesFocusAndFiles(t *testing.T) {
+	view := newWorkflowUI(t, true)
+	custom := filepath.Join(view.manager.Paths().MenuFolder, "_NES", "custom.txt")
+	if err := os.WriteFile(custom, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sendUIKey(view, tcell.KeyDown)
+	sendUIKey(view, tcell.KeyRight)
+	sendUIKey(view, tcell.KeyEnter)
+	for _, entry := range view.entries {
+		if entry.Selected {
+			t.Fatal("All/None did not clear all selections")
+		}
+	}
+	if view.mainButton != 1 || view.mainSelection != 1 {
+		t.Fatal("bulk selection lost footer or row selection")
+	}
+	_, primitive := view.pages.GetFrontPage()
+	frame, ok := primitive.(*tui.PageFrame)
+	if !ok {
+		t.Fatalf("page: %T", primitive)
+	}
+	frame.FocusButtonBar()
+	sendUIKey(view, tcell.KeyEnter)
+	if bar, focused := view.app.GetFocus().(*tui.ButtonBar); !focused || bar.FocusedIndex() != 1 {
+		t.Fatal("bulk selection lost button focus")
+	}
+	for _, entry := range view.entries {
+		if !entry.Selected {
+			t.Fatal("All/None did not select all")
+		}
+	}
+	sendUIKey(view, tcell.KeyEnter)
+	sendUIKey(view, tcell.KeyRight) // Generate with nothing selected still asks before removal.
+	sendUIKey(view, tcell.KeyEnter)
+	if !view.pages.HasPage("tui_confirm_modal") {
+		t.Fatal("bulk deselection bypassed removal confirmation")
+	}
+	sendUIKey(view, tcell.KeyRight) // No.
+	sendUIKey(view, tcell.KeyEnter)
+	data, err := os.ReadFile(custom)
+	if err != nil || string(data) != "keep" {
+		t.Fatalf("selection or cancellation changed files: %q %v", data, err)
+	}
+}
+
+func TestBulkSelectionFromMixedAndEmptyLists(t *testing.T) {
+	view := newWorkflowUI(t, true)
+	view.entries[0].Selected = false
+	view.renderMain()
+	sendUIKey(view, tcell.KeyRight)
+	sendUIKey(view, tcell.KeyEnter)
+	for _, entry := range view.entries {
+		if !entry.Selected {
+			t.Fatal("mixed selection was not expanded to all")
+		}
+	}
+	view.entries = nil
+	view.mainButton = 0
+	view.renderMain()
+	sendUIKey(view, tcell.KeyRight)
+	sendUIKey(view, tcell.KeyEnter)
+	if len(view.entries) != 0 || !view.manager.MenuExists() || view.pages.HasPage("tui_confirm_modal") {
+		t.Fatal("empty-list bulk selection changed menu state")
 	}
 }
 

@@ -40,7 +40,7 @@ func generateIndexWindow(cfg *config.UserConfig) error {
 		Current: 1,
 		Total:   100,
 	}, func(update func(tui.ProgressUpdate)) error {
-		_, err := gamesdb.NewNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
+		_, err := gamesdb.RebuildNamesIndex(cfg, games.AllSystems(), func(status gamesdb.IndexStatus) {
 			systemName := status.SystemID
 			if system, systemErr := games.GetSystem(status.SystemID); systemErr == nil {
 				systemName = system.Name
