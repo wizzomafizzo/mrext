@@ -28,12 +28,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// DefaultINI is written byte-for-byte when bgm.ini is missing, exactly as the
-// Python script did.
-const DefaultINI = "[bgm]\nplayback = random\nplaylist = none\nstartup = yes\nplayincore = no\nbootinplaylist = no\n" +
-	"corebootdelay = 0\nmenuvolume = -1\ndefaultvolume = -1\ndebug = no\n"
+// DefaultINI is written only when bgm.ini is missing.
+const DefaultINI = "[bgm]\nplayback = random\nplaylist = none\nstartup = yes\nplayincore = no\n" +
+	"bootinplaylist = no\ncorebootdelay = 0\nbootdelay = 0\nmenuvolume = -1\ndefaultvolume = -1\ndebug = no\n"
 
 const (
 	iniSectionBGM = "bgm"
@@ -100,6 +100,7 @@ type Config struct {
 	Playlist       Playlist
 	TUI            TUIOptions
 	CoreBootDelay  float64
+	BootDelay      float64
 	MenuVolume     int
 	DefaultVolume  int
 	Startup        bool
@@ -175,6 +176,11 @@ func ConfigFromDocument(doc *Document) Config {
 	if value, ok := doc.Get(iniSectionBGM, "corebootdelay"); ok {
 		if parsed, valid := parsePythonFloat(value); valid {
 			cfg.CoreBootDelay = parsed
+		}
+	}
+	if value, ok := doc.Get(iniSectionBGM, "bootdelay"); ok {
+		if parsed, err := ParseBootDelay(value); err == nil {
+			cfg.BootDelay = parsed
 		}
 	}
 	if value, ok := doc.Get(iniSectionTUI, "theme"); ok && strings.TrimSpace(value) != "" {
@@ -280,6 +286,7 @@ func SavePlaylist(path string, playlist Playlist) error {
 type Settings struct {
 	Theme            string
 	CoreBootDelay    float64
+	BootDelay        float64
 	MenuVolume       int
 	DefaultVolume    int
 	Startup          bool
@@ -296,6 +303,7 @@ func SettingsFromConfig(cfg *Config) Settings {
 	return Settings{
 		Theme:            cfg.TUI.Theme,
 		CoreBootDelay:    cfg.CoreBootDelay,
+		BootDelay:        cfg.BootDelay,
 		MenuVolume:       cfg.MenuVolume,
 		DefaultVolume:    cfg.DefaultVolume,
 		Startup:          cfg.Startup,
@@ -312,6 +320,7 @@ func SettingsFromConfig(cfg *Config) Settings {
 func (s *Settings) ApplyTo(cfg *Config) {
 	cfg.TUI.Theme = s.Theme
 	cfg.CoreBootDelay = s.CoreBootDelay
+	cfg.BootDelay = s.BootDelay
 	cfg.MenuVolume = s.MenuVolume
 	cfg.DefaultVolume = s.DefaultVolume
 	cfg.Startup = s.Startup
@@ -336,6 +345,9 @@ func (s *Settings) Validate() error {
 	if s.CoreBootDelay < 0 || math.IsInf(s.CoreBootDelay, 0) || math.IsNaN(s.CoreBootDelay) {
 		return errors.New("bgm.corebootdelay must be zero or a positive number of seconds")
 	}
+	if _, err := bootDelayDuration(s.BootDelay); err != nil {
+		return err
+	}
 	for name, volume := range map[string]int{"menuvolume": s.MenuVolume, "defaultvolume": s.DefaultVolume} {
 		if volume < -1 || volume > 7 {
 			return fmt.Errorf("bgm.%s must be between -1 and 7", name)
@@ -355,6 +367,7 @@ func SaveSettings(path string, settings *Settings) error {
 		doc.Set(iniSectionBGM, "playincore", formatYesNo(settings.PlayInCore))
 		doc.Set(iniSectionBGM, "bootinplaylist", formatYesNo(settings.BootInPlaylist))
 		doc.Set(iniSectionBGM, "corebootdelay", FormatDelay(settings.CoreBootDelay))
+		doc.Set(iniSectionBGM, "bootdelay", FormatDelay(settings.BootDelay))
 		doc.Set(iniSectionBGM, "menuvolume", strconv.Itoa(settings.MenuVolume))
 		doc.Set(iniSectionBGM, "defaultvolume", strconv.Itoa(settings.DefaultVolume))
 		doc.Set(iniSectionBGM, "debug", formatYesNo(settings.Debug))
@@ -365,7 +378,7 @@ func SaveSettings(path string, settings *Settings) error {
 	})
 }
 
-// FormatDelay renders a core boot delay without trailing zeros.
+// FormatDelay renders a delay without trailing zeros.
 func FormatDelay(seconds float64) string {
 	return strconv.FormatFloat(seconds, 'f', -1, 64)
 }
@@ -377,6 +390,25 @@ func ParseDelay(value string) (float64, error) {
 		return 0, errors.New("enter zero or a positive number of seconds, such as 0 or 1.5")
 	}
 	return parsed, nil
+}
+
+// ParseBootDelay validates startup seconds, including the timer's duration limit.
+func ParseBootDelay(value string) (float64, error) {
+	parsed, err := ParseDelay(value)
+	if err != nil {
+		return 0, err
+	}
+	if _, err = bootDelayDuration(parsed); err != nil {
+		return 0, err
+	}
+	return parsed, nil
+}
+
+func bootDelayDuration(seconds float64) (time.Duration, error) {
+	if seconds < 0 || math.IsNaN(seconds) || seconds >= float64(math.MaxInt64)/float64(time.Second) {
+		return 0, errors.New("bgm.bootdelay must be finite, nonnegative, and within the supported timer range")
+	}
+	return time.Duration(seconds * float64(time.Second)), nil
 }
 
 func formatYesNo(value bool) string {

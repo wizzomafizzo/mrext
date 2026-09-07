@@ -20,6 +20,7 @@
 package main
 
 var settingsHelp = map[string]string{
+	"Startup sound delay":     "Seconds before initial audio; applies next time BGM starts.",
 	"Boot sounds in rotation": "Add playlist and global boot sounds to normal playback after saving.",
 	"Start on boot":           "Start the BGM service automatically when MiSTer boots.",
 	"Play music in cores":     "Keep playing music while a core is running instead of only in the menu.",
