@@ -38,6 +38,8 @@ Arcade shortcuts are `.mra` links, so the Last Played shortcut becomes `Last Pla
 
 Recently Played numbers `.mra` and `.mgl` shortcuts together. Replaying a game refreshes its entry without deleting the newly numbered shortcut. `/tmp/ACTIVEGAME` continues to contain the legacy arcade set name; tracker events carry the resolved launchable path separately. This works on stock MiSTer without Zaparoo Core.
 
+LastPlayed waits for MiSTer's state files to appear when it starts, so launching it from `user-startup.sh` before MiSTer main has created them no longer makes the service exit. It also recovers when another script replaces `/tmp/ACTIVEGAME` or `/tmp/CORENAME` instead of writing over them, which previously left tracking silent until a restart.
+
 ## Configuration
 
 LastPlayed can be configured by creating a `lastplayed.ini` file in the `/media/fat/Scripts` folder where you put `lastplayed.sh`. For example:
