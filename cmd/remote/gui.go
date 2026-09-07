@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -33,7 +32,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func tryAddStartup() error {
+func tryAddStartup(cfg *config.UserConfig) error {
 	var startup mister.Startup
 	if err := startup.Load(); err != nil {
 		// Continuing with a zero-value Startup would rewrite user-startup.sh
@@ -45,24 +44,27 @@ func tryAddStartup() error {
 		return nil
 	}
 
+	// Same question and the same Yes/No, on the shared confirm modal so it
+	// looks like the rest of the app instead of a bare tview.Modal.
 	addService := false
+	options := tui.ApplicationOptions{
+		Theme: cfg.TUI.Theme, Mouse: cfg.TUI.Mouse, CRTMode: cfg.TUI.CRTMode,
+	}
 	builder := func() (*tview.Application, error) {
-		app := tview.NewApplication()
-		modal := tview.NewModal().
-			SetText("Add Remote service to MiSTer startup?\nThis won't impact MiSTer's performance.").
-			AddButtons([]string{"Yes", "No"}).
-			SetDoneFunc(func(_ int, label string) {
-				addService = label == "Yes"
-				app.Stop()
-			})
-		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			if event.Key() == tcell.KeyEscape {
-				app.Stop()
-				return nil
-			}
-			return event
-		})
-		return app.SetRoot(modal, true).SetFocus(modal), nil
+		app, err := tui.NewApplication(options)
+		if err != nil {
+			return nil, fmt.Errorf("create TUI application: %w", err)
+		}
+		pages := tview.NewPages()
+		done := func(yes bool) {
+			addService = yes
+			app.Stop()
+		}
+		tui.ShowConfirmModal(pages, app, appTitle,
+			"Add Remote service to MiSTer startup?\nThis won't impact MiSTer's performance.",
+			func() { done(true) }, func() { done(false) })
+		app.SetRoot(tui.WrapRoot(options, pages), true)
+		return app, nil
 	}
 	if err := tui.BuildAndRetry(builder); err != nil {
 		return fmt.Errorf("show startup prompt: %w", err)
@@ -121,6 +123,9 @@ const (
 	displayUninstall
 )
 
+// appTitle names the Scripts-menu screen.
+const appTitle = "Remote"
+
 func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, error) {
 	ip, err := utils.GetLocalIP()
 	appURL := fmt.Sprintf("http://<MiSTer IP>:%d", appPort)
@@ -135,73 +140,75 @@ func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, erro
 		altURL = fmt.Sprintf("OR http://%s.local:%d", hostname, appPort)
 	}
 
-	selected := 3
 	action := displayNothing
+	options := tui.ApplicationOptions{
+		Theme:            cfg.TUI.Theme,
+		Mouse:            cfg.TUI.Mouse,
+		CRTMode:          cfg.TUI.CRTMode,
+		OnScreenKeyboard: cfg.TUI.OnScreenKeyboard,
+	}
 	builder := func() (*tview.Application, error) {
-		app := tview.NewApplication()
+		app, err := tui.NewApplication(options)
+		if err != nil {
+			return nil, fmt.Errorf("create TUI application: %w", err)
+		}
+		pages := tview.NewPages()
 		status := tview.NewTextView().SetTextAlign(tview.AlignCenter)
-		footer := tview.NewTextView().SetDynamicColors(true).SetTextAlign(tview.AlignCenter)
-		content := tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(status, 0, 1, false).
-			AddItem(footer, 1, 0, false)
-		content.SetBorder(true)
 
+		var bar *tui.ButtonBar
 		draw := func() {
 			running := svc.Running()
-			state := "Service is NOT RUNNING"
+			message := "Service is NOT RUNNING"
 			toggle := "Start"
-			message := state
 			if running {
-				state = "Service is RUNNING"
 				toggle = "Stop"
 				message = fmt.Sprintf(
-					"%s\n\nAccess Remote with this URL:\n%s\n%s\n\n"+
+					"Service is RUNNING\n\nAccess Remote with this URL:\n%s\n%s\n\n"+
 						"It's safe to exit; service will continue running.",
-					state,
 					appURL,
 					altURL,
 				)
 			}
 			status.SetText(message)
-			footer.SetText(tui.ButtonLabels([]string{toggle, "Restart", "Uninstall", "Exit"}, selected))
+			bar.UpdateButtonLabel(0, toggle)
 		}
+
+		exit := func() { app.Stop() }
+		bar = tui.NewButtonBar(app).
+			AddButtonWithHelp("Start", "Start or stop the Remote service", func() {
+				if svc.Running() {
+					runServiceAction(app, status, "Stopping service...", svc.Stop, draw)
+					return
+				}
+				runServiceAction(app, status, "Starting service...", svc.Start, draw)
+			}).
+			AddButtonWithHelp("Restart", "Stop and start the service again", func() {
+				runServiceAction(app, status, "Restarting service...", svc.Restart, draw)
+			}).
+			AddButtonWithHelp("Uninstall", "Remove Remote's startup entry and generated files", func() {
+				action = displayUninstall
+				app.Stop()
+			}).
+			AddButtonWithHelp("Exit", "Leave this screen; the service keeps running", exit).
+			SetupNavigation(exit)
+		// Exit has been the default since this screen existed: people open it
+		// to read the URL and leave.
+		bar.SetFocusedIndex(3)
+
+		frame := tui.NewPageFrame(app).
+			SetTitle(appTitle).
+			SetContent(status).
+			SetFocusTarget(bar).
+			SetHelpText("Leave this screen; the service keeps running").
+			SetButtonBar(bar).
+			SetOnEscape(exit)
+		bar.SetHelpCallback(func(text string) { frame.SetHelpText(text) })
 		draw()
 
-		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Key() {
-			case tcell.KeyEscape:
-				app.Stop()
-				return nil
-			case tcell.KeyLeft:
-				selected = (selected + 3) % 4
-				draw()
-				return nil
-			case tcell.KeyRight:
-				selected = (selected + 1) % 4
-				draw()
-				return nil
-			case tcell.KeyEnter:
-				switch selected {
-				case 0:
-					if svc.Running() {
-						runServiceAction(app, status, "Stopping service...", svc.Stop, draw)
-					} else {
-						runServiceAction(app, status, "Starting service...", svc.Start, draw)
-					}
-				case 1:
-					runServiceAction(app, status, "Restarting service...", svc.Restart, draw)
-				case 2:
-					action = displayUninstall
-					app.Stop()
-				case 3:
-					app.Stop()
-				}
-				return nil
-			default:
-				return event
-			}
-		})
-		return app.SetRoot(tui.Centered(57, 11, content), true), nil
+		pages.AddAndSwitchToPage("remote_service", frame, true)
+		app.SetRoot(tui.WrapRoot(options, pages), true)
+		app.SetFocus(bar)
+		return app, nil
 	}
 	if err := tui.BuildAndRetry(builder); err != nil {
 		return displayNothing, fmt.Errorf("show service controls: %w", err)

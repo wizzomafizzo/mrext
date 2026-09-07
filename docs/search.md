@@ -35,6 +35,14 @@ Only one indexer can write at a time. If Remote is already rebuilding the index,
 
 A game folder that cannot be reached, such as a symlink into a drive that is not attached, is skipped rather than failing the whole run. Broken symlinks inside a library are skipped the same way, so one dead link no longer prevents indexing.
 
+## Compatibility notes
+
+Search now uses the same interface as BGM, Favorites and GamesMenu: the same border and title, the same footer help line, the same `↑↓ / ←→ / Enter / ESC` hints, and the themes, CRT mode and mouse settings from `[tui]`. Set them in `search.ini` or share them across every app; see the shared interface settings in [favorites.md](favorites.md).
+
+The flow is unchanged. Search still opens straight onto the keyboard, and the result list still offers `Launch` (or `Select` with `-print`), `PgUp`, `PgDn`, `Options` and `Exit`, with results still shown as `[System] Game name` and duplicates removed.
+
+Two things are better rather than merely different. The keyboard is the shared one, so it has lower case and a symbol layer; the old one accepted only digits, capitals, space and delete. And `Options` explains that updating the database rescans every games folder and takes several minutes, and asks before starting.
+
 ## Uninstall
 
 Remove Search's Downloader subscription if configured, so updates do not reinstall it.

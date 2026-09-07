@@ -454,7 +454,7 @@ func main() {
 	}
 
 	interactive := true
-	if err = tryAddStartup(); err != nil {
+	if err = tryAddStartup(cfg); err != nil {
 		logger.Error("adding startup: %s", err)
 		interactive = false
 	}
