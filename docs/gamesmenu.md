@@ -2,7 +2,7 @@
 
 GamesMenu mirrors game libraries into `/media/fat/_Games`, letting you launch games directly from the stock MiSTer menu without opening a core first. It does not require Zaparoo Core.
 
-For new Zaparoo integrations, prefer Frontend library browsing and Core's public interfaces. Frontend does not mirror libraries into stock-menu folders; see [migration guidance](../MIGRATE.md).
+Zaparoo Frontend offers library browsing in a separate interface rather than generating stock-menu folders. See [mrext and Zaparoo](../MIGRATE.md) to compare features.
 
 ## Installation
 

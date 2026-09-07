@@ -1,7 +1,7 @@
 # PlayLog
 
-> [!IMPORTANT]
-> PlayLog is maintained for legacy and stock-MiSTer workflows. Zaparoo Core also creates and maintains `/tmp/ACTIVEGAME` on MiSTer, so existing file readers can continue working. New MiSTer state and history integrations can use Core history, `media.active`, media notifications, or MQTT for richer cross-platform state. Executable state hooks have no direct Core replacement. See [MIGRATE.md](../MIGRATE.md).
+> [!NOTE]
+> PlayLog works without Zaparoo. Zaparoo also offers play history and tracking, but does not directly replace PlayLog's executable hooks. If you're building a new tracking integration, use Core's API. See [mrext and Zaparoo](../MIGRATE.md) for details.
 
 PlayLog is an application to track and store stats of what games and cores you play on your MiSTer.
 

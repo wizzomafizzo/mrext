@@ -1,7 +1,7 @@
 # Remote API
 
-> [!IMPORTANT]
-> This API is maintained for legacy Remote clients and is not compatible with the Zaparoo Core API. Before building a new MiSTer integration against it, review the public Core WebSocket JSON-RPC API and `@zaparoo/cli` mappings in [MIGRATE.md](../MIGRATE.md). Migrating requires translating calls, not pointing an existing client at a new port.
+> [!NOTE]
+> For new game search, launching, tracking, and automation integrations, use the [Zaparoo Core API](https://zaparoo.org/docs/core/api/), including for MiSTer-only projects. Remote's API remains supported for existing clients and MiSTer-specific functions such as INI editing and menu management. See [mrext and Zaparoo](../MIGRATE.md) for API mappings and differences. The APIs are not interchangeable; changing the port is not enough to migrate a client.
 
 <!-- TOC -->
 * [Remote API](#remote-api)

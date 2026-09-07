@@ -1,7 +1,7 @@
 # LaunchSync
 
-> [!IMPORTANT]
-> LaunchSync is maintained for `.sync` files and stock-menu shortcuts. Before creating a new shared MiSTer list with it, consider Online cards and decks, Zap Links, self-hosted Zap Link servers, or Zaparoo playlists. Keep LaunchSync when subscribed `.mgl` folders are required. See [MIGRATE.md](../MIGRATE.md).
+> [!NOTE]
+> LaunchSync works without Zaparoo. Zaparoo also offers shared cards, decks, Zap Links, and playlists, but does not read `.sync` files or generate LaunchSync's menu folders. See [mrext and Zaparoo](../MIGRATE.md) to compare features.
 
 LaunchSync allows people to create, share and maintain live-updating game playlists for the MiSTer.
 
@@ -41,11 +41,13 @@ Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/m
 
 ## Sync screen
 
-Running `launchsync` from the Scripts menu shows a progress screen while it searches for sync files, checks them for updates and builds the games index, then a summary of what each sync file produced: shortcuts created, games not found and errors. **Details** shows the full log, which is the same text the console printed.
+Running `launchsync` from the Scripts menu shows a progress screen while it searches for sync files, checks them for updates and builds the games index, then a summary of what each sync file produced: shortcuts created, games not found and errors. **Details** shows the full log. A sync that fails partway still reaches the summary, so the log stays readable after the error.
 
 Previously this was console output only, and `Building games index... ` was printed without a newline before a scan that can take minutes, so a slow step looked like a hang.
 
 `launchsync -update` is unchanged and stays on the console with no screen, so scripts and startup hooks behave exactly as before; add `-verbose` for the full log. `-test` is also unchanged.
+
+Running `launchsync` with no arguments where no screen can be opened — cron, `ssh` without a terminal, a wrapper script — falls back to the console log it has always printed, rather than failing. The log's wording changed slightly: steps that used to print a prefix and their result on one line, such as `Building games index... done`, are now reported as complete lines.
 
 ## Uninstall
 

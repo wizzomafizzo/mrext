@@ -1,7 +1,7 @@
 # Search
 
-> [!IMPORTANT]
-> Search is maintained for its controller-driven stock-OSD workflow. Before using it for new MiSTer search or library work, consider Core's media index and `media.search`, `zaparoo-cli media search`, or the search interfaces in App, Web UI, and Frontend. See [MIGRATE.md](../MIGRATE.md).
+> [!NOTE]
+> Search works without Zaparoo. To search and launch games from your phone or browser, you can also use Zaparoo App or Web UI. If you're building a new search integration, use Core's API. See [mrext and Zaparoo](../MIGRATE.md) for details.
 
 Search is an application to *search* for games on your MiSTer. It indexes all your games, lets you enter search queries without a keyboard, and then displays a list of results that can be launched directly.
 
