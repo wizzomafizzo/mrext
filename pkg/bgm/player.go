@@ -50,16 +50,17 @@ type Player struct {
 
 	CmdMu sync.Mutex
 
-	mu           sync.Mutex
-	proc         *playerProcess
-	current      *playState
-	playback     string
-	playlist     Playlist
-	playInCore   bool
-	history      []string
-	endPlaylist  bool
-	playlistDone chan struct{}
-	nextToken    uint64
+	mu             sync.Mutex
+	proc           *playerProcess
+	current        *playState
+	playback       string
+	playlist       Playlist
+	playInCore     bool
+	bootInPlaylist bool
+	history        []string
+	endPlaylist    bool
+	playlistDone   chan struct{}
+	nextToken      uint64
 
 	// randIndex and sleep are replaced by tests.
 	randIndex func(n int) int
@@ -80,13 +81,14 @@ type playerProcess struct {
 // NewPlayer initialises playback settings from the configuration.
 func NewPlayer(paths *Paths, logger *Logger, cfg *Config) *Player {
 	return &Player{
-		paths:      *paths,
-		logger:     logger,
-		playback:   cfg.Playback,
-		playlist:   cfg.Playlist,
-		playInCore: cfg.PlayInCore,
-		randIndex:  rand.IntN,
-		sleep:      time.Sleep,
+		paths:          *paths,
+		logger:         logger,
+		playback:       cfg.Playback,
+		playlist:       cfg.Playlist,
+		playInCore:     cfg.PlayInCore,
+		bootInPlaylist: cfg.BootInPlaylist,
+		randIndex:      rand.IntN,
+		sleep:          time.Sleep,
 	}
 }
 
@@ -123,6 +125,20 @@ func (p *Player) SetPlayInCore(enabled bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.playInCore = enabled
+}
+
+// BootInPlaylist reports whether boot sounds participate in normal playback.
+func (p *Player) BootInPlaylist() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.bootInPlaylist
+}
+
+// SetBootInPlaylist applies the rotation preference without interrupting a track.
+func (p *Player) SetBootInPlaylist(enabled bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.bootInPlaylist = enabled
 }
 
 // Playing returns the path of the track being played, if any.
@@ -182,7 +198,7 @@ func (p *Player) filterTracks(names []string, includeBoot bool) []string {
 			tracks = append(tracks, name)
 			continue
 		}
-		if strings.HasPrefix(name, "_") {
+		if strings.HasPrefix(name, "_") && !p.BootInPlaylist() {
 			continue
 		}
 		if current.IsAll() && IsPLS(name) {
@@ -210,7 +226,7 @@ func (p *Player) Tracks(playlist Playlist, includeBoot bool) []string {
 		for _, name := range p.filterTracks(names, includeBoot) {
 			tracks = append(tracks, filepath.Join(folder, name))
 		}
-		return tracks
+		return p.withGlobalBootTracks(tracks, includeBoot)
 	}
 	byFolder := make(map[string][]string)
 	var order []string
@@ -233,6 +249,29 @@ func (p *Player) Tracks(playlist Playlist, includeBoot bool) []string {
 			tracks = append(tracks, filepath.Join(parent, name))
 		}
 	}
+	return p.withGlobalBootTracks(tracks, includeBoot)
+}
+
+func (p *Player) withGlobalBootTracks(tracks []string, includeBoot bool) []string {
+	if !p.BootInPlaylist() {
+		return tracks
+	}
+	entries, err := os.ReadDir(p.paths.BootFolder)
+	if err != nil {
+		return tracks
+	}
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			names = append(names, entry.Name())
+		}
+	}
+	for _, name := range p.filterTracks(names, includeBoot) {
+		path := filepath.Join(p.paths.BootFolder, name)
+		if !containsString(tracks, path) {
+			tracks = append(tracks, path)
+		}
+	}
 	return tracks
 }
 
@@ -253,6 +292,9 @@ func (p *Player) TotalTracks(playlist Playlist, includeBoot bool) int {
 
 func (p *Player) addHistory(filename string) {
 	size := int(math.Floor(float64(p.TotalTracks(p.Playlist(), false)) * HistorySize))
+	if p.BootInPlaylist() {
+		size = max(size, 1)
+	}
 	if size < 1 {
 		return
 	}
@@ -430,6 +472,16 @@ func (p *Player) randomTrack() (string, bool) {
 	}
 	if len(candidates) == 0 {
 		candidates = tracks
+		// Exhausted history must not immediately repeat a boot sound when
+		// another track exists, including in very small playlists.
+		if p.BootInPlaylist() && len(history) > 0 && len(tracks) > 1 {
+			candidates = make([]string, 0, len(tracks))
+			for _, track := range tracks {
+				if track != history[len(history)-1] {
+					candidates = append(candidates, track)
+				}
+			}
+		}
 	}
 	return candidates[p.randIndex(len(candidates))], true
 }

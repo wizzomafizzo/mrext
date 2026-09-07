@@ -92,6 +92,77 @@ func layoutMusic(t *testing.T, paths *Paths) {
 	}
 }
 
+func TestBootRotationPreservesSelectedPlaylist(t *testing.T) {
+	paths := newTestPaths(t)
+	layoutMusic(t, &paths)
+	cfg := DefaultConfig()
+	cfg.Playlist = NamedPlaylist("chip")
+	player := newTestPlayer(t, &paths, &cfg)
+	before := player.Tracks(cfg.Playlist, false)
+	player.SetBootInPlaylist(true)
+	got := relativeTracks(t, &paths, player.Tracks(cfg.Playlist, false))
+	for _, name := range []string{"chip/_intro.wav", "chip/one.ogg", "chip/deep/two.vgm", "boot/global.wav"} {
+		if !slices.Contains(got, name) {
+			t.Fatalf("missing %s in %v", name, got)
+		}
+	}
+	for _, name := range []string{"_boot.mp3", "top.mp3", "boot/SNES/snes.mp3"} {
+		if slices.Contains(got, name) {
+			t.Fatalf("unrelated track %s in %v", name, got)
+		}
+	}
+	if player.Playlist() != cfg.Playlist {
+		t.Fatal("selected playlist changed")
+	}
+	player.SetBootInPlaylist(false)
+	if !slices.Equal(before, player.Tracks(cfg.Playlist, false)) {
+		t.Fatal("disabling did not restore tracks")
+	}
+	player.SetBootInPlaylist(true)
+	player.playlist = NamedPlaylist("all")
+	all := player.Tracks(player.Playlist(), false)
+	count := 0
+	for _, name := range all {
+		if name == filepath.Join(paths.BootFolder, "global.wav") {
+			count++
+		}
+		if IsPLS(name) {
+			t.Fatalf("all unexpectedly includes radio: %s", name)
+		}
+	}
+	if count != 1 {
+		t.Fatalf("global boot track appears %d times", count)
+	}
+}
+
+func TestBootRotationAvoidsImmediateRepeat(t *testing.T) {
+	paths := newTestPaths(t)
+	touchTracks(t, paths.MusicFolder, "_boot.wav", "song.wav")
+	cfg := DefaultConfig()
+	cfg.BootInPlaylist = true
+	player := newTestPlayer(t, &paths, &cfg)
+	player.randIndex = func(int) int { return 0 }
+	boot := filepath.Join(paths.MusicFolder, "_boot.wav")
+	song := filepath.Join(paths.MusicFolder, "song.wav")
+	player.addHistory(boot)
+	for range 4 {
+		if got, ok := player.randomTrack(); !ok || got != song {
+			t.Fatalf("after boot: %q %v", got, ok)
+		}
+		player.addHistory(song)
+		if got, ok := player.randomTrack(); !ok || got != boot {
+			t.Fatalf("after song: %q %v", got, ok)
+		}
+		player.addHistory(boot)
+	}
+	if err := os.Remove(song); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := player.randomTrack(); !ok || got != boot {
+		t.Fatalf("single track: %q %v", got, ok)
+	}
+}
+
 func TestTracksNoneIsTopLevelOnly(t *testing.T) {
 	paths := newTestPaths(t)
 	layoutMusic(t, &paths)
