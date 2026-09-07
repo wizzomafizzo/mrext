@@ -29,6 +29,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 // DefaultINI is written only when bgm.ini is missing.
@@ -154,7 +156,37 @@ func LoadConfig(paths *Paths) (Config, error) {
 	if err != nil {
 		return DefaultConfig(), err
 	}
-	return ConfigFromDocument(doc), nil
+	cfg := ConfigFromDocument(doc)
+	applySharedTUI(doc, &cfg)
+	return cfg, nil
+}
+
+// applySharedTUI layers the shared [tui] file under bgm.ini. BGM keeps its own
+// configparser-compatible reader, so it cannot go through config.LoadUserConfig
+// like the other apps; the read order has to match theirs by hand. Only keys
+// bgm.ini does not declare are taken from the shared file.
+func applySharedTUI(doc *Document, cfg *Config) {
+	shared, err := config.LoadSharedTUI(config.TUIConfig{
+		Theme:            cfg.TUI.Theme,
+		Mouse:            cfg.TUI.Mouse,
+		CRTMode:          cfg.TUI.CRTMode,
+		OnScreenKeyboard: cfg.TUI.OnScreenKeyboard,
+	})
+	if err != nil {
+		return
+	}
+	if _, ok := doc.Get(iniSectionTUI, "theme"); !ok {
+		cfg.TUI.Theme = shared.Theme
+	}
+	if _, ok := doc.Get(iniSectionTUI, "mouse"); !ok {
+		cfg.TUI.Mouse = shared.Mouse
+	}
+	if _, ok := doc.Get(iniSectionTUI, "crt_mode"); !ok {
+		cfg.TUI.CRTMode = shared.CRTMode
+	}
+	if _, ok := doc.Get(iniSectionTUI, "on_screen_keyboard"); !ok {
+		cfg.TUI.OnScreenKeyboard = shared.OnScreenKeyboard
+	}
 }
 
 // ConfigFromDocument applies Python's fallbacks and parsing rules. Values

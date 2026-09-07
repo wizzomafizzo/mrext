@@ -17,15 +17,19 @@
 // You should have received a copy of the GNU General Public License
 // along with mrext. If not, see <http://www.gnu.org/licenses/>.
 
+//nolint:gosec // Tests only operate on temporary fixture paths.
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 func TestKeyboardModalMatchesCompactZaparooLayout(t *testing.T) {
@@ -501,5 +505,42 @@ func TestDialogAndHelpTextKeepBracketsInNames(t *testing.T) {
 	frame.Draw(screen)
 	if drawn := screenText(screen, 75, 15); !strings.Contains(drawn, "[U].mgl") {
 		t.Errorf("help line lost the brackets:\n%s", drawn)
+	}
+}
+
+func TestShareInterfaceSettingsWritesSharedFileAndClearsLocalKeys(t *testing.T) {
+	shared := filepath.Join(t.TempDir(), "tui.ini")
+	t.Setenv(config.SharedTUIConfigEnv, shared)
+
+	appINI := filepath.Join(t.TempDir(), "favorites.ini")
+	original := "[favorites]\ndefault_folder = _@Favorites\n\n[tui]\ntheme = default\nmouse = true\n"
+	if err := os.WriteFile(appINI, []byte(original), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	options := ApplicationOptions{Theme: "nord", Mouse: false, CRTMode: true, OnScreenKeyboard: true}
+	if err := ShareInterfaceSettings(appINI, options); err != nil {
+		t.Fatal(err)
+	}
+
+	// The shared file holds the choice.
+	saved, err := config.LoadSharedTUI(config.TUIConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Theme != "nord" || saved.Mouse || !saved.CRTMode {
+		t.Fatalf("shared settings = %+v", saved)
+	}
+
+	// The app stops overriding it, but keeps everything else.
+	local, err := os.ReadFile(appINI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(local), "theme") {
+		t.Errorf("app INI still overrides the shared theme:\n%s", local)
+	}
+	if !strings.Contains(string(local), "_@Favorites") {
+		t.Errorf("unrelated settings were lost:\n%s", local)
 	}
 }

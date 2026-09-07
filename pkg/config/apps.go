@@ -40,6 +40,15 @@ const (
 	MrextConfigFolder   = ScriptsConfigFolder + "/mrext"
 )
 
+// SharedTUIConfigFile holds [tui] settings every mrext app falls back to, so a
+// theme can be chosen once instead of in each app's own INI. Optional: when it
+// is absent nothing changes. An app's own [tui] section still wins.
+const SharedTUIConfigFile = MrextConfigFolder + "/tui.ini"
+
+// SharedTUIConfigEnv overrides SharedTUIConfigFile, so tests never read or
+// write the real one.
+const SharedTUIConfigEnv = "MREXT_TUI_CONFIG"
+
 const (
 	ArcadeDBURL  = "https://api.github.com/repositories/521644036/contents/ArcadeDatabase_CSV"
 	ArcadeDBFile = MrextConfigFolder + "/ArcadeDatabase.csv"

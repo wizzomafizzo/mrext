@@ -19,15 +19,13 @@
 
 package main
 
+import "github.com/wizzomafizzo/mrext/pkg/tui"
+
+// settingHelp reads from the shared table so the interface settings are
+// described the same way here as in BGM and Favorites.
 func settingHelp(label string) string {
-	switch label {
-	case "Theme":
-		return "Choose interface colors; changes apply after Save"
-	case "Mouse":
-		return "Allow mouse navigation; controller navigation always works"
-	case "CRT mode":
-		return "Limit the interface to a centered 75 x 15 area on larger screens"
-	default:
-		return ""
+	if label == tui.ShareInterfaceSettingsLabel {
+		return tui.ShareInterfaceSettingsHelp
 	}
+	return tui.InterfaceSettingsHelp[label]
 }

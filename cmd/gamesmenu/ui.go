@@ -29,7 +29,11 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/tui"
 )
 
-const pageMain = "gamesmenu_main"
+const (
+	pageMain = "gamesmenu_main"
+	// appTitle is the first segment of every page title.
+	appTitle = "GamesMenu"
+)
 
 const welcomeText = "This script will generate a new folder in your main menu called Games, " +
 	"which will allow you to directly launch games without first opening a core. " +
@@ -155,7 +159,7 @@ func (u *ui) renderMain() {
 		AddButtonWithHelp("Settings", "Configure GamesMenu interface", remember(u.startSettings)).
 		AddButtonWithHelp("Exit", "Exit without changing the Games menu", u.app.Stop).
 		SetupNavigation(u.app.Stop)
-	frame := tui.NewPageFrame(u.app).SetTitle("GamesMenu").SetContent(list).
+	frame := tui.NewPageFrame(u.app).SetTitle(appTitle).SetContent(list).
 		SetButtonBar(bar).SetOnEscape(u.app.Stop)
 	help := func(index int) {
 		if index >= 0 && index < len(u.entries) {

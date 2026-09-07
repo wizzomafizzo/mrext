@@ -299,7 +299,7 @@ func TestSettingsPageStagesAndSavesChanges(t *testing.T) {
 		ui:       view,
 	}
 	page.show(0)
-	if !view.pages.HasPage(pageSettings) || page.list.GetItemCount() != 16 {
+	if !view.pages.HasPage(pageSettings) || page.list.GetItemCount() != 17 {
 		t.Fatalf("settings page rows = %d", page.list.GetItemCount())
 	}
 	screen := tcell.NewSimulationScreen("UTF-8")

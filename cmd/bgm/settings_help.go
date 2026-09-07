@@ -19,6 +19,8 @@
 
 package main
 
+import "github.com/wizzomafizzo/mrext/pkg/tui"
+
 var settingsHelp = map[string]string{
 	"Startup sound delay":     "Seconds before initial audio; applies next time BGM starts.",
 	"Boot sounds in rotation": "Add playlist and global boot sounds to normal playback after saving.",
@@ -28,8 +30,11 @@ var settingsHelp = map[string]string{
 	"Menu volume":             "MiSTer volume while the menu is open; needs Default volume too.",
 	"Default volume":          "MiSTer volume restored when a core runs; needs Menu volume too.",
 	"Debug logging":           "Write detailed service output to /tmp/bgm.log.",
-	"Theme":                   "Choose a color palette to apply after saving.",
-	"Mouse":                   "Enable mouse input alongside keyboard and controller navigation.",
-	"CRT mode":                "Use a compact 75-column, 15-row layout for CRT displays.",
-	"On-screen keyboard":      "Use controller-friendly text entry; Off needs a physical keyboard.",
+}
+
+func init() {
+	// The four interface settings read the same in every app.
+	for label, help := range tui.InterfaceSettingsHelp {
+		settingsHelp[label] = help
+	}
 }

@@ -273,3 +273,12 @@ func ApplyTheme(theme *Theme) {
 	tview.Styles.SecondaryTextColor = theme.SecondaryTextColor
 	tview.Styles.InverseTextColor = theme.InverseTextColor
 }
+
+// ThemeLabel returns a theme's display name, falling back to its key. Every
+// settings page needs this; each app used to carry its own copy.
+func ThemeLabel(name string) string {
+	if theme := AvailableThemes[name]; theme != nil {
+		return theme.DisplayName
+	}
+	return name
+}

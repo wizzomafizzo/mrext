@@ -92,19 +92,23 @@ func (s *settingsPage) editList(
 		values = slices.Delete(values, index, index+1)
 		rebuild()
 	}
+	// Every other page gives each button a help line and pipes it to the
+	// footer. This one used AddButton, so its footer never responded.
 	bar := tui.NewButtonBar(s.ui.app).
-		AddButton("Edit", func() { edit(false) }).
-		AddButton("Add", func() { edit(true) }).
-		AddButton("Remove", remove).
-		AddButton("Done", func() { apply(slices.Clone(values)); back() }).
-		AddButton("Cancel", back).
+		AddButtonWithHelp("Edit", "Change the selected entry", func() { edit(false) }).
+		AddButtonWithHelp("Add", "Add a new entry to the list", func() { edit(true) }).
+		AddButtonWithHelp("Remove", "Remove the selected entry", remove).
+		AddButtonWithHelp("Done", "Keep these entries and return to Settings",
+			func() { apply(slices.Clone(values)); back() }).
+		AddButtonWithHelp("Cancel", "Discard entry changes and return", back).
 		SetupNavigation(back)
 	frame := tui.NewPageFrame(s.ui.app).
-		SetTitle(label).
+		SetTitle(appTitle, "Settings", label).
 		SetContent(list).
 		SetHelpText("One entry per row. Done keeps edits; Save settings writes them.").
 		SetButtonBar(bar).
 		SetOnEscape(back)
+	bar.SetHelpCallback(func(text string) { frame.SetHelpText(text) })
 	list.SetSelectedFunc(func(int, string, string, rune) { edit(false) })
 	frame.SetupContentToButtonNavigation()
 	s.ui.pages.AddAndSwitchToPage(page, tui.Centered(73, 13, frame), true)

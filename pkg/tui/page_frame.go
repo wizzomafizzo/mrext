@@ -217,6 +217,15 @@ func (pf *PageFrame) SetupContentToButtonNavigation() {
 	capture := list.GetInputCapture()
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
+		// Left, Right and Tab move between actions; Enter presses the
+		// highlighted one, which is what the "Enter: Confirm" hint promises.
+		//
+		// Routing Enter here means the list's own SetSelectedFunc is never
+		// reached while this navigation is installed. Pages still behave
+		// correctly because every one of them puts the row action first, so
+		// Enter on a row activates that row. Keep that invariant: a page whose
+		// first button is not its row action would make Enter do something
+		// else entirely.
 		case tcell.KeyLeft, tcell.KeyRight, tcell.KeyTab, tcell.KeyBacktab, tcell.KeyEnter:
 			if handler := pf.buttonBar.InputHandler(); handler != nil {
 				handler(event, func(tview.Primitive) {})
