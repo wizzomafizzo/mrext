@@ -90,6 +90,8 @@ When the hook's condition is met, PlayLog will run the given executable with eit
 
 Be aware that stop hooks will be unreliable when an end user shuts down their MiSTer via power switch.
 
+`-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/playlog.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
+
 ## Uninstall
 
 Remove PlayLog's Downloader subscription if configured, so updates do not reinstall it.

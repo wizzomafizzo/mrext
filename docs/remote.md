@@ -101,6 +101,8 @@ The `announce_game_url` webhook is sent in the background. Earlier versions post
 
 Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh` already has, so a `#!/bin/bash` script is not rewritten to `#!/bin/sh`. Uninstalling when Remote is the only entry now succeeds; it previously reported "no startup entries to save" and left the entry in place, so the service returned on the next boot.
 
+`-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/remote.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
