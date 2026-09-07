@@ -97,6 +97,8 @@ Each settings page shows the file being edited. Save targets that loaded filenam
 
 Remote retains its first observed slot layout and refuses further access if it detects a change. **After adding, removing, or renaming alternate INIs, restart both MiSTer and Remote before editing.** MiSTer caches its mapping internally; Remote cannot reconstruct a different mapping cached before Remote started. Older firmware with different ordering is not verified. No INI files are renamed to force an order.
 
+The `announce_game_url` webhook is sent in the background. Earlier versions posted it inline while the tracker was locked, so an endpoint that had gone offline froze core and game tracking for the full 15-second timeout on every core change. Requests are queued; if the endpoint cannot keep up, events are dropped and logged rather than delaying tracking.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.

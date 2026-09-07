@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -103,35 +104,106 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 		}
 	}
 
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					switch {
-					case event.Name == config.CurrentPathFile:
-						tr.trackMenu()
-					case event.Name == config.CoreNameFile:
-						tr.LoadCore()
-					case event.Name == config.ActiveGameFile:
-						tr.loadGame()
-					case strings.HasPrefix(event.Name, config.CoreConfigFolder):
-						if recentErr := loadRecent(event.Name); recentErr != nil {
-							tr.Logger.Error("error loading recent file: %s", recentErr)
-						}
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				tr.Logger.Error("error in watcher: %s", err)
+	watch := &fileWatch{
+		watcher: watcher,
+		logger:  tr.Logger,
+		files: map[string]func(){
+			config.CurrentPathFile: tr.trackMenu,
+			config.CoreNameFile:    tr.LoadCore,
+			config.ActiveGameFile:  tr.loadGame,
+		},
+		folder: config.CoreConfigFolder,
+		onFolderEvent: func(name string) {
+			if recentErr := loadRecent(name); recentErr != nil {
+				tr.Logger.Error("error loading recent file: %s", recentErr)
 			}
-		}
-	}()
+		},
+	}
+	go watch.run()
 
 	return watcher, nil
+}
+
+const (
+	rewatchAttempts = 5
+	rewatchDelay    = 200 * time.Millisecond
+)
+
+// fileWatch dispatches fsnotify events. It is separate from StartFileWatch so
+// tests can drive it against temporary paths.
+//
+//nolint:govet // Field order groups the watch targets with their handlers.
+type fileWatch struct {
+	watcher       *fsnotify.Watcher
+	logger        trackerLogger
+	files         map[string]func()
+	folder        string
+	onFolderEvent func(string)
+	// attempts and delay bound the re-watch retry; zero selects the defaults.
+	attempts int
+	delay    time.Duration
+}
+
+func (f *fileWatch) run() {
+	for {
+		select {
+		case event, ok := <-f.watcher.Events:
+			if !ok {
+				return
+			}
+			f.dispatch(event)
+		case err, ok := <-f.watcher.Errors:
+			if !ok {
+				return
+			}
+			f.logger.Error("error in watcher: %s", err)
+		}
+	}
+}
+
+func (f *fileWatch) dispatch(event fsnotify.Event) {
+	// Create matters as much as Write: MiSTer tooling and other scripts
+	// replace these files rather than truncating them, and the first content
+	// of a newly created file arrives as Create.
+	if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
+		if handle, ok := f.files[event.Name]; ok {
+			handle()
+			return
+		}
+		if f.folder != "" && strings.HasPrefix(event.Name, f.folder) {
+			f.onFolderEvent(event.Name)
+		}
+		return
+	}
+	// inotify watches follow the inode, so a file that is removed and
+	// recreated leaves the watch on a dead one and the tracker goes silent
+	// until the service restarts. Re-add the path and re-read it.
+	if event.Op&(fsnotify.Remove|fsnotify.Rename) != 0 {
+		if _, ok := f.files[event.Name]; ok {
+			go f.rewatch(event.Name)
+		}
+	}
+}
+
+func (f *fileWatch) rewatch(name string) {
+	attempts, delay := f.attempts, f.delay
+	if attempts <= 0 {
+		attempts = rewatchAttempts
+	}
+	if delay <= 0 {
+		delay = rewatchDelay
+	}
+	for attempt := range attempts {
+		if err := f.watcher.Add(name); err == nil {
+			// The replacement may already hold new content.
+			if handle, ok := f.files[name]; ok {
+				handle()
+			}
+			return
+		}
+		if attempt < attempts-1 {
+			time.Sleep(delay)
+		}
+	}
+	f.logger.Error("gave up re-watching %s after %d attempts", name, attempts)
 }
