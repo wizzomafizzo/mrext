@@ -24,6 +24,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+          # Full history and tags: the build stamps every binary from
+          # git describe --tags, which reports nothing on a shallow clone.
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -41,7 +44,19 @@ jobs:
       - name: Use pinned npm
         run: npm install --global npm@12.0.2
 
+      # Release binaries have always been UPX compressed, which roughly halves
+      # what each app costs on the SD card. This used to come from the armv7
+      # build container; the container is gone, so install it here. Release()
+      # refuses to run without UPX_BIN rather than shipping larger binaries by
+      # accident.
+      - name: Install UPX
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y upx-ucl
+
       - name: Run mage prepRelease
+        env:
+          UPX_BIN: upx-ucl
         run: go run github.com/magefile/mage prepRelease
 
       - name: Upload release assets
