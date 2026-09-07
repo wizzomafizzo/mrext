@@ -1403,7 +1403,7 @@ Notes on usage:
 
 #### List .ini files
 
-List all available MiSTer.ini files on the SD card including alternate files.
+List Main and available alternate MiSTer.ini files on the SD card. Main is always ID 1, including when `MiSTer.ini` does not exist. `MiSTer_example.ini` is excluded case-insensitively. Loading missing Main returns blank configuration without creating a file; saving it creates `MiSTer.ini` with a `[MiSTer]` section. Example and alternate files are not changed by saving Main.
 
 ```plaintext
 GET /settings/inis

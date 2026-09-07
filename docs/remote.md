@@ -85,6 +85,10 @@ Remote verifies that a PID belongs to its copied executable running the service 
 
 If startup fails, capture `/tmp/remote.log`, `/tmp/remote.pid` (if present), and `/media/fat/linux/user-startup.sh` before restarting or re-enabling Remote. Also note executable location, mounted storage, and whether the recorded PID exists. These checks harden startup but do not establish the cause of intermittent reboot failures.
 
+## Main configuration
+
+Settings always offers Main, even if `MiSTer.ini` is absent. Loading it uses blank defaults without writing a file. Save creates `/media/fat/MiSTer.ini` with a `[MiSTer]` section and the selected settings; the Save screen explains this. `MiSTer_example.ini` is never offered as an active configuration or edited. Saving Main leaves alternate INIs unchanged, and the menu is relaunched only after saving succeeds.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
