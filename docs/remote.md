@@ -101,6 +101,10 @@ The `announce_game_url` webhook is sent in the background. Earlier versions post
 
 Adding or removing a startup entry preserves whatever `#!` line `user-startup.sh` already has, so a `#!/bin/bash` script is not rewritten to `#!/bin/sh`. Uninstalling when Remote is the only entry now succeeds; it previously reported "no startup entries to save" and left the entry in place, so the service returned on the next boot.
 
+`MiSTer.ini` and `u-boot.txt` are written by staging the replacement beside the original and renaming over it, so losing power mid-save leaves the previous file intact rather than a truncated one. Each keeps a single `.backup` of its contents from before mrext first changed it; that backup is no longer overwritten on every save.
+
+Changing the MAC address preserves the rest of `u-boot.txt` exactly, including comments and line order, and the value must be a valid MAC. Saving settings now reports which ones could not be applied instead of returning success regardless.
+
 `-service start`, `stop` and `restart` print why they failed on the console as well as to `/tmp/remote.log`; they previously exited 1 with no output at all. `restart` no longer waits forever for a wedged daemon: after 20 seconds it escalates to `SIGKILL` and starts the new one.
 
 ## Uninstall

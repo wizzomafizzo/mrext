@@ -506,8 +506,12 @@ func (tr *Tracker) processGame(activeGame string) {
 		tr.Logger.Error("error finding system for game: %s", err)
 	}
 
+	// The condition here was inverted: BestSystemMatch returns a zero System
+	// on error, so len(system.Folder) was only ever non-zero when err was nil,
+	// and folder stayed empty for every game ever recorded. It is written to
+	// playlog's game_times.folder column.
 	var folder string
-	if err != nil && len(system.Folder) > 0 {
+	if err == nil && len(system.Folder) > 0 {
 		folder = system.Folder[0]
 	}
 

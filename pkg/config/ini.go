@@ -154,9 +154,10 @@ func WriteINIAtomically(path string, file *ini.File) error {
 	if err := temporary.Sync(); err != nil {
 		return fmt.Errorf("sync temporary configuration: %w", err)
 	}
-	if err := temporary.Chmod(0o644); err != nil {
-		return fmt.Errorf("set configuration permissions: %w", err)
-	}
+	// Best effort: /media/fat is exFAT, where the mode comes from the mount
+	// and chmod reports EPERM. Failing here would make every configuration
+	// save on the device fail over a mode the filesystem does not store.
+	_ = temporary.Chmod(0o644)
 	if err := temporary.Close(); err != nil {
 		return fmt.Errorf("close temporary configuration: %w", err)
 	}
