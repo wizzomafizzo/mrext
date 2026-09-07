@@ -88,6 +88,30 @@ func (p *playLogDb) setupDb() error {
 		return fmt.Errorf("create game-times table: %w", err)
 	}
 
+	return p.pruneMenuNavigation()
+}
+
+// pruneMenuNavigation drops menu navigation rows written by older versions.
+// Every query in this file selects on core and game actions only, so these
+// rows are unreachable, and there can be hundreds of thousands of them.
+// Reclaiming the space is worth one delete on open; play history and totals
+// live in core_times and game_times and are untouched.
+func (p *playLogDb) pruneMenuNavigation() error {
+	result, err := p.db.ExecContext(
+		context.Background(),
+		"delete from events where action = ?",
+		tracker.EventActionMenuNavigation,
+	)
+	if err != nil {
+		return fmt.Errorf("prune menu navigation events: %w", err)
+	}
+	if removed, rowsErr := result.RowsAffected(); rowsErr == nil && removed > 0 {
+		// VACUUM outside a transaction, so the file actually shrinks rather
+		// than leaving free pages behind on the card.
+		if _, vacuumErr := p.db.ExecContext(context.Background(), "vacuum"); vacuumErr != nil {
+			return fmt.Errorf("compact play log database: %w", vacuumErr)
+		}
+	}
 	return nil
 }
 
@@ -156,7 +180,15 @@ func (p *playLogDb) UpdateGame(game tracker.GameTime) error {
 	return nil
 }
 
+// AddEvent records a play event. Menu navigation is deliberately not stored:
+// the tracker emits it on every write to /tmp/CURRENTPATH, so a minute of
+// browsing the menu was hundreds of inserts into a database on the SD card,
+// for rows nothing ever read back. Remote still receives those events and
+// broadcasts them over its websocket; only persistence is skipped.
 func (p *playLogDb) AddEvent(event *tracker.EventAction) error {
+	if event.Action == tracker.EventActionMenuNavigation {
+		return nil
+	}
 	_, err := p.db.ExecContext(
 		context.Background(),
 		"insert into events (timestamp, action, target, total_time) values (?, ?, ?, ?)",

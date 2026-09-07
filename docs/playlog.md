@@ -49,6 +49,8 @@ Remove PlayLog's Downloader subscription if configured, so updates do not reinst
 PlayLog generates no menu folder. Custom scripts referenced by its state hooks belong to you and may be shared; removing PlayLog does not require deleting them. Keep MiSTer recents/configuration and shared `/tmp/ACTIVEGAME`. After shutdown, `/tmp/playlog.pid`, `/tmp/playlog.log`, and `/tmp/playlog.sh` are optional cleanup.
 >>>>>>> origin/main
 
+PlayLog does not record menu navigation. Earlier versions wrote a database row for every cursor movement in the MiSTer menu, which put an SD card write behind each one and grew the `events` table without bound, for rows PlayLog never read back. Those rows are deleted and the database compacted the first time this version opens it; play history and totals are untouched. Remote still receives menu navigation over its websocket, which is the only place it was ever used.
+
 ## Configuration
 
 PlayLog can be configured by creating a `playlog.ini` file in the `/media/fat/Scripts` folder where you put `playlog.sh`. For example:
