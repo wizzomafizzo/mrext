@@ -402,7 +402,7 @@ func appHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
+	svcOpt := flag.String("service", "", "manage remote service (start, stop, restart, status)")
 	uninstallOpt := flag.Bool("uninstall", false, "uninstall MiSTer Remote")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()

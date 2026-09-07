@@ -99,7 +99,7 @@ All global configuration settings, MiSTer environment paths and the module for p
 
 #### tui
 
-Reusable terminal UI components built with tview and tcell, including list pickers, an on-screen keyboard, progress views, and MiSTer's framebuffer-console retry flow.
+Reusable terminal UI components built with tview and tcell: themes, the page frame, button bar, menu list, dialogs, progress boxes, an on-screen keyboard, and MiSTer's framebuffer-console retry flow.
 
 #### games
 

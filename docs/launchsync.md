@@ -41,11 +41,13 @@ Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/m
 
 ## Sync screen
 
-Running `launchsync` from the Scripts menu shows a progress screen while it searches for sync files, checks them for updates and builds the games index, then a summary of what each sync file produced: shortcuts created, games not found and errors. **Details** shows the full log, which is the same text the console printed.
+Running `launchsync` from the Scripts menu shows a progress screen while it searches for sync files, checks them for updates and builds the games index, then a summary of what each sync file produced: shortcuts created, games not found and errors. **Details** shows the full log. A sync that fails partway still reaches the summary, so the log stays readable after the error.
 
 Previously this was console output only, and `Building games index... ` was printed without a newline before a scan that can take minutes, so a slow step looked like a hang.
 
 `launchsync -update` is unchanged and stays on the console with no screen, so scripts and startup hooks behave exactly as before; add `-verbose` for the full log. `-test` is also unchanged.
+
+Running `launchsync` with no arguments where no screen can be opened — cron, `ssh` without a terminal, a wrapper script — falls back to the console log it has always printed, rather than failing. The log's wording changed slightly: steps that used to print a prefix and their result on one line, such as `Building games index... done`, are now reported as complete lines.
 
 ## Uninstall
 
