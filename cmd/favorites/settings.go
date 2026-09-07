@@ -188,7 +188,6 @@ func (s *settingsPage) addText(
 		selection := s.list.GetCurrentItem()
 		s.ui.showNameInput(tui.InputOptions{
 			Title:        "Edit " + label,
-			Prompt:       "Enter " + strings.ToLower(label) + ".",
 			InitialValue: value,
 			Validate:     validate,
 		}, func(updated string) {

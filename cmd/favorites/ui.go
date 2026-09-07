@@ -93,7 +93,11 @@ func (u *ui) Run() error {
 			return nil, err
 		}
 		app.SetRoot(tui.WrapRoot(u.options, u.pages), true)
-		u.runStartupWork()
+		// Deferred until this application is actually drawing. BuildAndRetry
+		// builds a second one to retry on /dev/tty2, so work started directly
+		// in a builder runs twice, and Refresh removes and recreates symlinks:
+		// two passes would race over the user's favourites.
+		tui.RunWhenStarted(app, u.runStartupWork)
 		return app, nil
 	}
 	if err := tui.BuildAndRetry(builder); err != nil {
@@ -108,10 +112,7 @@ func (u *ui) runStartupWork() {
 	if u.startupWork == nil {
 		return
 	}
-	options := tui.ProgressOptions{
-		Title:   "Favorites",
-		Initial: tui.ProgressUpdate{Text: "Checking favorites..."},
-	}
+	options := tui.ProgressOptions{Initial: tui.ProgressUpdate{Text: "Checking favorites..."}}
 	tui.ShowProgressModal(u.pages, u.app, options, func(update func(tui.ProgressUpdate)) error {
 		return u.startupWork(func(step string) { update(tui.ProgressUpdate{Text: step}) })
 	}, func(err error) {
@@ -218,7 +219,6 @@ func (u *ui) showBrowser(folder string) {
 
 	var entries []favorites.BrowseEntry
 	options := tui.ProgressOptions{
-		Title:   "Favorites",
 		Initial: tui.ProgressUpdate{Text: "Reading " + filepath.Base(strings.TrimSuffix(folder, "/")) + "..."},
 	}
 	tui.ShowProgressModal(u.pages, u.app, options, func(func(tui.ProgressUpdate)) error {
@@ -357,7 +357,6 @@ func (u *ui) startAddFavorite(entry favorites.BrowseEntry) {
 		defaultName := u.manager.DefaultName(entry.System, entry.Path)
 		u.showNameInput(tui.InputOptions{
 			Title:        "Favorite Name",
-			Prompt:       "Enter a display name for the favorite.",
 			InitialValue: defaultName,
 			Validate:     favorites.ValidateDisplayName,
 		}, func(name string) {
@@ -488,13 +487,17 @@ func (u *ui) showModify(item *favorites.Favorite) {
 
 func (u *ui) renameItem(item *favorites.Favorite, initial string) {
 	validator := favorites.ValidateDisplayName
+	prompt := ""
 	if item.Kind == favorites.FavoriteFolder {
 		validator = favorites.ValidateFolderName
 		initial = filepath.Base(item.Path)
+		// Renaming a folder has a rule renaming a favorite does not, and the
+		// same rule is spelled out when a folder is created.
+		prompt = "It must start with an underscore (_)."
 	}
 	u.showNameInput(tui.InputOptions{
 		Title:        "Rename Favorite",
-		Prompt:       "Enter a new display name.",
+		Prompt:       prompt,
 		InitialValue: initial,
 		Validate:     validator,
 	}, func(name string) {

@@ -255,10 +255,20 @@ func main() {
 		runConsole(cfg, *verbose)
 		return
 	}
-	if err := showSyncScreen(cfg); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+	started, screenErr := showSyncScreen(cfg)
+	if screenErr == nil {
+		return
+	}
+	if started {
+		// A screen came up and the sync ran inside it, so this is a real
+		// failure. Re-running here would rewrite every shortcut again.
+		_, _ = fmt.Fprintln(os.Stderr, screenErr)
 		os.Exit(1)
 	}
+	// No screen was ever obtained and nothing ran, so this is a headless
+	// invocation: cron, ssh without a tty, a wrapper script. Behave the way a
+	// bare "launchsync" always did and print the log.
+	runConsole(cfg, true)
 }
 
 // runConsole keeps the original non-interactive behaviour: the same lines, in

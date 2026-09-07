@@ -22,6 +22,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"github.com/rivo/tview"
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -38,16 +39,20 @@ const (
 // did. The console log this replaces printed "Building games index... " with
 // no newline and then blocked through the whole scan, so a slow step looked
 // like a hang.
-func showSyncScreen(cfg *config.UserConfig) error {
+//
+// It reports whether a screen was ever obtained, so a headless run can fall
+// back to the console instead of exiting having done nothing.
+func showSyncScreen(cfg *config.UserConfig) (started bool, err error) {
 	options := tui.ApplicationOptions{
 		Theme:   cfg.TUI.Theme,
 		Mouse:   cfg.TUI.Mouse,
 		CRTMode: cfg.TUI.CRTMode,
 	}
+	var drew *atomic.Bool
 	builder := func() (*tview.Application, error) {
-		app, err := tui.NewApplication(options)
-		if err != nil {
-			return nil, fmt.Errorf("create TUI application: %w", err)
+		app, buildErr := tui.NewApplication(options)
+		if buildErr != nil {
+			return nil, fmt.Errorf("create TUI application: %w", buildErr)
 		}
 		pages := tview.NewPages()
 		app.SetRoot(tui.WrapRoot(options, pages), true)
@@ -55,32 +60,38 @@ func showSyncScreen(cfg *config.UserConfig) error {
 		var outcomes []syncOutcome
 		var lines []string
 		progress := tui.ProgressOptions{
-			Title:   appTitle,
 			Initial: tui.ProgressUpdate{Text: "Searching for sync files..."},
 		}
-		tui.ShowProgressModal(pages, app, progress, func(update func(tui.ProgressUpdate)) error {
-			result, syncErr := runSync(cfg, func(line string) {
-				lines = append(lines, line)
-				update(tui.ProgressUpdate{Text: line})
+		// Deferred until this application is drawing. Starting it here would
+		// run a second sync when BuildAndRetry rebuilds for /dev/tty2, with
+		// both writing the same shortcut files.
+		drew = tui.RunWhenStarted(app, func() {
+			tui.ShowProgressModal(pages, app, progress, func(update func(tui.ProgressUpdate)) error {
+				result, syncErr := runSync(cfg, func(line string) {
+					lines = append(lines, line)
+					update(tui.ProgressUpdate{Text: line})
+				})
+				outcomes = result
+				if syncErr != nil {
+					return syncErr
+				}
+				return nil
+			}, func(syncErr error) {
+				if syncErr != nil {
+					tui.ShowErrorModal(pages, app, syncErr.Error(), app.Stop)
+					return
+				}
+				showSummary(pages, app, outcomes, lines)
 			})
-			outcomes = result
-			if syncErr != nil {
-				return syncErr
-			}
-			return nil
-		}, func(syncErr error) {
-			if syncErr != nil {
-				tui.ShowErrorModal(pages, app, syncErr.Error(), app.Stop)
-				return
-			}
-			showSummary(pages, app, outcomes, lines)
 		})
 		return app, nil
 	}
-	if err := tui.BuildAndRetry(builder); err != nil {
-		return fmt.Errorf("run LaunchSync TUI: %w", err)
+	runErr := tui.BuildAndRetry(builder)
+	started = drew != nil && drew.Load()
+	if runErr != nil {
+		return started, fmt.Errorf("run LaunchSync TUI: %w", runErr)
 	}
-	return nil
+	return started, nil
 }
 
 // showSummary lists what each sync file produced. The full log stays available

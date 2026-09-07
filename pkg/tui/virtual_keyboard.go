@@ -37,6 +37,18 @@ const (
 	keyboardCancel  = "CANC"
 )
 
+// The grid is 39 cells wide. Character rows sit on a four-cell pitch, ten to a
+// row. The action row is [SHFT SYM] [SPC] [DEL OK CANC] on a five-cell pitch,
+// with the space bar stretched across whatever is left in the middle.
+const (
+	keyboardGridWidth   = 39
+	keyboardKeyPitch    = 4
+	keyboardActionPitch = 5
+	keyboardLeftKeys    = 2
+	keyboardSpaceCol    = 2
+	keyboardRightCol    = 3
+)
+
 var (
 	keyboardLower = [][]string{
 		{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
@@ -57,7 +69,9 @@ var (
 		{"-", "_", "=", "+", "[", "]", "{", "}", "\\", "|"},
 		{";", ":", "'", "\"", "`", "~", "/", "?", "<", ">"},
 		{},
-		{"ABC", keyboardSpace, keyboardDelete, keyboardSubmit, keyboardCancel},
+		// The blank holds ABC in the column SYM occupies in the other
+		// layouts, so toggling between them does not move the cursor.
+		{"", "ABC", keyboardSpace, keyboardDelete, keyboardSubmit, keyboardCancel},
 	}
 )
 
@@ -139,23 +153,23 @@ func (k *VirtualKeyboard) drawRow(
 	keys []string,
 	theme *Theme,
 ) {
-	if row == len(k.layout())-1 {
-		leftCount := len(keys) - 4
-		rightStart := 39 - 3*5
+	if row != len(k.layout())-1 {
 		for column, key := range keys {
-			keyX, keyWidth := x+column*5, 4
-			switch {
-			case column == leftCount:
-				keyWidth = rightStart - leftCount*5 - 1
-			case column > leftCount:
-				keyX = x + rightStart + (column-leftCount-1)*5
-			}
-			k.drawKey(screen, keyX, y, key, keyWidth, row, column, theme)
+			k.drawKey(screen, x+column*keyboardKeyPitch, y, key, keyboardKeyPitch-1, row, column, theme)
 		}
 		return
 	}
+	leftEnd := keyboardLeftKeys * keyboardActionPitch
+	rightStart := keyboardGridWidth - (len(keys)-keyboardRightCol)*keyboardActionPitch
 	for column, key := range keys {
-		k.drawKey(screen, x+column*4, y, key, 3, row, column, theme)
+		keyX, keyWidth := x+column*keyboardActionPitch, keyboardActionPitch-1
+		switch {
+		case column == keyboardSpaceCol:
+			keyX, keyWidth = x+leftEnd, rightStart-leftEnd-1
+		case column > keyboardSpaceCol:
+			keyX = x + rightStart + (column-keyboardRightCol)*keyboardActionPitch
+		}
+		k.drawKey(screen, keyX, y, key, keyWidth, row, column, theme)
 	}
 }
 
@@ -206,9 +220,9 @@ func (k *VirtualKeyboard) InputHandler() func(*tcell.EventKey, func(tview.Primit
 		case tcell.KeyDown:
 			k.moveVertical(layout, 1)
 		case tcell.KeyLeft:
-			k.cursorCol = (k.cursorCol - 1 + len(layout[k.cursorRow])) % len(layout[k.cursorRow])
+			k.cursorCol = k.moveHorizontal(layout, -1)
 		case tcell.KeyRight:
-			k.cursorCol = (k.cursorCol + 1) % len(layout[k.cursorRow])
+			k.cursorCol = k.moveHorizontal(layout, 1)
 		case tcell.KeyEnter:
 			k.activate()
 		case tcell.KeyEscape:
@@ -224,15 +238,93 @@ func (k *VirtualKeyboard) InputHandler() func(*tcell.EventKey, func(tview.Primit
 	})
 }
 
-func (k *VirtualKeyboard) moveVertical(layout [][]string, direction int) {
+// moveHorizontal wraps along the current row, stepping over the blank that
+// holds the symbols action row in line with the other layouts.
+func (k *VirtualKeyboard) moveHorizontal(layout [][]string, direction int) int {
+	keys := layout[k.cursorRow]
 	column := k.cursorCol
-	for {
-		k.cursorRow = (k.cursorRow + direction + len(layout)) % len(layout)
-		if len(layout[k.cursorRow]) > 0 {
-			k.cursorCol = min(column, len(layout[k.cursorRow])-1)
-			return
+	for range keys {
+		column = (column + direction + len(keys)) % len(keys)
+		if keys[column] != "" {
+			return column
 		}
 	}
+	return k.cursorCol
+}
+
+func (k *VirtualKeyboard) moveVertical(layout [][]string, direction int) {
+	from := k.cursorRow
+	row := k.cursorRow
+	for range layout {
+		row = (row + direction + len(layout)) % len(layout)
+		if len(layout[row]) > 0 {
+			break
+		}
+	}
+	k.cursorRow = row
+	k.cursorCol = mapKeyboardColumn(layout, from, row, k.cursorCol)
+}
+
+// mapKeyboardColumn keeps the cursor under the key it left when crossing
+// between the character rows and the action row, which are drawn on different
+// pitches: z<->SHFT, x/c<->SYM, v/b/n<->SPC, m<->DEL, ,<->OK, .<->CANC. This
+// is Zaparoo Core's mapping, and without it a plain column index sends "." to
+// CANC on the way down and lands on "n" on the way back up, with everything
+// from "v" rightwards jumping across the row.
+func mapKeyboardColumn(layout [][]string, from, to, column int) int {
+	bottom := len(layout) - 1
+	keys := layout[to]
+	switch {
+	case from == bottom && to != bottom:
+		return skipBlankKey(keys, actionToCharacterColumn(column, len(keys)))
+	case from != bottom && to == bottom:
+		return skipBlankKey(keys, characterToActionColumn(column))
+	default:
+		return min(column, len(keys)-1)
+	}
+}
+
+func actionToCharacterColumn(column, width int) int {
+	switch column {
+	case 0:
+		return 0
+	case 1:
+		return min(1, width-1)
+	case 2:
+		return min(4, width-1)
+	case 3:
+		return min(6, width-1)
+	case 4:
+		return min(7, width-1)
+	default:
+		return width - 1
+	}
+}
+
+func characterToActionColumn(column int) int {
+	switch column {
+	case 0:
+		return 0
+	case 1, 2:
+		return 1
+	case 3, 4, 5:
+		return keyboardSpaceCol
+	case 6:
+		return keyboardRightCol
+	case 7:
+		return 4
+	default:
+		return 5
+	}
+}
+
+// skipBlankKey shifts off the symbols row's spacer, which is drawn but is not
+// a key. Zaparoo lets the cursor rest on it; there is nothing to press there.
+func skipBlankKey(keys []string, column int) int {
+	for column < len(keys) && keys[column] == "" {
+		column++
+	}
+	return min(column, len(keys)-1)
 }
 
 func (k *VirtualKeyboard) deleteLast() {
@@ -260,7 +352,8 @@ func (k *VirtualKeyboard) activate() {
 	case keyboardSymbols:
 		k.symbols = true
 		k.shift = false
-		k.cursorCol = 0
+		// ABC sits where SYM was, so the cursor does not appear to move.
+		k.cursorCol = 1
 	case "ABC":
 		k.symbols = false
 		k.cursorCol = 1
