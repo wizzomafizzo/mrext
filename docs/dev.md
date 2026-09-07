@@ -1,9 +1,11 @@
 # Developer Guide
 
-> [!IMPORTANT]
-> This guide documents legacy mrext development. Before using or extending mrext for new MiSTer work, read [MIGRATE.md](../MIGRATE.md) to see whether current Zaparoo features provide a maintained replacement. mrext can still be appropriate where the migration guide records a gap, especially for stock-MiSTer workflows that do not use Zaparoo Core.
+> [!NOTE]
+> This guide covers development of the maintained mrext tools. If you're building a new media application or integration, use the [Zaparoo Core API](https://zaparoo.org/docs/core/api/), even for MiSTer-only projects. See [mrext and Zaparoo](../MIGRATE.md) for API mappings and the MiSTer-specific functions available through mrext.
 
-MiSTer Extensions is a single Go project that outputs multiple individual binary applications. The goal of the project is to create a unified library to manage all aspects of a MiSTer system, and offer a set of modular applications that create a rich user experience for the MiSTer userspace.
+MiSTer Extensions is a single Go project that outputs multiple individual binary applications. It provides modular tools for MiSTer menu workflows and device management, backed by shared packages rather than duplicate implementations. Zaparoo Core is not required on the device.
+
+Changes to these tools should preserve existing configuration, folder layouts, command-line contracts, and controller-driven workflows. Remote's API remains supported for existing clients and its specialist MiSTer functions. For new media integrations, use Core's daemon rather than building on mrext's internal indexing, tracking, or launch implementation.
 
 Applications should:
 - Be usable with only a controller for at least the core functionality

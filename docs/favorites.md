@@ -2,7 +2,7 @@
 
 Favorites creates and manages game and core shortcuts in MiSTer's stock menu. It runs as a standalone Go application and does not require Zaparoo Core.
 
-Zaparoo Frontend also provides favorites for indexed media, but it does not create or repair stock-menu `.mgl` shortcuts. See [MIGRATE.md](../MIGRATE.md) before choosing between them.
+Zaparoo Frontend also provides favorites, but it does not create or repair these stock-menu shortcuts. See [mrext and Zaparoo](../MIGRATE.md) to compare features.
 
 ## Installation
 

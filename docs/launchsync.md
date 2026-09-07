@@ -1,7 +1,7 @@
 # LaunchSync
 
-> [!IMPORTANT]
-> LaunchSync is maintained for `.sync` files and stock-menu shortcuts. Before creating a new shared MiSTer list with it, consider Online cards and decks, Zap Links, self-hosted Zap Link servers, or Zaparoo playlists. Keep LaunchSync when subscribed `.mgl` folders are required. See [MIGRATE.md](../MIGRATE.md).
+> [!NOTE]
+> LaunchSync works without Zaparoo. Zaparoo also offers shared cards, decks, Zap Links, and playlists, but does not read `.sync` files or generate LaunchSync's menu folders. See [mrext and Zaparoo](../MIGRATE.md) to compare features.
 
 LaunchSync allows people to create, share and maintain live-updating game playlists for the MiSTer.
 

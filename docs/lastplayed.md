@@ -1,7 +1,7 @@
 # LastPlayed
 
-> [!IMPORTANT]
-> LastPlayed is maintained for stock-menu shortcuts. Before using it for a new MiSTer recents workflow, consider Frontend recents, Core play history, or ZapScript `launch.last`. Keep LastPlayed when dynamic `.mgl` or `bootcore` files are required. See [MIGRATE.md](../MIGRATE.md).
+> [!NOTE]
+> LastPlayed works without Zaparoo. Zaparoo also offers play history and recents, but does not generate LastPlayed's stock-menu shortcuts or `bootcore` files. See [mrext and Zaparoo](../MIGRATE.md) to compare features.
 
 LastPlayed is a service for automatically generating dynamic shortcuts in the MiSTer menu.
 

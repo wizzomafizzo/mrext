@@ -2,7 +2,7 @@
 
 BGM plays background music in MiSTer's menu, stops it while a core runs, and plays boot sounds when MiSTer starts or a core launches. It runs as a standalone Go application and does not require Zaparoo Core.
 
-Zaparoo Core also offers core audio playback. See [MIGRATE.md](../MIGRATE.md) before choosing between them; internet radio and BGM's folder-based configuration have no confirmed equivalent there.
+Zaparoo also offers background audio playback, with different controls and configuration. See [mrext and Zaparoo](../MIGRATE.md) to compare features, including radio support.
 
 ## Installation
 

@@ -12,14 +12,22 @@ Human docs live in [README.md](README.md), [docs/dev.md](docs/dev.md) and
 
 ## Scope and Zaparoo
 
-- Read [MIGRATE.md](MIGRATE.md) before proposing a new MiSTer integration or a
-  new cross-platform feature. Where it maps an mrext component to a maintained
-  Zaparoo replacement, do not present mrext's REST/WebSocket API, Go packages,
-  or `.mgl`/`.sync` generation as the preferred path for new integrations.
-- Work that keeps mrext apps working, or improves stock-MiSTer behaviour that
-  MIGRATE.md records as a gap, is in scope. Say plainly when a change targets
-  stock MiSTer without Core rather than presenting it as Zaparoo architecture.
-- Do not claim replacement parity. Preserve and report the gaps in MIGRATE.md.
+- mrext is actively maintained and standalone. Preserve familiar workflows,
+  configuration, files, CLI behavior, and existing Remote client contracts.
+  Do not tell end users they must migrate or describe the tools as retired.
+- For new media applications and integrations, including MiSTer-only projects,
+  use the Zaparoo Core daemon's public API or CLI. Do not use mrext's internal
+  indexing, tracking, launch packages, or Remote media API as the default
+  foundation when Core provides the required interface. Read
+  [MIGRATE.md](MIGRATE.md) for mappings and genuine workflow differences.
+- Remote's API remains supported for existing clients and specialist MiSTer
+  functions such as INI editing, wallpapers, and menu management. Use mrext
+  where those functions are needed without claiming full Core parity.
+- Keep maintenance of these tools separate from runtime integration changes.
+  Do not add a mandatory Core dependency, silently switch backends, or claim
+  proposed integration is shipped.
+- Public app docs should explain usage and relevant Zaparoo features, not
+  internal strategy, maintenance sequencing, or speculative architecture.
 - `/tmp/ACTIVEGAME` is a MiSTer-specific compatibility file that both mrext and
   Zaparoo Core maintain. Keep existing readers working; new integrations should
   prefer Core's public state, notification or MQTT interfaces.
