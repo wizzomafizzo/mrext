@@ -68,33 +68,48 @@ func HandleSaveIni(logger *service.Logger, reqID int) http.HandlerFunc {
 			return
 		}
 
+		// Report what did not apply. Logging and returning 200 told the user
+		// their hostname or MAC had been saved when it had not.
+		var failed []string
 		for key, value := range args {
 			// custom internal setting
 			if strings.HasPrefix(key, "__") {
 				switch key {
 				case hostnameKey:
-					err = mister.UpdateHostname(value, false)
-					if err != nil {
-						logger.Error("set hostname: %s", err)
+					if hostErr := mister.UpdateHostname(value, false); hostErr != nil {
+						logger.Error("set hostname: %s", hostErr)
+						failed = append(failed, "hostname")
 					}
 				case macAddressKey:
-					err = mister.UpdateConfiguredMacAddress(value)
-					if err != nil {
-						logger.Error("set mac address: %s", err)
+					if macErr := mister.UpdateConfiguredMacAddress(value); macErr != nil {
+						logger.Error("set mac address: %s", macErr)
+						failed = append(failed, "MAC address")
 					}
 				}
+				// Internal keys are not MiSTer INI settings; SetKey no-ops on
+				// them and only produced a misleading log line.
+				continue
 			}
 
-			setErr := mi.SetKey(key, value)
-			if setErr != nil {
+			if setErr := mi.SetKey(key, value); setErr != nil {
 				logger.Error("update mister.ini: %s", setErr)
+				failed = append(failed, key)
+				continue
 			}
 			logger.Info("update mister.ini: %s=%s", key, value)
 		}
 
+		// Persist whatever did apply before reporting, so a failure on one
+		// setting does not silently discard the others.
 		if err = saveAndRelaunch(&mi, mister.RelaunchIfInMenu); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("save settings: %s", err)
+			return
+		}
+
+		if len(failed) > 0 {
+			http.Error(w, "could not update: "+strings.Join(failed, ", "), http.StatusInternalServerError)
+			logger.Error("settings partially failed: %s", strings.Join(failed, ", "))
 			return
 		}
 	}

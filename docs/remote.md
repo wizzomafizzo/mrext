@@ -99,6 +99,10 @@ Remote retains its first observed slot layout and refuses further access if it d
 
 The `announce_game_url` webhook is sent in the background. Earlier versions posted it inline while the tracker was locked, so an endpoint that had gone offline froze core and game tracking for the full 15-second timeout on every core change. Requests are queued; if the endpoint cannot keep up, events are dropped and logged rather than delaying tracking.
 
+`MiSTer.ini` and `u-boot.txt` are written by staging the replacement beside the original and renaming over it, so losing power mid-save leaves the previous file intact rather than a truncated one. Each keeps a single `.backup` of its contents from before mrext first changed it; that backup is no longer overwritten on every save.
+
+Changing the MAC address preserves the rest of `u-boot.txt` exactly, including comments and line order, and the value must be a valid MAC. Saving settings now reports which ones could not be applied instead of returning success regardless.
+
 ## Uninstall
 
 Remove Remote's Downloader subscription if configured, so updates do not reinstall it.
