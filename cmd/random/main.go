@@ -29,6 +29,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 const (
@@ -42,7 +43,12 @@ func main() {
 	filter := flag.String("filter", "", "list of systems to filter (ex. gba,psx,nes)")
 	ignore := flag.String("ignore", "", "list of systems to ignore (ex. tgfx16-cd)")
 	noscan := flag.Bool("noscan", false, "don't index entire system (faster, but less random)")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "random", version.String())
+		return
+	}
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{})
 	if err != nil {

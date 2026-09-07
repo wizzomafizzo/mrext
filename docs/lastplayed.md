@@ -40,6 +40,16 @@ Recently Played numbers `.mra` and `.mgl` shortcuts together. Replaying a game r
 
 LastPlayed waits for MiSTer's state files to appear when it starts, so launching it from `user-startup.sh` before MiSTer main has created them no longer makes the service exit. It also recovers when another script replaces `/tmp/ACTIVEGAME` or `/tmp/CORENAME` instead of writing over them, which previously left tracking silent until a restart.
 
+## Service screen
+
+Running `lastplayed` from the Scripts menu now opens a screen instead of printing a line and exiting. It shows whether the service is running, the shortcut and recent folder names in use, and offers **Start**/**Stop**, **Restart**, **Uninstall** and **Exit**, with Exit selected by default. It uses the same interface as the other apps, including themes and CRT mode from `[tui]`.
+
+The question about adding LastPlayed to MiSTer startup is the same question, asked in the shared dialog rather than as a raw `[DOWN=Yes/UP=No]` terminal prompt.
+
+**Uninstall** stops the service and removes the `# mrext/lastplayed` entry from `user-startup.sh` without touching anything else in that file, then asks separately before deleting the generated `Last Played` shortcut and `Recently Played` folder. It does not delete `lastplayed.sh` or `lastplayed.ini`; the summary says so.
+
+`lastplayed.sh -service start|stop|restart|status` is unchanged and stays headless, so `user-startup.sh` is unaffected.
+
 ## Configuration
 
 LastPlayed can be configured by creating a `lastplayed.ini` file in the `/media/fat/Scripts` folder where you put `lastplayed.sh`. For example:

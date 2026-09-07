@@ -36,6 +36,7 @@ type PageFrame struct {
 	helpText  *tview.TextView
 	buttonBar *ButtonBar
 	onEscape  func()
+	version   string
 }
 
 func NewPageFrame(app *tview.Application) *PageFrame {
@@ -57,6 +58,14 @@ func NewPageFrame(app *tview.Application) *PageFrame {
 
 func (pf *PageFrame) SetTitle(path ...string) *PageFrame {
 	pf.Box.SetTitle(" " + strings.Join(path, " > ") + " ")
+	return pf
+}
+
+// SetVersion prints a build identifier in the bottom border, opposite the key
+// hints, so a user can say which build they are running without guessing from
+// a file date. Ignored when it does not fit.
+func (pf *PageFrame) SetVersion(version string) *PageFrame {
+	pf.version = version
 	return pf
 }
 
@@ -115,12 +124,16 @@ func (pf *PageFrame) Draw(screen tcell.Screen) {
 	pf.drawHints(screen)
 }
 
+func hintsRunes() []rune {
+	return []rune("↑↓: Rows │ ←→: Actions │ Enter: Confirm │ ESC: Back")
+}
+
 func (pf *PageFrame) drawHints(screen tcell.Screen) {
 	x, y, width, height := pf.GetRect()
 	if width <= 4 || height <= 2 {
 		return
 	}
-	hints := []rune("↑↓: Rows │ ←→: Actions │ Enter: Confirm │ ESC: Back")
+	hints := hintsRunes()
 	if len(hints) > width-4 {
 		hints = hints[:width-4]
 	}
@@ -132,6 +145,29 @@ func (pf *PageFrame) drawHints(screen tcell.Screen) {
 		screen.SetContent(column, y+height-1, ' ', nil, style)
 	}
 	for index, value := range hints {
+		screen.SetContent(start+index, y+height-1, value, nil, style)
+	}
+	pf.drawVersion(screen, x, y, width, height, start)
+}
+
+// drawVersion puts the build in the right of the bottom border, but only when
+// there is clear space between it and the key hints.
+func (pf *PageFrame) drawVersion(screen tcell.Screen, x, y, width, height, hintsStart int) {
+	if pf.version == "" {
+		return
+	}
+	label := []rune(pf.version)
+	start := x + width - 2 - len(label)
+	if start < hintsStart+len(hintsRunes())+2 {
+		return
+	}
+	style := tcell.StyleDefault.
+		Foreground(CurrentTheme().BorderColor).
+		Background(CurrentTheme().PrimitiveBackgroundColor)
+	for column := start - 1; column < start+len(label)+1; column++ {
+		screen.SetContent(column, y+height-1, ' ', nil, style)
+	}
+	for index, value := range label {
 		screen.SetContent(start+index, y+height-1, value, nil, style)
 	}
 }

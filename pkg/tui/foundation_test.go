@@ -544,3 +544,82 @@ func TestShareInterfaceSettingsWritesSharedFileAndClearsLocalKeys(t *testing.T) 
 		t.Errorf("unrelated settings were lost:\n%s", local)
 	}
 }
+
+func TestServicePageShowsStateAndKeepsExitDefault(t *testing.T) {
+	app := tview.NewApplication()
+	pages := tview.NewPages()
+	running := false
+
+	page := NewServicePage(app, pages, "LastPlayed", ServiceActions{
+		Running: func() bool { return running },
+		Start:   func() error { running = true; return nil },
+		Stop:    func() error { running = false; return nil },
+		Restart: func() error { return nil },
+		Exit:    func() {},
+		Status: func(isRunning bool) string {
+			if isRunning {
+				return "Service is RUNNING"
+			}
+			return "Service is NOT RUNNING"
+		},
+	})
+	page.Show("service")
+
+	screen := tcell.NewSimulationScreen("UTF-8")
+	if err := screen.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer screen.Fini()
+	screen.SetSize(75, 15)
+	pages.SetRect(0, 0, 75, 15)
+	pages.Draw(screen)
+
+	drawn := screenText(screen, 75, 15)
+	for _, want := range []string{"LastPlayed", "NOT RUNNING", "Start", "Restart", "Uninstall", "Exit"} {
+		if !strings.Contains(drawn, want) {
+			t.Errorf("missing %q:\n%s", want, drawn)
+		}
+	}
+	// Exit is selected on arrival: most visits are to read the state and leave.
+	if page.ButtonBar().FocusedIndex() != 3 {
+		t.Errorf("focused button = %d, want Exit at 3", page.ButtonBar().FocusedIndex())
+	}
+
+	// The toggle follows the service rather than being a fixed label.
+	running = true
+	page.Redraw()
+	pages.Draw(screen)
+	if drawn := screenText(screen, 75, 15); !strings.Contains(drawn, "Stop") {
+		t.Errorf("toggle did not become Stop:\n%s", drawn)
+	}
+}
+
+func TestPageFrameDrawsTheVersionWhenItFits(t *testing.T) {
+	app := tview.NewApplication()
+	frame := NewPageFrame(app).SetTitle("PlayLog").SetVersion("v1.4.2")
+
+	screen := tcell.NewSimulationScreen("UTF-8")
+	if err := screen.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer screen.Fini()
+	screen.SetSize(100, 15)
+	frame.SetRect(0, 0, 100, 15)
+	frame.Draw(screen)
+	if drawn := screenText(screen, 100, 15); !strings.Contains(drawn, "v1.4.2") {
+		t.Errorf("version not drawn:\n%s", drawn)
+	}
+
+	// A narrow screen keeps the key hints and drops the version rather than
+	// overlapping them.
+	screen.SetSize(60, 15)
+	frame.SetRect(0, 0, 60, 15)
+	frame.Draw(screen)
+	drawn := screenText(screen, 60, 15)
+	if strings.Contains(drawn, "v1.4.2") {
+		t.Errorf("version drawn over the hints at 60 columns:\n%s", drawn)
+	}
+	if !strings.Contains(drawn, "ESC") {
+		t.Errorf("key hints lost:\n%s", drawn)
+	}
+}

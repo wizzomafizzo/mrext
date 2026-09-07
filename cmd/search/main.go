@@ -25,13 +25,19 @@ import (
 	"os"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 const appName = "search"
 
 func main() {
 	printPath := flag.Bool("print", false, "Print game path to stderr instead of launching the game")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "search", version.String())
+		return
+	}
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		TUI: config.TUIConfig{Theme: "default", Mouse: true, CRTMode: true, OnScreenKeyboard: true},

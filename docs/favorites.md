@@ -76,6 +76,8 @@ Each app reads these in order: its own `[tui]` section, then `/media/fat/Scripts
 
 The settings screen has a **Use in all apps** row. It writes the current interface settings to the shared file and removes those four keys from this app's INI, so this app follows the shared file from then on. Other apps pick it up the next time they start, unless their own INI still sets those keys.
 
+Startup work happens inside the app now. Checking arcade core links and refreshing favorites both walk the whole favorites tree, and on a large collection, or one on USB or a network share, that used to be several seconds of blank screen before anything was drawn. It runs behind a progress box instead. Reading the contents of a ZIP shows one too, since that is the slow part of browsing.
+
 ## Configuration
 
 Favorites reads `favorites.ini` beside the executable:

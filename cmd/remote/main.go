@@ -50,6 +50,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 const (
@@ -403,7 +404,12 @@ func appHandler(rw http.ResponseWriter, req *http.Request) {
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	uninstallOpt := flag.Bool("uninstall", false, "uninstall MiSTer Remote")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "remote", version.String())
+		return
+	}
 
 	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
 		Remote: config.RemoteConfig{

@@ -31,6 +31,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 // Alternate names for systems.
@@ -213,7 +214,12 @@ func main() {
 	detect := flag.Bool("detect", false, "list active system folders")
 	noDupes := flag.Bool("nodupes", false, "filter out duplicate games")
 	launchPath := flag.String("launch", "", "launch game with given path")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "contool", version.String())
+		return
+	}
 
 	// launch game
 	if *launchPath != "" {

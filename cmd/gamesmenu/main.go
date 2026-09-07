@@ -28,20 +28,25 @@ import (
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/gamesmenu"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
-type cliOptions struct{ root string }
+type cliOptions struct {
+	root        string
+	showVersion bool
+}
 
 func parseCLI(args []string) (cliOptions, error) {
 	flags := flag.NewFlagSet("gamesmenu", flag.ContinueOnError)
 	root := flags.String("root", "", "use a local MiSTer filesystem root")
+	showVersion := flags.Bool("version", false, "print the version and exit")
 	if err := flags.Parse(args); err != nil {
 		return cliOptions{}, fmt.Errorf("parse arguments: %w", err)
 	}
 	if flags.NArg() != 0 {
 		return cliOptions{}, errors.New("usage: gamesmenu.sh [--root PATH]")
 	}
-	return cliOptions{root: *root}, nil
+	return cliOptions{root: *root, showVersion: *showVersion}, nil
 }
 
 func loadRuntime(root string) (*config.UserConfig, *gamesmenu.Manager, error) {
@@ -82,6 +87,10 @@ func run(args []string) error {
 	options, err := parseCLI(args)
 	if err != nil {
 		return err
+	}
+	if options.showVersion {
+		_, _ = fmt.Printf("gamesmenu %s\n", version.String())
+		return nil
 	}
 	cfg, manager, err := loadRuntime(options.root)
 	if err != nil {

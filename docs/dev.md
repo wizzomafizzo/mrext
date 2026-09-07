@@ -69,6 +69,8 @@ These are the important commands:
 
 Binary releases all go in the `releases` folder.
 
+`mage build` and `mage mister` stamp the binary with `git describe` and the short commit, so every app answers `-version`. A plain `go build` leaves the stamp empty and falls back to the VCS information Go records, so the flag still reports something useful. Apps with a full-screen interface also print the version in the bottom border of the page frame.
+
 ## Project Layout
 
 This is an overview of all the major files and folders in the project.

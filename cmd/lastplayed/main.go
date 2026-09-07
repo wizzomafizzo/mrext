@@ -36,6 +36,7 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 	"github.com/wizzomafizzo/mrext/pkg/utils"
+	"github.com/wizzomafizzo/mrext/pkg/version"
 )
 
 const (
@@ -331,34 +332,43 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}, nil
 }
 
-func tryAddStartup() error {
+// startupInstalled reports whether the boot entry is present.
+func startupInstalled() (bool, error) {
 	var startup mister.Startup
+	if err := startup.Load(); err != nil {
+		return false, fmt.Errorf("load startup configuration: %w", err)
+	}
+	return startup.Exists("mrext/" + appName), nil
+}
 
-	err := startup.Load()
-	if err != nil {
+// addToStartup installs the boot entry. The question that used to gate this
+// was a raw-terminal arrow-key prompt; it is now the shared confirm dialog, so
+// it looks and behaves like every other question the apps ask.
+func addToStartup() error {
+	var startup mister.Startup
+	if err := startup.Load(); err != nil {
 		return fmt.Errorf("load startup configuration: %w", err)
 	}
-
-	if !startup.Exists("mrext/" + appName) {
-		if utils.YesOrNoPrompt("LastPlayed must be set to run on MiSTer startup. Add it now?") {
-			err = startup.AddService("mrext/" + appName)
-			if err != nil {
-				return fmt.Errorf("add LastPlayed startup service: %w", err)
-			}
-
-			err = startup.Save()
-			if err != nil {
-				return fmt.Errorf("save startup configuration: %w", err)
-			}
-		}
+	if startup.Exists("mrext/" + appName) {
+		return nil
 	}
-
+	if err := startup.AddService("mrext/" + appName); err != nil {
+		return fmt.Errorf("add LastPlayed startup service: %w", err)
+	}
+	if err := startup.Save(); err != nil {
+		return fmt.Errorf("save startup configuration: %w", err)
+	}
 	return nil
 }
 
 func main() {
 	svcOpt := flag.String("service", "", "manage lastplayed service (start, stop, restart, status)")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, _ = fmt.Printf("%s %s\n", "lastplayed", version.String())
+		return
+	}
 
 	logger := service.NewLogger(appName)
 
@@ -403,13 +413,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// -service is how user-startup.sh and the shell invoke this, and it must
+	// stay headless. ServiceHandler exits for every command it recognises.
 	svc.ServiceHandler(svcOpt)
-
-	err = tryAddStartup()
-	if err != nil {
-		logger.Error("error adding startup: %s", err)
-		_, _ = fmt.Println("Error adding to startup:", err)
-	}
 
 	if !svc.Running() {
 		if startErr := svc.Start(); startErr != nil {
@@ -417,10 +423,14 @@ func main() {
 			_, _ = fmt.Println("Error starting service:", startErr)
 			os.Exit(1)
 		}
-		_, _ = fmt.Println("Service started successfully.")
-		os.Exit(0)
 	}
 
-	_, _ = fmt.Println("Service is running.")
+	// Interactive launch from the Scripts menu shows the service screen rather
+	// than printing one line and exiting.
+	if screenErr := showServiceScreen(svc, cfg); screenErr != nil {
+		logger.Error("error showing service screen: %s", screenErr)
+		_, _ = fmt.Println(screenErr)
+		os.Exit(1)
+	}
 	os.Exit(0)
 }

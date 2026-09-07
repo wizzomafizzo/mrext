@@ -39,6 +39,14 @@ LaunchSync indexes each required system once, regardless of how many playlist en
 
 Only requested systems are refreshed in the shared `/media/fat/Scripts/.config/mrext/games.db`; unrelated Search/Remote entries are retained. A successful refresh removes stale entries for the requested systems. Failed scans or writes leave the previous index intact. Allow free SD space for a replacement index and do not remove `games.db.lock` while an app is indexing. Playlist matching rules and generated shortcut formats are unchanged.
 
+## Sync screen
+
+Running `launchsync` from the Scripts menu shows a progress screen while it searches for sync files, checks them for updates and builds the games index, then a summary of what each sync file produced: shortcuts created, games not found and errors. **Details** shows the full log, which is the same text the console printed.
+
+Previously this was console output only, and `Building games index... ` was printed without a newline before a scan that can take minutes, so a slow step looked like a hang.
+
+`launchsync -update` is unchanged and stays on the console with no screen, so scripts and startup hooks behave exactly as before; add `-verbose` for the full log. `-test` is also unchanged.
+
 ## Uninstall
 
 Remove LaunchSync's Downloader subscription if configured, so updates do not reinstall it.

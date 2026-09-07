@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -121,16 +122,55 @@ func TestCancelAddInsideArchiveReturnsToBrowser(t *testing.T) {
 	if closeErr := file.Close(); closeErr != nil {
 		t.Fatal(closeErr)
 	}
+	// Returning to an archive listing now goes through a progress modal, which
+	// needs a running application to resolve its QueueUpdateDraw.
+	screen := tcell.NewSimulationScreen("UTF-8")
+	view.app.SetScreen(screen)
+	screen.SetSize(75, 15)
+	done := make(chan error, 1)
+	go func() { done <- view.app.Run() }()
+	t.Cleanup(func() {
+		view.app.Stop()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("UI did not stop")
+		}
+	})
+
+	waitForBrowser := func(cancelName bool) {
+		t.Helper()
+		deadline := time.Now().Add(3 * time.Second)
+		for time.Now().Before(deadline) {
+			var page string
+			var failed bool
+			view.app.QueueUpdate(func() {
+				page, _ = view.pages.GetFrontPage()
+				failed = view.pages.HasPage("tui_error_modal")
+			})
+			if failed {
+				t.Fatalf("cancelName=%v raised an error modal", cancelName)
+			}
+			if page == pageBrowser {
+				return
+			}
+			time.Sleep(time.Millisecond)
+		}
+		t.Fatalf("cancelName=%v did not return to the browser", cancelName)
+	}
+
 	for _, cancelName := range []bool{false, true} {
-		view.startAddFavorite(favorites.BrowseEntry{Path: archive + "/game.sfc"})
-		if cancelName {
-			sendUIKey(view, tcell.KeyEnter, 0)
-		}
-		sendUIKey(view, tcell.KeyEscape, 0)
-		page, _ := view.pages.GetFrontPage()
-		if page != pageBrowser || view.pages.HasPage("tui_error_modal") {
-			t.Fatalf("cancelName=%v returned to %s", cancelName, page)
-		}
+		view.app.QueueUpdateDraw(func() {
+			view.startAddFavorite(favorites.BrowseEntry{Path: archive + "/game.sfc"})
+			if cancelName {
+				sendUIKey(view, tcell.KeyEnter, 0)
+			}
+			sendUIKey(view, tcell.KeyEscape, 0)
+		})
+		waitForBrowser(cancelName)
 	}
 }
 

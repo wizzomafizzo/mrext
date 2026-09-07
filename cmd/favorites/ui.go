@@ -48,6 +48,7 @@ type ui struct {
 	pages            *tview.Pages
 	options          tui.ApplicationOptions
 	mainSelection    int
+	startupWork      func(report func(string)) error
 	browserSelection map[string]int
 }
 
@@ -72,6 +73,14 @@ func newUI(cfg *config.UserConfig, manager *favorites.Manager) *ui {
 	}
 }
 
+// SetStartupWork registers the arcade-link walk and refresh that used to run
+// before anything was drawn. On a large favourites tree, or one on USB or a
+// network share, that was several seconds of blank screen with no way to tell
+// whether the app had hung.
+func (u *ui) SetStartupWork(work func(report func(string)) error) {
+	u.startupWork = work
+}
+
 func (u *ui) Run() error {
 	builder := func() (*tview.Application, error) {
 		app, err := tui.NewApplication(u.options)
@@ -84,12 +93,34 @@ func (u *ui) Run() error {
 			return nil, err
 		}
 		app.SetRoot(tui.WrapRoot(u.options, u.pages), true)
+		u.runStartupWork()
 		return app, nil
 	}
 	if err := tui.BuildAndRetry(builder); err != nil {
 		return fmt.Errorf("run Favorites TUI: %w", err)
 	}
 	return nil
+}
+
+// runStartupWork performs the slow startup steps behind a progress modal, then
+// redraws the list so it reflects what the refresh changed.
+func (u *ui) runStartupWork() {
+	if u.startupWork == nil {
+		return
+	}
+	options := tui.ProgressOptions{
+		Title:   "Favorites",
+		Initial: tui.ProgressUpdate{Text: "Checking favorites..."},
+	}
+	tui.ShowProgressModal(u.pages, u.app, options, func(update func(tui.ProgressUpdate)) error {
+		return u.startupWork(func(step string) { update(tui.ProgressUpdate{Text: step}) })
+	}, func(err error) {
+		if err != nil {
+			u.showError(err, u.mustShowMain)
+			return
+		}
+		u.mustShowMain()
+	})
 }
 
 func (u *ui) showMain() error {
@@ -171,12 +202,47 @@ func (u *ui) createFolder(onReturn func()) {
 	}, onReturn)
 }
 
+// showBrowser lists a folder. Reading a ZIP's members is the slow case, and
+// the Python original carried a FIXME about it, so that one goes behind a
+// progress modal instead of freezing on the previous screen.
 func (u *ui) showBrowser(folder string) {
-	entries, err := u.manager.ListDirectory(folder)
-	if err != nil {
-		u.showError(err, u.mustShowMain)
+	if !insideArchive(folder) {
+		entries, err := u.manager.ListDirectory(folder)
+		if err != nil {
+			u.showError(err, u.mustShowMain)
+			return
+		}
+		u.renderBrowser(folder, entries)
 		return
 	}
+
+	var entries []favorites.BrowseEntry
+	options := tui.ProgressOptions{
+		Title:   "Favorites",
+		Initial: tui.ProgressUpdate{Text: "Reading " + filepath.Base(strings.TrimSuffix(folder, "/")) + "..."},
+	}
+	tui.ShowProgressModal(u.pages, u.app, options, func(func(tui.ProgressUpdate)) error {
+		listed, err := u.manager.ListDirectory(folder)
+		if err != nil {
+			return fmt.Errorf("list archive contents: %w", err)
+		}
+		entries = listed
+		return nil
+	}, func(err error) {
+		if err != nil {
+			u.showError(err, u.mustShowMain)
+			return
+		}
+		u.renderBrowser(folder, entries)
+	})
+}
+
+// insideArchive reports a browse path that reaches into a ZIP.
+func insideArchive(folder string) bool {
+	return strings.Contains(strings.ToLower(folder), ".zip"+string(filepath.Separator))
+}
+
+func (u *ui) renderBrowser(folder string, entries []favorites.BrowseEntry) {
 	choices := make([]browserChoice, 0, len(entries)+2)
 	list := tui.NewMenuList()
 

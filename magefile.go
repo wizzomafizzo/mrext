@@ -154,6 +154,30 @@ func GenerateSystemMetadata() error {
 	return sh.RunV("go", "run", "./internal/gensystemmetadata")
 }
 
+const versionPackage = "github.com/wizzomafizzo/mrext/pkg/version"
+
+// versionLdflags stamps the build so every binary can report what it is. The
+// package falls back to Go's own VCS stamps for a plain "go build", so this is
+// only about producing a clean tag name for a release.
+func versionLdflags() string {
+	describe, err := sh.Output("git", "describe", "--tags", "--always", "--dirty")
+	if err != nil {
+		describe = ""
+	}
+	commit, err := sh.Output("git", "rev-parse", "--short", "HEAD")
+	if err != nil {
+		commit = ""
+	}
+	flags := "-s -w"
+	if describe != "" {
+		flags += " -X " + versionPackage + ".Version=" + describe
+	}
+	if commit != "" {
+		flags += " -X " + versionPackage + ".Commit=" + commit
+	}
+	return flags
+}
+
 func buildApp(a app, out string, env map[string]string) error {
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err
@@ -165,7 +189,7 @@ func buildApp(a app, out string, env map[string]string) error {
 	for key, value := range env {
 		buildEnv[key] = value
 	}
-	return sh.RunWithV(buildEnv, "go", "build", "-trimpath", "-o", out, a.path)
+	return sh.RunWithV(buildEnv, "go", "build", "-trimpath", "-ldflags", versionLdflags(), "-o", out, a.path)
 }
 
 func buildApps(appName, platform string, env map[string]string) error {
