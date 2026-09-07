@@ -28,7 +28,7 @@ var settingsHelp = map[string]string{
 	"USB shortcut folder":     "Folder opened by the USB shortcut, normally /media/usb0.",
 	"Core prefix":             "Prefix standard RBF paths for custom setups; normally leave empty.",
 	"Additional game folders": "Extra game-library roots to recognize alongside SD and USB roots.",
-	"Alternate core":          "Choose Standard, LLAPI, or YC for newly created game favorites.",
+	"Alternate core":          "Choose Standard, LLAPI, YC or RetroAchievements for new game favorites.",
 	"Theme":                   "Choose a color palette to apply after saving.",
 	"Mouse":                   "Enable mouse input alongside keyboard and controller navigation.",
 	"CRT mode":                "Use a compact 75-column, 15-row layout for CRT displays.",

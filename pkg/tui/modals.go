@@ -31,6 +31,9 @@ const (
 	errorModalPage   = "tui_error_modal"
 	confirmModalPage = "tui_confirm_modal"
 	inputModalPage   = "tui_input_modal"
+
+	keyboardModalWidth  = 41
+	keyboardModalHeight = 8
 )
 
 func ShowInfoModal(
@@ -143,7 +146,27 @@ func ShowInputModal(
 	if options.OnScreenKeyboard {
 		keyboard := NewVirtualKeyboard(options.InitialValue, submit, cancel)
 		keyboard.SetTitle(" " + options.Title + " ")
-		pages.AddPage(inputModalPage, Centered(41, 8, keyboard), true, true)
+		// The prompt used to be drawn only on the physical-keyboard path, so
+		// the one audience that cannot see the rest of the app -- controller
+		// users, which is the default on MiSTer -- never saw the hint that
+		// explains what to type.
+		if options.Prompt == "" {
+			pages.AddPage(inputModalPage, Centered(41, 8, keyboard), true, true)
+			app.SetFocus(keyboard)
+			return
+		}
+		prompt := tview.NewTextView().
+			SetText(tview.Escape(options.Prompt)).
+			SetWrap(true).
+			SetWordWrap(true).
+			SetTextAlign(tview.AlignCenter)
+		prompt.SetTextColor(CurrentTheme().SecondaryTextColor)
+		promptHeight := len(tview.WordWrap(options.Prompt, keyboardModalWidth))
+		content := tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(prompt, promptHeight, 0, false).
+			AddItem(keyboard, keyboardModalHeight, 0, true)
+		pages.AddPage(inputModalPage,
+			Centered(keyboardModalWidth, keyboardModalHeight+promptHeight, content), true, true)
 		app.SetFocus(keyboard)
 		return
 	}

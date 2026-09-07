@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -185,21 +184,12 @@ func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, erro
 				switch selected {
 				case 0:
 					if svc.Running() {
-						err = svc.Stop()
+						runServiceAction(app, status, "Stopping service...", svc.Stop, draw)
 					} else {
-						err = svc.Start()
+						runServiceAction(app, status, "Starting service...", svc.Start, draw)
 					}
-					if err != nil {
-						logger.Error("could not toggle service: %s", err)
-					}
-					time.Sleep(time.Second)
-					draw()
 				case 1:
-					if err = svc.Restart(); err != nil {
-						logger.Error("could not restart service: %s", err)
-					}
-					time.Sleep(time.Second)
-					draw()
+					runServiceAction(app, status, "Restarting service...", svc.Restart, draw)
 				case 2:
 					action = displayUninstall
 					app.Stop()
@@ -217,6 +207,27 @@ func displayServiceInfo(svc *service.Service, cfg *config.UserConfig) (int, erro
 		return displayNothing, fmt.Errorf("show service controls: %w", err)
 	}
 	return action, nil
+}
+
+// runServiceAction runs a service command off the UI goroutine.
+//
+// The previous version called Stop, Start or Restart inline and then slept a
+// second on the UI goroutine before redrawing, so the screen was frozen and
+// unclickable with nothing to say why. A second is not long enough for a
+// restart either. Say what is happening, then redraw when it is really done.
+func runServiceAction(
+	app *tview.Application, status *tview.TextView, message string, action func() error, redraw func(),
+) {
+	status.SetText(message)
+	go func() {
+		err := action()
+		app.QueueUpdateDraw(func() {
+			if err != nil {
+				logger.Error("service action failed: %s", err)
+			}
+			redraw()
+		})
+	}()
 }
 
 func displayNonInteractiveServiceInfo(svc *service.Service) {

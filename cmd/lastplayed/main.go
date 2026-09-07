@@ -357,7 +357,7 @@ func tryAddStartup() error {
 }
 
 func main() {
-	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
+	svcOpt := flag.String("service", "", "manage lastplayed service (start, stop, restart, status)")
 	flag.Parse()
 
 	logger := service.NewLogger(appName)

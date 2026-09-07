@@ -66,7 +66,7 @@ Changes remain staged until `Save` is selected. `Cancel` leaves the file untouch
 
 `USB shortcut folder` is the filesystem target of the browser's USB shortcut, normally `/media/usb0`. If that target contains a `games` folder, the shortcut opens it instead. This setting does not mount storage or change the destination of saved favorites; the INI key remains `external_folder`.
 
-The on-screen keyboard uses Zaparoo's compact 41×8 layout, with no separate prompt floating above it. Setting explanations stay in the settings page footer.
+The on-screen keyboard uses Zaparoo's compact 41×8 layout. Where an input has a prompt explaining what to enter, that line is shown above the keyboard; controller users could not see it otherwise, and they are the ones it is written for. Setting explanations stay in the settings page footer.
 
 ## Configuration
 

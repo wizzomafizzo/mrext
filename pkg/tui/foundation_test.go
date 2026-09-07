@@ -32,7 +32,7 @@ func TestKeyboardModalMatchesCompactZaparooLayout(t *testing.T) {
 	app := tview.NewApplication()
 	pages := tview.NewPages()
 	ShowInputModal(pages, app, InputOptions{
-		Title: "Name", Prompt: "Floating prompt must not appear", OnScreenKeyboard: true,
+		Title: "Name", OnScreenKeyboard: true,
 	}, func(string) {}, func() {})
 	screen := tcell.NewSimulationScreen("UTF-8")
 	if err := screen.Init(); err != nil {
@@ -57,9 +57,49 @@ func TestKeyboardModalMatchesCompactZaparooLayout(t *testing.T) {
 			_, _ = text.WriteString(value)
 		}
 	}
-	if strings.Contains(text.String(), "Floating prompt") || !strings.Contains(text.String(), "SPC") {
+	if !strings.Contains(text.String(), "SPC") {
 		t.Fatalf("unexpected keyboard rendering: %s", text.String())
 	}
+}
+
+func TestKeyboardModalShowsThePromptForControllerUsers(t *testing.T) {
+	// The prompt used to be rendered only on the physical-keyboard path, so
+	// the hint explaining what to type never reached controller users, who are
+	// the default on MiSTer and the audience it was written for.
+	app := tview.NewApplication()
+	pages := tview.NewPages()
+	ShowInputModal(pages, app, InputOptions{
+		Title:            "Startup sound delay",
+		Prompt:           "Enter the number of seconds to wait, such as 0 or 1.5.",
+		OnScreenKeyboard: true,
+	}, func(string) {}, func() {})
+	screen := tcell.NewSimulationScreen("UTF-8")
+	if err := screen.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer screen.Fini()
+	screen.SetSize(75, 15)
+	pages.SetRect(0, 0, 75, 15)
+	pages.Draw(screen)
+
+	if _, ok := app.GetFocus().(*VirtualKeyboard); !ok {
+		t.Fatal("keyboard not focused")
+	}
+	if !strings.Contains(screenText(screen, 75, 15), "seconds to wait") {
+		t.Fatalf("prompt not drawn:\n%s", screenText(screen, 75, 15))
+	}
+}
+
+func screenText(screen tcell.SimulationScreen, width, height int) string {
+	var text strings.Builder
+	for y := range height {
+		for x := range width {
+			value, _, _ := screen.Get(x, y)
+			_, _ = text.WriteString(value)
+		}
+		_ = text.WriteByte('\n')
+	}
+	return text.String()
 }
 
 func TestChoiceModalPreservesSelectionOnCancel(t *testing.T) {
@@ -429,5 +469,37 @@ func TestModalDismissalRestoresPageFocus(t *testing.T) {
 				t.Fatalf("focus after dismissal = %T", h.app.GetFocus())
 			}
 		})
+	}
+}
+
+func TestDialogAndHelpTextKeepBracketsInNames(t *testing.T) {
+	// tview reads square brackets as colour tags on these views. Its tag
+	// pattern matches a run of letters, so ROM-set markers like [USA], [U],
+	// [Europe] and [hack] were swallowed: "Delete favorite Sonic (USA) [U].mgl?"
+	// rendered as "Delete favorite Sonic (USA) .mgl?". Markers containing
+	// punctuation or digits, such as [!] or [b1], happen to survive.
+	const name = "Sonic The Hedgehog (USA) [U].mgl"
+
+	app := tview.NewApplication()
+	pages := tview.NewPages()
+	ShowConfirmModal(pages, app, "Favorites Manager", "Delete favorite "+name+"?", func() {}, func() {})
+
+	screen := tcell.NewSimulationScreen("UTF-8")
+	if err := screen.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer screen.Fini()
+	screen.SetSize(75, 15)
+	pages.SetRect(0, 0, 75, 15)
+	pages.Draw(screen)
+	if drawn := screenText(screen, 75, 15); !strings.Contains(drawn, "[U].mgl") {
+		t.Errorf("confirm dialog lost the brackets:\n%s", drawn)
+	}
+
+	frame := NewPageFrame(app).SetHelpText("/media/fat/games/NES/" + name)
+	frame.SetRect(0, 0, 75, 15)
+	frame.Draw(screen)
+	if drawn := screenText(screen, 75, 15); !strings.Contains(drawn, "[U].mgl") {
+		t.Errorf("help line lost the brackets:\n%s", drawn)
 	}
 }
