@@ -45,7 +45,32 @@ const (
 	maxRecentEntries        = 99
 )
 
-func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
+func launcherSystem(cfg *config.UserConfig, path string) (games.System, error) {
+	if strings.TrimSpace(path) == "" {
+		return games.System{}, errors.New("launcher target is empty")
+	}
+	if strings.EqualFold(filepath.Ext(path), ".mra") {
+		info, err := os.Stat(path)
+		if err != nil {
+			return games.System{}, fmt.Errorf("inspect arcade target: %w", err)
+		}
+		if !info.Mode().IsRegular() {
+			return games.System{}, errors.New("arcade target is not a regular file")
+		}
+		system, err := games.GetSystem(tracker.ArcadeSystem)
+		if err != nil {
+			return games.System{}, fmt.Errorf("get arcade system: %w", err)
+		}
+		return *system, nil
+	}
+	system, err := games.BestSystemMatch(cfg, path)
+	if err != nil {
+		return games.System{}, fmt.Errorf("find launcher system: %w", err)
+	}
+	return system, nil
+}
+
+func createLastPlayedMgl(cfg *config.UserConfig, path, sdRoot string) error {
 	var mglName string
 
 	switch {
@@ -63,14 +88,31 @@ func createLastPlayedMgl(cfg *config.UserConfig, path string) error {
 		return errors.New("name cannot be empty")
 	}
 
-	system, err := games.BestSystemMatch(cfg, path)
+	system, err := launcherSystem(cfg, path)
 	if err != nil {
-		return fmt.Errorf("no system match found: %s", path)
+		return err
 	}
 
-	_, err = mister.CreateLauncher(cfg, &system, path, config.SdFolder, mglName)
+	created, err := mister.CreateLauncher(cfg, &system, path, sdRoot, mglName)
 	if err != nil {
 		return fmt.Errorf("error creating mgl: %w", err)
+	}
+
+	return removeStaleLastPlayed(sdRoot, mglName, created)
+}
+
+// Arcade launchers are `.mra` links and everything else is a `.mgl` file, so a
+// system change leaves the previous extension behind. Remove it: a stale
+// shortcut keeps appearing in the menu and can boot the wrong game.
+func removeStaleLastPlayed(sdRoot, name, created string) error {
+	for _, extension := range []string{".mgl", ".mra"} {
+		stale := filepath.Join(sdRoot, name+extension)
+		if stale == created {
+			continue
+		}
+		if err := os.Remove(stale); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove stale last played launcher: %w", err)
+		}
 	}
 
 	return nil
@@ -83,7 +125,11 @@ type recentFile struct {
 	NewFilename string
 }
 
-func addToRecentFolder(cfg *config.UserConfig, path string) error {
+func addToRecentFolder(cfg *config.UserConfig, path, sdRoot string) error {
+	system, err := launcherSystem(cfg, path)
+	if err != nil {
+		return err
+	}
 	var recentFolderName string
 
 	if cfg.LastPlayed.RecentFolderName == "" {
@@ -98,19 +144,13 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		return errors.New("name cannot be empty")
 	}
 
-	recentPath := filepath.Join(config.SdFolder, "_"+recentFolderName)
+	recentPath := filepath.Join(sdRoot, "_"+recentFolderName)
 
-	if _, err := os.Stat(recentPath); os.IsNotExist(err) {
+	if _, statErr := os.Stat(recentPath); os.IsNotExist(statErr) {
 		// #nosec G301 -- MiSTer menu folder must remain world-readable.
-		err = os.Mkdir(recentPath, 0o755)
-		if err != nil {
-			return fmt.Errorf("error creating recent folder: %w", err)
+		if mkdirErr := os.Mkdir(recentPath, 0o755); mkdirErr != nil {
+			return fmt.Errorf("error creating recent folder: %w", mkdirErr)
 		}
-	}
-
-	system, err := games.BestSystemMatch(cfg, path)
-	if err != nil {
-		return fmt.Errorf("no system match found: %s", path)
 	}
 
 	mglName := filepath.Base(path)
@@ -130,7 +170,15 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 
 	var recentFiles []recentFile
 	for _, file := range recentFolder {
-		if file.IsDir() || filepath.Ext(strings.ToLower(file.Name())) != ".mgl" {
+		extension := strings.ToLower(filepath.Ext(file.Name()))
+		if file.IsDir() || (extension != ".mgl" && extension != ".mra") {
+			continue
+		}
+		// Only number entries owned by LastPlayed, not unrelated menu files.
+		if len(file.Name()) < 4 || file.Name()[2] != ' ' {
+			continue
+		}
+		if _, parseErr := strconv.Atoi(file.Name()[:2]); parseErr != nil {
 			continue
 		}
 
@@ -149,12 +197,16 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 	prefixLength := len(strconv.Itoa(maxRecentEntries))
 
 	sort.Slice(recentFiles, func(i, j int) bool {
+		if recentFiles[i].Modified.Equal(recentFiles[j].Modified) {
+			return recentFiles[i].Filename < recentFiles[j].Filename
+		}
 		return recentFiles[i].Modified.After(recentFiles[j].Modified)
 	})
 
 	knownFiles := make(map[string]bool)
 
 	i := 0
+	retained := make([]recentFile, 0, len(recentFiles))
 	for _, file := range recentFiles {
 		if i >= maxRecentEntries {
 			err := os.Remove(file.Path)
@@ -175,14 +227,18 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 		}
 		knownFiles[filename] = true
 
-		newFilename := fmt.Sprintf("%0*d %s", prefixLength, i+1, filename)
-		newPath := filepath.Join(recentPath, newFilename)
-		err := os.Rename(file.Path, newPath)
-		if err != nil {
-			return fmt.Errorf("error renaming recent file: %w", err)
-		}
-
+		file.NewFilename = fmt.Sprintf("%0*d %s", prefixLength, i+1, filename)
+		retained = append(retained, file)
 		i++
+	}
+
+	// Remove duplicates before renumbering: otherwise an old duplicate's path
+	// can refer to the freshly renamed launcher when it is deleted.
+	for _, file := range retained {
+		newPath := filepath.Join(recentPath, file.NewFilename)
+		if renameErr := os.Rename(file.Path, newPath); renameErr != nil {
+			return fmt.Errorf("error renaming recent file: %w", renameErr)
+		}
 	}
 
 	return nil
@@ -190,6 +246,7 @@ func addToRecentFolder(cfg *config.UserConfig, path string) error {
 
 type fakeDb struct {
 	config *config.UserConfig
+	sdRoot string
 }
 
 func (*fakeDb) FixPowerLoss() (bool, error) {
@@ -197,19 +254,23 @@ func (*fakeDb) FixPowerLoss() (bool, error) {
 }
 
 func (f *fakeDb) AddEvent(ev *tracker.EventAction) error {
-	if ev.Action != tracker.EventActionGameStart {
+	if ev.Action != tracker.EventActionGameStart || strings.TrimSpace(ev.TargetPath) == "" {
 		return nil
+	}
+	root := f.sdRoot
+	if root == "" {
+		root = config.SdFolder
 	}
 
 	if !f.config.LastPlayed.DisableLastPlayed {
-		err := createLastPlayedMgl(f.config, ev.TargetPath)
+		err := createLastPlayedMgl(f.config, ev.TargetPath, root)
 		if err != nil {
 			return fmt.Errorf("error creating last played mgl: %w", err)
 		}
 	}
 
 	if !f.config.LastPlayed.DisableRecentFolder {
-		err := addToRecentFolder(f.config, ev.TargetPath)
+		err := addToRecentFolder(f.config, ev.TargetPath, root)
 		if err != nil {
 			return fmt.Errorf("error adding to recent folder: %w", err)
 		}

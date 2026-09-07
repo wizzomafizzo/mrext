@@ -134,6 +134,10 @@ func (r *Remote) Handle(command string) (reply string, ok bool) {
 				player.StartCurrentPlaylist()
 			}
 		}
+	case command == "set bootinplaylist yes":
+		player.SetBootInPlaylist(true)
+	case command == "set bootinplaylist no":
+		player.SetBootInPlaylist(false)
 	case command == "set playincore yes":
 		player.SetPlayInCore(true)
 	case command == "set playincore no":

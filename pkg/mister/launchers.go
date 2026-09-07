@@ -583,8 +583,8 @@ func LaunchToken(cfg *config.UserConfig, manual bool, kbd input.Keyboard, text s
 				return fmt.Errorf("parse INI ID: %w", err)
 			}
 
-			if id < 1 || id > len(inis) {
-				return fmt.Errorf("ini id out of range: %d", id)
+			if _, lookupErr := iniByID(inis, id); lookupErr != nil {
+				return lookupErr
 			}
 
 			return SetActiveIni(id, true)

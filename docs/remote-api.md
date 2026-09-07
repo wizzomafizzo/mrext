@@ -147,11 +147,9 @@ Example response:
 
 #### Take new screenshot
 
-Request main to take a new screenshot of the current core using the `/dev/MiSTer_cmd` interface.
+Request MiSTer to take a normal screenshot using the same keyboard shortcut as Control's Screenshot action (`Alt+Scroll Lock`), rather than the command-interface capture path. This keeps both actions on the capture path reported to preserve PSX image shape. Like Control, it requires MiSTer to accept the shortcut; PS/2 keyboard mode can disable it.
 
-*Due to limitations with main, this method cannot report on errors during screenshot, when the screenshot is complete or
-which file is the taken screenshot. Check for newest screenshot from the full list after a delay to see taken
-screenshot. The method includes an artificial delay which has been reliable.*
+Capture is asynchronous. A successful request does not confirm that MiSTer accepted the shortcut or finished writing a file. The method retains its one-second delay; check the screenshot list for new files afterward.
 
 ```plaintext
 POST /screenshots
@@ -159,7 +157,7 @@ POST /screenshots
 
 This method takes no arguments.
 
-On success, returns `200`.
+On success, returns `200` with the existing empty screenshot payload. If sending the keyboard shortcut fails, returns `500`.
 
 Example request:
 
@@ -1405,7 +1403,7 @@ Notes on usage:
 
 #### List .ini files
 
-List all available MiSTer.ini files on the SD card including alternate files.
+List Main and available alternate MiSTer.ini files on the SD card. Main is always ID 1, including when `MiSTer.ini` does not exist. `MiSTer_example.ini` is excluded case-insensitively. Loading missing Main returns blank configuration without creating a file; saving it creates `MiSTer.ini` with a `[MiSTer]` section. Example and alternate files are not changed by saving Main.
 
 ```plaintext
 GET /settings/inis
@@ -1417,15 +1415,15 @@ On success, returns `200` and object:
 
 | Attribute | Type   | Description                                                                                                                                          |
 |-----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `active`  | number | `0` to `4`. This is the current active .ini file's ID in the list. `0` is a special value meaning no value has been set, which falls back on ID `1`. |
+| `active`  | number | Active MiSTer slot, `0` to `4`; `0` falls back to Main (`1`). An excluded/unavailable slot may not appear in `inis`. |
 | `inis`    | Ini[]  | List of Ini objects (see below).                                                                                                                     |
 
 Ini object:
 
 | Attribute     | Type   | Description                                        |
 |---------------|--------|----------------------------------------------------|
-| `id`          | number | ID of .ini file.                                   |
-| `displayName` | string | Name of the .ini file as it would show in the OSD. |
+| `id`          | number | MiSTer slot ID, not array position. IDs may have gaps. |
+| `displayName` | string | Descriptive INI name; custom names are no longer truncated to OSD label length. |
 | `filename`    | string | Filename of the .ini file.                         |
 | `path`        | string | Absolute path to the .ini file.                    |
 
@@ -1472,6 +1470,10 @@ Example request:
 ```shell
 curl --request PUT --url "http://mister:8182/api/settings/inis" --data '{"ini":1}'
 ```
+
+INI listing uses MiSTer's first-three-candidates-then-case-insensitive-sort rule. The example is excluded only after slot assignment. Clients must use each object's `id`, not its array index. Detected slot-layout changes fail requests; restart MiSTer and Remote together after changing alternate filenames.
+
+For loading, saving, or activating an INI, clients may send `X-Mrext-Ini-Filename` with the expected `filename` from the listing. A mismatch returns `409` before reading, saving, or activating another file. Existing JSON shapes are unchanged; the header is optional for legacy clients and always sent by the current UI. Editors should retain the loaded ID/filename rather than re-fetching the active slot at Save time.
 
 #### Get .ini file values
 
@@ -1790,7 +1792,7 @@ Format: `indexStatus:{exists},{inProgress},{totalSteps},{currentStep},{currentSt
 | `currentStep`            | number  | Current step in the index generation process. Split by system.            |
 | `currentStepDescription` | string  | Description of current step in the index generation process. System name. |
 
-Steps are used for displaying detailed indexing status to the user.
+Steps are used for displaying detailed indexing status to the user. On failure, `inProgress` becomes `n`, step counters reset to zero, and `currentStepDescription` retains an `Index failed: ...` message until the next indexing attempt. Commas and line breaks in descriptions are replaced to preserve the existing five-field format. `exists` continues to describe the published index: a failed regeneration preserves the previous working index, while a failed first build leaves it absent. Successful completion clears the description. An indexing request received while Remote is already indexing does not start a second build.
 
 #### Core status
 

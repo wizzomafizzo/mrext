@@ -31,6 +31,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/wizzomafizzo/mrext/pkg/config"
+	"github.com/wizzomafizzo/mrext/pkg/input"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
@@ -124,36 +125,28 @@ func ViewScreenshot(_ *service.Logger) http.HandlerFunc {
 	}
 }
 
-func TakeScreenshot(logger *service.Logger) http.HandlerFunc {
+func TakeScreenshot(kbd input.Keyboard, logger *service.Logger) http.HandlerFunc {
+	return screenshotHandler(kbd.Screenshot, logger.Error, time.Sleep)
+}
+
+func screenshotHandler(
+	capture func() error, logError func(string, ...any), pause func(time.Duration),
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		screenshot := ScreenshotPayload{}
-
-		cmd, err := os.OpenFile(config.CmdInterface, os.O_RDWR, 0)
-		if err != nil {
-			logger.Error("take screenshot: open dev: %s", err)
-			return
-		}
-		defer func(cmd *os.File) {
-			closeErr := cmd.Close()
-			if closeErr != nil {
-				logger.Error("take screenshot: close dev: %s", closeErr)
-			}
-		}(cmd)
-
-		_, err = cmd.WriteString("screenshot\n")
-		if err != nil {
-			logger.Error("take screenshot: write dev: %s", err)
+		// Use the same normal capture shortcut as Control, not the command
+		// interface's capture path which can distort PSX screenshots.
+		if err := capture(); err != nil {
+			logError("take screenshot: keyboard: %s", err)
+			http.Error(w, "Could not request screenshot", http.StatusInternalServerError)
 			return
 		}
 
-		// TODO: don't pretend to wait
-		time.Sleep(1 * time.Second)
-
-		err = json.NewEncoder(w).Encode(screenshot)
-		if err != nil {
+		// Capture is asynchronous. Keep the existing delay before clients refresh
+		// the list; this does not acknowledge that MiSTer has finished writing.
+		pause(time.Second)
+		if err := json.NewEncoder(w).Encode(ScreenshotPayload{}); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			logger.Error("take screenshot: encode: %s", err)
-			return
+			logError("take screenshot: encode: %s", err)
 		}
 	}
 }
