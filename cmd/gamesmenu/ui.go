@@ -159,7 +159,7 @@ func (u *ui) renderMain() {
 		SetButtonBar(bar).SetOnEscape(u.app.Stop)
 	help := func(index int) {
 		if index >= 0 && index < len(u.entries) {
-			frame.SetHelpText(tview.Escape(strings.Join(u.entries[index].Paths, ", ")))
+			frame.SetHelpText(strings.Join(u.entries[index].Paths, ", "))
 		} else {
 			frame.SetHelpText("Add games to a supported system folder, then restart GamesMenu.")
 		}
@@ -174,7 +174,7 @@ func (u *ui) renderMain() {
 }
 
 func (u *ui) showError(err error, onDismiss func()) {
-	tui.ShowErrorModal(u.pages, u.app, tview.Escape(err.Error()), onDismiss)
+	tui.ShowErrorModal(u.pages, u.app, err.Error(), onDismiss)
 }
 
 func (u *ui) startGenerate() {
@@ -202,7 +202,7 @@ func (u *ui) startGenerate() {
 	generate := func() { u.generate(selected) }
 	if len(removed) > 0 {
 		message := fmt.Sprintf("Generate will remove %d folders and everything inside them:\n", len(removed)) +
-			tview.Escape(strings.Join(removed, "\n"))
+			strings.Join(removed, "\n")
 		tui.ShowConfirmModal(u.pages, u.app, "Remove deselected folders", message, generate, u.renderMain)
 	} else {
 		generate()
@@ -242,7 +242,7 @@ func (u *ui) generate(selected []gamesmenu.Entry) {
 			text += "\n" + strings.Join(result.Removed, ", ")
 		}
 		text += errorSummary(result.Scan.Errors, result.Scan.ErrorsDropped)
-		tui.ShowInfoModal(u.pages, u.app, "Finished scanning", tview.Escape(text), u.mustShowMain)
+		tui.ShowInfoModal(u.pages, u.app, "Finished scanning", text, u.mustShowMain)
 	})
 }
 
@@ -289,6 +289,6 @@ func (u *ui) cleanUp() {
 			text += fmt.Sprintf("\nSkipped (storage not attached): %d", result.Unavailable)
 		}
 		text += errorSummary(result.Errors, result.ErrorsDropped)
-		tui.ShowInfoModal(u.pages, u.app, "Clean Up complete", tview.Escape(text), u.mustShowMain)
+		tui.ShowInfoModal(u.pages, u.app, "Clean Up complete", text, u.mustShowMain)
 	})
 }

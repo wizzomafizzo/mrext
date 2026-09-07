@@ -76,9 +76,14 @@ func NewDialog() *Dialog {
 	return dialog
 }
 
+// SetText sets the dialog body. The text is escaped: the view has dynamic
+// colours enabled, and dialog text here is nearly always a path or a file
+// name. tview reads a bracketed run of letters as a colour tag, so ROM-set
+// markers like [USA], [U], [Europe] and [hack] were swallowed -- "Delete
+// favorite Sonic (USA) [U].mgl?" rendered without the [U].
 func (d *Dialog) SetText(text string) *Dialog {
-	d.text = text
-	d.textView.SetText(text).ScrollToBeginning()
+	d.text = tview.Escape(text)
+	d.textView.SetText(d.text).ScrollToBeginning()
 	return d
 }
 

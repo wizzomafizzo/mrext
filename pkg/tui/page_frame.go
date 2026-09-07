@@ -71,8 +71,12 @@ func (pf *PageFrame) SetFocusTarget(focus tview.Primitive) *PageFrame {
 	return pf
 }
 
+// SetHelpText sets the footer line. The text is escaped for the same reason
+// dialog text is: the view has dynamic colours enabled, and callers put paths
+// and file names here. The Favorites browser shows the current folder and
+// GamesMenu shows a row's source paths, so a bracketed name lost its marker.
 func (pf *PageFrame) SetHelpText(text string) *PageFrame {
-	pf.helpText.SetText(text)
+	pf.helpText.SetText(tview.Escape(text))
 	return pf
 }
 
