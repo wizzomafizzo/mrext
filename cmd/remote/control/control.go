@@ -122,6 +122,24 @@ func SendKeyboard(kbd input.Keyboard, key string) error {
 		return wrapKeyboard("exit console", kbd.ExitConsole())
 	case "computer_osd":
 		return wrapKeyboard("send computer OSD key", kbd.ComputerOSD())
+	// Savestate slots. The unnumbered names are slot 1, which is what a quick
+	// save button wants; the numbered ones reach the other three.
+	case "save_state", "save_state_1":
+		return wrapKeyboard("save state", kbd.SaveState(1))
+	case "save_state_2":
+		return wrapKeyboard("save state 2", kbd.SaveState(2))
+	case "save_state_3":
+		return wrapKeyboard("save state 3", kbd.SaveState(3))
+	case "save_state_4":
+		return wrapKeyboard("save state 4", kbd.SaveState(4))
+	case "load_state", "load_state_1":
+		return wrapKeyboard("load state", kbd.LoadState(1))
+	case "load_state_2":
+		return wrapKeyboard("load state 2", kbd.LoadState(2))
+	case "load_state_3":
+		return wrapKeyboard("load state 3", kbd.LoadState(3))
+	case "load_state_4":
+		return wrapKeyboard("load state 4", kbd.LoadState(4))
 	default:
 		return fmt.Errorf("unknown key: %s", key)
 	}
