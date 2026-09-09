@@ -61,6 +61,16 @@ func loadRecent(filename string) error {
 			if err != nil {
 				return fmt.Errorf("error setting active game: %w", err)
 			}
+		} else if strings.HasSuffix(strings.ToLower(newest.Name), ".mra") {
+			// Arcade games are launched straight from an .mra, and the menu
+			// records it here. Publishing that path is what lets the tracker
+			// name the game from the file, the same title MiSTer's own menu
+			// shows, for sets the arcade database does not list. It costs
+			// nothing: the path is handed to us rather than searched for.
+			err = mister.SetActiveGame(filepath.Join(newest.Directory, newest.Name))
+			if err != nil {
+				return fmt.Errorf("error setting active arcade game: %w", err)
+			}
 		}
 	} else {
 		// individual core's recent file

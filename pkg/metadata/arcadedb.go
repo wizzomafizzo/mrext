@@ -21,9 +21,15 @@ package metadata
 
 import (
 	"context"
+	// #nosec G505 -- Git object hashing is defined as SHA-1. Used to compare a
+	// downloaded file against the hash GitHub reports, not for security.
+	"crypto/sha1" //nolint:gosec // see above
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -107,11 +113,13 @@ func UpdateArcadeDB() (bool, error) {
 		return false, err
 	}
 
-	var contents []gitHubContentsItem
-	if decodeErr := json.Unmarshal(body, &contents); decodeErr != nil {
+	// A single file, so the contents API answers with one object rather than
+	// the array the dated-folder layout used to return.
+	var remote gitHubContentsItem
+	if decodeErr := json.Unmarshal(body, &remote); decodeErr != nil {
 		return false, fmt.Errorf("decode GitHub contents response: %w", decodeErr)
 	}
-	if len(contents) == 0 {
+	if remote.DownloadURL == "" || remote.SHA == "" {
 		return false, nil
 	}
 
@@ -119,42 +127,60 @@ func UpdateArcadeDB() (bool, error) {
 		return false, fmt.Errorf("create metadata directory: %w", mkdirErr)
 	}
 
-	dbAge := time.Time{}
-	if dbFile, statErr := os.Stat(config.ArcadeDBFile); statErr == nil {
-		dbAge = dbFile.ModTime()
-	} else if !os.IsNotExist(statErr) {
-		return false, fmt.Errorf("stat arcade database: %w", statErr)
-	}
-
-	latestFile := contents[len(contents)-1]
-	latestFileDate, err := time.Parse("ArcadeDatabase060102.csv", latestFile.Name)
-	if err != nil {
-		return false, fmt.Errorf("parse arcade database date: %w", err)
-	}
-	// Skip only when the local copy is already at least as new. This compares
-	// against the date stamped on the local file below, not its modification
-	// time: using mtime meant every download made the file look newer than any
-	// remote filename, so a copy truncated by a power cut or a full disk was
-	// never replaced and arcade names stayed blank for good.
-	if !latestFileDate.After(dbAge) {
+	// The file name no longer carries a date, so freshness is decided by
+	// comparing the local copy's Git blob hash with the one GitHub reports.
+	// That is exact, needs nothing stored alongside the CSV, and a copy
+	// truncated by a power cut or a full disk hashes differently and is
+	// replaced rather than kept for good.
+	local, hashErr := blobSHA(config.ArcadeDBFile)
+	switch {
+	case hashErr == nil && local == remote.SHA:
 		return false, nil
+	case hashErr != nil && !errors.Is(hashErr, fs.ErrNotExist):
+		return false, hashErr
 	}
 
-	body, err = readURL(ctx, client, latestFile.DownloadURL)
+	body, err = readURL(ctx, client, remote.DownloadURL)
 	if err != nil {
 		return false, err
 	}
-	if err := writeArcadeDB(body, latestFileDate); err != nil {
+	if err := writeArcadeDB(body); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-// writeArcadeDB stages the download beside the destination and renames it over,
-// then stamps it with the date the remote file carries so the freshness check
-// above has something truthful to compare against.
-func writeArcadeDB(body []byte, stamp time.Time) error {
+// blobSHA computes a file's Git blob hash, which is what the GitHub contents
+// API reports as a file's sha: sha1 over "blob <size>\x00" followed by the
+// contents. Streamed, because this runs on a MiSTer and the database is
+// hundreds of kilobytes.
+func blobSHA(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("stat arcade database for hashing: %w", err)
+	}
+	// #nosec G304 -- fixed path from config, not user input.
+	file, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("open arcade database for hashing: %w", err)
+	}
+	defer func() { _ = file.Close() }()
+
+	// #nosec G401 -- Git object hashing is defined as SHA-1; not security use.
+	hash := sha1.New()
+	if _, err := fmt.Fprintf(hash, "blob %d\x00", info.Size()); err != nil {
+		return "", fmt.Errorf("hash arcade database header: %w", err)
+	}
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("hash arcade database contents: %w", err)
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// writeArcadeDB stages the download beside the destination and renames it
+// over, so losing power mid-write leaves the previous copy intact.
+func writeArcadeDB(body []byte) error {
 	path := config.ArcadeDBFile
 	temporary, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+"-*")
 	if err != nil {
@@ -177,9 +203,6 @@ func writeArcadeDB(body []byte, stamp time.Time) error {
 	}
 	if err := temporary.Close(); err != nil {
 		return fmt.Errorf("close staged arcade database: %w", err)
-	}
-	if err := os.Chtimes(staged, stamp, stamp); err != nil {
-		return fmt.Errorf("stamp staged arcade database: %w", err)
 	}
 	// #nosec G703 -- destination is the fixed arcade database path.
 	if err := os.Rename(staged, path); err != nil {
