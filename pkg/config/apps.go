@@ -50,7 +50,11 @@ const SharedTUIConfigFile = MrextConfigFolder + "/tui.ini"
 const SharedTUIConfigEnv = "MREXT_TUI_CONFIG"
 
 const (
-	ArcadeDBURL  = "https://api.github.com/repositories/521644036/contents/ArcadeDatabase_CSV"
+	// The database used to be a folder of dated ArcadeDatabaseYYMMDD.csv
+	// files. It is now a single file at the repository root, and the old
+	// folder is gone, so the previous URL answers 404 and every MiSTer
+	// silently loses arcade game names.
+	ArcadeDBURL  = "https://api.github.com/repos/MiSTer-devel/ArcadeDatabase_MiSTer/contents/ArcadeDatabase.csv"
 	ArcadeDBFile = MrextConfigFolder + "/ArcadeDatabase.csv"
 )
 
