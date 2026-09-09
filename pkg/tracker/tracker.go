@@ -153,6 +153,12 @@ func generateNameMap(logger trackerLogger) []NameMapping {
 	} else {
 		for i := range arcadeDbEntries {
 			entry := &arcadeDbEntries[i]
+			// The database carries a handful of rows with no setname. They
+			// match nothing real, and an empty CoreName turns any lookup of an
+			// empty core name into an arcade hit with that row's title.
+			if strings.TrimSpace(entry.Setname) == "" {
+				continue
+			}
 			nameMap = append(nameMap, NameMapping{
 				CoreName:   entry.Setname,
 				System:     ArcadeSystem,
@@ -207,6 +213,12 @@ func (tr *Tracker) ReloadNameMap() {
 }
 
 func (tr *Tracker) LookupName(name, game string) NameMapping {
+	// No core name is not something to look up. Without this an empty name
+	// matches any mapping that also has one, and the caller gets a game it
+	// never asked about.
+	if name == "" {
+		return NameMapping{}
+	}
 	for _, mapping := range tr.NameMap {
 		if len(mapping.CoreName) != len(name) {
 			continue
