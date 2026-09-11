@@ -57,6 +57,45 @@ func TestMatchRBFByLaunchNameAndPath(t *testing.T) {
 	}
 }
 
+func TestParseRBFStripsOnlyTheReleaseDate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		path      string
+		shortName string
+		mglName   string
+	}{
+		{"/media/fat/_Console/NES_20240310.rbf", "NES", "_Console/NES"},
+		{"/media/fat/_Console/NES_Alt_20240102.rbf", "NES_Alt", "_Console/NES_Alt"},
+		{"/media/fat/_Console/NES_Alt.rbf", "NES_Alt", "_Console/NES_Alt"},
+		{"/media/fat/_RA_Cores/Cores/NES.rbf", "NES", "_RA_Cores/Cores/NES"},
+		{"/media/fat/_Console/NeoGeoPocket-Color.rbf", "NeoGeoPocket-Color", "_Console/NeoGeoPocket-Color"},
+	}
+	for _, tt := range tests {
+		info := ParseRBF(tt.path)
+		if info.ShortName != tt.shortName || info.MGLName != tt.mglName {
+			t.Fatalf("%s: got %q %q, want %q %q", tt.path, info.ShortName, info.MGLName, tt.shortName, tt.mglName)
+		}
+	}
+}
+
+func TestMatchRBFKeepsUndatedVariantApart(t *testing.T) {
+	t.Parallel()
+
+	rbfFiles := []RBFInfo{
+		ParseRBF("/media/fat/_Console/NES_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/NES_Alt.rbf"),
+	}
+	stock, ok := matchRBF(rbfFiles, "_Console/NES")
+	if !ok || stock.Filename != "NES_20240310.rbf" {
+		t.Fatalf("stock core: got %+v", stock)
+	}
+	alt, ok := matchRBF(rbfFiles, "_Console/NES_Alt")
+	if !ok || alt.Filename != "NES_Alt.rbf" {
+		t.Fatalf("undated variant: got %+v", alt)
+	}
+}
+
 func TestMatchSystemLaunchCoresKeepsVariantsAndNewestRelease(t *testing.T) {
 	t.Parallel()
 

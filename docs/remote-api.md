@@ -823,7 +823,7 @@ Arguments (JSON):
 
 On success, returns `200`.
 
-If system cannot be detected from path, returns `500`.
+If system cannot be detected from path, returns `400`.
 
 If `rbf` is not a core Remote can see, or `path` is an `.mra` or `.mgl` file,
 which names its own core, returns `400`.

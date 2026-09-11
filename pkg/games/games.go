@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -165,17 +166,19 @@ type RBFInfo struct {
 	MGLName   string // relative path launch-able from MGL file
 }
 
+var rbfDateSuffix = regexp.MustCompile(`_\d{8}$`)
+
 func ParseRBF(path string) RBFInfo {
 	info := RBFInfo{
 		Path:     path,
 		Filename: filepath.Base(path),
 	}
 
-	if strings.Contains(info.Filename, "_") {
-		info.ShortName = info.Filename[0:strings.LastIndex(info.Filename, "_")]
-	} else {
-		info.ShortName = strings.TrimSuffix(info.Filename, filepath.Ext(info.Filename))
-	}
+	// Only a release date comes off the name, the way MiSTer itself resolves
+	// an MGL's rbf: NES_20240310.rbf is NES, and an undated NES_Alt.rbf stays
+	// NES_Alt rather than collapsing into the stock core.
+	stem := strings.TrimSuffix(info.Filename, filepath.Ext(info.Filename))
+	info.ShortName = rbfDateSuffix.ReplaceAllString(stem, "")
 
 	if strings.HasPrefix(path, config.SdFolder) {
 		relDir := strings.TrimPrefix(filepath.Dir(path), config.SdFolder+"/")

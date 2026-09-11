@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -213,8 +212,6 @@ func SystemLaunchCores(system *System) ([]LaunchCore, error) {
 	}
 	return matchSystemLaunchCores(rbfFiles, launchers, system), nil
 }
-
-var rbfDateSuffix = regexp.MustCompile(`_\d{8}$`)
 
 // isCoreVariant reports whether a core's short name is the system's core or
 // a suffixed build of it.
