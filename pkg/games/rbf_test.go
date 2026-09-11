@@ -20,6 +20,7 @@
 package games
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -205,6 +206,32 @@ func TestMatchMGLLauncherByRelativeAndAbsolutePath(t *testing.T) {
 		if ok != tt.found {
 			t.Fatalf("%q: found %v, want %v", tt.name, ok, tt.found)
 		}
+	}
+}
+
+func TestLauncherSetNamesCoverEverySystemOnTheCore(t *testing.T) {
+	t.Parallel()
+
+	launchers := []LaunchCore{
+		mustParseLauncher(t, "/media/fat/_RA_Cores/NES.mgl", raNESLauncher),
+		mustParseLauncher(t, "/media/fat/_Other/Plain.mgl", plainNESLauncher),
+		mustParseLauncher(t, "/media/fat/_RA_Cores/SNES.mgl", raSNESLauncher),
+	}
+
+	got := setNamesOfLaunchers(launchers)
+
+	want := map[string][]string{"RA_NES": {"FDS", "NES", "NESMusic"}, "RA_SNES": {"SNES", "SNESMusic"}}
+	seen := make(map[string][]string)
+	for _, entry := range got {
+		seen[entry.SetName] = append(seen[entry.SetName], entry.System.Id)
+	}
+	for setName, systems := range want {
+		if strings.Join(seen[setName], ",") != strings.Join(systems, ",") {
+			t.Fatalf("%s: got %v, want %v", setName, seen[setName], systems)
+		}
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("unexpected setnames: %v", seen)
 	}
 }
 

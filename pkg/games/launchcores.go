@@ -263,3 +263,49 @@ func matchSystemLaunchCores(rbfFiles []RBFInfo, launchers []LaunchCore, system *
 
 	return append(results, fromLaunchers...)
 }
+
+// LauncherSetName ties the setname an MGL launcher sets to a system whose
+// core it runs, so a tracker can tell which system a core like RA_NES is.
+type LauncherSetName struct {
+	System  *System
+	SetName string
+}
+
+// LauncherSetNames returns the setnames of every MGL launcher the launcher
+// can see, paired with each system that uses the core it names. A core
+// shared by several systems, like NES, FDS and NESMusic, is listed once per
+// system, and the tracker picks between them from the game path.
+func LauncherSetNames() ([]LauncherSetName, error) {
+	launchers, err := shallowScanMGL()
+	if err != nil {
+		return nil, fmt.Errorf("scan mgl files: %w", err)
+	}
+	return setNamesOfLaunchers(launchers), nil
+}
+
+func setNamesOfLaunchers(launchers []LaunchCore) []LauncherSetName {
+	ids := make([]string, 0, len(Systems))
+	for id := range Systems {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	results := make([]LauncherSetName, 0)
+	for i := range launchers {
+		launcher := &launchers[i]
+		if launcher.SetName == "" {
+			continue
+		}
+		shortName := rbfDateSuffix.ReplaceAllString(filepath.Base(launcher.RBF), "")
+
+		for _, id := range ids {
+			system := Systems[id]
+			base := strings.ToLower(filepath.Base(system.Rbf))
+			if base == "" || base == "." || !isCoreVariant(shortName, base) {
+				continue
+			}
+			results = append(results, LauncherSetName{SetName: launcher.SetName, System: &system})
+		}
+	}
+	return results
+}
