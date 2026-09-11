@@ -147,6 +147,20 @@ func generateNameMap(logger trackerLogger) []NameMapping {
 		}
 	}
 
+	// Launchers such as _RA_Cores/NES.mgl run a system's core under their
+	// own setname, which is what MiSTer then reports as the core name.
+	launcherNames, err := games.LauncherSetNames()
+	if err != nil {
+		logger.Error("error reading core launchers: %s", err)
+	}
+	for _, launcher := range launcherNames {
+		nameMap = append(nameMap, NameMapping{
+			CoreName: launcher.SetName,
+			System:   launcher.System.Id,
+			Name:     launcher.System.Name,
+		})
+	}
+
 	arcadeDbEntries, err := metadata.ReadArcadeDB()
 	if err != nil {
 		logger.Error("error reading arcade db: %s", err)
