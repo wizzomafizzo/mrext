@@ -742,15 +742,31 @@ Arguments (JSON):
 | Attribute | Type   | Required | Description                 |
 |-----------|--------|----------|-----------------------------|
 | `path`    | string | Yes      | Absolute path to game file. |
+| `rbf`     | string | No       | Core to run the game with instead of the system default: a core in the short form an `.mgl` file uses, for example `_Console/NES_Alt`, or an MGL launcher such as `_RA_Cores/NES.mgl`, whose `rbf` and `setname` are used. Either may be given as an absolute path. |
 
 On success, returns `200`.
 
 If system cannot be detected from path, returns `500`.
 
+If `rbf` is not a core Remote can see, or `path` is an `.mra` or `.mgl` file,
+which names its own core, returns `400`.
+
 Example request:
 
 ```shell
 curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/PSX/1 USA - A-D/Crash Bandicoot (USA).chd"}'
+```
+
+Example request with a specific core:
+
+```shell
+curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/NES/Contra (USA).nes","rbf":"_Console/NES_Alt"}'
+```
+
+Example request through an MGL launcher, here a RetroAchievements build:
+
+```shell
+curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/NES/Contra (USA).nes","rbf":"_RA_Cores/NES.mgl"}'
 ```
 
 #### Generate search index

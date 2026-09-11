@@ -187,28 +187,13 @@ func ParseRBF(path string) RBFInfo {
 	return info
 }
 
-// Find all rbf files in the top 2 menu levels of the SD card.
-func shallowScanRBF() ([]RBFInfo, error) {
-	results := make([]RBFInfo, 0)
+// shallowScanPaths lists the files with an extension in the top 2 menu
+// levels of the SD card: the root and every _ folder in it.
+func shallowScanPaths(ext string) ([]string, error) {
+	results := make([]string, 0)
 
-	isRBF := func(file os.DirEntry) bool {
-		return filepath.Ext(strings.ToLower(file.Name())) == ".rbf"
-	}
-
-	infoSymlink := func(path string) (RBFInfo, error) {
-		info, err := os.Lstat(path)
-		if err != nil {
-			return RBFInfo{}, fmt.Errorf("inspect RBF path: %w", err)
-		}
-
-		if info.Mode()&os.ModeSymlink != 0 {
-			newPath, err := os.Readlink(path)
-			if err != nil {
-				return RBFInfo{}, fmt.Errorf("read RBF symlink: %w", err)
-			}
-			return ParseRBF(newPath), nil
-		}
-		return ParseRBF(path), nil
+	isMatch := func(file os.DirEntry) bool {
+		return strings.EqualFold(filepath.Ext(file.Name()), ext)
 	}
 
 	files, err := os.ReadDir(config.SdFolder)
@@ -224,23 +209,41 @@ func shallowScanRBF() ([]RBFInfo, error) {
 			}
 
 			for _, subFile := range subFiles {
-				if isRBF(subFile) {
-					path := filepath.Join(config.SdFolder, file.Name(), subFile.Name())
-					info, err := infoSymlink(path)
-					if err != nil {
-						continue
-					}
-					results = append(results, info)
+				if isMatch(subFile) {
+					results = append(results, filepath.Join(config.SdFolder, file.Name(), subFile.Name()))
 				}
 			}
-		} else if isRBF(file) {
-			path := filepath.Join(config.SdFolder, file.Name())
-			info, err := infoSymlink(path)
+		} else if isMatch(file) {
+			results = append(results, filepath.Join(config.SdFolder, file.Name()))
+		}
+	}
+
+	return results, nil
+}
+
+// Find all rbf files in the top 2 menu levels of the SD card.
+func shallowScanRBF() ([]RBFInfo, error) {
+	paths, err := shallowScanPaths(".rbf")
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]RBFInfo, 0, len(paths))
+	for _, path := range paths {
+		info, err := os.Lstat(path)
+		if err != nil {
+			continue
+		}
+
+		if info.Mode()&os.ModeSymlink != 0 {
+			newPath, err := os.Readlink(path)
 			if err != nil {
 				continue
 			}
-			results = append(results, info)
+			results = append(results, ParseRBF(newPath))
+			continue
 		}
+		results = append(results, ParseRBF(path))
 	}
 
 	return results, nil
