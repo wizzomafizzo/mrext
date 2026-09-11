@@ -283,6 +283,83 @@ Example request:
 curl --request POST --url "http://mister:8182/api/systems/SNES"
 ```
 
+#### List system cores
+
+List the cores a system's games can be launched with: the core file Remote
+launches by default, any alternative build kept beside it under the same
+name with a suffix, for example `NES_Alt` next to `NES`, and any MGL
+launcher that runs one of those cores, for example `_RA_Cores/NES.mgl`. The
+`rbf` value can be passed to [launch game](#launch-game) to run a game with
+that core.
+
+```plaintext
+GET /systems/{id}/rbfs
+```
+
+Arguments:
+
+| Attribute | Type   | Required | Description            |
+|-----------|--------|----------|------------------------|
+| `id`      | string | Yes      | System's internal ID. See [systems](systems.md). |
+
+On success, returns `200` and a list of objects with attributes:
+
+| Attribute  | Type    | Description                                                                  |
+|------------|---------|------------------------------------------------------------------------------|
+| `rbf`      | string  | Value to pass to launch game: a core in the short form an `.mgl` file uses, or the SD-relative path of an MGL launcher. |
+| `name`     | string  | Name to show: the launcher's `setname` when it has one, otherwise the core's short name. |
+| `core`     | string  | Core the launch will load, in the short form an `.mgl` file uses.           |
+| `setname`  | string  | `setname` the launch will set, empty for a plain core file.                 |
+| `filename` | string  | Filename of the core or launcher, the newest one when several core releases share a name. |
+| `path`     | string  | Absolute path to the core or launcher file.                                 |
+| `default`  | boolean | `true` for the core a plain launch uses, after any `set_core` override in `remote.ini`. |
+
+Only the top two menu levels of the SD card are scanned, the same as
+[list systems](#list-systems). An MGL launcher counts when it names an
+`<rbf>` and no `<file>`; an MGL that launches a game is not a core.
+
+If system does not exist, returns `404`.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/systems/NES/rbfs"
+```
+
+Example response:
+
+```json
+[
+  {
+    "rbf": "_Console/NES",
+    "name": "NES",
+    "core": "_Console/NES",
+    "setname": "",
+    "filename": "NES_20240310.rbf",
+    "path": "/media/fat/_Console/NES_20240310.rbf",
+    "default": true
+  },
+  {
+    "rbf": "_Console/NES_Alt",
+    "name": "NES_Alt",
+    "core": "_Console/NES_Alt",
+    "setname": "",
+    "filename": "NES_Alt_20240102.rbf",
+    "path": "/media/fat/_Console/NES_Alt_20240102.rbf",
+    "default": false
+  },
+  {
+    "rbf": "_RA_Cores/NES.mgl",
+    "name": "RA_NES",
+    "core": "_RA_Cores/Cores/NES",
+    "setname": "RA_NES",
+    "filename": "NES.mgl",
+    "path": "/media/fat/_RA_Cores/NES.mgl",
+    "default": false
+  }
+]
+```
+
 ### Wallpapers
 
 Remote has its own mechanism of setting wallpapers as "active" on the MiSTer menu by managing a symlink to the wallpaper
@@ -742,7 +819,7 @@ Arguments (JSON):
 | Attribute | Type   | Required | Description                 |
 |-----------|--------|----------|-----------------------------|
 | `path`    | string | Yes      | Absolute path to game file. |
-| `rbf`     | string | No       | Core to run the game with instead of the system default: a core in the short form an `.mgl` file uses, for example `_Console/NES_Alt`, or an MGL launcher such as `_RA_Cores/NES.mgl`, whose `rbf` and `setname` are used. Either may be given as an absolute path. |
+| `rbf`     | string | No       | Core to run the game with instead of the system default: a core in the short form an `.mgl` file uses, for example `_Console/NES_Alt`, or an MGL launcher such as `_RA_Cores/NES.mgl`, whose `rbf` and `setname` are used. Either may be given as an absolute path. See [list system cores](#list-system-cores). |
 
 On success, returns `200`.
 

@@ -315,6 +315,7 @@ func setupAPI(
 
 	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
 	sub.HandleFunc("/systems/{id}", withSAMActivity(systems.LaunchCore(cfg, logger), logger)).Methods("POST")
+	sub.HandleFunc("/systems/{id}/rbfs", systems.ListSystemRBFs(cfg, logger)).Methods("GET")
 
 	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapersHandler(logger)).Methods("GET")
 	sub.HandleFunc("/wallpapers", wallpapers.UnsetWallpaperHandler(logger)).Methods("DELETE")

@@ -56,6 +56,58 @@ func TestMatchRBFByLaunchNameAndPath(t *testing.T) {
 	}
 }
 
+func TestMatchSystemLaunchCoresKeepsVariantsAndNewestRelease(t *testing.T) {
+	t.Parallel()
+
+	system, err := GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rbfFiles := []RBFInfo{
+		ParseRBF("/media/fat/_Console/NES_20230101.rbf"),
+		ParseRBF("/media/fat/_Console/NES_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/NES_Alt_20240102.rbf"),
+		ParseRBF("/media/fat/_Other/NES_Dev_20240201.rbf"),
+		ParseRBF("/media/fat/_Console/SNES_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/NESMusic_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/Genesis_20240310.rbf"),
+	}
+
+	got := matchSystemLaunchCores(rbfFiles, nil, system)
+
+	want := []string{
+		"_Console/NES", "NES_20240310.rbf",
+		"_Console/NES_Alt", "NES_Alt_20240102.rbf",
+		"_Other/NES_Dev", "NES_Dev_20240201.rbf",
+	}
+	if len(got) != len(want)/2 {
+		t.Fatalf("got %d results, want %d: %+v", len(got), len(want)/2, got)
+	}
+	for i, core := range got {
+		if core.Launch != want[i*2] || core.Filename != want[i*2+1] {
+			t.Fatalf("result %d: got %s %s, want %s %s", i, core.Launch, core.Filename, want[i*2], want[i*2+1])
+		}
+		if core.RBF != core.Launch || core.SetName != "" || core.IsLauncher() {
+			t.Fatalf("result %d: a core file should launch as itself with no setname: %+v", i, core)
+		}
+	}
+}
+
+func TestMatchSystemLaunchCoresWithoutMatches(t *testing.T) {
+	t.Parallel()
+
+	system, err := GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := matchSystemLaunchCores([]RBFInfo{ParseRBF("/media/fat/_Console/SNES_20240310.rbf")}, nil, system)
+	if len(got) != 0 {
+		t.Fatalf("expected no results, got %+v", got)
+	}
+}
+
 const (
 	raNESLauncher = "<mistergamedescription>\n\t<rbf>_RA_Cores/Cores/NES</rbf>\n" +
 		"\t<setname same_dir=\"1\">RA_NES</setname>\n</mistergamedescription>"
@@ -67,6 +119,42 @@ const (
 	nesGameLauncher  = "<mistergamedescription><rbf>_Console/NES</rbf>" +
 		"<file delay=\"1\" type=\"f\" index=\"0\" path=\"x.nes\"/></mistergamedescription>"
 )
+
+func TestMatchSystemLaunchCoresIncludesLaunchersForTheCore(t *testing.T) {
+	t.Parallel()
+
+	system, err := GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rbfFiles := []RBFInfo{ParseRBF("/media/fat/_Console/NES_20240310.rbf")}
+	launchers := []LaunchCore{
+		mustParseLauncher(t, "/media/fat/_RA_Cores/SNES.mgl", raSNESLauncher),
+		mustParseLauncher(t, "/media/fat/_RA_Cores/NES.mgl", raNESLauncher),
+		mustParseLauncher(t, "/media/fat/_Other/NES dated.mgl", datedNESLauncher),
+		mustParseLauncher(t, "/media/fat/_Other/NESMusic.mgl",
+			"<mistergamedescription><rbf>_Console/NESMusic</rbf></mistergamedescription>"),
+	}
+
+	got := matchSystemLaunchCores(rbfFiles, launchers, system)
+	if len(got) != 3 {
+		t.Fatalf("got %d results, want 3: %+v", len(got), got)
+	}
+	if got[0].Launch != "_Console/NES" || got[0].IsLauncher() {
+		t.Fatalf("core file should come first: %+v", got[0])
+	}
+
+	ra := got[1]
+	if ra.Launch != "_Other/NES dated.mgl" || ra.Name != "NES_Dated" || ra.SetNameSameDir {
+		t.Fatalf("dated launcher: %+v", ra)
+	}
+	ra = got[2]
+	if ra.Launch != "_RA_Cores/NES.mgl" || ra.RBF != "_RA_Cores/Cores/NES" ||
+		ra.SetName != "RA_NES" || !ra.SetNameSameDir || ra.Name != "RA_NES" || !ra.IsLauncher() {
+		t.Fatalf("RA launcher: %+v", ra)
+	}
+}
 
 func TestParseMGLLauncherSkipsGameLaunchers(t *testing.T) {
 	t.Parallel()

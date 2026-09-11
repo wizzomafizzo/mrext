@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -193,4 +195,71 @@ func matchRBF(rbfFiles []RBFInfo, name string) (RBFInfo, bool) {
 		}
 	}
 	return RBFInfo{}, false
+}
+
+// SystemLaunchCores returns the cores a game of a system can be launched
+// with: the core file the catalog names and any variant that adds a suffix
+// to that name, such as NES_Alt beside NES, followed by every MGL launcher
+// whose core is one of those. Core files that share a launch name, like two
+// dated builds, are reported once, as the newest file.
+func SystemLaunchCores(system *System) ([]LaunchCore, error) {
+	rbfFiles, err := shallowScanRBF()
+	if err != nil {
+		return nil, fmt.Errorf("scan rbf files: %w", err)
+	}
+	launchers, err := shallowScanMGL()
+	if err != nil {
+		return nil, fmt.Errorf("scan mgl files: %w", err)
+	}
+	return matchSystemLaunchCores(rbfFiles, launchers, system), nil
+}
+
+var rbfDateSuffix = regexp.MustCompile(`_\d{8}$`)
+
+// isCoreVariant reports whether a core's short name is the system's core or
+// a suffixed build of it.
+func isCoreVariant(shortName, base string) bool {
+	short := strings.ToLower(shortName)
+	return short == base || strings.HasPrefix(short, base+"_")
+}
+
+func matchSystemLaunchCores(rbfFiles []RBFInfo, launchers []LaunchCore, system *System) []LaunchCore {
+	base := strings.ToLower(filepath.Base(system.Rbf))
+	if base == "" || base == "." {
+		return nil
+	}
+
+	byName := make(map[string]RBFInfo)
+	for _, info := range rbfFiles {
+		if !isCoreVariant(info.ShortName, base) {
+			continue
+		}
+
+		key := strings.ToLower(info.MGLName)
+		if prev, ok := byName[key]; ok && prev.Filename >= info.Filename {
+			continue
+		}
+		byName[key] = info
+	}
+
+	results := make([]LaunchCore, 0, len(byName))
+	for _, info := range byName {
+		results = append(results, rbfLaunchCore(info))
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return strings.ToLower(results[i].Launch) < strings.ToLower(results[j].Launch)
+	})
+
+	fromLaunchers := make([]LaunchCore, 0)
+	for _, core := range launchers {
+		shortName := rbfDateSuffix.ReplaceAllString(filepath.Base(core.RBF), "")
+		if isCoreVariant(shortName, base) {
+			fromLaunchers = append(fromLaunchers, core)
+		}
+	}
+	sort.Slice(fromLaunchers, func(i, j int) bool {
+		return strings.ToLower(fromLaunchers[i].Launch) < strings.ToLower(fromLaunchers[j].Launch)
+	})
+
+	return append(results, fromLaunchers...)
 }
