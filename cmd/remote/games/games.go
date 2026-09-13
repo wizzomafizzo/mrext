@@ -38,14 +38,19 @@ import (
 
 const pageSize = 500
 
+// searchNames is the index query behind Search, a variable so a test can
+// stand in a populated index without a games database on disk.
+var searchNames = gamesdb.SearchNamesWords
+
 // searchPage returns the results on a 1-based page. A page past the end is
 // empty rather than an error, so a client walking pages stops at the first
-// empty one and never has to compute the count itself.
+// empty one and never has to compute the count itself. The bound is checked
+// before any arithmetic on page, so an absurd page cannot overflow the offset.
 func searchPage(results []SearchResultGame, page int) []SearchResultGame {
-	start := (page - 1) * pageSize
-	if start >= len(results) {
+	if len(results) == 0 || page > (len(results)-1)/pageSize+1 {
 		return []SearchResultGame{}
 	}
+	start := (page - 1) * pageSize
 	end := min(start+pageSize, len(results))
 	return results[start:end]
 }
@@ -250,7 +255,7 @@ func Search(logger *service.Logger) http.HandlerFunc {
 		var search []gamesdb.SearchResult
 
 		if args.System == "all" || args.System == "" {
-			search, err = gamesdb.SearchNamesWords(games.AllSystems(), args.Query)
+			search, err = searchNames(games.AllSystems(), args.Query)
 		} else {
 			system, errSys := games.GetSystem(args.System)
 			if errSys != nil {
@@ -258,7 +263,7 @@ func Search(logger *service.Logger) http.HandlerFunc {
 				logger.Error("search games: getting system: %s", err)
 				return
 			}
-			search, err = gamesdb.SearchNamesWords([]games.System{*system}, args.Query)
+			search, err = searchNames([]games.System{*system}, args.Query)
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
