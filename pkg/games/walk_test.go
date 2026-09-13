@@ -101,3 +101,47 @@ func TestWalkFilesFindsGamesThroughSymlinksAndArchives(t *testing.T) {
 		t.Fatalf("callback failure not propagated immediately: %v, calls=%d", err, calls)
 	}
 }
+
+// NeoGeo ROM sets are folders. A folder named in romsets.xml is a game and
+// is emitted as one, without descending into its ROM files; any other folder
+// is walked as usual. Without romsets.xml nothing changes.
+func TestWalkFilesEmitsNeoGeoSetFolders(t *testing.T) {
+	root := t.TempDir()
+	romsets := `<romsets><romset name="aof,aofa" altname="Art of Fighting"/></romsets>`
+	if err := os.WriteFile(filepath.Join(root, "romsets.xml"), []byte(romsets), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{"aof", "misc"} {
+		if err := os.Mkdir(filepath.Join(root, dir), 0o750); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, file := range []string{"aof/p1.p1", "misc/kof98.neo", "mslug.neo"} {
+		if err := os.WriteFile(filepath.Join(root, file), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var got []string
+	if err := WalkFiles("NeoGeo", root, func(path string) error { got = append(got, path); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(got)
+	want := []string{
+		filepath.Join(root, "aof"),
+		filepath.Join(root, "misc", "kof98.neo"),
+		filepath.Join(root, "mslug.neo"),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+
+	// The same tree for a system without set folders walks into "aof".
+	got = nil
+	if err := WalkFiles("NES", root, func(path string) error { got = append(got, path); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(got, filepath.Join(root, "aof")) {
+		t.Fatalf("NES walk emitted the aof folder as a game: %v", got)
+	}
+}
