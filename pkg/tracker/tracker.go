@@ -509,9 +509,11 @@ func (tr *Tracker) processGame(activeGame string) {
 	}
 
 	// NeoGeo games are folders named by ROM set, so the filename is "aof".
-	// MiSTer names them from romsets.xml beside the games; do the same.
+	// MiSTer names them from romsets.xml beside the games; do the same. The
+	// set comes from the resolved path, so a launcher .mgl that points at a
+	// set folder names the set rather than the launcher.
 	if system.Id == NeoGeoSystem {
-		if title := tr.neoGeoName(name); title != "" {
+		if title := tr.neoGeoName(utils.RemoveFileExt(filepath.Base(path))); title != "" {
 			name = title
 		}
 	}

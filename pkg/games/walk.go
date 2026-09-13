@@ -104,6 +104,13 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 					return nil //nolint:nilerr // As above: unreachable target, not a scan failure.
 				}
 				if targetInfo.IsDir() {
+					// A set folder reached through a link is still the game
+					// itself, the same as a set folder found directly above.
+					if neoGeoSets != nil {
+						if _, known := neoGeoSets[strings.ToLower(entry.Name())]; known {
+							return visit(display)
+						}
+					}
 					return walk(target, display)
 				}
 			}

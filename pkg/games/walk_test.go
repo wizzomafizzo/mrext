@@ -145,3 +145,28 @@ func TestWalkFilesEmitsNeoGeoSetFolders(t *testing.T) {
 		t.Fatalf("NES walk emitted the aof folder as a game: %v", got)
 	}
 }
+
+// A set folder reached through a symlink is the game itself too, so it is
+// emitted under its link name and not walked into.
+func TestWalkFilesEmitsLinkedNeoGeoSetFolders(t *testing.T) {
+	root, external := t.TempDir(), t.TempDir()
+	romsets := `<romsets><romset name="aofa" altname="Art of Fighting (set 2)"/></romsets>`
+	if err := os.WriteFile(filepath.Join(root, "romsets.xml"), []byte(romsets), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(external, "p1.p1"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(external, filepath.Join(root, "aofa")); err != nil {
+		t.Fatal(err)
+	}
+
+	var got []string
+	if err := WalkFiles("NeoGeo", root, func(path string) error { got = append(got, path); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{filepath.Join(root, "aofa")}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
