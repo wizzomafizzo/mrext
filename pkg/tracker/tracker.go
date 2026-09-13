@@ -111,6 +111,7 @@ type Tracker struct {
 	GameTimes        map[string]GameTime
 	CoreTimes        map[string]CoreTime
 	arcadePaths      map[string]string
+	neoGeoNames      map[string]string
 	arcadeRoots      func() []string
 	setActiveGame    func(string) error
 	ActiveGamePath   string
@@ -204,6 +205,7 @@ func (tr *Tracker) ReloadNameMap() {
 	tr.Logger.Info("loaded %d name mappings", len(nameMap))
 	tr.NameMap = nameMap
 	tr.arcadePaths = nil
+	tr.neoGeoNames = nil
 }
 
 func (tr *Tracker) LookupName(name, game string) NameMapping {
@@ -504,6 +506,14 @@ func (tr *Tracker) processGame(activeGame string) {
 	system, err := games.BestSystemMatch(tr.Config, path)
 	if err != nil {
 		tr.Logger.Error("error finding system for game: %s", err)
+	}
+
+	// NeoGeo games are folders named by ROM set, so the filename is "aof".
+	// MiSTer names them from romsets.xml beside the games; do the same.
+	if system.Id == NeoGeoSystem {
+		if title := tr.neoGeoName(name); title != "" {
+			name = title
+		}
 	}
 
 	// The condition here was inverted: BestSystemMatch returns a zero System
