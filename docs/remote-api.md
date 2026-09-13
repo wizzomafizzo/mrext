@@ -608,15 +608,16 @@ Arguments (JSON):
 |-----------|--------|----------|-----------------------------------------------------------------------------------------------------------|
 | `query`   | string | Yes      | Query to search for in game filename (by word).                                                           |
 | `system`  | string | Yes      | System ID to search in. `all` or empty string to search all systems. Must be an exact match of system ID. |
+| `page`    | number | No       | Page of results to return, starting at 1. Defaults to 1. A page past the last one returns an empty `data` list. |
 
 On success, returns `200` and object:
 
 | Attribute  | Type     | Description                                                                                  |
 |------------|----------|----------------------------------------------------------------------------------------------|
 | `data`     | Result[] | List of result objects (see below).                                                          |
-| `total`    | number   | Total number of results.                                                                     |
-| `pageSize` | number   | Max number of results per page. *Accurate, but multiple pages aren't currently implemented.* |
-| `page`     | number   | Current page number.                                                                         |
+| `total`    | number   | Total number of results across all pages.                                                    |
+| `pageSize` | number   | Max number of results per page. Fixed at 500.                                                |
+| `page`     | number   | The page returned, as requested. Request `page + 1` until `data` comes back empty.           |
 
 Result object:
 

@@ -38,6 +38,18 @@ import (
 
 const pageSize = 500
 
+// searchPage returns the results on a 1-based page. A page past the end is
+// empty rather than an error, so a client walking pages stops at the first
+// empty one and never has to compute the count itself.
+func searchPage(results []SearchResultGame, page int) []SearchResultGame {
+	start := (page - 1) * pageSize
+	if start >= len(results) {
+		return []SearchResultGame{}
+	}
+	end := min(start+pageSize, len(results))
+	return results[start:end]
+}
+
 type SearchResultGame struct {
 	System systems.System `json:"system"`
 	Name   string         `json:"name"`
@@ -213,12 +225,24 @@ func Search(logger *service.Logger) http.HandlerFunc {
 		var args struct {
 			Query  string `json:"query"`
 			System string `json:"system"`
+			Page   int    `json:"page"`
 		}
 
 		err := json.NewDecoder(r.Body).Decode(&args)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			logger.Error("search games: decoding request: %s", err)
+			return
+		}
+
+		// Clients written before pagination send no page and keep getting
+		// the first one.
+		if args.Page == 0 {
+			args.Page = 1
+		}
+		if args.Page < 1 {
+			http.Error(w, "page must be 1 or greater", http.StatusBadRequest)
+			logger.Error("search games: invalid page %d", args.Page)
 			return
 		}
 
@@ -259,16 +283,13 @@ func Search(logger *service.Logger) http.HandlerFunc {
 		}
 
 		total := len(results)
-
-		if len(results) > pageSize {
-			results = results[:pageSize]
-		}
+		results = searchPage(results, args.Page)
 
 		err = json.NewEncoder(w).Encode(&SearchResults{
 			Data:     results,
 			Total:    total,
 			PageSize: pageSize,
-			Page:     1,
+			Page:     args.Page,
 		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
