@@ -97,10 +97,13 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 	}
 
 	tr.LoadCore()
-	if !mister.ActiveGameEnabled() {
-		if activeErr := mister.SetActiveGame(""); activeErr != nil {
-			tr.Logger.Error("error setting active game: %s", activeErr)
-		}
+	if mister.ActiveGameEnabled() {
+		// Pick up a game that was already running. Startup read the core but
+		// never the active game, so restarting Remote mid-game left clients
+		// with a core and no game until the next launch.
+		tr.LoadGame()
+	} else if activeErr := mister.SetActiveGame(""); activeErr != nil {
+		tr.Logger.Error("error setting active game: %s", activeErr)
 	}
 
 	watcher, err := tracker.StartFileWatchWithRetry(tr)
