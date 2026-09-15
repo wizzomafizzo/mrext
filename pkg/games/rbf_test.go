@@ -28,6 +28,7 @@ func TestMatchRBFByLaunchNameAndPath(t *testing.T) {
 	t.Parallel()
 
 	rbfFiles := []RBFInfo{
+		ParseRBF("/media/fat/_Console/NES_20230101.rbf"),
 		ParseRBF("/media/fat/_Console/NES_20240310.rbf"),
 		ParseRBF("/media/fat/_Console/NES_Alt_20240102.rbf"),
 	}
@@ -39,6 +40,7 @@ func TestMatchRBFByLaunchNameAndPath(t *testing.T) {
 	}{
 		{"_Console/NES", "NES_20240310.rbf", true},
 		{"_console/nes_alt", "NES_Alt_20240102.rbf", true},
+		{"/media/fat/_Console/NES_20230101.rbf", "NES_20230101.rbf", true},
 		{"/media/fat/_Console/NES_Alt_20240102.rbf", "NES_Alt_20240102.rbf", true},
 		{"NES", "", false},
 		{"_Console/NES_20240310", "", false},
@@ -114,7 +116,7 @@ func TestMatchSystemLaunchCoresKeepsVariantsAndNewestRelease(t *testing.T) {
 		ParseRBF("/media/fat/_Console/Genesis_20240310.rbf"),
 	}
 
-	got := matchSystemLaunchCores(rbfFiles, nil, system)
+	got := matchSystemLaunchCores(rbfFiles, nil, system, "")
 
 	want := []string{
 		"_Console/NES", "NES_20240310.rbf",
@@ -134,6 +136,33 @@ func TestMatchSystemLaunchCoresKeepsVariantsAndNewestRelease(t *testing.T) {
 	}
 }
 
+func TestMatchSystemLaunchCoresIncludesConfiguredDefault(t *testing.T) {
+	t.Parallel()
+
+	system, err := GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rbfFiles := []RBFInfo{
+		ParseRBF("/media/fat/_Console/NES_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/Custom_20230101.rbf"),
+		ParseRBF("/media/fat/_Console/Custom_20240310.rbf"),
+		ParseRBF("/media/fat/_Console/SNES_20240310.rbf"),
+	}
+	got := matchSystemLaunchCores(rbfFiles, nil, system, "_Console/Custom")
+
+	if len(got) != 2 {
+		t.Fatalf("got %d results, want 2: %+v", len(got), got)
+	}
+	if got[0].Launch != "_Console/Custom" || got[0].Filename != "Custom_20240310.rbf" {
+		t.Fatalf("configured default missing or not newest: %+v", got)
+	}
+	if got[1].Launch != "_Console/NES" {
+		t.Fatalf("catalog core missing: %+v", got)
+	}
+}
+
 func TestMatchSystemLaunchCoresWithoutMatches(t *testing.T) {
 	t.Parallel()
 
@@ -142,7 +171,12 @@ func TestMatchSystemLaunchCoresWithoutMatches(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := matchSystemLaunchCores([]RBFInfo{ParseRBF("/media/fat/_Console/SNES_20240310.rbf")}, nil, system)
+	got := matchSystemLaunchCores(
+		[]RBFInfo{ParseRBF("/media/fat/_Console/SNES_20240310.rbf")},
+		nil,
+		system,
+		"",
+	)
 	if len(got) != 0 {
 		t.Fatalf("expected no results, got %+v", got)
 	}
@@ -177,7 +211,7 @@ func TestMatchSystemLaunchCoresIncludesLaunchersForTheCore(t *testing.T) {
 			"<mistergamedescription><rbf>_Console/NESMusic</rbf></mistergamedescription>"),
 	}
 
-	got := matchSystemLaunchCores(rbfFiles, launchers, system)
+	got := matchSystemLaunchCores(rbfFiles, launchers, system, "")
 	if len(got) != 3 {
 		t.Fatalf("got %d results, want 3: %+v", len(got), got)
 	}

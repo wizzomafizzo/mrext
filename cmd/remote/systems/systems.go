@@ -49,6 +49,24 @@ type SystemRBF struct {
 	Default  bool   `json:"default"`
 }
 
+func systemRBFResults(cores []games.LaunchCore, defaultRBF string) []SystemRBF {
+	results := make([]SystemRBF, 0, len(cores))
+	for _, core := range cores {
+		isDefault := !core.IsLauncher() &&
+			(strings.EqualFold(core.RBF, defaultRBF) || core.Path == defaultRBF)
+		results = append(results, SystemRBF{
+			RBF:      core.Launch,
+			Name:     core.Name,
+			Core:     core.RBF,
+			SetName:  core.SetName,
+			Filename: core.Filename,
+			Path:     core.Path,
+			Default:  isDefault,
+		})
+	}
+	return results
+}
+
 var ignoreSystems = []string{
 	"Arcade",
 	"NESMusic",
@@ -102,27 +120,15 @@ func ListSystemRBFs(cfg *config.UserConfig, logger *service.Logger) http.Handler
 			return
 		}
 
-		cores, err := games.SystemLaunchCores(system)
+		defaultRBF := mister.SystemRBF(cfg, system)
+		cores, err := games.SystemLaunchCores(system, defaultRBF)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list system rbfs: %s", err)
 			return
 		}
 
-		defaultRBF := mister.SystemRBF(cfg, system)
-		results := make([]SystemRBF, 0, len(cores))
-		for _, core := range cores {
-			results = append(results, SystemRBF{
-				RBF:      core.Launch,
-				Name:     core.Name,
-				Core:     core.RBF,
-				SetName:  core.SetName,
-				Filename: core.Filename,
-				Path:     core.Path,
-				Default:  !core.IsLauncher() && strings.EqualFold(core.RBF, defaultRBF),
-			})
-		}
-
+		results := systemRBFResults(cores, defaultRBF)
 		err = json.NewEncoder(w).Encode(results)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -188,20 +188,30 @@ func matchRBF(rbfFiles []RBFInfo, name string) (RBFInfo, bool) {
 		return RBFInfo{}, false
 	}
 
+	var matched RBFInfo
+	found := false
 	for _, info := range rbfFiles {
-		if strings.EqualFold(info.MGLName, name) || info.Path == name {
+		if info.Path == name {
 			return info, true
 		}
+		if !strings.EqualFold(info.MGLName, name) {
+			continue
+		}
+		if !found || matched.Filename < info.Filename {
+			matched = info
+			found = true
+		}
 	}
-	return RBFInfo{}, false
+	return matched, found
 }
 
 // SystemLaunchCores returns the cores a game of a system can be launched
-// with: the core file the catalog names and any variant that adds a suffix
-// to that name, such as NES_Alt beside NES, followed by every MGL launcher
-// whose core is one of those. Core files that share a launch name, like two
-// dated builds, are reported once, as the newest file.
-func SystemLaunchCores(system *System) ([]LaunchCore, error) {
+// with: the core file the catalog names, any variant that adds a suffix to
+// that name, such as NES_Alt beside NES, and the configured default when it
+// uses another visible core. These are followed by every MGL launcher whose
+// core is a catalog core or variant. Core files that share a launch name,
+// like two dated builds, are reported once, as the newest file.
+func SystemLaunchCores(system *System, defaultRBF string) ([]LaunchCore, error) {
 	rbfFiles, err := shallowScanRBF()
 	if err != nil {
 		return nil, fmt.Errorf("scan rbf files: %w", err)
@@ -210,7 +220,7 @@ func SystemLaunchCores(system *System) ([]LaunchCore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scan mgl files: %w", err)
 	}
-	return matchSystemLaunchCores(rbfFiles, launchers, system), nil
+	return matchSystemLaunchCores(rbfFiles, launchers, system, defaultRBF), nil
 }
 
 // isCoreVariant reports whether a core's short name is the system's core or
@@ -220,15 +230,22 @@ func isCoreVariant(shortName, base string) bool {
 	return short == base || strings.HasPrefix(short, base+"_")
 }
 
-func matchSystemLaunchCores(rbfFiles []RBFInfo, launchers []LaunchCore, system *System) []LaunchCore {
+func matchSystemLaunchCores(
+	rbfFiles []RBFInfo,
+	launchers []LaunchCore,
+	system *System,
+	defaultRBF string,
+) []LaunchCore {
 	base := strings.ToLower(filepath.Base(system.Rbf))
 	if base == "" || base == "." {
 		return nil
 	}
 
+	defaultRBF = strings.TrimSpace(defaultRBF)
 	byName := make(map[string]RBFInfo)
 	for _, info := range rbfFiles {
-		if !isCoreVariant(info.ShortName, base) {
+		isDefault := strings.EqualFold(info.MGLName, defaultRBF) || info.Path == defaultRBF
+		if !isCoreVariant(info.ShortName, base) && !isDefault {
 			continue
 		}
 
