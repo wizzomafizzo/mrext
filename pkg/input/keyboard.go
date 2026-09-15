@@ -186,3 +186,31 @@ func (k *Keyboard) ExitConsole() error {
 func (k *Keyboard) ComputerOSD() error {
 	return k.Combo(uinput.KeyLeftmeta, uinput.KeyF12)
 }
+
+// savestateSlotKey maps a savestate slot to its function key. Cores with
+// savestate support use F1 to F4 for the four slots, and Alt with the same key
+// to save. Anything outside 1 to 4 falls back to the first slot.
+func savestateSlotKey(slot int) int {
+	switch slot {
+	case 2:
+		return uinput.KeyF2
+	case 3:
+		return uinput.KeyF3
+	case 4:
+		return uinput.KeyF4
+	default:
+		return uinput.KeyF1
+	}
+}
+
+// SaveState writes a savestate to the given slot.
+func (k *Keyboard) SaveState(slot int) error {
+	return k.Combo(uinput.KeyLeftalt, savestateSlotKey(slot))
+}
+
+// LoadState restores a savestate from the given slot. These are the keys the
+// menu core uses for its own functions, so a load name and a menu name can
+// share a code and differ only in the intent they express.
+func (k *Keyboard) LoadState(slot int) error {
+	return k.Press(savestateSlotKey(slot))
+}

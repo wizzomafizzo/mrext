@@ -63,6 +63,14 @@ The Screenshots-page camera and `POST /screenshots` use the same normal screensh
 
 Both normal screenshot actions depend on MiSTer accepting `Alt+Scroll Lock`; PS/2 keyboard mode can disable that shortcut. The API reports keyboard-send failures, but its one-second delay does not confirm a screenshot was saved. Check the screenshot list afterward.
 
+## Savestate keys
+
+`save_state` and `load_state` cover MiSTer's four savestate slots through `POST /controls/keyboard/{name}` and the `kbd` WebSocket message. The unnumbered names are slot 1; `save_state_1` to `save_state_4` and `load_state_1` to `load_state_4` reach a specific one. Saving sends `Alt` with `F1` to `F4`, loading sends `F1` to `F4`.
+
+Only cores built with savestate support respond. Others ignore the key, and no error is reported either way, because the key is sent to MiSTer rather than acknowledged by it.
+
+The load keys are the same ones the menu core uses for its own functions, so `load_state` and `change_background` both send `F1`, and `load_state_2` and `toggle_core_dates` both send `F2`. They describe the same key in different contexts. The save keys have no raw equivalent: `/controls/keyboard-raw` sends one key and prefixes shift only, so it cannot express `Alt+F1`.
+
 ## MiSTer SAM compatibility
 
 After successful game, core, file, or launch-token requests, Remote signals user activity through SAM's existing `/tmp/.SAM_tmp/SAM_Joy_Activity` file. Current SAM MCP recognizes the `zaparoo` message as external activity: in normal mode it resets idle and exits attract mode while keeping the current game, rather than returning to Menu. This supports stock MiSTer without requiring Zaparoo Core.

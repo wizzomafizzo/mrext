@@ -106,7 +106,17 @@ export type KeyboardCodes =
   | "toggle_core_dates"
   | "console"
   | "exit_console"
-  | "computer_osd";
+  | "computer_osd"
+  | "save_state"
+  | "save_state_1"
+  | "save_state_2"
+  | "save_state_3"
+  | "save_state_4"
+  | "load_state"
+  | "load_state_1"
+  | "load_state_2"
+  | "load_state_3"
+  | "load_state_4";
 
 export type MouseButtons =
   | "click"
