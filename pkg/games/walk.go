@@ -48,6 +48,17 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 	if !info.IsDir() {
 		return fmt.Errorf("game root is not a directory: %s", root)
 	}
+	// NeoGeo ROM sets are folders, and the NeoGeo core launches them as such
+	// (see hookNeoGeo). The walker only ever emits files, so those sets were
+	// launchable but never indexed: the system showed up in the index with no
+	// games in it. GamesMenu already decides this the same way, by asking
+	// romsets.xml whether a folder name is a known set, which keeps stray
+	// directories out of the index.
+	var neoGeoSets map[string]string
+	if systemID == "NeoGeo" {
+		neoGeoSets = readNeoGeoSets(resolved)
+	}
+
 	visited := make(map[string]bool)
 	var walk func(string, string) error
 	walk = func(realRoot, displayRoot string) error {
@@ -65,6 +76,16 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 					return filepath.SkipDir
 				}
 				visited[path] = true
+				// A known NeoGeo set is the game itself, so emit it and do not
+				// descend into its ROM files.
+				if neoGeoSets != nil && path != realRoot {
+					if _, known := neoGeoSets[strings.ToLower(entry.Name())]; known {
+						if err := visit(display); err != nil {
+							return err
+						}
+						return filepath.SkipDir
+					}
+				}
 				return nil
 			}
 			if entry.Type()&os.ModeSymlink != 0 {
@@ -83,6 +104,13 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 					return nil //nolint:nilerr // As above: unreachable target, not a scan failure.
 				}
 				if targetInfo.IsDir() {
+					// A set folder reached through a link is still the game
+					// itself, the same as a set folder found directly above.
+					if neoGeoSets != nil {
+						if _, known := neoGeoSets[strings.ToLower(entry.Name())]; known {
+							return visit(display)
+						}
+					}
 					return walk(target, display)
 				}
 			}
@@ -111,4 +139,25 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 		return nil
 	}
 	return walk(resolved, root)
+}
+
+// readNeoGeoSets loads the ROM set names MiSTer's NeoGeo core knows about, so
+// the walker can tell a set folder from an ordinary directory. An absent or
+// unreadable romsets.xml yields no sets, which leaves behaviour as it was.
+func readNeoGeoSets(root string) map[string]string {
+	path, err := FindFile(filepath.Join(root, "romsets.xml"))
+	if err != nil {
+		return nil
+	}
+	// #nosec G304 -- path is romsets.xml under the caller's NeoGeo game root.
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = file.Close() }()
+	names, err := ReadNeoGeoNames(file)
+	if err != nil {
+		return nil
+	}
+	return names
 }
