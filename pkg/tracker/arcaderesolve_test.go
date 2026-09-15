@@ -219,3 +219,21 @@ func TestArcadeMissRetriedAndRemovedCachedPathDiscarded(t *testing.T) {
 		t.Fatalf("removed cached MRA retained: %q", got)
 	}
 }
+
+// A handful of arcade database rows carry no setname. Left in the name map
+// they give every lookup of an empty core name an arcade hit, so the tracker
+// reports whichever of those rows came first as the running game.
+func TestEmptyCoreNameMatchesNothing(t *testing.T) {
+	db := &arcadeDB{}
+	tr := arcadeTracker(t.TempDir(), db)
+	tr.NameMap = []NameMapping{
+		{CoreName: "", System: ArcadeSystem, Name: ArcadeSystem, ArcadeName: "Arkanoid [hb]"},
+		{CoreName: "pooyan", System: ArcadeSystem, Name: ArcadeSystem, ArcadeName: "Pooyan"},
+	}
+	if got := tr.LookupName("", "/media/fat/_Arcade/Whatever.mra"); got != (NameMapping{}) {
+		t.Fatalf("empty core name matched %+v", got)
+	}
+	if got := tr.LookupName("pooyan", ""); got.ArcadeName != "Pooyan" {
+		t.Fatalf("real lookup regressed: %+v", got)
+	}
+}

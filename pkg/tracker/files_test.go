@@ -134,3 +134,32 @@ func TestFileWatchSurvivesTheFileBeingReplaced(t *testing.T) {
 	}
 	waitFor(t, "a write after replacement to be handled", func() bool { return hits.value() > before })
 }
+
+func TestLoadRecentPublishesArcadeMRAPath(t *testing.T) {
+	const (
+		directory = "/media/fat/_Arcade"
+		name      = "After Burner II.MRA"
+	)
+	entry := make([]byte, 1024+256+256)
+	copy(entry[:1024], directory)
+	copy(entry[1024:1280], name)
+	copy(entry[1280:], "After Burner II")
+
+	recentPath := filepath.Join(t.TempDir(), "cores_recent.cfg")
+	if err := os.WriteFile(recentPath, entry, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var published string
+	err := loadRecentWithPublisher(recentPath, func(path string) error {
+		published = path
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(directory, name)
+	if published != want {
+		t.Fatalf("published path = %q, want %q", published, want)
+	}
+}

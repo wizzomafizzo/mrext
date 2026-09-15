@@ -73,7 +73,9 @@ The protocol is implemented in [SAM MCP's activity poller and action handler](ht
 
 ## Arcade tracking
 
-Remote's shared tracker now supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value.
+Remote's shared tracker supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value for these database matches.
+
+When Arcade Database has no matching set, Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
 
 ## Startup diagnostics
 
