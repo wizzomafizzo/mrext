@@ -22,6 +22,7 @@ package games
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -39,6 +40,7 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args struct {
 			Path string `json:"path"`
+			RBF  string `json:"rbf"`
 		}
 
 		err := json.NewDecoder(r.Body).Decode(&args)
@@ -48,6 +50,22 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 			return
 		}
 
+		var launch *games.LaunchCore
+		if strings.TrimSpace(args.RBF) != "" {
+			core, findErr := games.FindLaunchCore(args.RBF)
+			switch {
+			case errors.Is(findErr, games.ErrUnknownRBF):
+				http.Error(w, "unknown rbf", http.StatusBadRequest)
+				logger.Error("launch game: %s", findErr)
+				return
+			case findErr != nil:
+				http.Error(w, findErr.Error(), http.StatusInternalServerError)
+				logger.Error("launch game: looking up rbf: %s", findErr)
+				return
+			}
+			launch = &core
+		}
+
 		system, err := games.BestSystemMatch(cfg, args.Path)
 		if err != nil {
 			http.Error(w, "no system found for game", http.StatusBadRequest)
@@ -55,8 +73,13 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 			return
 		}
 
-		err = mister.LaunchGame(cfg, &system, args.Path)
-		if err != nil {
+		err = mister.LaunchGameWithCore(cfg, &system, args.Path, launch)
+		switch {
+		case errors.Is(err, mister.ErrRBFOverrideUnsupported):
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error("launch game: %s: %s", err, args.Path)
+			return
+		case err != nil:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("launch game: during launch: %s", err)
 			return

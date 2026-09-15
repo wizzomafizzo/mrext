@@ -20,6 +20,7 @@
 package mister
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,93 @@ func TestGenerateMglPreservesRBFOverride(t *testing.T) {
 	}
 	if !strings.Contains(got, "<rbf>_Console/CustomNES</rbf>") {
 		t.Fatalf("custom RBF missing: %s", got)
+	}
+}
+
+func TestGenerateMglWithCoreOverridesSetCore(t *testing.T) {
+	t.Parallel()
+
+	system, err := games.GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.UserConfig{Systems: config.SystemsConfig{SetCore: []string{"nes:_Console/CustomNES"}}}
+
+	alt := &games.LaunchCore{RBF: "_Console/NES_Alt"}
+	got, err := GenerateMglWithCore(cfg, system, alt, "/media/fat/games/NES/Mario.nes", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "<rbf>_Console/NES_Alt</rbf>") {
+		t.Fatalf("requested RBF missing: %s", got)
+	}
+	if strings.Contains(got, "<setname") {
+		t.Fatalf("plain core file must not add a setname: %s", got)
+	}
+
+	got, err = GenerateMglWithCore(cfg, system, nil, "/media/fat/games/NES/Mario.nes", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "<rbf>_Console/CustomNES</rbf>") {
+		t.Fatalf("no core should keep set_core: %s", got)
+	}
+}
+
+func TestGenerateMglWithLauncherSetsSetName(t *testing.T) {
+	t.Parallel()
+
+	system, err := games.GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ra := &games.LaunchCore{RBF: "_RA_Cores/Cores/NES", SetName: "RA_NES", SetNameSameDir: true}
+	got, err := GenerateMglWithCore(&config.UserConfig{}, system, ra, "/media/fat/games/NES/Mario.nes", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"<rbf>_RA_Cores/Cores/NES</rbf>",
+		"<setname same_dir=\"1\">RA_NES</setname>",
+		"path=\"../../../../../media/fat/games/NES/Mario.nes\"",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %s in: %s", want, got)
+		}
+	}
+}
+
+func TestSystemRBFPrefersSetCore(t *testing.T) {
+	t.Parallel()
+
+	system, err := games.GetSystem("NES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := SystemRBF(&config.UserConfig{}, system); got != "_Console/NES" {
+		t.Fatalf("catalog RBF: got %q", got)
+	}
+	cfg := &config.UserConfig{Systems: config.SystemsConfig{
+		SetCore: []string{"SNES:_Console/Other", "nes:_Console/CustomNES"},
+	}}
+	if got := SystemRBF(cfg, system); got != "_Console/CustomNES" {
+		t.Fatalf("set_core RBF: got %q", got)
+	}
+}
+
+func TestLaunchGameWithCoreRejectsLauncherFiles(t *testing.T) {
+	t.Parallel()
+
+	system, err := games.GetSystem("Arcade")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/media/fat/_Arcade/Pooyan.mra", "/media/fat/_Games/Mario.MGL"} {
+		err := LaunchGameWithCore(&config.UserConfig{}, system, path, &games.LaunchCore{RBF: "_Console/NES"})
+		if !errors.Is(err, ErrRBFOverrideUnsupported) {
+			t.Fatalf("%s: got %v, want ErrRBFOverrideUnsupported", path, err)
+		}
 	}
 }
 

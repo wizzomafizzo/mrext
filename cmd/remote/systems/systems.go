@@ -39,6 +39,34 @@ type System struct {
 	Category string `json:"category"`
 }
 
+type SystemRBF struct {
+	RBF      string `json:"rbf"`
+	Name     string `json:"name"`
+	Core     string `json:"core"`
+	SetName  string `json:"setname"`
+	Filename string `json:"filename"`
+	Path     string `json:"path"`
+	Default  bool   `json:"default"`
+}
+
+func systemRBFResults(cores []games.LaunchCore, defaultRBF string) []SystemRBF {
+	results := make([]SystemRBF, 0, len(cores))
+	for _, core := range cores {
+		isDefault := !core.IsLauncher() &&
+			(strings.EqualFold(core.RBF, defaultRBF) || core.Path == defaultRBF)
+		results = append(results, SystemRBF{
+			RBF:      core.Launch,
+			Name:     core.Name,
+			Core:     core.RBF,
+			SetName:  core.SetName,
+			Filename: core.Filename,
+			Path:     core.Path,
+			Default:  isDefault,
+		})
+	}
+	return results
+}
+
 var ignoreSystems = []string{
 	"Arcade",
 	"NESMusic",
@@ -78,6 +106,33 @@ func ListSystems(logger *service.Logger) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error("list systems: during encode: %s", err)
+			return
+		}
+	}
+}
+
+func ListSystemRBFs(cfg *config.UserConfig, logger *service.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := mux.Vars(r)["id"]
+		system, err := games.GetSystem(id)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		defaultRBF := mister.SystemRBF(cfg, system)
+		cores, err := games.SystemLaunchCores(system, defaultRBF)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("list system rbfs: %s", err)
+			return
+		}
+
+		results := systemRBFResults(cores, defaultRBF)
+		err = json.NewEncoder(w).Encode(results)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("list system rbfs: during encode: %s", err)
 			return
 		}
 	}

@@ -38,19 +38,45 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
+// ErrRBFOverrideUnsupported is returned when a core is given for a launch
+// file that already names its own core.
+var ErrRBFOverrideUnsupported = errors.New("rbf override does not apply to mra and mgl files")
+
+// SystemRBF returns the rbf a generated MGL launches for a system: the
+// set_core override from remote.ini when there is one, otherwise the catalog
+// core. The value is the short form an MGL accepts, such as _Console/NES.
+func SystemRBF(cfg *config.UserConfig, system *games.System) string {
+	for _, setCore := range cfg.Systems.SetCore {
+		parts := s.SplitN(setCore, ":", 2)
+		if len(parts) == 2 && s.EqualFold(parts[0], system.Id) {
+			return parts[1]
+		}
+	}
+	return system.Rbf
+}
+
 func GenerateMgl(cfg *config.UserConfig, system *games.System, path, override string) (string, error) {
+	return GenerateMglWithCore(cfg, system, nil, path, override)
+}
+
+// GenerateMglWithCore is GenerateMgl with a specific core. The launch core
+// swaps the rbf, and its setname when it has one, and nil keeps the system
+// default from SystemRBF. Slots, delays and everything else stay whatever
+// the catalog says for the system.
+func GenerateMglWithCore(
+	cfg *config.UserConfig, system *games.System, launch *games.LaunchCore, path, override string,
+) (string, error) {
 	if system == nil {
 		return "", errors.New("no system supplied for MGL generation")
 	}
 
 	core := games.CatalogCore(system)
-
-	// Preserve legacy per-system RBF overrides.
-	for _, setCore := range cfg.Systems.SetCore {
-		parts := s.SplitN(setCore, ":", 2)
-		if len(parts) == 2 && s.EqualFold(parts[0], system.Id) {
-			core.RBF = parts[1]
-			break
+	core.RBF = SystemRBF(cfg, system)
+	if launch != nil {
+		core.RBF = launch.RBF
+		if launch.SetName != "" {
+			core.SetName = launch.SetName
+			core.SetNameSameDir = launch.SetNameSameDir
 		}
 	}
 
@@ -94,13 +120,13 @@ func launchFile(path string) error {
 	return nil
 }
 
-func launchTempMgl(cfg *config.UserConfig, system *games.System, path string) error {
+func launchTempMgl(cfg *config.UserConfig, system *games.System, launch *games.LaunchCore, path string) error {
 	override, err := games.RunSystemHook(cfg, system, path)
 	if err != nil {
 		return fmt.Errorf("run system hook: %w", err)
 	}
 
-	mgl, err := GenerateMgl(cfg, system, path, override)
+	mgl, err := GenerateMglWithCore(cfg, system, launch, path, override)
 	if err != nil {
 		return err
 	}
@@ -130,7 +156,19 @@ func LaunchShortCore(path string) error {
 }
 
 func LaunchGame(cfg *config.UserConfig, system *games.System, path string) error {
-	switch s.ToLower(filepath.Ext(path)) {
+	return LaunchGameWithCore(cfg, system, path, nil)
+}
+
+// LaunchGameWithCore launches a game with a core other than the system
+// default, and nil behaves as LaunchGame. Launch files that name their own
+// core, .mra and .mgl, return ErrRBFOverrideUnsupported when a core is given.
+func LaunchGameWithCore(cfg *config.UserConfig, system *games.System, path string, launch *games.LaunchCore) error {
+	ext := s.ToLower(filepath.Ext(path))
+	if launch != nil && (ext == ".mra" || ext == ".mgl") {
+		return ErrRBFOverrideUnsupported
+	}
+
+	switch ext {
 	case ".mra":
 		err := launchFile(path)
 		if err != nil {
@@ -148,7 +186,7 @@ func LaunchGame(cfg *config.UserConfig, system *games.System, path string) error
 			}
 		}
 	default:
-		err := launchTempMgl(cfg, system, path)
+		err := launchTempMgl(cfg, system, launch, path)
 		if err != nil {
 			return err
 		}
@@ -378,7 +416,7 @@ func LaunchGenericFile(cfg *config.UserConfig, path string) error {
 			return fmt.Errorf("unknown file type: %s", ext)
 		}
 
-		err = launchTempMgl(cfg, &system, path)
+		err = launchTempMgl(cfg, &system, nil, path)
 		if err != nil {
 			return err
 		}
