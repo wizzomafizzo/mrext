@@ -34,6 +34,10 @@ import (
 // Read a core's recent file and attempt to write the newest entry's
 // launch-able path to ACTIVEGAME.
 func loadRecent(filename string) error {
+	return loadRecentWithPublisher(filename, mister.SetActiveGame)
+}
+
+func loadRecentWithPublisher(filename string, publish func(string) error) error {
 	if !strings.Contains(filename, "_recent") {
 		return nil
 	}
@@ -57,7 +61,7 @@ func loadRecent(filename string) error {
 				return fmt.Errorf("error reading mgl file: %w", mglErr)
 			}
 
-			err = mister.SetActiveGame(mgl.File.Path)
+			err = publish(mgl.File.Path)
 			if err != nil {
 				return fmt.Errorf("error setting active game: %w", err)
 			}
@@ -67,14 +71,14 @@ func loadRecent(filename string) error {
 			// name the game from the file, the same title MiSTer's own menu
 			// shows, for sets the arcade database does not list. It costs
 			// nothing: the path is handed to us rather than searched for.
-			err = mister.SetActiveGame(filepath.Join(newest.Directory, newest.Name))
+			err = publish(filepath.Join(newest.Directory, newest.Name))
 			if err != nil {
 				return fmt.Errorf("error setting active arcade game: %w", err)
 			}
 		}
 	} else {
 		// individual core's recent file
-		err = mister.SetActiveGame(filepath.Join(newest.Directory, newest.Name))
+		err = publish(filepath.Join(newest.Directory, newest.Name))
 		if err != nil {
 			return fmt.Errorf("error setting active game: %w", err)
 		}

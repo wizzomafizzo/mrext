@@ -108,7 +108,23 @@ func UpdateArcadeDB() (bool, error) {
 	defer cancel()
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	body, err := readURL(ctx, client, config.ArcadeDBURL)
+	return updateArcadeDBFromSource(
+		ctx,
+		client,
+		config.ArcadeDBURL,
+		config.MrextConfigFolder,
+		config.ArcadeDBFile,
+	)
+}
+
+func updateArcadeDBFromSource(
+	ctx context.Context,
+	client *http.Client,
+	sourceURL string,
+	databaseDir string,
+	databasePath string,
+) (bool, error) {
+	body, err := readURL(ctx, client, sourceURL)
 	if err != nil {
 		return false, err
 	}
@@ -123,7 +139,7 @@ func UpdateArcadeDB() (bool, error) {
 		return false, nil
 	}
 
-	if mkdirErr := os.MkdirAll(config.MrextConfigFolder, 0o700); mkdirErr != nil {
+	if mkdirErr := os.MkdirAll(databaseDir, 0o700); mkdirErr != nil {
 		return false, fmt.Errorf("create metadata directory: %w", mkdirErr)
 	}
 
@@ -132,7 +148,7 @@ func UpdateArcadeDB() (bool, error) {
 	// That is exact, needs nothing stored alongside the CSV, and a copy
 	// truncated by a power cut or a full disk hashes differently and is
 	// replaced rather than kept for good.
-	local, hashErr := blobSHA(config.ArcadeDBFile)
+	local, hashErr := blobSHA(databasePath)
 	switch {
 	case hashErr == nil && local == remote.SHA:
 		return false, nil
@@ -144,7 +160,7 @@ func UpdateArcadeDB() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if err := writeArcadeDB(body); err != nil {
+	if err := writeArcadeDB(databasePath, body); err != nil {
 		return false, err
 	}
 
@@ -160,7 +176,7 @@ func blobSHA(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("stat arcade database for hashing: %w", err)
 	}
-	// #nosec G304 -- fixed path from config, not user input.
+	// #nosec G304 -- trusted application path or isolated test path, not user input.
 	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("open arcade database for hashing: %w", err)
@@ -180,8 +196,7 @@ func blobSHA(path string) (string, error) {
 
 // writeArcadeDB stages the download beside the destination and renames it
 // over, so losing power mid-write leaves the previous copy intact.
-func writeArcadeDB(body []byte) error {
-	path := config.ArcadeDBFile
+func writeArcadeDB(path string, body []byte) error {
 	temporary, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+"-*")
 	if err != nil {
 		return fmt.Errorf("create staged arcade database: %w", err)
