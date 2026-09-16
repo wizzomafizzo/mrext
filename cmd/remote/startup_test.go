@@ -25,7 +25,17 @@ import (
 	"strconv"
 	"syscall"
 	"testing"
+
+	"github.com/wizzomafizzo/mrext/pkg/config"
 )
+
+func TestDefaultUserConfigIncludesTUIDefaults(t *testing.T) {
+	t.Parallel()
+
+	if got, want := defaultUserConfig().TUI, config.DefaultTUIConfig(); got != want {
+		t.Fatalf("TUI defaults = %+v, want %+v", got, want)
+	}
+}
 
 func TestBindFailureReturnsBeforeDeviceSetup(t *testing.T) {
 	// No logger/config/devices are needed if bind fails. An injected listener

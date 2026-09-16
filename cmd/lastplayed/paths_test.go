@@ -31,6 +31,14 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
+func TestDefaultUserConfigIncludesTUIDefaults(t *testing.T) {
+	t.Parallel()
+
+	if got, want := defaultUserConfig().TUI, config.DefaultTUIConfig(); got != want {
+		t.Fatalf("TUI defaults = %+v, want %+v", got, want)
+	}
+}
+
 func TestLastPlayedPathsDoNotDependOnLauncherFolder(t *testing.T) {
 	for _, fixture := range []struct{ system, game, folder string }{
 		{system: "NES", game: "Mario & Luigi's (USA) [!].nes"},

@@ -42,7 +42,7 @@ LastPlayed waits for MiSTer's state files to appear when it starts, so launching
 
 ## Service screen
 
-Running `lastplayed` from the Scripts menu now opens a screen instead of printing a line and exiting. It shows whether the service is running, the shortcut and recent folder names in use, and offers **Start**/**Stop**, **Restart**, **Uninstall** and **Exit**, with Exit selected by default. It uses the same interface as the other apps, including themes and CRT mode from `[tui]`.
+Running `lastplayed` from the Scripts menu now opens a screen instead of printing a line and exiting. It shows whether the service is running, the shortcut and recent folder names in use, and offers **Start**/**Stop**, **Restart**, **Uninstall** and **Exit**, with Exit selected by default. It uses the same interface as the other apps, including themes and CRT mode from `[tui]`. When no interface settings exist, built-in defaults are used in memory without creating or updating `lastplayed.ini`.
 
 The question about adding LastPlayed to MiSTer startup is the same question, asked in the shared dialog rather than as a raw `[DOWN=Yes/UP=No]` terminal prompt.
 

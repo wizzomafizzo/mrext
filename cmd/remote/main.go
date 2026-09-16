@@ -402,6 +402,17 @@ func appHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(build)).ServeHTTP(rw, req)
 }
 
+func defaultUserConfig() *config.UserConfig {
+	return &config.UserConfig{
+		TUI: config.DefaultTUIConfig(),
+		Remote: config.RemoteConfig{
+			MDNSService: true,
+			SyncSSHKeys: true,
+			CustomLogo:  "",
+		},
+	}
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage remote service (start, stop, restart, status)")
 	uninstallOpt := flag.Bool("uninstall", false, "uninstall MiSTer Remote")
@@ -412,13 +423,7 @@ func main() {
 		return
 	}
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
-		Remote: config.RemoteConfig{
-			MDNSService: true,
-			SyncSSHKeys: true,
-			CustomLogo:  "",
-		},
-	})
+	cfg, err := config.LoadUserConfig(appName, defaultUserConfig())
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		_, _ = fmt.Println("Error loading config file:", err)

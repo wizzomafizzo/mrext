@@ -43,7 +43,7 @@ PlayLog waits for MiSTer's state files to appear when it starts, so launching it
 
 ## Service screen
 
-Running `playlog` from the Scripts menu now opens a screen instead of printing a report that scrolls past. It shows whether the service is running and offers **Start**/**Stop**, **Restart**, **Uninstall**, **Exit** and **Stats**, with Exit selected by default.
+Running `playlog` from the Scripts menu now opens a screen instead of printing a report that scrolls past. It shows whether the service is running and offers **Start**/**Stop**, **Restart**, **Uninstall**, **Exit** and **Stats**, with Exit selected by default. When no interface settings exist, built-in defaults are used in memory without creating or updating `playlog.ini`.
 
 **Stats** is the same top ten cores and top ten games, with the same `Xh Ym` times, on a page that stays put.
 

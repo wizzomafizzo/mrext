@@ -27,8 +27,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 )
+
+func TestDefaultUserConfigIncludesTUIDefaults(t *testing.T) {
+	t.Parallel()
+
+	if got, want := defaultUserConfig().TUI, config.DefaultTUIConfig(); got != want {
+		t.Fatalf("TUI defaults = %+v, want %+v", got, want)
+	}
+}
 
 func TestPlayLogDatabaseRemainsSQLiteCompatible(t *testing.T) {
 	t.Parallel()

@@ -81,6 +81,18 @@ type TUIConfig struct {
 	OnScreenKeyboard bool   `ini:"on_screen_keyboard,omitempty"`
 }
 
+// DefaultTUIConfig returns in-memory interface defaults. Loading these values
+// does not create or rewrite an INI; config files change only through explicit
+// save operations.
+func DefaultTUIConfig() TUIConfig {
+	return TUIConfig{
+		Theme:            "default",
+		Mouse:            true,
+		CRTMode:          true,
+		OnScreenKeyboard: true,
+	}
+}
+
 type SystemsConfig struct {
 	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
 	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
