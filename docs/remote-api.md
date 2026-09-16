@@ -1745,7 +1745,7 @@ Example response:
   "peers": [
     {
       "hostname": "MiSTuh.local",
-      "version": "0.2.4",
+      "version": "0.5",
       "ip": "10.0.0.107"
     }
   ]
@@ -1866,7 +1866,7 @@ Example response:
   ],
   "hostname": "MiSTuh",
   "dns": "MiSTuh.local",
-  "version": "0.2.4",
+  "version": "0.5",
   "updated": "2023-08-30T19:35:02+08:00",
   "disks": [
     {
