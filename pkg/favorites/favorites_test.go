@@ -828,7 +828,7 @@ func TestRACoreMappingsAndFallback(t *testing.T) {
 				t.Fatal(err)
 			}
 			if resolved.Rbf != filepath.Join(config.RACoresFolder, variant.name) ||
-				resolved.SetName != variant.setName || resolved.SetNameSameDir != variant.sameDir {
+				resolved.SetName != variant.setName || !resolved.SetNameSameDir {
 				t.Fatalf("RA metadata: %+v", resolved)
 			}
 			if strings.HasPrefix(source.SetName, "RA_") {
@@ -875,8 +875,9 @@ func TestRAIgnoresNonmatchingCoreFiles(t *testing.T) {
 func TestRAGameFavoritesUseSetNamesAndCatalogSlots(t *testing.T) {
 	for _, tc := range []struct{ id, file, core, setname, slot string }{
 		{"NES", "game.nes", "NES", `<setname same_dir="1">RA_NES</setname>`, `type="f" index="1"`},
-		{"FDS", "game.fds", "NES", `<setname>RA_FDS</setname>`, `type="f" index="1"`},
-		{"GameboyColor", "game.gbc", "Gameboy", `<setname>RA_GBC</setname>`, `type="f" index="1"`},
+		{"FDS", "game.fds", "NES", `<setname same_dir="1">RA_FDS</setname>`, `type="f" index="1"`},
+		{"GameboyColor", "game.gbc", "Gameboy", `<setname same_dir="1">RA_GBC</setname>`, `type="f" index="1"`},
+		{"NeoGeoCD", "game.chd", "NeoGeo", `<setname same_dir="1">RA_NeoGeoCD</setname>`, `type="s" index="1"`},
 		{"Atari2600", "game.a26", "Atari7800", `<setname same_dir="1">RA_Atari7800</setname>`, `type="f" index="1"`},
 		{"Genesis", "game.md", "MegaDrive", `<setname same_dir="1">RA_MegaDrive</setname>`, `type="f" index="1"`},
 	} {
