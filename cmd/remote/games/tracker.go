@@ -30,6 +30,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/wizzomafizzo/mrext/cmd/remote/websocket"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -86,6 +87,31 @@ func (*fakeDb) NoResults(_ error) bool {
 	return true
 }
 
+func initializeTrackerState(
+	activeGameEnabled func() bool,
+	loadCore, loadGame, clearActiveGame func(),
+	startWatch func() error,
+) error {
+	loadCore()
+	if activeGameEnabled() {
+		loadGame()
+	} else {
+		clearActiveGame()
+	}
+
+	if err := startWatch(); err != nil {
+		return err
+	}
+
+	// State can change after the first read but before the watches attach.
+	// Re-read both files once every write in this window is observable.
+	loadCore()
+	if activeGameEnabled() {
+		loadGame()
+	}
+	return nil
+}
+
 func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Tracker, func() error, error) {
 	tr, err := tracker.NewTracker(logger, cfg, &fakeDb{
 		logger: logger,
@@ -96,21 +122,30 @@ func StartTracker(logger *service.Logger, cfg *config.UserConfig) (*tracker.Trac
 		return nil, nil, fmt.Errorf("create tracker: %w", err)
 	}
 
-	tr.LoadCore()
-	if !mister.ActiveGameEnabled() {
-		if activeErr := mister.SetActiveGame(""); activeErr != nil {
-			tr.Logger.Error("error setting active game: %s", activeErr)
-		}
-	}
-
-	watcher, err := tracker.StartFileWatchWithRetry(tr)
+	var watcher *fsnotify.Watcher
+	err = initializeTrackerState(
+		mister.ActiveGameEnabled,
+		tr.LoadCore,
+		tr.LoadGame,
+		func() {
+			if activeErr := mister.SetActiveGame(""); activeErr != nil {
+				tr.Logger.Error("error setting active game: %s", activeErr)
+			}
+		},
+		func() error {
+			var watchErr error
+			watcher, watchErr = tracker.StartFileWatchWithRetry(tr)
+			if watchErr != nil {
+				return fmt.Errorf("start file watch with retry: %w", watchErr)
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		tr.Logger.Error("error starting file watch: %s", err)
 		return nil, nil, fmt.Errorf("start tracker file watch: %w", err)
 	}
 
-	// The core state may have appeared while watch setup was retrying.
-	tr.LoadCore()
 	tr.StartTicker(0)
 
 	return tr, func() error {

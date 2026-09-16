@@ -124,7 +124,7 @@ func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 		files: map[string]func(){
 			config.CurrentPathFile: tr.trackMenu,
 			config.CoreNameFile:    tr.LoadCore,
-			config.ActiveGameFile:  tr.loadGame,
+			config.ActiveGameFile:  tr.LoadGame,
 		},
 		folder: config.CoreConfigFolder,
 		onFolderEvent: func(name string) {

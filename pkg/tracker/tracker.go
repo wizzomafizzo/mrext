@@ -485,8 +485,9 @@ func (tr *Tracker) stopGame() bool {
 	return true
 }
 
-// Load the current running game and set it as active.
-func (tr *Tracker) loadGame() {
+// LoadGame reads the active game file and updates state from it. Exported so
+// startup can pick up a game that was already running, not only changes to it.
+func (tr *Tracker) LoadGame() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -500,7 +501,7 @@ func (tr *Tracker) loadGame() {
 }
 
 // processGame runs under the tracker lock, with the compatibility signal supplied
-// by loadGame. Arcade set names must not be interpreted as relative filenames.
+// by LoadGame. Arcade set names must not be interpreted as relative filenames.
 func (tr *Tracker) processGame(activeGame string) {
 	if activeGame == "" {
 		tr.stopGame()
