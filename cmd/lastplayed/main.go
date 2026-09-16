@@ -361,6 +361,18 @@ func addToStartup() error {
 	return nil
 }
 
+func defaultUserConfig() *config.UserConfig {
+	return &config.UserConfig{
+		TUI: config.DefaultTUIConfig(),
+		LastPlayed: config.LastPlayedConfig{
+			LastPlayedName:      defaultLastPlayedName,
+			DisableLastPlayed:   false,
+			RecentFolderName:    defaultRecentFolderName,
+			DisableRecentFolder: false,
+		},
+	}
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage lastplayed service (start, stop, restart, status)")
 	showVersion := flag.Bool("version", false, "print the version and exit")
@@ -372,14 +384,7 @@ func main() {
 
 	logger := service.NewLogger(appName)
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
-		LastPlayed: config.LastPlayedConfig{
-			LastPlayedName:      defaultLastPlayedName,
-			DisableLastPlayed:   false,
-			RecentFolderName:    defaultRecentFolderName,
-			DisableRecentFolder: false,
-		},
-	})
+	cfg, err := config.LoadUserConfig(appName, defaultUserConfig())
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		_, _ = fmt.Println("Error loading config:", err)

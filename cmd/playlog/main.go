@@ -80,6 +80,15 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 	}, nil
 }
 
+func defaultUserConfig() *config.UserConfig {
+	return &config.UserConfig{
+		TUI: config.DefaultTUIConfig(),
+		PlayLog: config.PlayLogConfig{
+			SaveEvery: 5, // minutes
+		},
+	}
+}
+
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	showVersion := flag.Bool("version", false, "print the version and exit")
@@ -91,11 +100,7 @@ func main() {
 
 	logger := service.NewLogger(appName)
 
-	cfg, err := config.LoadUserConfig(appName, &config.UserConfig{
-		PlayLog: config.PlayLogConfig{
-			SaveEvery: 5, // minutes
-		},
-	})
+	cfg, err := config.LoadUserConfig(appName, defaultUserConfig())
 	if err != nil {
 		logger.Error("error loading user config: %s", err)
 		_, _ = fmt.Println("Error loading config:", err)

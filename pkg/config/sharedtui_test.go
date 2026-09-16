@@ -76,16 +76,14 @@ func TestSharedTUIResolutionOrder(t *testing.T) {
 
 	for _, item := range cases {
 		t.Run(item.name, func(t *testing.T) {
-			sharedTUIFixture(t, item.shared)
+			sharedPath := sharedTUIFixture(t, item.shared)
 			if item.app == "" {
 				_ = os.Remove(appINI)
 			} else if err := os.WriteFile(appINI, []byte(item.app), 0o600); err != nil {
 				t.Fatal(err)
 			}
 
-			defaults := &UserConfig{
-				TUI: TUIConfig{Theme: "default", Mouse: true, CRTMode: true, OnScreenKeyboard: true},
-			}
+			defaults := &UserConfig{TUI: DefaultTUIConfig()}
 			cfg, err := LoadUserConfigAt(appINI, "/media/fat/Scripts/favorites.sh", defaults)
 			if err != nil {
 				t.Fatal(err)
@@ -93,7 +91,22 @@ func TestSharedTUIResolutionOrder(t *testing.T) {
 			if cfg.TUI != item.want {
 				t.Fatalf("TUI = %+v, want %+v", cfg.TUI, item.want)
 			}
+			assertConfigUnchanged(t, appINI, item.app)
+			assertConfigUnchanged(t, sharedPath, item.shared)
 		})
+	}
+}
+
+func assertConfigUnchanged(t *testing.T, path, original string) {
+	t.Helper()
+	if original == "" {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("loading defaults created %q: %v", path, err)
+		}
+		return
+	}
+	if got := readFileString(t, path); got != original {
+		t.Fatalf("loading defaults changed %q:\ngot:  %q\nwant: %q", path, got, original)
 	}
 }
 

@@ -121,7 +121,7 @@ Changing the MAC address preserves the rest of `u-boot.txt` exactly, including c
 
 Start, Stop and Restart on the Scripts-menu screen say what they are doing and redraw when the command finishes. They previously froze the screen for a fixed second and then redrew, which was both unresponsive and often too early to show the real state.
 
-The Scripts-menu screen uses the shared interface: the same border, footer help and key hints as the other apps, and the themes, CRT mode and mouse settings from `[tui]` in `remote.ini`. The status text and the `Start`/`Stop`, `Restart`, `Uninstall` and `Exit` buttons are unchanged, and `Exit` is still selected by default. The startup question is the shared confirmation dialog rather than a bare modal.
+The Scripts-menu screen uses the shared interface: the same border, footer help and key hints as the other apps, and the themes, CRT mode and mouse settings from `[tui]` in `remote.ini`. When no interface settings exist, built-in defaults are used in memory without creating or updating `remote.ini`. The status text and the `Start`/`Stop`, `Restart`, `Uninstall` and `Exit` buttons are unchanged, and `Exit` is still selected by default. The startup question is the shared confirmation dialog rather than a bare modal.
 
 ## Uninstall
 
