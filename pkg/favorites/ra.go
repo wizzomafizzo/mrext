@@ -33,35 +33,36 @@ import (
 type raCore struct {
 	name    string
 	setName string
-	sameDir bool
 }
 
 // Adapted from Zaparoo Core pkg/platforms/mister/launchers.go (7cae7f1f),
 // retroAchievementsSetName and RA launcher registrations. Keep these variant
 // overrides aligned until Core exposes them through a shared library. System
 // folders, extensions, and slot parameters still come from the shared catalog.
+// Favorites always emits same_dir="1": the RA setname selects its MiSTer.ini
+// section, while games remain in the base core's existing directory.
 var raCores = map[string]raCore{
-	"Atari2600":      {"Atari7800", "RA_Atari7800", true},
-	"Atari7800":      {"Atari7800", "RA_Atari7800", true},
-	"FDS":            {"NES", "RA_FDS", false},
-	"Gameboy":        {"Gameboy", "RA_Gameboy", true},
-	"GameboyColor":   {"Gameboy", "RA_GBC", false},
-	"GameGear":       {"SMS", "RA_GameGear", false},
-	"SuperGameboy":   {"Gameboy", "RA_SGB", false},
-	"GBA":            {"GBA", "RA_GBA", true},
-	"Genesis":        {"MegaDrive", "RA_MegaDrive", true},
-	"MegaCD":         {"MegaCD", "RA_MegaCD", true},
-	"MasterSystem":   {"SMS", "RA_SMS", true},
-	"NeoGeo":         {"NeoGeo", "RA_NeoGeo", true},
-	"NeoGeoCD":       {"NeoGeo", "RA_NeoGeoCD", false},
-	"NES":            {"NES", "RA_NES", true},
-	"Nintendo64":     {"N64", "RA_N64", true},
-	"PSX":            {"PSX", "RA_PSX", true},
-	"Sega32X":        {"S32X", "RA_S32X", true},
-	"SNES":           {"SNES", "RA_SNES", true},
-	"Saturn":         {"Saturn", "RA_Saturn", true},
-	"TurboGrafx16":   {"TurboGrafx16", "RA_TurboGrafx16", true},
-	"TurboGrafx16CD": {"TurboGrafx16", "RA_TurboGrafx16CD", false},
+	"Atari2600":      {"Atari7800", "RA_Atari7800"},
+	"Atari7800":      {"Atari7800", "RA_Atari7800"},
+	"FDS":            {"NES", "RA_FDS"},
+	"Gameboy":        {"Gameboy", "RA_Gameboy"},
+	"GameboyColor":   {"Gameboy", "RA_GBC"},
+	"GameGear":       {"SMS", "RA_GameGear"},
+	"SuperGameboy":   {"Gameboy", "RA_SGB"},
+	"GBA":            {"GBA", "RA_GBA"},
+	"Genesis":        {"MegaDrive", "RA_MegaDrive"},
+	"MegaCD":         {"MegaCD", "RA_MegaCD"},
+	"MasterSystem":   {"SMS", "RA_SMS"},
+	"NeoGeo":         {"NeoGeo", "RA_NeoGeo"},
+	"NeoGeoCD":       {"NeoGeo", "RA_NeoGeoCD"},
+	"NES":            {"NES", "RA_NES"},
+	"Nintendo64":     {"N64", "RA_N64"},
+	"PSX":            {"PSX", "RA_PSX"},
+	"Sega32X":        {"S32X", "RA_S32X"},
+	"SNES":           {"SNES", "RA_SNES"},
+	"Saturn":         {"Saturn", "RA_Saturn"},
+	"TurboGrafx16":   {"TurboGrafx16", "RA_TurboGrafx16"},
+	"TurboGrafx16CD": {"TurboGrafx16", "RA_TurboGrafx16CD"},
 }
 
 func (m *Manager) configureRACore(system *games.System) error {
@@ -115,7 +116,7 @@ func (m *Manager) configureRACore(system *games.System) error {
 		}
 		system.Rbf = filepath.Join(config.RACoresFolder, core.ShortName)
 		system.SetName = variant.setName
-		system.SetNameSameDir = variant.sameDir
+		system.SetNameSameDir = true
 		return nil
 	}
 	return nil

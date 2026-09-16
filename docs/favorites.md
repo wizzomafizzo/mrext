@@ -131,7 +131,7 @@ on_screen_keyboard = true
 
 Favorites falls back to standard catalog core when requested variant is unavailable. Select **RetroAchievements** in Settings, or use `[cores]` with `all = ra`. This affects newly created game favorites; existing shortcuts are not rewritten.
 
-RA paths and setnames follow Zaparoo Core's MiSTer launcher mappings. Generated shortcuts include the appropriate `RA_*` setname and `same_dir` behavior, including separate FDS/GBC/Game Gear/Super Game Boy/NeoGeo CD/TurboGrafx-CD names. Atari 2600 uses the RA Atari7800 core's loading slot. Standard catalog data continues to supply media formats and loading parameters.
+RA paths and setnames follow Zaparoo Core's MiSTer launcher mappings. Generated shortcuts use `same_dir="1"` with every `RA_*` setname, selecting the RA-specific MiSTer.ini section without redirecting games into nonexistent `RA_*` directories. This includes separate FDS/GBC/Game Gear/Super Game Boy/NeoGeo CD/TurboGrafx-CD names. Atari 2600 uses the RA Atari7800 core's loading slot. Standard catalog data continues to supply media formats and loading parameters.
 
 Install and configure a compatible RetroAchievements MiSTer binary and RA cores first. Favorites does not install binaries, edit `MiSTer.ini`, or handle credentials. An installation that selects `MiSTer_RA` using `[RA_*]` must already have that rule configured. Availability of a core file does not prove that achievements or hardcore mode work on the device.
 
