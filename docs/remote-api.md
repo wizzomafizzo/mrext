@@ -34,6 +34,12 @@
       * [Generate search index](#generate-search-index)
       * [Check current playing game and system](#check-current-playing-game-and-system)
       * [Browse game folders](#browse-game-folders)
+    * [Play log](#play-log)
+      * [Play log status](#play-log-status)
+      * [Play log summary](#play-log-summary)
+      * [List played games](#list-played-games)
+      * [Get game play history](#get-game-play-history)
+      * [List play sessions](#list-play-sessions)
     * [Launchers](#launchers)
       * [Launch token data](#launch-token-data)
       * [Launch games, cores, arcade and .mgl](#launch-games-cores-arcade-and-mgl)
@@ -890,6 +896,10 @@ On success, returns `200` and object with attributes:
 | `systemName` | string | Friendly name of system.            |
 | `game`       | string | System ID and filename of game.     |
 | `gameName`   | string | Filename of game without extension. |
+| `coreSessionTime` | integer | Seconds since the active core started, or `0`. |
+| `gameSessionTime` | integer | Seconds since the active game started, or `0`. |
+
+The session times are elapsed seconds rather than timestamps, so a client can run a timer from them without relying on the MiSTer's clock. They are refreshed once a second.
 
 Example request:
 
@@ -905,7 +915,9 @@ Example response:
   "system": "NES",
   "systemName": "NES",
   "game": "NES/2022-04 Crystalis.mgl",
-  "gameName": "2022-04 Crystalis"
+  "gameName": "2022-04 Crystalis",
+  "coreSessionTime": 754,
+  "gameSessionTime": 750
 }
 ```
 
@@ -929,6 +941,186 @@ Example request:
 
 ```shell
 curl --request POST --url "http://mister:8182/api/games/view" --data '{"path":""}'
+```
+
+### Play log
+
+These endpoints read the play history recorded by [PlayLog](playlog.md), another mrext app. Remote only reads PlayLog's database; it never writes to it. Without PlayLog, the status endpoint says what is missing and the others return empty results.
+
+Times are in seconds. Timestamps are in the MiSTer's time zone, as PlayLog recorded them.
+
+Game objects have these attributes:
+
+| Attribute    | Type           | Description                                                        |
+|--------------|----------------|--------------------------------------------------------------------|
+| `id`         | string         | PlayLog's game ID: system ID and filename, or the set name for arcade games. |
+| `path`       | string         | Path of the game file, empty if PlayLog has not saved it yet and it is not running. |
+| `name`       | string         | Filename without extension, or the arcade game's name.             |
+| `system`     | string         | System ID, `Arcade` for arcade games.                              |
+| `time`       | integer        | Total time played, as last saved by PlayLog.                       |
+| `plays`      | integer        | Number of times the game was started.                              |
+| `lastPlayed` | string or null | When the game was last started.                                    |
+
+A session is one run of one game, rebuilt from PlayLog's start and stop events. A session without a stop, after a power cut, ends where the game's next session starts or at its saved total.
+
+PlayLog saves a running game's time only every few minutes. While PlayLog is running, Remote brings the running game up to date from its own tracker, so every endpoint includes the current session as it stands, not as last saved. Until that first save PlayLog knows a new game only by its ID, so Remote also fills in the running game's path and name.
+
+#### Play log status
+
+Reports whether PlayLog is installed and set up.
+
+```plaintext
+GET /playlog/status
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object with attributes:
+
+| Attribute   | Type    | Description                                                        |
+|-------------|---------|--------------------------------------------------------------------|
+| `installed` | boolean | `playlog.sh` is in the Scripts folder.                             |
+| `running`   | boolean | The PlayLog service is running.                                    |
+| `database`  | boolean | PlayLog has created its database.                                  |
+| `recents`   | boolean | The `recents` option is enabled in `MiSTer.ini`, which game tracking needs. |
+| `startup`   | boolean | PlayLog starts when the MiSTer boots.                              |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/playlog/status"
+```
+
+Example response:
+
+```json
+{
+  "installed": true,
+  "running": true,
+  "database": true,
+  "recents": true,
+  "startup": true
+}
+```
+
+#### Play log summary
+
+Totals and highlights for a stats screen.
+
+```plaintext
+GET /playlog/summary
+```
+
+Query parameters:
+
+| Parameter | Type    | Required | Description                                                         |
+|-----------|---------|----------|---------------------------------------------------------------------|
+| `top`     | integer | No       | Length of the top games and systems lists. Default `10`.            |
+| `days`    | integer | No       | Number of days in `days`, ending today. Default `30`, at most `366`. |
+| `offset`  | integer | No       | Client's UTC offset in seconds. Days, hours and streaks are counted in it. Default is the MiSTer's time zone. |
+
+On success, returns `200` and object with attributes:
+
+| Attribute        | Type           | Description                                                  |
+|------------------|----------------|--------------------------------------------------------------|
+| `totalTime`      | integer        | Time played across all games.                                |
+| `coreTime`       | integer        | Time spent in all cores, with or without a game.             |
+| `gamesPlayed`    | integer        | Number of games with any time played.                        |
+| `sessions`       | integer        | Number of sessions.                                          |
+| `firstPlayed`    | string or null | Start of the first session.                                  |
+| `lastPlayed`     | string or null | Start of the latest session.                                 |
+| `longestSession` | object or null | The longest session, as in [List play sessions](#list-play-sessions). |
+| `topGames`       | array          | Most played games, as game objects.                          |
+| `topSystems`     | array          | Most played systems: `system`, `time`, and `games` played.   |
+| `days`           | array          | Time played each day: `date` (`YYYY-MM-DD`) and `time`, oldest first. |
+| `hours`          | array          | Time played by hour of the day a session started, 24 values from midnight. |
+| `currentStreak`  | integer        | Consecutive days played, up to today or yesterday.           |
+| `longestStreak`  | integer        | Most consecutive days ever played.                           |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/playlog/summary?days=7&offset=7200"
+```
+
+#### List played games
+
+```plaintext
+GET /playlog/games
+```
+
+Query parameters:
+
+| Parameter | Type    | Required | Description                                            |
+|-----------|---------|----------|--------------------------------------------------------|
+| `sort`    | string  | No       | `time` (most played first, default) or `recent` (most recently played first). |
+| `limit`   | integer | No       | Games per page. Default `50`, at most `500`.           |
+| `offset`  | integer | No       | Games to skip. Default `0`.                            |
+
+On success, returns `200` and object with attributes:
+
+| Attribute | Type    | Description                     |
+|-----------|---------|---------------------------------|
+| `games`   | array   | Game objects.                   |
+| `total`   | integer | Number of games played in all.  |
+
+Returns `400` for an unknown `sort`.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/playlog/games?sort=recent&limit=10"
+```
+
+#### Get game play history
+
+Looks up one game by the path it is launched from. PlayLog records the path the core resolved, so when that differs, the game is matched on its system and filename instead.
+
+```plaintext
+GET /playlog/game
+```
+
+Query parameters:
+
+| Parameter | Type   | Required | Description                         |
+|-----------|--------|----------|-------------------------------------|
+| `path`    | string | Yes      | Path of the game file.              |
+| `system`  | string | No       | System ID of the game, for the filename match. |
+
+On success, returns `200` and a game object. A game never played has `time` and `plays` of `0` and a null `lastPlayed`.
+
+Returns `400` without a `path`.
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/playlog/game?system=SNES&path=/media/fat/games/SNES/Super%20Metroid.sfc"
+```
+
+#### List play sessions
+
+```plaintext
+GET /playlog/sessions
+```
+
+Query parameters:
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| `limit`   | integer | No       | Sessions per page. Default `50`, at most `500`. |
+| `offset`  | integer | No       | Sessions to skip. Default `0`.               |
+
+On success, returns `200` and object with a `total` count and a `sessions` array, newest first. Sessions have `id`, `path`, `name` and `system` as in game objects, plus:
+
+| Attribute  | Type    | Description                  |
+|------------|---------|------------------------------|
+| `start`    | string  | When the game was started.   |
+| `duration` | integer | Length of the session.       |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/playlog/sessions?limit=20"
 ```
 
 ### Launchers

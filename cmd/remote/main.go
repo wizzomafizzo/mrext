@@ -39,6 +39,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/music"
+	"github.com/wizzomafizzo/mrext/cmd/remote/playlog"
 	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
 	"github.com/wizzomafizzo/mrext/cmd/remote/scripts"
 	"github.com/wizzomafizzo/mrext/cmd/remote/settings"
@@ -336,6 +337,13 @@ func setupAPI(
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 	sub.HandleFunc("/games/view", games.ListGamesFolder(logger)).Methods("POST")
+
+	playLog := playlog.DefaultEnv(logger, trk)
+	sub.HandleFunc("/playlog/status", playlog.HandleStatus(playLog)).Methods("GET")
+	sub.HandleFunc("/playlog/summary", playlog.HandleSummary(playLog)).Methods("GET")
+	sub.HandleFunc("/playlog/games", playlog.HandleGames(playLog)).Methods("GET")
+	sub.HandleFunc("/playlog/game", playlog.HandleGame(playLog)).Methods("GET")
+	sub.HandleFunc("/playlog/sessions", playlog.HandleSessions(playLog)).Methods("GET")
 
 	sub.HandleFunc("/l/{data:.*}", withSAMActivity(games.LaunchToken(logger, cfg, kbd), logger)).Methods("GET")
 

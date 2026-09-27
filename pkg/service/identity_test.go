@@ -142,3 +142,32 @@ func TestRestartWaitIsBounded(t *testing.T) {
 		t.Fatal("Restart did not return")
 	}
 }
+
+func TestAppRunningChecksTheNamedApp(t *testing.T) {
+	root := t.TempDir()
+	proc := filepath.Join(root, "proc", "42")
+	if err := os.MkdirAll(proc, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	executable := filepath.Join(root, "playlog.sh")
+	if err := os.Symlink(executable, filepath.Join(proc, "exe")); err != nil {
+		t.Fatal(err)
+	}
+	cmdline := []byte("playlog.sh\x00-service\x00exec\x00")
+	if err := os.WriteFile(filepath.Join(proc, "cmdline"), cmdline, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pidFile := filepath.Join(root, "playlog.pid")
+	if runningAt(pidFile, filepath.Join(root, "proc"), executable) {
+		t.Fatal("no PID file was treated as running")
+	}
+	if err := os.WriteFile(pidFile, []byte("42"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if !runningAt(pidFile, filepath.Join(root, "proc"), executable) {
+		t.Fatal("running PlayLog was not recognised")
+	}
+	if runningAt(pidFile, filepath.Join(root, "proc"), filepath.Join(root, "remote.sh")) {
+		t.Fatal("PlayLog's process was taken for another app")
+	}
+}

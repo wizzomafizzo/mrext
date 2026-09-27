@@ -164,16 +164,24 @@ type PlayingPayload struct {
 	SystemName string `json:"systemName"`
 	Game       string `json:"game"`
 	GameName   string `json:"gameName"`
+	// Seconds since the active core and game started. Elapsed time rather
+	// than a start timestamp, because the MiSTer clock often disagrees with
+	// the client's.
+	CoreSessionTime int `json:"coreSessionTime"`
+	GameSessionTime int `json:"gameSessionTime"`
 }
 
 func HandlePlaying(tr *tracker.Tracker) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
+		coreTime, gameTime := tr.SessionTimes()
 		playing := PlayingPayload{
-			Core:       tr.ActiveCore,
-			System:     tr.ActiveSystem,
-			SystemName: tr.ActiveSystemName,
-			Game:       tr.ActiveGame,
-			GameName:   tr.ActiveGameName,
+			Core:            tr.ActiveCore,
+			System:          tr.ActiveSystem,
+			SystemName:      tr.ActiveSystemName,
+			Game:            tr.ActiveGame,
+			GameName:        tr.ActiveGameName,
+			CoreSessionTime: coreTime,
+			GameSessionTime: gameTime,
 		}
 
 		err := json.NewEncoder(w).Encode(playing)

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
 	"github.com/wizzomafizzo/mrext/pkg/service"
@@ -51,14 +52,25 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		os.Exit(1)
 	}
 
-	tr.LoadCore()
-	if !mister.ActiveGameEnabled() {
-		if activeErr := mister.SetActiveGame(""); activeErr != nil {
-			tr.Logger.Error("error setting active game: %s", activeErr)
-		}
-	}
-
-	watcher, err := tracker.StartFileWatchWithRetry(tr)
+	var watcher *fsnotify.Watcher
+	err = startTracking(
+		mister.ActiveGameEnabled,
+		tr.LoadCore,
+		tr.LoadGame,
+		func() {
+			if activeErr := mister.SetActiveGame(""); activeErr != nil {
+				tr.Logger.Error("error setting active game: %s", activeErr)
+			}
+		},
+		func() error {
+			var watchErr error
+			watcher, watchErr = tracker.StartFileWatchWithRetry(tr)
+			if watchErr != nil {
+				return fmt.Errorf("start file watch: %w", watchErr)
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		tr.Logger.Error("error starting file watch: %s", err)
 		os.Exit(1)
@@ -78,6 +90,32 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		tr.StopAll()
 		return nil
 	}, nil
+}
+
+// startTracking reads the running core and game, then watches for changes.
+// The game is read as well as the core: PlayLog restarted while a game runs
+// would otherwise count the core's time but not the game's until the next
+// game started. Both are read again once the watches are attached, since
+// either can change in between. The same sequence as Remote's tracker.
+func startTracking(
+	activeGameEnabled func() bool,
+	loadCore, loadGame, clearActiveGame func(),
+	startWatch func() error,
+) error {
+	loadCore()
+	if activeGameEnabled() {
+		loadGame()
+	} else {
+		clearActiveGame()
+	}
+	if err := startWatch(); err != nil {
+		return err
+	}
+	loadCore()
+	if activeGameEnabled() {
+		loadGame()
+	}
+	return nil
 }
 
 func defaultUserConfig() *config.UserConfig {

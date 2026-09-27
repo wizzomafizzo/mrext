@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -98,6 +99,13 @@ type Db interface {
 	NoResults(err error) bool
 }
 
+// RunningGame is the game the tracker last saw running.
+type RunningGame struct {
+	ID   string
+	Path string
+	Name string
+}
+
 type trackerLogger interface {
 	Info(string, ...any)
 	Warn(string, ...any)
@@ -105,15 +113,17 @@ type trackerLogger interface {
 }
 
 type Tracker struct {
-	Db               Db
-	Logger           trackerLogger
-	Config           *config.UserConfig
-	GameTimes        map[string]GameTime
-	CoreTimes        map[string]CoreTime
-	arcadePaths      map[string]string
-	neoGeoNames      map[string]string
-	arcadeRoots      func() []string
-	setActiveGame    func(string) error
+	Db            Db
+	Logger        trackerLogger
+	Config        *config.UserConfig
+	GameTimes     map[string]GameTime
+	CoreTimes     map[string]CoreTime
+	arcadePaths   map[string]string
+	neoGeoNames   map[string]string
+	arcadeRoots   func() []string
+	setActiveGame func(string) error
+	// The running game for ActiveSession, published by the ticker.
+	runningGame      atomic.Pointer[RunningGame]
 	ActiveGamePath   string
 	ActiveSystemName string
 	ActiveGame       string
@@ -122,7 +132,11 @@ type Tracker struct {
 	ActiveCore       string
 	Events           []EventAction
 	NameMap          []NameMapping
-	mu               sync.Mutex
+	// Session times, refreshed by the ticker and read without the lock, so
+	// a client asking is never held up by work the tracker does under it.
+	coreSession atomic.Int64
+	gameSession atomic.Int64
+	mu          sync.Mutex
 }
 
 func generateNameMap(logger trackerLogger) []NameMapping {
@@ -599,6 +613,52 @@ func (tr *Tracker) processGame(activeGame string) {
 	}
 }
 
+// SessionTimes returns how many seconds the active core and game have been
+// running since they last started, or 0 for whichever is not running. It
+// never waits on the tracker lock: the values are the ticker's latest, at
+// most a second old, or held while the tracker is busy.
+func (tr *Tracker) SessionTimes() (core, game int) {
+	return int(tr.coreSession.Load()), int(tr.gameSession.Load())
+}
+
+// updateSessions runs under the tracker lock. It measures against the
+// running total recorded in the start event, so time a game built up in
+// earlier sessions is not counted again.
+func (tr *Tracker) updateSessions() {
+	core := tr.sessionTime(EventActionCoreStart, tr.ActiveCore, tr.CoreTimes[tr.ActiveCore].Time)
+	game := tr.sessionTime(EventActionGameStart, tr.ActiveGame, tr.GameTimes[tr.ActiveGame].Time)
+	tr.coreSession.Store(int64(core))
+	tr.gameSession.Store(int64(game))
+	tr.runningGame.Store(&RunningGame{ID: tr.ActiveGame, Path: tr.ActiveGamePath, Name: tr.ActiveGameName})
+}
+
+// ActiveSession returns the running game and how long it has run, or an
+// empty game with nothing running. Lock-free, like SessionTimes.
+func (tr *Tracker) ActiveSession() (game RunningGame, seconds int) {
+	if active := tr.runningGame.Load(); active != nil {
+		game = *active
+	}
+	if game.ID == "" {
+		return RunningGame{}, 0
+	}
+	return game, int(tr.gameSession.Load())
+}
+
+// sessionTime runs under the tracker lock. The newest start event for target
+// holds its running total at the moment it started.
+func (tr *Tracker) sessionTime(startAction int, target string, total int) int {
+	if target == "" {
+		return 0
+	}
+	for i := len(tr.Events) - 1; i >= 0; i-- {
+		ev := tr.Events[i]
+		if ev.Action == startAction && ev.Target == target {
+			return max(0, total-ev.TotalTime)
+		}
+	}
+	return 0
+}
+
 func (tr *Tracker) StopAll() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
@@ -644,6 +704,8 @@ func (tr *Tracker) tick(saveInterval int) {
 			tr.GameTimes[tr.ActiveGame] = gt
 		}
 	}
+
+	tr.updateSessions()
 }
 
 // StartTicker starts the thread for updating core/game play times.

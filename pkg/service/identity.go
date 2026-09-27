@@ -22,6 +22,7 @@
 package service
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -40,6 +41,25 @@ func (*Service) matchesDaemon(pid int) bool {
 		}
 	}
 	return daemonIdentity(config.ServiceProcFolder, pid, filepath.Join(config.TempFolder, filepath.Base(path)))
+}
+
+// AppRunning reports whether another mrext app's service is running, such as
+// Remote asking after PlayLog. Running only answers for the calling app's own
+// daemon, since it checks against the caller's executable.
+func AppRunning(name string) bool {
+	return runningAt(
+		fmt.Sprintf(config.PidFileTemplate, name),
+		config.ServiceProcFolder,
+		filepath.Join(config.TempFolder, name+".sh"),
+	)
+}
+
+func runningAt(pidFile, procRoot, executable string) bool {
+	pid, err := readServicePID(pidFile)
+	if err != nil || pid == 0 {
+		return false
+	}
+	return daemonIdentity(procRoot, pid, executable)
 }
 
 // A live PID alone is not proof of ownership: it may have been recycled after

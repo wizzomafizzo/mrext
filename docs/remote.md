@@ -87,6 +87,12 @@ Remote's shared tracker supplies a resolved `.mra` path for arcade games recogni
 
 When Arcade Database has no matching set, Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
 
+## Play history
+
+With [PlayLog](playlog.md) running, Remote serves its play history: time played per game and system, how many times each game was started, recent sessions and a summary for stats screens. Remote only reads PlayLog's database. Without PlayLog, clients are told what is missing through `GET /api/playlog/status`. See [Play log](remote-api.md#play-log) in the API reference.
+
+`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog.
+
 ## Startup diagnostics
 
 Remote retries tracker setup when required MiSTer state files or directories are missing: at most six attempts, with one-second gaps. Each retry is logged. Permission errors and other failures stop immediately. This does not retry a missing `remote.sh` before the executable starts, or missing input devices.

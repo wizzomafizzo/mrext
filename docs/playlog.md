@@ -39,6 +39,8 @@ Service status and stop commands verify the recorded PID's executable and daemon
 
 PlayLog does not record menu navigation. Earlier versions wrote a database row for every cursor movement in the MiSTer menu, which put an SD card write behind each one and grew the `events` table without bound, for rows PlayLog never read back. Those rows are deleted and the database compacted the first time this version opens it; play history and totals are untouched. Remote still receives menu navigation over its websocket, which is the only place it was ever used.
 
+PlayLog reads the running game as well as the core when it starts, so restarting it mid-game, or updating it, no longer counts the core's time while dropping the game's until the next game starts.
+
 PlayLog waits for MiSTer's state files to appear when it starts, so launching it from `user-startup.sh` before MiSTer main has created them no longer makes the service exit. It also recovers when another script replaces `/tmp/ACTIVEGAME` or `/tmp/CORENAME` instead of writing over them, which previously left tracking silent until a restart.
 
 ## Service screen
@@ -52,6 +54,10 @@ The question about adding PlayLog to MiSTer startup is the same question, asked 
 **Uninstall** stops the service and removes the `# mrext/playlog` entry from `user-startup.sh`. It never touches `playlog.db`: that is your play history, and the summary points at where it still is.
 
 `playlog.sh -service start|stop|restart|status` is unchanged and stays headless, so `user-startup.sh` is unaffected.
+
+## Remote
+
+[Remote](remote.md) serves PlayLog's stats to its clients over its API: time per game and system, play counts, recent sessions and a summary. It only reads the database, so it adds no writes to the SD card.
 
 ## Configuration
 
