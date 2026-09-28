@@ -1,83 +1,83 @@
 {
     "db_id": "mrext/all",
-    "timestamp": 1789532409,
+    "timestamp": 1790580965,
     "files": {
         "Scripts/bgm.sh": {
-            "hash": "a4b9855f9f5c83c8271da67ee34be511",
+            "hash": "4e38231c5e050833bdb22a523eba9072",
             "size": 2988548,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/bgm.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/bgm.sh",
             "reboot": false,
             "tags": [
                 "bgm"
             ]
         },
         "Scripts/favorites.sh": {
-            "hash": "9b289fbe21c69b17086d489d49f8a7f6",
-            "size": 2706096,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/favorites.sh",
+            "hash": "ce74275745680c2a6a358835cefc9c8b",
+            "size": 2706088,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/favorites.sh",
             "reboot": false,
             "tags": [
                 "favorites"
             ]
         },
         "Scripts/gamesmenu.sh": {
-            "hash": "7378431f2205cd0e88ac560a2e1bfdb1",
+            "hash": "69e3b7c8def7ca427b9b23f703fdf5a6",
             "size": 2639600,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/gamesmenu.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/gamesmenu.sh",
             "reboot": false,
             "tags": [
                 "gamesmenu"
             ]
         },
         "Scripts/lastplayed.sh": {
-            "hash": "6cf35fc1c10f573f359d1c55ed8ab3f1",
-            "size": 2658412,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/lastplayed.sh",
+            "hash": "05e6d0a95e03e24d9847293de63a1d76",
+            "size": 2658732,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/lastplayed.sh",
             "reboot": false,
             "tags": [
                 "lastplayed"
             ]
         },
         "Scripts/launchsync.sh": {
-            "hash": "06c850f5eed246b72b4f1841b2df45f9",
+            "hash": "5594b597a298e03cb677129c50d6ef25",
             "size": 3356776,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/launchsync.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/launchsync.sh",
             "reboot": false,
             "tags": [
                 "launchsync"
             ]
         },
         "Scripts/playlog.sh": {
-            "hash": "287f3eb976d3694fd8144a642c479525",
-            "size": 4242284,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/playlog.sh",
+            "hash": "a2778060bd0166c8074b5a7f063fa317",
+            "size": 4243820,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/playlog.sh",
             "reboot": false,
             "tags": [
                 "playlog"
             ]
         },
         "Scripts/random.sh": {
-            "hash": "e70dfb5575e981a7b47e4b6f21fe9fc6",
+            "hash": "2da347938d5ab93b2f9d927371d452b1",
             "size": 2233616,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/random.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/random.sh",
             "reboot": false,
             "tags": [
                 "random"
             ]
         },
         "Scripts/remote.sh": {
-            "hash": "7abd54567ae07aa80ad421b2a92eabc4",
-            "size": 5589824,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/remote.sh",
+            "hash": "16b64c5534f88cc1bcea2cd269bd0fa0",
+            "size": 7174680,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/remote.sh",
             "reboot": true,
             "tags": [
                 "remote"
             ]
         },
         "Scripts/search.sh": {
-            "hash": "b2130fb695d0694b6502cf6e7c236c4f",
-            "size": 2678444,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/search.sh",
+            "hash": "f2302e68f986e9751fda03776b692899",
+            "size": 2678436,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/search.sh",
             "reboot": false,
             "tags": [
                 "search"

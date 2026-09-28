@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/bgm",
-    "timestamp": 1789532409,
+    "timestamp": 1790580964,
     "files": {
         "Scripts/bgm.sh": {
-            "hash": "a4b9855f9f5c83c8271da67ee34be511",
+            "hash": "4e38231c5e050833bdb22a523eba9072",
             "size": 2988548,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260916-1/bgm.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/bgm.sh",
             "reboot": false,
             "tags": [
                 "bgm"
