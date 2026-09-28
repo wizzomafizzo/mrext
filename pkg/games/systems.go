@@ -231,6 +231,17 @@ func CatalogCore(system *System) catalog.Core {
 	}
 }
 
+// LaunchCatalogCore is CatalogCore for launching path. An Atari 2600 .bin
+// gets .bin added to the 2600 slot, as Zaparoo Core's launcher does, so the
+// generated MGL loads it with the same parameters as an .a26.
+func LaunchCatalogCore(system *System, path string) catalog.Core {
+	core := CatalogCore(system)
+	if isAtari2600Bin(system, path) && len(core.Slots) > 0 {
+		core.Slots[0].Exts = append(core.Slots[0].Exts, ".bin")
+	}
+	return core
+}
+
 func PathToMglDef(system *System, path string) (*MglParams, error) {
 	params, err := catalog.PathToMGLDef(&catalog.Core{ID: system.Id, Slots: slotsToCatalog(system.Slots)}, path)
 	if err != nil {

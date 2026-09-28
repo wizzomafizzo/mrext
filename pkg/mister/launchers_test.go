@@ -120,6 +120,27 @@ func TestGenerateMglWithLauncherSetsSetName(t *testing.T) {
 	}
 }
 
+func TestGenerateMglLoadsAtari2600Bin(t *testing.T) {
+	t.Parallel()
+
+	atari2600, err := games.GetSystem("Atari2600")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := GenerateMgl(&config.UserConfig{}, atari2600, "/media/fat/games/Atari2600/Adventure.bin", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `<file delay="1" type="f" index="1" path="../../../../../media/fat/games/Atari2600/Adventure.bin"/>`
+	if !strings.Contains(got, want) || !strings.Contains(got, "<setname>Atari2600</setname>") {
+		t.Fatalf("Atari 2600 .bin MGL = %s", got)
+	}
+	_, err = GenerateMgl(&config.UserConfig{}, atari2600, "/media/fat/games/ATARI7800/Asteroids.bin", "")
+	if err == nil {
+		t.Fatal("Atari2600 accepted a .bin outside an Atari2600 folder")
+	}
+}
+
 func TestSystemRBFPrefersSetCore(t *testing.T) {
 	t.Parallel()
 

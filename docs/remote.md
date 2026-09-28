@@ -57,6 +57,8 @@ Progress and failures appear in the existing indexing status flow. If regenerati
 
 A rebuild needs space beside `games.db` for a replacement index. Do not delete the adjacent `games.db.lock` while any app is indexing; it serializes writers across index replacement. Failed attempts normally clean up their temporary `.games-index-*` files. After a hard interruption, leftover files with that prefix can be removed only when no indexer is running. Mount the libraries you want included before regenerating: absent libraries are omitted from a successful full rebuild.
 
+For Atari 2600, `.bin` files are indexed and launched as 2600 games when they are under an `Atari2600` folder, alongside `.a26`. A `.bin` in the shared `ATARI7800` folder stays an Atari 7800 game.
+
 For NeoGeo, an extracted set folder is indexed as one launchable game when its folder name appears in `romsets.xml` at the NeoGeo games root. Remote does not index files inside a recognized set folder separately. Ordinary folders are still traversed, and missing or unreadable `romsets.xml` leaves the normal file scan unchanged. Active-game tracking uses the same file's `altname` for direct folder and MGL launches, so set names such as `aof` are reported as titles such as `Art of Fighting`. Restart Remote after changing `romsets.xml` to reload cached titles, then rebuild the search index if the set list changed.
 
 ## Screenshot compatibility notes

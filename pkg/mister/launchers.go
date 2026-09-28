@@ -70,7 +70,7 @@ func GenerateMglWithCore(
 		return "", errors.New("no system supplied for MGL generation")
 	}
 
-	core := games.CatalogCore(system)
+	core := games.LaunchCatalogCore(system, path)
 	core.RBF = SystemRBF(cfg, system)
 	if launch != nil {
 		core.RBF = launch.RBF
@@ -447,7 +447,8 @@ func TryPickRandomGame(system *games.System, folder string) (string, error) {
 
 	var validFiles []os.DirEntry
 	for _, file := range files {
-		if file.IsDir() || utils.IsZip(file.Name()) || games.MatchSystemFile(system, file.Name()) {
+		path := filepath.Join(folder, file.Name())
+		if file.IsDir() || utils.IsZip(file.Name()) || games.MatchSystemFile(system, path) {
 			validFiles = append(validFiles, file)
 		}
 	}
