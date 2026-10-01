@@ -102,6 +102,48 @@ func TestWalkFilesFindsGamesThroughSymlinksAndArchives(t *testing.T) {
 	}
 }
 
+// Atari 2600 .bin dumps are found under an Atari2600 folder, including one
+// reached through a symlink, but not in the ATARI7800 folder the two consoles
+// share, where a .bin is a 7800 game.
+func TestWalkFilesFindsAtari2600BinOnlyInItsOwnFolder(t *testing.T) {
+	library, external := t.TempDir(), t.TempDir()
+	shared := filepath.Join(library, "ATARI7800")
+	if err := os.Mkdir(shared, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		filepath.Join(external, "Adventure.bin"),
+		filepath.Join(external, "Pitfall.a26"),
+		filepath.Join(shared, "Asteroids.bin"),
+		filepath.Join(shared, "Combat.a26"),
+	} {
+		if err := os.WriteFile(path, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	linked := filepath.Join(library, "Atari2600")
+	if err := os.Symlink(external, linked); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		root string
+		want []string
+	}{
+		{linked, []string{filepath.Join(linked, "Adventure.bin"), filepath.Join(linked, "Pitfall.a26")}},
+		{shared, []string{filepath.Join(shared, "Combat.a26")}},
+	} {
+		var got []string
+		err := WalkFiles("Atari2600", test.root, func(path string) error { got = append(got, path); return nil })
+		if err != nil {
+			t.Fatal(err)
+		}
+		slices.Sort(got)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("WalkFiles(%s) = %v, want %v", test.root, got, test.want)
+		}
+	}
+}
+
 // NeoGeo ROM sets are folders. A folder named in romsets.xml is a game and
 // is emitted as one, without descending into its ROM files; any other folder
 // is walked as usual. Without romsets.xml nothing changes.

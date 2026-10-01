@@ -35,7 +35,7 @@ Arcade link management creates missing `cores` links when the interactive app op
 
 Core-update repair now recognizes the date in the symlink target rather than requiring it in the favorite's name. Renaming a core favorite no longer prevents its repair after an update.
 
-Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
+Zaparoo's maintained MiSTer catalog now supplies system aliases, extensions, RBF paths, MGL slots, set names, and reset timing. Canonical definitions intentionally replace stale Python-table behavior: Genesis uses the current MegaDrive core path, Vectrex `.ovr` overlay files are not treated as games, and Atari 7800 images placed in the Atari 2600 folder are no longer accepted. A `.bin` in an `Atari2600` folder is an Atari 2600 game, as in Zaparoo Core's launcher; in the shared `ATARI7800` folder it stays an Atari 7800 game. NeoGeo ZIP support remains as an explicit compatibility extension until present in the standalone catalog. ZIP and `.neo` launchers use the same catalog ROM-slot parameters and retain Favorites' relative NeoGeo paths.
 
 ## Moving to another SD card
 

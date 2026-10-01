@@ -85,11 +85,31 @@ func LookupSystem(id string) (*System, error) {
 	return nil, fmt.Errorf("unknown system: %s", id)
 }
 
+// isAtari2600Bin reports whether path is an Atari 2600 .bin dump. The
+// Atari7800 core loads .bin for both consoles, but the catalog gives .bin to
+// Atari7800 alone because the two share the ATARI7800 folder. A .bin under an
+// Atari2600 folder can only be a 2600 game, the same rule Zaparoo Core's
+// launcher applies with atari2600BinTest.
+func isAtari2600Bin(system *System, path string) bool {
+	if system.Id != "Atari2600" {
+		return false
+	}
+	lowerPath := strings.ToLower(filepath.ToSlash(path))
+	if filepath.Ext(lowerPath) != ".bin" {
+		return false
+	}
+	return strings.Contains(lowerPath, "/atari2600/") || strings.Contains(lowerPath, "/atari 2600/")
+}
+
 // MatchSystemFile returns true if a given file's extension is valid for a system.
 func MatchSystemFile(system *System, path string) bool {
 	// ignore dot files
 	if strings.HasPrefix(filepath.Base(path), ".") {
 		return false
+	}
+
+	if isAtari2600Bin(system, path) {
+		return true
 	}
 
 	lowerPath := strings.ToLower(path)
