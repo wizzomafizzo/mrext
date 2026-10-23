@@ -131,6 +131,15 @@ type Tracker struct {
 	neoGeoNames   map[string]string
 	arcadeRoots   func() []string
 	setActiveGame func(string) error
+	// rbfName reads /tmp/RBFNAME and currentCore reads CORENAME now;
+	// replaced in tests.
+	rbfName     func() string
+	currentCore func() string
+	// Core names no installed .mra carries, so each is looked for once.
+	unknownSets map[string]bool
+	// pendingSet is an unlisted core name that came up before the first
+	// arcade index was ready; the index install looks it up.
+	pendingSet string
 	// runBuild runs an arcade index build; nil runs it on a goroutine.
 	// Replaced in tests.
 	runBuild func(func())
@@ -265,6 +274,7 @@ func (tr *Tracker) ReloadNameMap() {
 	tr.Logger.Info("loaded %d name mappings", len(nameMap))
 	tr.NameMap = nameMap
 	tr.neoGeoNames = nil
+	tr.unknownSets = nil
 }
 
 func (tr *Tracker) LookupName(name, game string) NameMapping {
@@ -300,6 +310,107 @@ func (tr *Tracker) LookupName(name, game string) NameMapping {
 	}
 
 	return NameMapping{}
+}
+
+// lookupCore is LookupName, plus arcade games whose .mra carries a set name
+// the Arcade Database does not list, as fan and homebrew sets do
+// ("bombjack_dualbit"). MiSTer reports that set name as the core name, so
+// those games used to count as core time only. Such a name is taken as an
+// arcade game only when exactly one installed .mra carries it, and is
+// named after that file. Only a core name the name map does not know, whose
+// loaded core file is named differently from it, as for every .mra, is
+// looked up in the arcade index. A name no .mra carries is not looked up
+// again until the name map reloads or a later index finds it. While the
+// first index is being built the core is tracked on its own, and the index
+// install takes it up.
+func (tr *Tracker) lookupCore(name, game string) NameMapping {
+	if mapping := tr.LookupName(name, game); mapping != (NameMapping{}) {
+		return mapping
+	}
+	if name == "" || tr.unknownSets[name] || tr.knownCore(name) {
+		return NameMapping{}
+	}
+	rbf := tr.readRBFName()
+	if rbf == "" || strings.EqualFold(rbf, name) {
+		return NameMapping{}
+	}
+	path, known := tr.lookupArcadeSetPath(name)
+	switch {
+	case !known:
+		tr.pendingSet = name
+		return NameMapping{}
+	case path == "":
+		tr.markUnknownSet(name)
+		return NameMapping{}
+	}
+	return unlistedArcade(name, path)
+}
+
+// unlistedArcade maps a set name the Arcade Database does not list to the
+// arcade game in path, named after the file.
+func unlistedArcade(name, path string) NameMapping {
+	return NameMapping{
+		CoreName:   name,
+		System:     ArcadeSystem,
+		Name:       ArcadeSystem,
+		ArcadeName: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
+	}
+}
+
+func (tr *Tracker) markUnknownSet(name string) {
+	if tr.unknownSets == nil {
+		tr.unknownSets = make(map[string]bool)
+	}
+	tr.unknownSets[name] = true
+}
+
+// coreStillRunning reports whether CORENAME still names the core; true
+// when it cannot be read, so tracking never stops on a read error.
+func (tr *Tracker) coreStillRunning(name string) bool {
+	now := ""
+	if tr.currentCore != nil {
+		now = tr.currentCore()
+	} else if data, err := os.ReadFile(config.CoreNameFile); err == nil {
+		now = strings.TrimSpace(string(data))
+	}
+	return now == "" || now == name
+}
+
+// knownCore reports whether the name map has the name at all. Such a core
+// can miss in LookupName (no game yet, or a game for another system), and
+// is never an unlisted arcade set: TGFX16, RA_NES and other launchers run
+// under a name that differs from their RBF.
+func (tr *Tracker) knownCore(name string) bool {
+	for i := range tr.NameMap {
+		if strings.EqualFold(tr.NameMap[i].CoreName, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// readRBFName returns the name in /tmp/RBFNAME, or "" when it cannot be
+// read: a missing file only means no arcade lookup.
+func (tr *Tracker) readRBFName() string {
+	if tr.rbfName != nil {
+		return tr.rbfName()
+	}
+	data, err := os.ReadFile(config.RBFNameFile)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+// publishActiveGame writes ACTIVEGAME for the other trackers and scripts.
+func (tr *Tracker) publishActiveGame(value string) error {
+	if tr.setActiveGame != nil {
+		return tr.setActiveGame(value)
+	}
+	if err := mister.SetActiveGame(value); err != nil {
+		return fmt.Errorf("write active game: %w", err)
+	}
+	return nil
 }
 
 func (tr *Tracker) execHook(bin, arg string) {
@@ -473,12 +584,8 @@ func (tr *Tracker) LoadCore() {
 
 // processCore runs under the tracker lock; separated from device reads for tests.
 func (tr *Tracker) processCore(coreName string) {
-	publish := tr.setActiveGame
-	if publish == nil {
-		publish = mister.SetActiveGame
-	}
 	if coreName == config.MenuCore {
-		err := publish("")
+		err := tr.publishActiveGame("")
 		if err != nil {
 			tr.Logger.Error("error setting active game: %s", err)
 		}
@@ -494,14 +601,20 @@ func (tr *Tracker) processCore(coreName string) {
 			return
 		}
 
-		result := tr.LookupName(coreName, tr.ActiveGamePath)
+		result := tr.lookupCore(coreName, tr.ActiveGamePath)
+		// MiSTer can have moved on to another core by the time this change
+		// is handled: this one is then over, and publishing its set name
+		// would overwrite the next game's ACTIVEGAME.
+		if result.System == ArcadeSystem && !tr.coreStillRunning(coreName) {
+			result = NameMapping{}
+		}
 		if result != (NameMapping{}) {
 			tr.ActiveSystem = result.System
 			tr.ActiveSystemName = result.Name
 
 			switch result.System {
 			case ArcadeSystem:
-				if err := publish(coreName); err != nil {
+				if err := tr.publishActiveGame(coreName); err != nil {
 					tr.Logger.Error("error setting active arcade game: %s", err)
 				}
 			case "":
@@ -530,9 +643,20 @@ func (tr *Tracker) processCore(coreName string) {
 
 		tr.addEvent(EventActionCoreStart, coreName)
 		if result.System == ArcadeSystem {
-			tr.startArcade(result)
+			tr.beginArcade(result)
 		}
 	}
+}
+
+// beginArcade starts the arcade game of a core already started, for a
+// core change and for the index install taking up a set late. Only the
+// core change writes the set name to ACTIVEGAME, before its core-start
+// event as it always has: by the time of a late take-up, ACTIVEGAME may
+// name the next game.
+func (tr *Tracker) beginArcade(mapping NameMapping) {
+	tr.ActiveSystem = mapping.System
+	tr.ActiveSystemName = mapping.Name
+	tr.startArcade(mapping)
 }
 
 func (tr *Tracker) stopGame() bool {
@@ -579,11 +703,18 @@ func (tr *Tracker) processGame(activeGame string) {
 	}
 
 	if tr.ActiveSystem == ArcadeSystem {
-		mapping := tr.LookupName(tr.ActiveCore, activeGame)
+		mapping := tr.lookupCore(tr.ActiveCore, activeGame)
 		if mapping.System == ArcadeSystem {
 			tr.startArcade(mapping)
 			return
 		}
+	}
+
+	// A bare name is an arcade set name the trackers publish, never a
+	// file: one that lands after its core was replaced must not become
+	// "/media/fat/<setname>" under the next core.
+	if !strings.Contains(activeGame, "/") {
+		return
 	}
 
 	path := mister.ResolvePath(activeGame)

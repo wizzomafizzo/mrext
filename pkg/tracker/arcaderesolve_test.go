@@ -26,6 +26,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -118,6 +119,8 @@ func arcadeTracker(root string, db *arcadeDB) *Tracker {
 		GameTimes: make(map[string]GameTime), CoreTimes: make(map[string]CoreTime),
 		arcadeRoots:   func() []string { return []string{root} },
 		setActiveGame: func(string) error { return nil },
+		rbfName:       func() string { return "" },
+		currentCore:   func() string { return "" },
 	}
 	queueBuilds(tr)
 	return tr
@@ -411,5 +414,278 @@ func TestReadMRASetNameReadsOnlyTheHead(t *testing.T) {
 	}
 	if got := readMRASetName(path); got != "" {
 		t.Fatalf("set name past the head limit = %q", got)
+	}
+}
+
+func TestUnlistedArcadeSetIsTrackedFromItsMRA(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "Bomb Jack Dualbit.mra")
+	writeArcade(t, path, "bombjack_dualbit")
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	tr.NameMap = nil
+	tr.rbfName = func() string { return "BombJack" }
+	var signal string
+	eventsAtSignal := -1
+	tr.setActiveGame = func(value string) error {
+		signal, eventsAtSignal = value, len(db.events)
+		return nil
+	}
+	readyIndex(t, tr)
+	tr.processCore("bombjack_dualbit")
+	if tr.ActiveSystem != ArcadeSystem || tr.ActiveGame != "bombjack_dualbit" ||
+		tr.ActiveGamePath != path || tr.ActiveGameName != "Bomb Jack Dualbit" {
+		t.Fatalf("unlisted arcade set not tracked: system=%q game=%q path=%q name=%q",
+			tr.ActiveSystem, tr.ActiveGame, tr.ActiveGamePath, tr.ActiveGameName)
+	}
+	if len(db.events) != 2 || db.events[1].Action != EventActionGameStart || db.events[1].TargetPath != path {
+		t.Fatalf("expected core and game start, got %+v", db.events)
+	}
+	if signal != "bombjack_dualbit" || eventsAtSignal != 0 {
+		t.Fatalf("ACTIVEGAME = %q after %d events, want the set name before the core start", signal, eventsAtSignal)
+	}
+	tr.processGame("bombjack_dualbit")
+	if len(db.events) != 2 {
+		t.Fatal("ACTIVEGAME notification duplicated the unlisted arcade start")
+	}
+}
+
+func TestUnlistedCoreWithoutMRAIsScannedOnce(t *testing.T) {
+	root := t.TempDir()
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	tr.NameMap = nil
+	tr.rbfName = func() string { return "SomeCore" }
+	scans := 0
+	tr.arcadeRoots = func() []string {
+		scans++
+		return []string{root}
+	}
+	tr.processCore("homebrew_thing")
+	drainIndex(t, tr)
+	tr.processCore(config.MenuCore)
+	tr.processCore("homebrew_thing")
+	drainIndex(t, tr)
+	if scans != 1 {
+		t.Fatalf("arcade folders scanned %d times for one unknown core", scans)
+	}
+	if tr.ActiveGame != "" || !tr.unknownSets["homebrew_thing"] {
+		t.Fatalf("unknown core: game=%q unknown=%v", tr.ActiveGame, tr.unknownSets)
+	}
+
+	// An index that later finds the set forgets it was unknown.
+	path := filepath.Join(root, "Homebrew Thing.mra")
+	writeArcade(t, path, "homebrew_thing")
+	tr.processCore(config.MenuCore)
+	tr.mu.Lock()
+	tr.requestArcadeIndex()
+	tr.mu.Unlock()
+	drainIndex(t, tr)
+	if tr.unknownSets["homebrew_thing"] {
+		t.Fatal("a set the new index found is still unknown")
+	}
+	tr.processCore("homebrew_thing")
+	if tr.ActiveSystem != ArcadeSystem || tr.ActiveGamePath != path {
+		t.Fatalf("set found later not tracked: system=%q path=%q", tr.ActiveSystem, tr.ActiveGamePath)
+	}
+}
+
+func TestUnlistedCoreNamedLikeItsFileIsNotScanned(t *testing.T) {
+	db := &arcadeDB{}
+	tr := arcadeTracker(t.TempDir(), db)
+	tr.NameMap = nil
+	tr.rbfName = func() string { return "MyCore" }
+	tr.processCore("MyCore")
+	if tr.ActiveGame != "" || len(db.events) != 1 {
+		t.Fatalf("unexpected state: %+v", db.events)
+	}
+	if n := pendingBuilds(t, tr); n != 0 {
+		t.Fatalf("a core running from its own file asked for %d arcade index builds", n)
+	}
+}
+
+func TestKnownCoreWithoutGameIsNotScanned(t *testing.T) {
+	db := &arcadeDB{}
+	tr := arcadeTracker(t.TempDir(), db)
+	tr.NameMap = []NameMapping{{CoreName: "RA_NES", System: "NES", Name: "NES"}}
+	tr.rbfName = func() string { return "NES" }
+	tr.processCore("RA_NES")
+	if tr.ActiveGame != "" {
+		t.Fatalf("unexpected game: %q", tr.ActiveGame)
+	}
+	if n := pendingBuilds(t, tr); n != 0 {
+		t.Fatalf("a core the name map knows asked for %d arcade index builds", n)
+	}
+}
+
+func TestArcadeCoreReplacedMeanwhileIsNotPublished(t *testing.T) {
+	db := &arcadeDB{}
+	tr := arcadeTracker(t.TempDir(), db)
+	published := false
+	tr.setActiveGame = func(value string) error {
+		if value != "" {
+			published = true
+		}
+		return nil
+	}
+	tr.currentCore = func() string { return "MegaDrive" }
+	tr.processCore("pooyan")
+	if published || tr.ActiveGame != "" {
+		t.Fatalf("a core already replaced published its set: game=%q", tr.ActiveGame)
+	}
+}
+
+func TestUnlistedSetWhileIndexPending(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "Bomb Jack Dualbit.mra")
+	writeArcade(t, path, "bombjack_dualbit")
+	pending := func() (*Tracker, *arcadeDB, *[]string) {
+		db := &arcadeDB{}
+		tr := arcadeTracker(root, db)
+		tr.NameMap = nil
+		tr.rbfName = func() string { return "BombJack" }
+		var published []string
+		tr.setActiveGame = func(value string) error { published = append(published, value); return nil }
+		tr.processCore("bombjack_dualbit")
+		if tr.ActiveSystem != "" || tr.ActiveGame != "" || len(db.events) != 1 {
+			t.Fatalf("pending set not tracked as its core only: system=%q game=%q events=%+v",
+				tr.ActiveSystem, tr.ActiveGame, db.events)
+		}
+		if tr.unknownSets["bombjack_dualbit"] {
+			t.Fatal("a set was taken for unknown before the index was ready")
+		}
+		return tr, db, &published
+	}
+
+	tr, db, published := pending()
+	drainIndex(t, tr)
+	if tr.ActiveSystem != ArcadeSystem || tr.ActiveGame != "bombjack_dualbit" ||
+		tr.ActiveGamePath != path || tr.ActiveGameName != "Bomb Jack Dualbit" {
+		t.Fatalf("pending set not taken up: system=%q game=%q path=%q name=%q",
+			tr.ActiveSystem, tr.ActiveGame, tr.ActiveGamePath, tr.ActiveGameName)
+	}
+	if len(db.events) != 2 || db.events[1].Action != EventActionGameStart || db.events[1].TargetPath != path ||
+		db.events[1].ActiveCore.System != ArcadeSystem {
+		t.Fatalf("expected one late game start, got %+v", db.events)
+	}
+	if len(*published) != 0 {
+		t.Fatalf("a late take-up wrote ACTIVEGAME: %q", *published)
+	}
+
+	// MiSTer moved on before the index was ready.
+	tr, db, published = pending()
+	tr.currentCore = func() string { return "MegaDrive" }
+	drainIndex(t, tr)
+	if tr.ActiveSystem != "" || tr.ActiveGame != "" || len(db.events) != 1 || len(*published) != 0 {
+		t.Fatalf("a replaced core was taken up: system=%q game=%q events=%d published=%q",
+			tr.ActiveSystem, tr.ActiveGame, len(db.events), *published)
+	}
+
+	// A game already tracked for the core, as from MiSTer's recent files.
+	tr, db, _ = pending()
+	tr.processGame(path)
+	game, events := tr.ActiveGame, len(db.events)
+	if game == "" {
+		t.Fatal("fixture: the recorded .mra was not tracked")
+	}
+	drainIndex(t, tr)
+	if tr.ActiveGame != game || len(db.events) != events || tr.pendingSet != "" {
+		t.Fatalf("take-up replaced a tracked game: game=%q, was %q; events=%d, were %d",
+			tr.ActiveGame, game, len(db.events), events)
+	}
+
+	// The set name in ACTIVEGAME, stale or written by another tracker,
+	// is not a file: the install still takes the set up.
+	tr, _, _ = pending()
+	tr.processGame("bombjack_dualbit")
+	if tr.ActiveGame != "" {
+		t.Fatalf("a bare set name became a game: %q", tr.ActiveGame)
+	}
+	drainIndex(t, tr)
+	if tr.ActiveGame != "bombjack_dualbit" || tr.ActiveGamePath != path {
+		t.Fatalf("pending set not taken up after its name: game=%q path=%q", tr.ActiveGame, tr.ActiveGamePath)
+	}
+}
+
+func TestSetNameIsNotTakenForAConsoleGame(t *testing.T) {
+	root := t.TempDir()
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	tr.Config.Systems.GamesFolder = []string{root}
+	tr.NameMap = []NameMapping{{CoreName: "MegaDrive", System: "Genesis", Name: "Genesis"}}
+	tr.processCore("MegaDrive")
+	tr.processGame("bombjack_dualbit")
+	if tr.ActiveGame != "" || tr.ActiveGamePath != "" {
+		t.Fatalf("an arcade set name became a game: %q %q", tr.ActiveGame, tr.ActiveGamePath)
+	}
+}
+
+// With recents enabled, MiSTer's menu records a launched .mra in
+// cores_recent.cfg and the tracker publishes that path to ACTIVEGAME, so
+// the game can arrive before or after its core change. Either way an
+// unlisted set the index resolves is tracked under its set name.
+func TestUnlistedSetWithItsRecordedMRA(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "Bomb Jack Dualbit.mra")
+	writeArcade(t, path, "bombjack_dualbit")
+	ready := func() (*Tracker, *arcadeDB, *[]string) {
+		db := &arcadeDB{}
+		tr := arcadeTracker(root, db)
+		tr.NameMap = nil
+		tr.rbfName = func() string { return "BombJack" }
+		var published []string
+		tr.setActiveGame = func(value string) error { published = append(published, value); return nil }
+		readyIndex(t, tr)
+		return tr, db, &published
+	}
+	actions := func(events []EventAction) []string {
+		got := make([]string, 0, len(events))
+		for i := range events {
+			got = append(got, fmt.Sprintf("%d:%s", events[i].Action, events[i].Target))
+		}
+		return got
+	}
+
+	// The recorded .mra first, under the menu.
+	tr, db, published := ready()
+	tr.processGame(path)
+	recorded := tr.ActiveGame
+	if recorded == "" || recorded == "bombjack_dualbit" {
+		t.Fatalf("fixture: the recorded .mra was tracked as %q", recorded)
+	}
+	tr.processCore("bombjack_dualbit")
+	tr.processGame("bombjack_dualbit") // the tracker's own ACTIVEGAME echo
+	want := []string{
+		fmt.Sprintf("%d:%s", EventActionGameStart, recorded),
+		fmt.Sprintf("%d:%s", EventActionCoreStart, "bombjack_dualbit"),
+		fmt.Sprintf("%d:%s", EventActionGameStop, recorded),
+		fmt.Sprintf("%d:%s", EventActionGameStart, "bombjack_dualbit"),
+	}
+	if got := actions(db.events); !reflect.DeepEqual(got, want) {
+		t.Fatalf("events = %q, want %q", got, want)
+	}
+	if !reflect.DeepEqual(*published, []string{"bombjack_dualbit"}) {
+		t.Fatalf("ACTIVEGAME writes = %q, want the set name", *published)
+	}
+	if tr.ActiveGame != "bombjack_dualbit" || tr.ActiveGamePath != path || tr.ActiveGameName != "Bomb Jack Dualbit" {
+		t.Fatalf("game=%q path=%q name=%q", tr.ActiveGame, tr.ActiveGamePath, tr.ActiveGameName)
+	}
+
+	// The core change first.
+	tr, db, published = ready()
+	tr.processCore("bombjack_dualbit")
+	tr.processGame(path)
+	want = []string{
+		fmt.Sprintf("%d:%s", EventActionCoreStart, "bombjack_dualbit"),
+		fmt.Sprintf("%d:%s", EventActionGameStart, "bombjack_dualbit"),
+	}
+	if got := actions(db.events); !reflect.DeepEqual(got, want) {
+		t.Fatalf("events = %q, want %q", got, want)
+	}
+	if !reflect.DeepEqual(*published, []string{"bombjack_dualbit"}) {
+		t.Fatalf("ACTIVEGAME writes = %q, want the set name", *published)
+	}
+	if tr.ActiveGame != "bombjack_dualbit" || tr.ActiveGamePath != path {
+		t.Fatalf("game=%q path=%q", tr.ActiveGame, tr.ActiveGamePath)
 	}
 }
