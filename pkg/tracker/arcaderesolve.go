@@ -21,6 +21,7 @@ package tracker
 
 import (
 	"encoding/xml"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,26 +29,92 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/games"
 )
 
+// mraHeadLimit bounds how much of an .mra is read for its set name. The
+// <setname> sits near the top, ahead of the <rom> parts, which can run to
+// megabytes; a set name that is not within this much counts as absent.
+const mraHeadLimit = 64 << 10
+
+// openMRA opens an .mra for reading; replaced in tests.
+var openMRA = func(path string) (io.ReadCloser, error) {
+	// #nosec G304 -- path comes from installed arcade roots or the resolver cache.
+	return os.Open(path)
+}
+
 // Copyright (c) 2026 The Zaparoo Project Contributors.
 // Adapted from Zaparoo Core's pkg/platforms/mister/tracker/arcaderesolve.go
 // (ResolveArcadeSetName) and pkg/platforms/mister/mgls/mgls.go (MRA/ReadMRA).
 // Keep this boundary small so a future dependency-light Core library can replace
 // it. mrext discovers candidates on disk instead of using Core's MediaDB, and
 // rejects unreadable candidates rather than using Core's single-candidate guess.
-type arcadeMRA struct {
-	XMLName xml.Name `xml:"misterromdescription"`
-	SetName string   `xml:"setname"`
+//
+// readMRASetName returns the <setname> of an .mra's <misterromdescription>
+// root, or "" when the file cannot be read, is not an MRA or has none. It
+// stops at the set name rather than decoding the whole file, and reads no
+// further than mraHeadLimit, so a truncated head means no set name rather
+// than a guess.
+func readMRASetName(path string) string {
+	file, err := openMRA(path)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = file.Close() }()
+	dec := xml.NewDecoder(io.LimitReader(file, mraHeadLimit))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return ""
+		}
+		if start, ok := tok.(xml.StartElement); ok {
+			if start.Name.Local != "misterromdescription" {
+				return ""
+			}
+			break
+		}
+	}
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return ""
+		}
+		switch elem := tok.(type) {
+		case xml.StartElement:
+			if elem.Name.Local == "setname" {
+				return readElementText(dec)
+			}
+			if err := dec.Skip(); err != nil {
+				return ""
+			}
+		case xml.EndElement:
+			// The root closed without a set name.
+			return ""
+		}
+	}
+}
+
+// readElementText collects the character data of the element just opened,
+// which can arrive in several pieces, up to its end tag.
+func readElementText(dec *xml.Decoder) string {
+	var text strings.Builder
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return ""
+		}
+		switch elem := tok.(type) {
+		case xml.CharData:
+			_, _ = text.Write(elem)
+		case xml.StartElement:
+			if err := dec.Skip(); err != nil {
+				return ""
+			}
+		case xml.EndElement:
+			return strings.TrimSpace(text.String())
+		}
+	}
 }
 
 func mraMatches(path, setName string) bool {
-	// #nosec G304 -- path comes from installed arcade roots or the resolver cache.
-	file, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer func() { _ = file.Close() }()
-	var mra arcadeMRA
-	return xml.NewDecoder(file).Decode(&mra) == nil && strings.EqualFold(strings.TrimSpace(mra.SetName), setName)
+	return setName != "" && strings.EqualFold(readMRASetName(path), setName)
 }
 
 func resolveArcadeSetName(roots []string, setName string) (string, bool) {

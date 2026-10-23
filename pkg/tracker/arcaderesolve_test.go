@@ -22,8 +22,11 @@ package tracker
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -235,5 +238,90 @@ func TestEmptyCoreNameMatchesNothing(t *testing.T) {
 	}
 	if got := tr.LookupName("pooyan", ""); got.ArcadeName != "Pooyan" {
 		t.Fatalf("real lookup regressed: %+v", got)
+	}
+}
+
+func TestReadMRASetName(t *testing.T) {
+	root := t.TempDir()
+	cases := []struct {
+		name, data, want string
+	}{
+		{
+			"declaration comment and name first",
+			`<?xml version="1.0" encoding="UTF-8"?><!-- generated --><misterromdescription>` +
+				`<name>Pooyan</name><setname>pooyan</setname></misterromdescription>`, "pooyan",
+		},
+		{
+			"uppercase with whitespace",
+			"<misterromdescription>\n\t<setname>\n  POOYAN  \n</setname></misterromdescription>", "POOYAN",
+		},
+		{"split by an entity", "<misterromdescription><setname>pooy&#97;n</setname></misterromdescription>", "pooyan"},
+		{"wrong root", "<bad>", ""},
+		{"wrong root with setname", "<other><setname>pooyan</setname></other>", ""},
+		{"nested setname", "<misterromdescription><rom><setname>pooyan</setname></rom></misterromdescription>", ""},
+		{"no setname", "<misterromdescription><name>Pooyan</name></misterromdescription>", ""},
+		{"empty file", "", ""},
+		{
+			"malformed tail after setname",
+			"<misterromdescription><setname>pooyan</setname><rom><part></rom>", "pooyan",
+		},
+	}
+	for i, tc := range cases {
+		path := filepath.Join(root, fmt.Sprintf("%d.mra", i))
+		if err := os.WriteFile(path, []byte(tc.data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if got := readMRASetName(path); got != tc.want {
+			t.Errorf("%s: set name = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	if got := readMRASetName(filepath.Join(root, "missing.mra")); got != "" {
+		t.Errorf("missing file: set name = %q", got)
+	}
+}
+
+type countingReader struct {
+	io.ReadCloser
+	read *int
+}
+
+func (c countingReader) Read(p []byte) (int, error) {
+	n, err := c.ReadCloser.Read(p)
+	*c.read += n
+	return n, err //nolint:wrapcheck // A reader passes io.EOF through as is.
+}
+
+func TestReadMRASetNameReadsOnlyTheHead(t *testing.T) {
+	root := t.TempDir()
+	big := "<misterromdescription><setname>pooyan</setname><rom>" +
+		strings.Repeat("<part>00 01 02 03 04 05 06 07</part>\n", 5<<20/37) + "</rom></misterromdescription>"
+	path := filepath.Join(root, "big.mra")
+	if err := os.WriteFile(path, []byte(big), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	read := 0
+	original := openMRA
+	openMRA = func(path string) (io.ReadCloser, error) {
+		file, err := original(path)
+		if err != nil {
+			return nil, err
+		}
+		return countingReader{ReadCloser: file, read: &read}, nil
+	}
+	t.Cleanup(func() { openMRA = original })
+	if got := readMRASetName(path); got != "pooyan" {
+		t.Fatalf("set name = %q", got)
+	}
+	if read > mraHeadLimit+4<<10 {
+		t.Fatalf("read %d bytes of a %d byte MRA for its set name", read, len(big))
+	}
+
+	late := "<misterromdescription><name>" + strings.Repeat("x", mraHeadLimit) +
+		"</name><setname>pooyan</setname></misterromdescription>"
+	if err := os.WriteFile(path, []byte(late), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := readMRASetName(path); got != "" {
+		t.Fatalf("set name past the head limit = %q", got)
 	}
 }
