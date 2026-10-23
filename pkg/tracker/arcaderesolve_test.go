@@ -30,6 +30,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
@@ -121,6 +122,7 @@ func arcadeTracker(root string, db *arcadeDB) *Tracker {
 		setActiveGame: func(string) error { return nil },
 		rbfName:       func() string { return "" },
 		currentCore:   func() string { return "" },
+		recentGame:    func(time.Time) (string, bool) { return "", false },
 	}
 	queueBuilds(tr)
 	return tr
@@ -687,5 +689,190 @@ func TestUnlistedSetWithItsRecordedMRA(t *testing.T) {
 	}
 	if tr.ActiveGame != "bombjack_dualbit" || tr.ActiveGamePath != path {
 		t.Fatalf("game=%q path=%q", tr.ActiveGame, tr.ActiveGamePath)
+	}
+}
+
+func TestGameWrittenBeforeItsCoreIsTracked(t *testing.T) {
+	root := t.TempDir()
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	tr.Config.Systems.GamesFolder = []string{root}
+	tr.NameMap = append(tr.NameMap, NameMapping{CoreName: "NES", System: "NES", Name: "NES"})
+	path := filepath.Join(root, "games", "NES", "game.nes")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeArcade(t, filepath.Join(root, "Pooyan.mra"), "pooyan")
+	readyIndex(t, tr)
+	tr.processCore("pooyan")
+	before := len(db.events)
+	// The new game lands while the arcade core is still the active one.
+	tr.processGame(path)
+	if tr.ActiveGamePath == path {
+		t.Fatal("fixture: the arcade core already took the console game")
+	}
+	if len(db.events) != before {
+		t.Fatalf("the next core's game restarted the arcade game: %+v", db.events[before:])
+	}
+	tr.recentGame = func(time.Time) (string, bool) { return path, true }
+	tr.processCore("NES")
+	if tr.ActiveSystem != "NES" || tr.ActiveGamePath != path {
+		t.Fatalf("game written before its core was lost: system=%q path=%q", tr.ActiveSystem, tr.ActiveGamePath)
+	}
+	starts := 0
+	for _, event := range db.events[before:] {
+		if event.Action == EventActionCoreStart || event.Action == EventActionGameStart {
+			starts++
+		}
+	}
+	if starts != 2 {
+		t.Fatalf("want one core start and one game start, got %+v", db.events[before:])
+	}
+}
+
+func TestStaleOrForeignGameIsNotCaughtUp(t *testing.T) {
+	root := t.TempDir()
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	tr.Config.Systems.GamesFolder = []string{root}
+	tr.NameMap = []NameMapping{
+		{CoreName: "NES", System: "NES", Name: "NES"},
+		{CoreName: "SNES", System: "SNES", Name: "SNES"},
+	}
+	path := filepath.Join(root, "games", "SNES", "game.sfc")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tr.processCore("SNES")
+	tr.processCore(config.MenuCore)
+	tr.recentGame = func(time.Time) (string, bool) { return path, true }
+	tr.processCore("NES")
+	if tr.ActiveGame != "" {
+		t.Fatalf("another system's game was taken for the NES core: %q", tr.ActiveGame)
+	}
+	tr.processCore(config.MenuCore)
+	tr.recentGame = func(time.Time) (string, bool) { return "", false }
+	tr.processCore("SNES")
+	if tr.ActiveGame != "" {
+		t.Fatalf("an old ACTIVEGAME was taken: %q", tr.ActiveGame)
+	}
+}
+
+// The launches that left Remote reporting Bomb Jack under the MegaDrive
+// core: Timber, then Bomb Jack Dualbit, then Rocket Knight Adventures from
+// Remote, whose ACTIVEGAME lands before its CORENAME.
+func TestIncidentReplay(t *testing.T) {
+	root := t.TempDir()
+	writeArcade(t, filepath.Join(root, "_Arcade", "Timber.mra"), "timber")
+	writeArcade(t, filepath.Join(root, "_Arcade", "Bomb Jack Dualbit.mra"), "bombjack_dualbit")
+	rocket := filepath.Join(root, "games", "Genesis", "Rocket Knight Adventures.md")
+	if err := os.MkdirAll(filepath.Dir(rocket), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rocket, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	db := &arcadeDB{}
+	tr := arcadeTracker(filepath.Join(root, "_Arcade"), db)
+	tr.Config.Systems.GamesFolder = []string{root}
+	tr.NameMap = []NameMapping{
+		{CoreName: "timber", System: ArcadeSystem, Name: ArcadeSystem, ArcadeName: "Timber"},
+		{CoreName: "MegaDrive", System: "Genesis", Name: "Genesis"},
+	}
+	var coreName, rbf string
+	var published []string
+	tr.currentCore = func() string { return coreName }
+	tr.rbfName = func() string { return rbf }
+	tr.setActiveGame = func(value string) error { published = append(published, value); return nil }
+	readyIndex(t, tr)
+	update := func(change func()) {
+		tr.mu.Lock()
+		defer tr.mu.Unlock()
+		defer tr.updateSessions()
+		change()
+	}
+
+	coreName, rbf = "timber", "Timber"
+	update(func() { tr.processCore("timber") })
+	coreName, rbf = "bombjack_dualbit", "BombJack"
+	update(func() { tr.processCore("bombjack_dualbit") })
+	if tr.ActiveGame != "bombjack_dualbit" || tr.ActiveSystem != ArcadeSystem {
+		t.Fatalf("Bomb Jack Dualbit not tracked: game=%q system=%q", tr.ActiveGame, tr.ActiveSystem)
+	}
+	// Remote writes ACTIVEGAME before MiSTer loads the MegaDrive core.
+	update(func() { tr.processGame(rocket) })
+	if tr.ActiveGame != "bombjack_dualbit" {
+		t.Fatalf("the arcade core took the console game: %q", tr.ActiveGame)
+	}
+	tr.recentGame = func(time.Time) (string, bool) { return rocket, true }
+	coreName, rbf = "MegaDrive", "MegaDrive"
+	publishedBefore := len(published)
+	update(func() { tr.processCore("MegaDrive") })
+	// Bomb Jack's own ACTIVEGAME echo, handled after the core changed.
+	update(func() { tr.processGame("bombjack_dualbit") })
+
+	want := Playing{
+		Core: "MegaDrive", System: "Genesis", SystemName: "Genesis",
+		Game: "Genesis/Rocket Knight Adventures.md", GameName: "Rocket Knight Adventures", GamePath: rocket,
+	}
+	got := Playing{
+		Core: tr.ActiveCore, System: tr.ActiveSystem, SystemName: tr.ActiveSystemName,
+		Game: tr.ActiveGame, GameName: tr.ActiveGameName, GamePath: tr.ActiveGamePath,
+	}
+	if got != want {
+		t.Fatalf("final state = %+v, want %+v", got, want)
+	}
+	if now := tr.Playing(); now != want {
+		t.Fatalf("playing = %+v, want %+v", now, want)
+	}
+	for i := range db.events {
+		if db.events[i].Target == "/bombjack_dualbit" || db.events[i].ActiveGame.Path == "/bombjack_dualbit" {
+			t.Fatalf("the set name became a game: %+v", db.events[i])
+		}
+	}
+	if late := published[publishedBefore:]; len(late) != 0 {
+		t.Fatalf("ACTIVEGAME written after the MegaDrive core started: %q", late)
+	}
+}
+
+func TestEmptyReadIsReadAgain(t *testing.T) {
+	reads := []string{"", "MegaDrive"}
+	got, err := readSettled(func() (string, error) {
+		value := reads[0]
+		reads = reads[1:]
+		return value, nil
+	})
+	if err != nil || got != "MegaDrive" {
+		t.Fatalf("got %q, %v; want the value written after the truncate", got, err)
+	}
+	calls := 0
+	got, err = readSettled(func() (string, error) {
+		calls++
+		return "", nil
+	})
+	if err != nil || got != "" || calls != 2 {
+		t.Fatalf("an empty file: got %q after %d reads", got, calls)
+	}
+}
+
+func TestConsoleGameDoesNotRestartArcadeGame(t *testing.T) {
+	root := t.TempDir()
+	writeArcade(t, filepath.Join(root, "Pooyan.mra"), "pooyan")
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
+	readyIndex(t, tr)
+	tr.processCore("pooyan")
+	// The truncate before the next launch's write, then the write itself.
+	tr.processGame("")
+	before := len(db.events)
+	tr.processGame("/media/fat/games/MegaDrive/game.md")
+	if len(db.events) != before || tr.ActiveGame != "" {
+		t.Fatalf("a console game under the arcade core restarted it: %+v", db.events[before:])
 	}
 }
