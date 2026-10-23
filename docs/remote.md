@@ -93,7 +93,7 @@ When Arcade Database has no matching set, Remote can instead use the `.mra` path
 
 With [PlayLog](playlog.md) running, Remote serves its play history: time played per game and system, how many times each game was started, recent sessions and a summary for stats screens. Remote only reads PlayLog's database. Without PlayLog, clients are told what is missing through `GET /api/playlog/status`. See [Play log](remote-api.md#play-log) in the API reference.
 
-`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog.
+`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog. Its core, system and game always come from the same moment, and the request never waits for the tracker. The tracker publishes that snapshot before each websocket `coreRunning` or `gameRunning` message goes out, matching the core and game of that event.
 
 ## Startup diagnostics
 

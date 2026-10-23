@@ -106,6 +106,16 @@ type RunningGame struct {
 	Name string
 }
 
+// Playing is the running core and game, as one consistent snapshot.
+type Playing struct {
+	Core       string
+	System     string
+	SystemName string
+	Game       string
+	GameName   string
+	GamePath   string
+}
+
 type trackerLogger interface {
 	Info(string, ...any)
 	Warn(string, ...any)
@@ -130,7 +140,9 @@ type Tracker struct {
 	indexDone      chan struct{}
 	lastBuildStart time.Time
 	// The running game for ActiveSession, published by the ticker.
-	runningGame      atomic.Pointer[RunningGame]
+	runningGame atomic.Pointer[RunningGame]
+	// What Playing returns, published with every event and tick.
+	playing          atomic.Pointer[Playing]
 	ActiveGamePath   string
 	ActiveSystemName string
 	ActiveGame       string
@@ -350,6 +362,9 @@ func (tr *Tracker) addEvent(action int, target string) {
 	if action != EventActionMenuNavigation {
 		tr.Events = append(tr.Events, ev)
 	}
+	// Event consumers, such as Remote's websocket clients, may ask what is
+	// playing as soon as they hear of it.
+	tr.publishPlaying()
 	err := tr.Db.AddEvent(&ev)
 	if err != nil {
 		tr.Logger.Error("error saving event: %s", err)
@@ -442,6 +457,7 @@ func (tr *Tracker) unlockTimed(what string, start time.Time) {
 func (tr *Tracker) LoadCore() {
 	tr.mu.Lock()
 	defer tr.unlockTimed("core change", time.Now())
+	defer tr.updateSessions()
 
 	data, err := os.ReadFile(config.CoreNameFile)
 	coreName := string(data)
@@ -543,6 +559,7 @@ func (tr *Tracker) stopGame() bool {
 func (tr *Tracker) LoadGame() {
 	tr.mu.Lock()
 	defer tr.unlockTimed("game change", time.Now())
+	defer tr.updateSessions()
 
 	activeGame, err := mister.GetActiveGame()
 	if err != nil {
@@ -660,7 +677,8 @@ func (tr *Tracker) SessionTimes() (core, game int) {
 	return int(tr.coreSession.Load()), int(tr.gameSession.Load())
 }
 
-// updateSessions runs under the tracker lock. It measures against the
+// updateSessions runs under the tracker lock, and also publishes the
+// running game for ActiveSession and Playing. It measures against the
 // running total recorded in the start event, so time a game built up in
 // earlier sessions is not counted again.
 func (tr *Tracker) updateSessions() {
@@ -669,6 +687,29 @@ func (tr *Tracker) updateSessions() {
 	tr.coreSession.Store(int64(core))
 	tr.gameSession.Store(int64(game))
 	tr.runningGame.Store(&RunningGame{ID: tr.ActiveGame, Path: tr.ActiveGamePath, Name: tr.ActiveGameName})
+	tr.publishPlaying()
+}
+
+// publishPlaying runs under the tracker lock.
+func (tr *Tracker) publishPlaying() {
+	tr.playing.Store(&Playing{
+		Core:       tr.ActiveCore,
+		System:     tr.ActiveSystem,
+		SystemName: tr.ActiveSystemName,
+		Game:       tr.ActiveGame,
+		GameName:   tr.ActiveGameName,
+		GamePath:   tr.ActiveGamePath,
+	})
+}
+
+// Playing returns the running core and game as of the tracker's last
+// event or tick, all from the same moment. Like SessionTimes it never
+// waits on the tracker lock; it is empty before the tracker first runs.
+func (tr *Tracker) Playing() Playing {
+	if playing := tr.playing.Load(); playing != nil {
+		return *playing
+	}
+	return Playing{}
 }
 
 // ActiveSession returns the running game and how long it has run, or an
@@ -701,6 +742,7 @@ func (tr *Tracker) sessionTime(startAction int, target string, total int) int {
 func (tr *Tracker) StopAll() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
+	defer tr.updateSessions()
 	tr.stopCore()
 	tr.stopGame()
 }

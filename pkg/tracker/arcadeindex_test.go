@@ -121,6 +121,11 @@ func TestIndexBuildRunsOffTheLock(t *testing.T) {
 		tr.processGame("pooyan")
 	})
 	within("session read", func() { tr.SessionTimes() })
+	within("playing read", func() {
+		if now := tr.Playing(); now.Core != "pooyan" || now.System != ArcadeSystem || now.Game != "pooyan" {
+			t.Errorf("playing during the build = %+v", now)
+		}
+	})
 
 	close(release)
 	if !tr.WaitArcadeIndex(5 * time.Second) {
@@ -140,6 +145,9 @@ func TestIndexBuildRunsOffTheLock(t *testing.T) {
 	}
 	if game, _ := tr.ActiveSession(); game.Path != path {
 		t.Fatalf("running game path = %q", game.Path)
+	}
+	if now := tr.Playing(); now.GamePath != path || now.Game != "pooyan" {
+		t.Fatalf("playing after the build = %+v", now)
 	}
 }
 

@@ -171,15 +171,24 @@ type PlayingPayload struct {
 	GameSessionTime int `json:"gameSessionTime"`
 }
 
-func HandlePlaying(tr *tracker.Tracker) http.HandlerFunc {
+// playingSource is the part of the tracker HandlePlaying reads.
+type playingSource interface {
+	Playing() tracker.Playing
+	SessionTimes() (core, game int)
+}
+
+// HandlePlaying reports the tracker's snapshot of the running core and
+// game, which is consistent and never waits on the tracker lock.
+func HandlePlaying(tr playingSource) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
+		now := tr.Playing()
 		coreTime, gameTime := tr.SessionTimes()
 		playing := PlayingPayload{
-			Core:            tr.ActiveCore,
-			System:          tr.ActiveSystem,
-			SystemName:      tr.ActiveSystemName,
-			Game:            tr.ActiveGame,
-			GameName:        tr.ActiveGameName,
+			Core:            now.Core,
+			System:          now.System,
+			SystemName:      now.SystemName,
+			Game:            now.Game,
+			GameName:        now.GameName,
 			CoreSessionTime: coreTime,
 			GameSessionTime: gameTime,
 		}
