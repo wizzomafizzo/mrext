@@ -309,6 +309,13 @@ func startService(logger *service.Logger, cfg *config.UserConfig) (func() error,
 		os.Exit(1)
 	}
 
+	// LastPlayed needs an arcade game's .mra path to link it, and the tracker
+	// finds it in an index built in the background. Have the index ready for
+	// an arcade game already running now.
+	if !tr.WaitArcadeIndex(30 * time.Second) {
+		tr.Logger.Warn("arcade index not ready, starting without it")
+	}
+
 	tr.LoadCore()
 	if !mister.ActiveGameEnabled() {
 		if activeErr := mister.SetActiveGame(""); activeErr != nil {

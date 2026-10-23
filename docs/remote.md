@@ -85,13 +85,15 @@ The protocol is implemented in [SAM MCP's activity poller and action handler](ht
 
 Remote's shared tracker supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value for these database matches.
 
+The tracker reads the arcade folders into an index in the background when it starts, so a core change never waits for them. Right after boot, an arcade game's path can therefore be filled in a few seconds after the game starts, without a second game-start event. The recorded path is the real file, not a link to it such as the copies in `_Organized`. Only the head of each MRA is read for its `<setname>`, so a file with a malformed tail after a valid set name now matches. An MRA added or replaced later is picked up the next time its set is looked up and missed, at most once a minute.
+
 When Arcade Database has no matching set, Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
 
 ## Play history
 
 With [PlayLog](playlog.md) running, Remote serves its play history: time played per game and system, how many times each game was started, recent sessions and a summary for stats screens. Remote only reads PlayLog's database. Without PlayLog, clients are told what is missing through `GET /api/playlog/status`. See [Play log](remote-api.md#play-log) in the API reference.
 
-`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog.
+`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog. Its core, system and game always come from the same moment, and the request never waits for the tracker. The tracker publishes that snapshot before each websocket `coreRunning` or `gameRunning` message goes out, matching the core and game of that event.
 
 ## Startup diagnostics
 
