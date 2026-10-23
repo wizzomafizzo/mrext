@@ -85,13 +85,17 @@ The protocol is implemented in [SAM MCP's activity poller and action handler](ht
 
 Remote's shared tracker supplies a resolved `.mra` path for arcade games recognized through Arcade Database. It searches nested installed arcade folders and confirms the active set name against MRA XML, rather than relying on display names. Ambiguous or unreadable matches remain unresolved. Existing event fields are unchanged, and `/tmp/ACTIVEGAME` retains its legacy arcade set-name value for these database matches.
 
-When Arcade Database has no matching set, Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
+The tracker reads the arcade folders into an index in the background when it starts, so a core change never waits for them. Right after boot, an arcade game's path can therefore be filled in a few seconds after the game starts, without a second game-start event. The recorded path is the real file, not a link to it such as the copies in `_Organized`. Only the head of each MRA is read for its `<setname>`, so a file with a malformed tail after a valid set name now matches. An MRA added or replaced later is picked up the next time its set is looked up and missed, at most once a minute.
+
+A set name Arcade Database does not list, as on fan and homebrew MRAs (for example `bombjack_dualbit`), is tracked the same way when exactly one installed MRA carries it: the set name is the game identifier, sent in `gameRunning` and written to `/tmp/ACTIVEGAME` when the core starts, the path is that MRA, and the game is named after the MRA file. With `recents=1`, MiSTer's menu also records the launched `.mra` and the fallback below writes its path, so `/tmp/ACTIVEGAME` ends with whichever of the two was written last. Before this, with `recents=1`, such a game was tracked under its `.mra` path as its identifier; history recorded under that path is not moved, and the same game now starts a separate entry under its set name. Launched before the first index is ready, such a set is reported as its core alone until the index is ready, then as the arcade game, without writing its set name to `/tmp/ACTIVEGAME`.
+
+When neither Arcade Database nor the arcade index resolves a set (no installed MRA or several carry its set name, or the first index is not ready yet), Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
 
 ## Play history
 
 With [PlayLog](playlog.md) running, Remote serves its play history: time played per game and system, how many times each game was started, recent sessions and a summary for stats screens. Remote only reads PlayLog's database. Without PlayLog, clients are told what is missing through `GET /api/playlog/status`. See [Play log](remote-api.md#play-log) in the API reference.
 
-`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog.
+`GET /api/games/playing` also reports how long the running core and game have been going, with or without PlayLog. Its core, system and game always come from the same moment, and the request never waits for the tracker. The tracker publishes that snapshot before each websocket `coreRunning` or `gameRunning` message goes out, matching the core and game of that event.
 
 ## Startup diagnostics
 

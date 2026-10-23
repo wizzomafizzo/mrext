@@ -49,6 +49,9 @@ const (
 	CurrentPathFile = TempFolder + "/CURRENTPATH"
 	StartPathFile   = TempFolder + "/STARTPATH"
 	FullPathFile    = TempFolder + "/FULLPATH"
+	// RBFNameFile holds the loaded core file's name without its date. For an
+	// arcade .mra it is the <rbf> core while CORENAME is the set name.
+	RBFNameFile = TempFolder + "/RBFNAME"
 )
 
 const CoresRecentFile = CoreConfigFolder + "/cores_recent.cfg"

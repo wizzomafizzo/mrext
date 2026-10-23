@@ -20,9 +20,14 @@
 package games
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/wizzomafizzo/mrext/pkg/tracker"
 )
 
 func TestInitializeTrackerStateReconcilesChangesDuringWatchSetup(t *testing.T) {
@@ -90,5 +95,58 @@ func TestInitializeTrackerStateStopsAfterWatchFailure(t *testing.T) {
 	}
 	if coreLoads != 1 {
 		t.Fatalf("core loads after failed watch = %d, want 1", coreLoads)
+	}
+}
+
+type fakePlaying struct {
+	now        tracker.Playing
+	core, game int
+}
+
+func (f *fakePlaying) Playing() tracker.Playing { return f.now }
+
+func (f *fakePlaying) SessionTimes() (core, game int) { return f.core, f.game }
+
+var _ playingSource = (*tracker.Tracker)(nil)
+
+func playingRequest(t *testing.T) *http.Request {
+	t.Helper()
+	return httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/games/playing", http.NoBody)
+}
+
+func TestHandlePlayingReportsTheTrackerSnapshot(t *testing.T) {
+	source := &fakePlaying{
+		now: tracker.Playing{
+			Core: "MegaDrive", System: "Genesis", SystemName: "Genesis",
+			Game: "Genesis/Rocket Knight Adventures.md", GameName: "Rocket Knight Adventures",
+			GamePath: "/media/fat/games/Genesis/Rocket Knight Adventures.md",
+		},
+		core: 12, game: 9,
+	}
+	rec := httptest.NewRecorder()
+	HandlePlaying(source)(rec, playingRequest(t))
+	var got map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]any{
+		"core": "MegaDrive", "system": "Genesis", "systemName": "Genesis",
+		"game": "Genesis/Rocket Knight Adventures.md", "gameName": "Rocket Knight Adventures",
+		"coreSessionTime": float64(12), "gameSessionTime": float64(9),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("playing = %v, want %v", got, want)
+	}
+}
+
+func TestHandlePlayingBeforeTheTrackerRuns(t *testing.T) {
+	rec := httptest.NewRecorder()
+	HandlePlaying(&tracker.Tracker{})(rec, playingRequest(t))
+	var got PlayingPayload
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got != (PlayingPayload{}) {
+		t.Fatalf("playing = %+v, want empty", got)
 	}
 }
