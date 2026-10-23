@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -111,13 +112,82 @@ func (*arcadeDB) UpdateGame(GameTime) error             { return nil }
 func (*arcadeDB) UpdateCore(CoreTime) error             { return nil }
 
 func arcadeTracker(root string, db *arcadeDB) *Tracker {
-	return &Tracker{
+	tr := &Tracker{
 		Db: db, Logger: silentLogger{}, Config: &config.UserConfig{},
 		NameMap:   []NameMapping{{CoreName: "pooyan", System: ArcadeSystem, Name: ArcadeSystem, ArcadeName: "Pooyan"}},
 		GameTimes: make(map[string]GameTime), CoreTimes: make(map[string]CoreTime),
 		arcadeRoots:   func() []string { return []string{root} },
 		setActiveGame: func(string) error { return nil },
 	}
+	queueBuilds(tr)
+	return tr
+}
+
+// buildQueue holds the index builds a test tracker asks for until the test
+// runs them with drainIndex, outside the tracker lock.
+type buildQueue struct {
+	jobs []func()
+	mu   sync.Mutex
+}
+
+var buildQueues sync.Map // *Tracker to *buildQueue
+
+func queueBuilds(tr *Tracker) {
+	queue := &buildQueue{}
+	buildQueues.Store(tr, queue)
+	tr.runBuild = func(job func()) {
+		queue.mu.Lock()
+		defer queue.mu.Unlock()
+		queue.jobs = append(queue.jobs, job)
+	}
+}
+
+func trackerQueue(t *testing.T, tr *Tracker) *buildQueue {
+	t.Helper()
+	queue, ok := buildQueues.Load(tr)
+	if !ok {
+		t.Fatal("tracker has no build queue")
+	}
+	typed, ok := queue.(*buildQueue)
+	if !ok {
+		t.Fatal("tracker build queue has the wrong type")
+	}
+	return typed
+}
+
+// pendingBuilds counts the index builds asked for and not yet run.
+func pendingBuilds(t *testing.T, tr *Tracker) int {
+	t.Helper()
+	queue := trackerQueue(t, tr)
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
+	return len(queue.jobs)
+}
+
+// drainIndex runs the queued index builds.
+func drainIndex(t *testing.T, tr *Tracker) {
+	t.Helper()
+	queue := trackerQueue(t, tr)
+	for {
+		queue.mu.Lock()
+		if len(queue.jobs) == 0 {
+			queue.mu.Unlock()
+			return
+		}
+		job := queue.jobs[0]
+		queue.jobs = queue.jobs[1:]
+		queue.mu.Unlock()
+		job()
+	}
+}
+
+// readyIndex builds and installs the arcade index before the test starts.
+func readyIndex(t *testing.T, tr *Tracker) {
+	t.Helper()
+	tr.mu.Lock()
+	tr.warmArcadeIndex()
+	tr.mu.Unlock()
+	drainIndex(t, tr)
 }
 
 func TestArcadeLifecycleProvidesPathOnceAndPreservesIdentity(t *testing.T) {
@@ -128,6 +198,7 @@ func TestArcadeLifecycleProvidesPathOnceAndPreservesIdentity(t *testing.T) {
 	tr := arcadeTracker(root, db)
 	var signal string
 	tr.setActiveGame = func(value string) error { signal = value; return nil }
+	readyIndex(t, tr)
 	tr.processCore("pooyan")
 	if signal != "pooyan" {
 		t.Fatalf("legacy ACTIVEGAME payload changed: %q", signal)
@@ -186,6 +257,9 @@ func TestConsoleTrackingDoesNotScanArcadeRoots(t *testing.T) {
 	if len(db.events) != 2 {
 		t.Fatal("same console game emitted duplicate start")
 	}
+	if n := pendingBuilds(t, tr); n != 0 {
+		t.Fatalf("console launch asked for %d arcade index builds", n)
+	}
 }
 
 func TestMissingArcadeMappingDoesNotInventGame(t *testing.T) {
@@ -200,26 +274,40 @@ func TestMissingArcadeMappingDoesNotInventGame(t *testing.T) {
 	if tr.ActiveGame != "" || len(db.events) != 1 || db.events[0].Action != EventActionCoreStart {
 		t.Fatalf("missing Arcade Database mapping invented game state: %+v", db.events)
 	}
+	if n := pendingBuilds(t, tr); n != 0 {
+		t.Fatalf("unmapped core asked for %d arcade index builds", n)
+	}
 }
 
 func TestArcadeMissRetriedAndRemovedCachedPathDiscarded(t *testing.T) {
 	root := t.TempDir()
-	tr := arcadeTracker(root, &arcadeDB{})
+	db := &arcadeDB{}
+	tr := arcadeTracker(root, db)
 	tr.processCore("pooyan")
-	if tr.GameTimes["pooyan"].Path != "" {
+	drainIndex(t, tr)
+	if tr.GameTimes["pooyan"].Path != "" || tr.ActiveGamePath != "" {
 		t.Fatal("missing MRA produced a target")
 	}
+	events := len(db.events)
 	path := filepath.Join(root, "Pooyan.mra")
 	writeArcade(t, path, "pooyan")
+	// The ACTIVEGAME echo misses and asks for a fresh index.
 	tr.processGame("pooyan")
-	if tr.ActiveGamePath != path {
-		t.Fatal("miss was cached permanently")
+	drainIndex(t, tr)
+	if tr.ActiveGamePath != path || tr.GameTimes["pooyan"].Path != path {
+		t.Fatalf("miss was cached permanently: path=%q", tr.ActiveGamePath)
+	}
+	if len(db.events) != events {
+		t.Fatalf("a path found later started the running game again: %+v", db.events[events:])
 	}
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
 	}
-	if got := tr.lookupArcadeSetPath("pooyan"); got != "" {
-		t.Fatalf("removed cached MRA retained: %q", got)
+	if got, known := tr.lookupArcadeSetPath("pooyan"); got != "" || !known {
+		t.Fatalf("removed cached MRA retained: %q known=%t", got, known)
+	}
+	if n := pendingBuilds(t, tr); n != 1 {
+		t.Fatalf("a removed MRA asked for %d index builds, want 1", n)
 	}
 }
 

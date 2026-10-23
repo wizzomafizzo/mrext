@@ -118,10 +118,17 @@ type Tracker struct {
 	Config        *config.UserConfig
 	GameTimes     map[string]GameTime
 	CoreTimes     map[string]CoreTime
-	arcadePaths   map[string]string
 	neoGeoNames   map[string]string
 	arcadeRoots   func() []string
 	setActiveGame func(string) error
+	// runBuild runs an arcade index build; nil runs it on a goroutine.
+	// Replaced in tests.
+	runBuild func(func())
+	// The installed arcade index, changed under mu and read without it.
+	arcadeIdx atomic.Pointer[arcadeIndex]
+	// Closed once the first index is installed.
+	indexDone      chan struct{}
+	lastBuildStart time.Time
 	// The running game for ActiveSession, published by the ticker.
 	runningGame      atomic.Pointer[RunningGame]
 	ActiveGamePath   string
@@ -136,7 +143,13 @@ type Tracker struct {
 	// a client asking is never held up by work the tracker does under it.
 	coreSession atomic.Int64
 	gameSession atomic.Int64
-	mu          sync.Mutex
+	// rebuildInterval spaces out the index builds missed lookups ask for;
+	// zero allows one at any time.
+	rebuildInterval time.Duration
+	mu              sync.Mutex
+	// Whether an index build is running, set and cleared under mu.
+	indexBusy      atomic.Bool
+	indexInstalled bool
 }
 
 func generateNameMap(logger trackerLogger) []NameMapping {
@@ -228,6 +241,7 @@ func NewTracker(logger *service.Logger, cfg *config.UserConfig, db Db) (*Tracker
 		CoreTimes:        map[string]CoreTime{},
 		GameTimes:        map[string]GameTime{},
 		NameMap:          nameMap,
+		rebuildInterval:  arcadeRebuildInterval,
 	}, nil
 }
 
@@ -238,7 +252,6 @@ func (tr *Tracker) ReloadNameMap() {
 	nameMap := generateNameMap(tr.Logger)
 	tr.Logger.Info("loaded %d name mappings", len(nameMap))
 	tr.NameMap = nameMap
-	tr.arcadePaths = nil
 	tr.neoGeoNames = nil
 }
 
@@ -384,11 +397,19 @@ func (tr *Tracker) stopCore() bool {
 	return true
 }
 
+// The menu state files trackMenu reads; replaced in tests.
+var (
+	fullPathFile    = config.FullPathFile
+	currentPathFile = config.CurrentPathFile
+)
+
 // trackMenu check where we are in the menu and update the websocket
 func (tr *Tracker) trackMenu() {
-	data1, err1 := os.ReadFile(config.FullPathFile)
+	// #nosec G304 -- MiSTer's menu state file, replaced only in tests.
+	data1, err1 := os.ReadFile(fullPathFile)
 	fullPath := string(data1)
-	data2, err2 := os.ReadFile(config.CurrentPathFile)
+	// #nosec G304 -- MiSTer's menu state file, replaced only in tests.
+	data2, err2 := os.ReadFile(currentPathFile)
 	currentPath := string(data2)
 
 	if err1 != nil || err2 != nil {
@@ -396,13 +417,31 @@ func (tr *Tracker) trackMenu() {
 		return
 	}
 
+	// addEvent reads the running core and game, which the ticker and the
+	// arcade index install change on their own goroutines.
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
 	tr.addEvent(EventActionMenuNavigation, fullPath+":"+currentPath)
+}
+
+// slowUpdate is how long a core or game change may hold the tracker lock
+// before it is logged as slow.
+const slowUpdate = 2 * time.Second
+
+// unlockTimed releases the tracker lock taken at start, and logs an update
+// that held it for longer than slowUpdate.
+func (tr *Tracker) unlockTimed(what string, start time.Time) {
+	held := time.Since(start)
+	tr.mu.Unlock()
+	if held > slowUpdate {
+		tr.Logger.Warn("slow tracker update: %s took %s", what, held.Round(time.Millisecond))
+	}
 }
 
 // LoadCore loads the current running core and set it as active.
 func (tr *Tracker) LoadCore() {
 	tr.mu.Lock()
-	defer tr.mu.Unlock()
+	defer tr.unlockTimed("core change", time.Now())
 
 	data, err := os.ReadFile(config.CoreNameFile)
 	coreName := string(data)
@@ -503,7 +542,7 @@ func (tr *Tracker) stopGame() bool {
 // startup can pick up a game that was already running, not only changes to it.
 func (tr *Tracker) LoadGame() {
 	tr.mu.Lock()
-	defer tr.mu.Unlock()
+	defer tr.unlockTimed("game change", time.Now())
 
 	activeGame, err := mister.GetActiveGame()
 	if err != nil {

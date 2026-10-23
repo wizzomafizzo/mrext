@@ -23,10 +23,8 @@ import (
 	"encoding/xml"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
-
-	"github.com/wizzomafizzo/mrext/pkg/games"
+	"time"
 )
 
 // mraHeadLimit bounds how much of an .mra is read for its set name. The
@@ -117,86 +115,65 @@ func mraMatches(path, setName string) bool {
 	return setName != "" && strings.EqualFold(readMRASetName(path), setName)
 }
 
+// resolveArcadeSetName returns the only .mra under roots that carries
+// setName. Where Core looks set names up in its MediaDB, mrext walks the
+// arcade folders into an index, which the tracker builds off its lock.
 func resolveArcadeSetName(roots []string, setName string) (string, bool) {
 	if setName == "" {
 		return "", false
 	}
-	seen := make(map[string]bool)
-	var matches []string
-	var visit func(string)
-	visit = func(path string) {
-		canonical, err := filepath.EvalSymlinks(path)
-		if err != nil || seen[canonical] {
-			return
-		}
-		seen[canonical] = true
-		info, err := os.Stat(canonical)
-		if err != nil {
-			return
-		}
-		if !info.IsDir() {
-			if info.Mode().IsRegular() && strings.EqualFold(filepath.Ext(path), ".mra") && mraMatches(path, setName) {
-				matches = append(matches, path)
-			}
-			return
-		}
-		entries, err := os.ReadDir(path)
-		if err != nil {
-			return
-		}
-		for _, entry := range entries {
-			visit(filepath.Join(path, entry.Name()))
-		}
-	}
-	for _, root := range roots {
-		visit(root)
-	}
-	if len(matches) != 1 {
+	paths := buildArcadeIndex(roots).paths(setName)
+	if len(paths) != 1 {
 		return "", false
 	}
-	return matches[0], true
+	return paths[0], true
 }
 
-func (tr *Tracker) lookupArcadeSetPath(setName string) string {
-	if path := tr.arcadePaths[setName]; path != "" && mraMatches(path, setName) {
-		return path
+// lookupArcadeSetPath returns the installed .mra for setName from the
+// arcade index, without touching the disk beyond confirming that file.
+// known is false while the first index is still being built, and the path
+// is empty for a set no single file carries. A miss asks for a fresh index,
+// at most once per rebuildInterval, in case the files changed.
+func (tr *Tracker) lookupArcadeSetPath(setName string) (path string, known bool) {
+	return tr.findArcadeSetPath(setName, true)
+}
+
+// findArcadeSetPath runs under the tracker lock; mayRequest is false for
+// lookups made while installing an index, which never ask for another.
+func (tr *Tracker) findArcadeSetPath(setName string, mayRequest bool) (path string, known bool) {
+	if setName == "" {
+		return "", true
 	}
-	var roots []string
-	if tr.arcadeRoots != nil {
-		roots = tr.arcadeRoots()
-	} else {
-		system, err := games.GetSystem(ArcadeSystem)
-		if err != nil {
-			return ""
+	idx := tr.arcadeIdx.Load()
+	if idx == nil {
+		if mayRequest {
+			tr.requestArcadeIndex()
 		}
-		paths := games.GetSystemPaths(tr.Config, []games.System{*system})
-		for i := range paths {
-			roots = append(roots, paths[i].Path)
-		}
+		return "", false
 	}
-	path, ok := resolveArcadeSetName(roots, setName)
-	if !ok {
-		delete(tr.arcadePaths, setName)
-		return ""
+	if paths := idx.paths(setName); len(paths) == 1 && mraMatches(paths[0], setName) {
+		return paths[0], true
 	}
-	if tr.arcadePaths == nil {
-		tr.arcadePaths = make(map[string]string)
+	if mayRequest && !tr.indexBusy.Load() && time.Since(tr.lastBuildStart) >= tr.rebuildInterval {
+		tr.requestArcadeIndex()
 	}
-	tr.arcadePaths[setName] = path
-	return path
+	return "", true
 }
 
 // startArcade keeps the legacy set-name identity and ACTIVEGAME payload while
 // supplying the installed MRA path to event consumers such as LastPlayed.
+// A set already running never starts again: a path found later only fills
+// in the running game, so its session time carries on.
 func (tr *Tracker) startArcade(mapping NameMapping) {
 	id := tr.ActiveCore
-	path := tr.lookupArcadeSetPath(id)
-	if tr.ActiveGame == id && tr.ActiveGamePath == path {
+	path, _ := tr.lookupArcadeSetPath(id)
+	if tr.ActiveGame == id {
+		if path != "" && path != tr.ActiveGamePath {
+			tr.setArcadePath(id, path)
+		}
 		return
 	}
-	if tr.ActiveGame != id {
-		tr.stopGame()
-	}
+	tr.stopGame()
 	game, exists := tr.GameTimes[id]
 	if !exists {
 		loaded, err := tr.Db.GetGame(id)
@@ -210,4 +187,13 @@ func (tr *Tracker) startArcade(mapping NameMapping) {
 	tr.GameTimes[id] = game
 	tr.ActiveGame, tr.ActiveGamePath, tr.ActiveGameName = id, path, mapping.ArcadeName
 	tr.addEvent(EventActionGameStart, id)
+}
+
+// setArcadePath gives the running arcade game the path found for it,
+// without an event.
+func (tr *Tracker) setArcadePath(id, path string) {
+	tr.ActiveGamePath = path
+	game := tr.GameTimes[id]
+	game.Path = path
+	tr.GameTimes[id] = game
 }
