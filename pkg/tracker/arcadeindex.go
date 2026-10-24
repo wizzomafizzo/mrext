@@ -316,16 +316,38 @@ func (tr *Tracker) indexReady() chan struct{} {
 	return tr.indexDone
 }
 
-// reconcileArcade fills in the path of an arcade game that started before
-// the index could name its file. It runs under the tracker lock, emits no
-// event and asks for no further build.
+// reconcileArcade brings the running game up to date with a new index. It
+// runs under the tracker lock and asks for no further build. An arcade game
+// that started before the index could name its file gets its path, with no
+// event. An unlisted set that came up before the first index is taken up
+// as an arcade game if its core still runs with nothing else tracked, and
+// sets the new index finds are no longer taken for unknown.
 func (tr *Tracker) reconcileArcade() {
 	id := tr.ActiveCore
-	if id == "" || tr.ActiveSystem != ArcadeSystem || tr.ActiveGame != id || tr.ActiveGamePath != "" {
+	if id != "" && tr.ActiveSystem == ArcadeSystem && tr.ActiveGame == id && tr.ActiveGamePath == "" {
+		if path, _ := tr.findArcadeSetPath(id, false); path != "" {
+			tr.setArcadePath(id, path)
+		}
+	}
+
+	for name := range tr.unknownSets {
+		if path, _ := tr.findArcadeSetPath(name, false); path != "" {
+			delete(tr.unknownSets, name)
+		}
+	}
+
+	name := tr.pendingSet
+	if name == "" {
 		return
 	}
-	if path, _ := tr.findArcadeSetPath(id, false); path != "" {
-		tr.setArcadePath(id, path)
+	tr.pendingSet = ""
+	path, _ := tr.findArcadeSetPath(name, false)
+	if path == "" {
+		tr.markUnknownSet(name)
+		return
+	}
+	if name == tr.ActiveCore && tr.ActiveSystem == "" && tr.ActiveGame == "" && tr.coreStillRunning(name) {
+		tr.beginArcade(unlistedArcade(name, path))
 	}
 }
 
