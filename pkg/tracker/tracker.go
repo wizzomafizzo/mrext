@@ -148,6 +148,11 @@ type Tracker struct {
 	// Closed once the first index is installed.
 	indexDone      chan struct{}
 	lastBuildStart time.Time
+	// recentGame reads /tmp/ACTIVEGAME when it was written after the
+	// given time; replaced in tests.
+	recentGame func(since time.Time) (string, bool)
+	// When the core last changed, menu included.
+	coreChangedAt time.Time
 	// The running game for ActiveSession, published by the ticker.
 	runningGame atomic.Pointer[RunningGame]
 	// What Playing returns, published with every event and tick.
@@ -566,12 +571,15 @@ func (tr *Tracker) unlockTimed(what string, start time.Time) {
 
 // LoadCore loads the current running core and set it as active.
 func (tr *Tracker) LoadCore() {
+	// Read before taking the lock: readSettled may wait a moment.
+	coreName, err := readSettled(func() (string, error) {
+		data, readErr := os.ReadFile(config.CoreNameFile)
+		return string(data), readErr
+	})
+
 	tr.mu.Lock()
 	defer tr.unlockTimed("core change", time.Now())
 	defer tr.updateSessions()
-
-	data, err := os.ReadFile(config.CoreNameFile)
-	coreName := string(data)
 
 	if err != nil {
 		tr.Logger.Error("error reading core name: %s", err)
@@ -596,6 +604,8 @@ func (tr *Tracker) processCore(coreName string) {
 		tr.stopCore()
 
 		tr.ActiveCore = coreName
+		since := tr.coreChangedAt
+		tr.coreChangedAt = time.Now()
 
 		if coreName == "" {
 			return
@@ -644,6 +654,8 @@ func (tr *Tracker) processCore(coreName string) {
 		tr.addEvent(EventActionCoreStart, coreName)
 		if result.System == ArcadeSystem {
 			tr.beginArcade(result)
+		} else {
+			tr.catchUpGame(since)
 		}
 	}
 }
@@ -657,6 +669,66 @@ func (tr *Tracker) beginArcade(mapping NameMapping) {
 	tr.ActiveSystem = mapping.System
 	tr.ActiveSystemName = mapping.Name
 	tr.startArcade(mapping)
+}
+
+// settleDelay is how long an empty read waits to be read again.
+const settleDelay = 150 * time.Millisecond
+
+// readSettled reads a state file, and reads it again a moment later when
+// it came back empty. os.WriteFile truncates before it writes, and the
+// watcher can fire in between: an empty CORENAME or ACTIVEGAME read then
+// stopped the running core or game, and the next read restarted it, a
+// phantom session in the play history. A file that really is empty reads
+// empty twice.
+func readSettled(read func() (string, error)) (string, error) {
+	value, err := read()
+	if err != nil || strings.TrimSpace(value) != "" {
+		return value, err
+	}
+	time.Sleep(settleDelay)
+	return read()
+}
+
+// catchUpGame picks up a game that arrived before its core. A launch
+// through pkg/mister (Remote, Search, LaunchSync...) sends load_core and
+// writes ACTIVEGAME straight after, before MiSTer has loaded the core and
+// changed CORENAME, so the tracker reads the new file while the old core
+// is still active: an arcade core takes it as its own set and drops it,
+// and the core change that follows started the new core with no game.
+// Only a file written since the previous core change, for the new core's
+// system, is taken, so a stale one from an earlier session never is,
+// however long the core takes to load.
+func (tr *Tracker) catchUpGame(since time.Time) {
+	if since.IsZero() {
+		// The first core seen: LoadGame at startup reads the game.
+		return
+	}
+	read := tr.recentGame
+	if read == nil {
+		read = activeGameSince
+	}
+	game, ok := read(since)
+	if !ok || game == "" || tr.ActiveGame != "" {
+		return
+	}
+	// A path for this core's system, or a launcher that names one.
+	if !strings.EqualFold(filepath.Ext(game), ".mgl") && tr.LookupName(tr.ActiveCore, game) == (NameMapping{}) {
+		return
+	}
+	tr.processGame(game)
+}
+
+// activeGameSince returns ACTIVEGAME when it was written after since.
+func activeGameSince(since time.Time) (string, bool) {
+	info, err := os.Stat(config.ActiveGameFile)
+	if err != nil || info.ModTime().Before(since) {
+		return "", false
+	}
+	game, err := mister.GetActiveGame()
+	if err != nil {
+		return "", false
+	}
+	return strings.TrimSpace(game), true
 }
 
 func (tr *Tracker) stopGame() bool {
@@ -681,11 +753,12 @@ func (tr *Tracker) stopGame() bool {
 // LoadGame reads the active game file and updates state from it. Exported so
 // startup can pick up a game that was already running, not only changes to it.
 func (tr *Tracker) LoadGame() {
+	activeGame, err := readSettled(mister.GetActiveGame)
+
 	tr.mu.Lock()
 	defer tr.unlockTimed("game change", time.Now())
 	defer tr.updateSessions()
 
-	activeGame, err := mister.GetActiveGame()
 	if err != nil {
 		tr.Logger.Error("error getting active game: %s", err)
 		tr.stopGame()
@@ -699,6 +772,14 @@ func (tr *Tracker) LoadGame() {
 func (tr *Tracker) processGame(activeGame string) {
 	if activeGame == "" {
 		tr.stopGame()
+		return
+	}
+
+	// A file that is not an .mra under an arcade core is the next core's
+	// game, written before MiSTer switches cores: catchUpGame takes it
+	// once the core changes. Taking it now restarted the arcade game.
+	if tr.ActiveSystem == ArcadeSystem && strings.Contains(activeGame, "/") &&
+		!strings.EqualFold(filepath.Ext(activeGame), ".mra") {
 		return
 	}
 
