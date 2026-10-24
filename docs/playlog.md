@@ -13,6 +13,8 @@ PlayLog is an application to track and store stats of what games and cores you p
 
 When Arcade Database recognizes a running arcade set name, the shared tracker resolves a unique installed MRA by its XML `<setname>`, including nested arcade folders. Game-start events and game state include that path while retaining the set name as the game identifier. Ambiguous or unreadable matches leave the path empty rather than guessing. The legacy arcade value in `/tmp/ACTIVEGAME` remains the set name. Existing history is not backfilled.
 
+The tracker reads the arcade folders into an index in the background when it starts, so a core change never waits for them. Right after boot, an arcade game's path can therefore be filled in a few seconds after the game starts, without a second game-start event. The recorded path is the real file, not a link to it such as the copies in `_Organized`. Only the head of each MRA is read for its `<setname>`, so a file with a malformed tail after a valid set name now matches. An MRA added or replaced later is picked up the next time its set is looked up and missed, at most once a minute.
+
 ## Install
 
 Enable the `recents` option in your `MiSTer.ini` file and reboot your MiSTer.

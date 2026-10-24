@@ -91,6 +91,11 @@ func loadRecentWithPublisher(filename string, publish func(string) error) error 
 func StartFileWatch(tr *Tracker) (*fsnotify.Watcher, error) {
 	tr.Logger.Info("starting file watcher")
 
+	// Index the arcade folders ahead of the first arcade launch.
+	tr.mu.Lock()
+	tr.warmArcadeIndex()
+	tr.mu.Unlock()
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("create file watcher: %w", err)
