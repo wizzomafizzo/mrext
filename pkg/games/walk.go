@@ -120,7 +120,7 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 					return nil //nolint:nilerr // GetFiles also ignores invalid archives.
 				}
 				for _, member := range members {
-					if MatchSystemFile(system, member) {
+					if MatchSystemFile(system, filepath.Join(display, member)) {
 						if err := visit(filepath.Join(display, member)); err != nil {
 							return err
 						}
@@ -128,7 +128,10 @@ func WalkFiles(systemID, root string, visit func(string) error) error {
 				}
 				return nil
 			}
-			if MatchSystemFile(system, path) {
+			// Match the emitted path, not the resolved one: an Atari 2600 .bin
+			// is recognised by its Atari2600 folder, which a symlinked root
+			// resolves away.
+			if MatchSystemFile(system, display) {
 				return visit(display)
 			}
 			return nil

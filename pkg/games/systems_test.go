@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -139,6 +140,68 @@ func TestMatchSystemFileUsesCatalogScanExtensions(t *testing.T) {
 	}
 	if !MatchSystemFile(&group, "game.cdi") {
 		t.Fatal("group did not merge catalog scan extensions")
+	}
+}
+
+// The Atari7800 core loads .bin for both consoles, and the two share the
+// ATARI7800 folder. A .bin is a 2600 game only under an Atari2600 folder, so
+// 7800 dumps keep resolving to Atari7800 even though Atari2600 has a setname.
+func TestAtari2600BinMatchesOnlyItsOwnFolder(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "games")
+	cfg := &config.UserConfig{Systems: config.SystemsConfig{GamesFolder: []string{root}}}
+	atari2600, atari7800 := Systems["Atari2600"], Systems["Atari7800"]
+	tests := []struct {
+		path string
+		want string
+	}{
+		{filepath.Join(root, "Atari2600", "Adventure.bin"), "Atari2600"},
+		{filepath.Join(root, "Atari2600", "Pitfall.a26"), "Atari2600"},
+		{filepath.Join(root, "ATARI7800", "Atari 2600", "Combat.bin"), "Atari2600"},
+		{filepath.Join(root, "ATARI7800", "Asteroids.bin"), "Atari7800"},
+		{filepath.Join(root, "ATARI7800", "Joust.a78"), "Atari7800"},
+	}
+	for _, test := range tests {
+		got, err := BestSystemMatch(cfg, test.path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Id != test.want {
+			t.Errorf("BestSystemMatch(%s) = %s, want %s", test.path, got.Id, test.want)
+		}
+	}
+	if MatchSystemFile(&atari2600, filepath.Join(root, "ATARI7800", "Asteroids.bin")) {
+		t.Error("Atari2600 matched a .bin outside an Atari2600 folder")
+	}
+	if !MatchSystemFile(&atari7800, filepath.Join(root, "Atari2600", "Adventure.bin")) {
+		t.Error("Atari7800 lost its own .bin extension")
+	}
+	if MatchSystemFile(&atari2600, filepath.Join(root, "Atari2600", ".Adventure.bin")) {
+		t.Error("Atari2600 matched a dot file")
+	}
+}
+
+func TestLaunchCatalogCoreAddsBinOnlyForAtari2600Folders(t *testing.T) {
+	t.Parallel()
+
+	atari2600 := Systems["Atari2600"]
+	core := LaunchCatalogCore(&atari2600, "/media/fat/games/Atari2600/Adventure.bin")
+	params, err := catalog.PathToMGLDef(&core, "/media/fat/games/Atari2600/Adventure.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := catalog.PathToMGLDef(&core, "Adventure.a26")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *params != *want {
+		t.Fatalf(".bin params = %#v, want the .a26 slot %#v", params, want)
+	}
+	outside := LaunchCatalogCore(&atari2600, "/media/fat/games/ATARI7800/Asteroids.bin")
+	if !reflect.DeepEqual(outside, CatalogCore(&atari2600)) {
+		t.Fatalf("core changed outside an Atari2600 folder: %#v", outside)
+	}
+	if slots := CatalogCore(&atari2600).Slots; len(slots) == 0 || slices.Contains(slots[0].Exts, ".bin") {
+		t.Fatal("LaunchCatalogCore changed the shared catalog slots")
 	}
 }
 
