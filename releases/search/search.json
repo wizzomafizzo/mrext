@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/search",
-    "timestamp": 1790580965,
+    "timestamp": 1792887863,
     "files": {
         "Scripts/search.sh": {
-            "hash": "f2302e68f986e9751fda03776b692899",
-            "size": 2678436,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20260928-1/search.sh",
+            "hash": "854b7868bd3303920d15588a15100c86",
+            "size": 2679084,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20261025-1/search.sh",
             "reboot": false,
             "tags": [
                 "search"
