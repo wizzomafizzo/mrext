@@ -11,9 +11,9 @@ Remote is a web-based interface with a stack of modern features to manage all as
 
 ## Mobile app
 
-[MiSTer Connect](https://devcells.it/apps/misterconnect/) is a native app for iOS and Android that works with Remote. It is a third-party app, not part of mrext, and needs Remote running on the MiSTer (see [Install](#install)).
+[MiSTer Connect](https://devcells.it/apps/misterconnect/) is a native app for iOS and Android that uses Remote's [API](remote-api.md). It is a third-party app, not part of mrext, and needs Remote running on the MiSTer (see [Install](#install)).
 
-Remote's features are free in the app: the virtual remote and keyboard, launching from the menu, cores and search, screenshots, wallpapers, scripts, INI settings and system information. With [PlayLog](playlog.md) running, it also shows play time and history. An optional one-time purchase adds extras: box art, themes, RetroAchievements progress and more than one MiSTer.
+Using Remote through the app is free: the virtual remote, keyboard and trackpad, launching from the menu, cores and search, screenshots, wallpapers, music, scripts, INI settings and system information. With [PlayLog](playlog.md) running, it also shows play time and history. An optional one-time purchase adds extras that Remote itself does not provide: box art, themes, RetroAchievements progress and connecting to more than one MiSTer.
 
 <a href="https://apps.apple.com/app/mister-connect-fpga-remote/id6789198386"><img src="images/app-store.svg" alt="Download MiSTer Connect on the App Store" height="40"></a>
 <a href="https://play.google.com/store/apps/details?id=it.devcells.misterwingman"><img src="images/google-play.png" alt="Get MiSTer Connect on Google Play" height="40"></a>
