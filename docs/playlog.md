@@ -39,6 +39,8 @@ db_url = https://raw.githubusercontent.com/wizzomafizzo/mrext/main/releases/play
 
 From this point, PlayLog will always run on boot and silently track game playing stats in the background. At any point you can run `playlog` again and see a summary report of the stats.
 
+With [Remote](remote.md) running too, its API serves these stats to other apps. [MiSTer Connect](remote.md#mobile-app) shows them on a phone: recent sessions, time per game and system, and the time of the game running now.
+
 Service status and stop commands verify the recorded PID's executable and daemon arguments before trusting it, so an unrelated process reusing a stale PID is not treated as PlayLog. The PID-file format is unchanged.
 
 PlayLog does not record menu navigation. Earlier versions wrote a database row for every cursor movement in the MiSTer menu, which put an SD card write behind each one and grew the `events` table without bound, for rows PlayLog never read back. Those rows are deleted and the database compacted the first time this version opens it; play history and totals are untouched. Remote still receives menu navigation over its websocket, which is the only place it was ever used.

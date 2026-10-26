@@ -38,6 +38,11 @@ Use Download button for an application, copy downloaded script to SD card's `Scr
 
 Control MiSTer from any device on your network. Remote provides a web interface for input, launching, menu management, search, screenshots, settings, wallpapers, and other system functions.
 
+On a phone, Remote also works with [MiSTer Connect](docs/remote.md#mobile-app), a native app for iOS and Android:
+
+<a href="https://apps.apple.com/app/mister-connect-fpga-remote/id6789198386"><img src="docs/images/app-store.svg" alt="Download MiSTer Connect on the App Store" height="40"></a>
+<a href="https://play.google.com/store/apps/details?id=it.devcells.misterwingman"><img src="docs/images/google-play.png" alt="Get MiSTer Connect on Google Play" height="40"></a>
+
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/remote.md"><img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140"></a>
 
