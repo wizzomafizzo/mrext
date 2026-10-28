@@ -41,6 +41,11 @@ Control MiSTer from any device on your network. Remote provides a web interface 
 <a href="https://github.com/wizzomafizzo/mrext/releases/latest/download/remote.sh"><img src="docs/images/download.svg" alt="Download Remote" title="Download Remote" width="140"></a>
 <a href="https://github.com/wizzomafizzo/mrext/blob/main/docs/remote.md"><img src="docs/images/readme.svg" alt="Readme Remote" title="Readme Remote" width="140"></a>
 
+Once Remote is installed, you can also use it from your phone with [MiSTer Connect](docs/remote.md#mobile-app), a third-party native app for iOS and Android:
+
+<a href="https://apps.apple.com/app/mister-connect-fpga-remote/id6789198386"><img src="docs/images/app-store.svg" alt="Download MiSTer Connect on the App Store" height="40"></a>
+<a href="https://play.google.com/store/apps/details?id=it.devcells.misterwingman"><img src="docs/images/google-play.png" alt="Get MiSTer Connect on Google Play" height="40"></a>
+
 ## BGM
 
 Play music in MiSTer menu. BGM supports common audio formats and internet radio streams, and can pause automatically while a core is running.
