@@ -55,8 +55,10 @@ type LastPlayedConfig struct {
 type RemoteConfig struct {
 	CustomLogo      string `ini:"custom_logo,omitempty"`
 	AnnounceGameURL string `ini:"announce_game_url,omitempty"`
-	MDNSService     bool   `ini:"mdns_service,omitempty"`
-	SyncSSHKeys     bool   `ini:"sync_ssh_keys,omitempty"`
+	// AllowedOrigins lists extra browser origins allowed to call the API.
+	AllowedOrigins []string `ini:"allowed_origins,omitempty" delim:","`
+	MDNSService    bool     `ini:"mdns_service,omitempty"`
+	SyncSSHKeys    bool     `ini:"sync_ssh_keys,omitempty"`
 }
 
 type FavoritesConfig struct {

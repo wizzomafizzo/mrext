@@ -118,6 +118,30 @@ Remote verifies that a PID belongs to its copied executable running the service 
 
 If startup fails, capture `/tmp/remote.log`, `/tmp/remote.pid` (if present), and `/media/fat/linux/user-startup.sh` before restarting or re-enabling Remote. Also note executable location, mounted storage, and whether the recorded PID exists. These checks harden startup but do not establish the cause of intermittent reboot failures.
 
+## Browser access from other sites
+
+Remote's API has no password, so it only accepts requests that change something from web pages it trusts. Without this, any web page open on a computer or phone on your network could reboot the MiSTer, edit `MiSTer.ini`, send key presses or launch games.
+
+These are always allowed:
+
+- Remote's own web UI, at `http://<mister_ip>:8182`.
+- The web UI of another MiSTer running Remote on your network, at an address like `http://192.168.1.20:8182`, `http://mister.local:8182` or `http://mister:8182`. This keeps the web UI's connect dialog working between MiSTers.
+- Apps and tools that are not web pages, such as [MiSTer Connect](#mobile-app), Home Assistant integrations, scripts and `curl`.
+- Launch links at `/api/l/...` opened in a browser tab, such as from a QR code, a bookmark or a link on a dashboard. Other web pages cannot trigger them in the background.
+
+To use the API from a web page hosted somewhere else, list its origin in `Scripts/remote.ini` and restart Remote:
+
+```ini
+[remote]
+allowed_origins = https://dashboard.example, http://localhost:5173
+```
+
+Each origin is `scheme://host[:port]`, separated by commas. Invalid entries are skipped and logged in `/tmp/remote.log`. `allowed_origins = *` restores the old behavior of allowing every site, which lets any web page you visit control the MiSTer.
+
+### Compatibility notes
+
+Remote previously allowed cross-origin requests from every site and accepted WebSocket connections from any page. Web pages on other origins now get `403 Forbidden` for `POST`, `PUT` and `DELETE` requests, launch links loaded in the background and WebSocket connections, unless their origin is allowed as above. Reading data with `GET` still works, but browsers hide the response from other sites. Non-browser clients are unchanged.
+
 ## Main configuration
 
 Settings always offers Main, even if `MiSTer.ini` is absent. Loading it uses blank defaults without writing a file. Save creates `/media/fat/MiSTer.ini` with a `[MiSTer]` section and the selected settings; the Save screen explains this. `MiSTer_example.ini` is never offered as an active configuration or edited. Saving Main leaves alternate INIs unchanged, and the menu is relaunched only after saving succeeds.
