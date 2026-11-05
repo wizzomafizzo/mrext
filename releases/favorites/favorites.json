@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/favorites",
-    "timestamp": 1792887863,
+    "timestamp": 1793861821,
     "files": {
         "Scripts/favorites.sh": {
-            "hash": "a22aedced0444290470955768219e416",
-            "size": 2706916,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20261025-1/favorites.sh",
+            "hash": "4e4935eea9a09ec07a6cd3f0c4b0a869",
+            "size": 2711912,
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20261105-1/favorites.sh",
             "reboot": false,
             "tags": [
                 "favorites"
