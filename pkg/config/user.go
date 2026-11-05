@@ -55,8 +55,10 @@ type LastPlayedConfig struct {
 type RemoteConfig struct {
 	CustomLogo      string `ini:"custom_logo,omitempty"`
 	AnnounceGameURL string `ini:"announce_game_url,omitempty"`
-	MDNSService     bool   `ini:"mdns_service,omitempty"`
-	SyncSSHKeys     bool   `ini:"sync_ssh_keys,omitempty"`
+	// AllowedOrigins lists extra browser origins allowed to call the API.
+	AllowedOrigins []string `ini:"allowed_origins,omitempty" delim:","`
+	MDNSService    bool     `ini:"mdns_service,omitempty"`
+	SyncSSHKeys    bool     `ini:"sync_ssh_keys,omitempty"`
 }
 
 type FavoritesConfig struct {
@@ -93,6 +95,11 @@ func DefaultTUIConfig() TUIConfig {
 	}
 }
 
+type GamesMenuConfig struct {
+	MenuFolder string   `ini:"menu_folder,omitempty"`
+	Exclude    []string `ini:"exclude,omitempty,allowshadow" delim:"\n"`
+}
+
 type SystemsConfig struct {
 	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
 	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
@@ -110,6 +117,7 @@ type UserConfig struct {
 	Remote         RemoteConfig         `ini:"remote,omitempty"`
 	Favorites      FavoritesConfig      `ini:"favorites,omitempty"`
 	FavoritesCores FavoritesCoresConfig `ini:"cores,omitempty"`
+	GamesMenu      GamesMenuConfig      `ini:"gamesmenu,omitempty"`
 	TUI            TUIConfig            `ini:"tui,omitempty"`
 	Systems        SystemsConfig        `ini:"systems,omitempty"`
 }

@@ -29,12 +29,6 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(_ *http.Request) bool {
-		return true
-	},
-}
-
 func send(c *websocket.Conn, msg string) error {
 	if c == nil {
 		return errors.New("websocket connection is nil")
@@ -92,11 +86,14 @@ func (cg *connGroup) Broadcast(logger *service.Logger, msg string) {
 
 var conns = &connGroup{}
 
+// Handle upgrades connections whose origin passes checkOrigin.
 func Handle(
 	logger *service.Logger,
+	checkOrigin func(r *http.Request) bool,
 	connectPayload func() []string,
 	msgHandler func(msg string) string,
 ) http.HandlerFunc {
+	upgrader := websocket.Upgrader{CheckOrigin: checkOrigin}
 	return func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

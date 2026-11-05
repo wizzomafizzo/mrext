@@ -16,6 +16,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -25,7 +26,7 @@ require (
 )
 
 require (
-	github.com/ZaparooProject/zaparoo-core/mister v0.1.0
+	github.com/ZaparooProject/zaparoo-core/mister v0.1.1
 	github.com/bendahl/uinput v1.6.0
 	github.com/c-seeger/mac-gen-go v0.0.0-20210816124238-465118e656da
 	github.com/fsnotify/fsnotify v1.6.0
@@ -41,7 +42,6 @@ require (
 	github.com/txn2/txeh v1.4.0
 	go.etcd.io/bbolt v1.3.9
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
-	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.45.0
 	gopkg.in/ini.v1 v1.67.0

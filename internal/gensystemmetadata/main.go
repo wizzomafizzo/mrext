@@ -42,7 +42,7 @@ import (
 const (
 	coreModule        = "github.com/ZaparooProject/zaparoo-core/v2"
 	coreRepository    = "https://github.com/ZaparooProject/zaparoo-core.git"
-	coreRevision      = "97f142e67329526f59529db09f58010da72f8c70"
+	coreRevision      = "cf6e1820870e663a214294945a662f5dcc41a71e"
 	defaultOutput     = "pkg/games/system_metadata.gen.json"
 	coreSourceEnv     = "ZAPAROO_CORE_SOURCE"
 	coreRepositoryEnv = "ZAPAROO_CORE_REPOSITORY"

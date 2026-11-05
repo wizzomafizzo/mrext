@@ -35,6 +35,12 @@ theme = default
 mouse = true
 crt_mode = true
 
+[gamesmenu]
+; Output folder at the SD root. It must start with _. Defaults to _Games.
+; menu_folder = _Games
+; Skip files whose names match. Repeat this key; * and ? are wildcards.
+; exclude = *(Beta)*
+
 [systems]
 ; Add custom game roots by repeating this key. Built-in MiSTer roots remain enabled.
 ; games_folder = /media/network
@@ -88,6 +94,11 @@ func ValidateConfig(cfg *config.UserConfig) error {
 	}
 	if _, ok := tui.AvailableThemes[cfg.TUI.Theme]; !ok {
 		return fmt.Errorf("unknown tui.theme value: %s", cfg.TUI.Theme)
+	}
+	if name := MenuFolderNameFor(cfg); name != MenuFolderName {
+		if err := ValidateMenuFolder(name); err != nil {
+			return err
+		}
 	}
 	return nil
 }

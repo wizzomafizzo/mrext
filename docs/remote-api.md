@@ -98,6 +98,8 @@
 
 The REST API is accessible at `http://<ip or hostname>:8182/api` on a default Remote install. It can be used through any standard HTTP client. Examples below use [curl](https://curl.se/).
 
+Web pages can only change state through the API, use the WebSocket or load launch links in the background if they are served by Remote itself, by another Remote on the local network, or from an origin listed in `allowed_origins`. Other origins get `403 Forbidden`. Clients that are not web pages are not affected. See [Browser access from other sites](remote.md#browser-access-from-other-sites).
+
 See the [supported systems](systems.md) page for a list of system IDs referred to throughout this document.
 
 ### Screenshots

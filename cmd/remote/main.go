@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 	"github.com/wizzomafizzo/mrext/cmd/remote/control"
 	"github.com/wizzomafizzo/mrext/cmd/remote/games"
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
@@ -245,18 +244,17 @@ func startServiceWithListener(
 		}()
 	}
 
+	origins, originErrs := newOriginPolicy(cfg.Remote.AllowedOrigins)
+	for _, originErr := range originErrs {
+		logger.Error("skipping allowed origin: %s", originErr)
+	}
+
 	router := mux.NewRouter()
-	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, mouse, trk, logger, cfg)
+	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, mouse, trk, logger, cfg, origins)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"Origin", "Accept", "Content-Type", "X-Requested-With", mister.IniFilenameHeader},
-		AllowedMethods: []string{"GET", "POST", "DELETE", "PUT"},
-	})
-
 	srv := &http.Server{
-		Handler: corsHandler.Handler(router),
+		Handler: origins.Handler(router),
 		Addr:    ":" + strconv.Itoa(appPort),
 		// TODO: this will not work for large file uploads
 		WriteTimeout: 15 * time.Second,
@@ -307,8 +305,11 @@ func setupAPI(
 	trk *tracker.Tracker,
 	logger *service.Logger,
 	cfg *config.UserConfig,
+	origins *originPolicy,
 ) {
-	sub.HandleFunc("/ws", websocket.Handle(logger, wsConnectPayload(trk), wsMsgHandler(kbd, mouse)))
+	sub.HandleFunc("/ws", websocket.Handle(
+		logger, origins.requestAllowed, wsConnectPayload(trk), wsMsgHandler(kbd, mouse),
+	))
 
 	sub.HandleFunc("/screenshots", screenshots.AllScreenshots(logger)).Methods("GET")
 	sub.HandleFunc("/screenshots", screenshots.TakeScreenshot(kbd, logger)).Methods("POST")
@@ -346,7 +347,8 @@ func setupAPI(
 	sub.HandleFunc("/playlog/game", playlog.HandleGame(playLog)).Methods("GET")
 	sub.HandleFunc("/playlog/sessions", playlog.HandleSessions(playLog)).Methods("GET")
 
-	sub.HandleFunc("/l/{data:.*}", withSAMActivity(games.LaunchToken(logger, cfg, kbd), logger)).Methods("GET")
+	launchToken := withSAMActivity(games.LaunchToken(logger, cfg, kbd), logger)
+	sub.HandleFunc("/l/{data:.*}", origins.LaunchGuard(launchToken)).Methods("GET")
 
 	sub.HandleFunc("/launch", withSAMActivity(games.LaunchFile(logger, cfg), logger)).Methods("POST")
 	sub.HandleFunc("/launch/menu", games.LaunchMenu).Methods("POST")
