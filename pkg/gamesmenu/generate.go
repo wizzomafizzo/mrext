@@ -65,6 +65,9 @@ func (m *Manager) openSD() (*os.Root, string, error) {
 	if err != nil || !filepath.IsLocal(relative) || relative == "." {
 		return nil, "", errors.New("games menu must be below the SD root")
 	}
+	if checkErr := checkCustomMenuFolder(m.paths.MenuFolder); checkErr != nil {
+		return nil, "", checkErr
+	}
 	root, err := os.OpenRoot(m.paths.SDRoot)
 	if err != nil {
 		return nil, "", fmt.Errorf("open SD root: %w", err)
@@ -204,6 +207,9 @@ func (s *menuScanner) walk(dir string) {
 		if !info.IsDir() && !info.Mode().IsRegular() {
 			continue
 		}
+		if !info.IsDir() && s.manager.exclude.match(child.Name()) {
+			continue
+		}
 		relative, err := filepath.Rel(s.folder, dir)
 		if err != nil {
 			s.result.fail(fmt.Errorf("resolve game folder: %w", err))
@@ -274,7 +280,7 @@ func (s *menuScanner) archive(filename, relative string) {
 			s.result.fail(fmt.Errorf("unsafe ZIP member in %s: %q", filename, member))
 			continue
 		}
-		if hiddenMember(member) {
+		if hiddenMember(member) || s.manager.exclude.match(path.Base(member)) {
 			continue
 		}
 		folders := relativeFolders(relative)

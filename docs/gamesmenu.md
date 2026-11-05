@@ -68,6 +68,12 @@ theme = default
 mouse = true
 crt_mode = true
 
+[gamesmenu]
+; Output folder at the SD root. It must start with _. Defaults to _Games.
+; menu_folder = _Games
+; Skip files whose names match. Repeat this key; * and ? are wildcards.
+; exclude = *(Beta)*
+
 [systems]
 ; Add custom game roots by repeating this key. Built-in MiSTer roots remain enabled.
 ; games_folder = /media/network
@@ -76,6 +82,25 @@ crt_mode = true
 Available themes: `default`, `high_contrast`, `dracula`, `nord`, `gruvbox`, `monogreen`. Settings saves preserve unknown keys, sections and comments using an atomic replacement; existing configuration is never replaced with defaults. Shared `MREXT_CONFIG` and `MREXT_APP_PATH` overrides are supported.
 
 To add libraries, repeat `games_folder` under `[systems]`. Each root and its `games` subfolder are considered. Built-in roots remain enabled on MiSTer. Shared `[systems] set_core` overrides are honored when generating new shortcuts, for example `set_core = NES:_Console/Custom`. Existing shortcuts are not rewritten when overrides change.
+
+### Output folder
+
+Set `menu_folder` under `[gamesmenu]` to use a different folder name than `_Games` at the SD root, for example `menu_folder = _Juegos`. The name must start with `_` so the MiSTer menu lists it, and must be a single folder name. Stock core folders such as `_Console` and `_Arcade`, and folders starting with `_@` such as Favorites, are refused, as is any folder that has `.rbf` or `.mra` files directly inside it. Generate removes deselected folders inside the output folder, so point it only at a folder GamesMenu owns.
+
+Changing the name does not move or delete the old folder. Generate builds the new one from scratch; remove the old `_Games` folder yourself if you no longer want it.
+
+### Excluding files
+
+Repeat `exclude` under `[gamesmenu]` to skip files by name. `*` matches any run of characters and `?` matches one character. Everything else, including brackets, parentheses and commas, matches literally, and case is ignored. Patterns apply to loose files, ZIP files as a whole and the names of files inside ZIPs, not to folders.
+
+```ini
+[gamesmenu]
+exclude = *(Beta)*
+exclude = *[h]*
+exclude = *(USA, Europe)*
+```
+
+Excluded files get no new shortcut. Shortcuts created before the pattern was added stay; Clean Up only removes shortcuts whose game no longer exists.
 
 ### Shared interface settings
 
@@ -111,7 +136,7 @@ Intentional differences:
 - Source files and subfolders are each scanned in name order rather than Python's filesystem-dependent order; ZIP members retain archive order. Current-directory files still precede all subfolders. If same-level sources collide, the first name wins.
 - Existing `_NeoGeo` and `_ATARI2600` folder spelling survives catalog casing differences. Source directory symlinks are followed with loop protection. Additional network and configured roots are supported.
 - Dotfiles, AppleDouble files and hidden ZIP members are skipped. Absolute and parent-traversing ZIP paths are rejected, but harmless `./` and repeated separators are accepted. Exact ZIP member names and Python's `_.`/`_` menu-folder quirks are preserved (for example, `./game.nes` creates `_./game.mgl`). Output writes are confined to the SD root; symlinks escaping it fail rather than writing elsewhere. Exclusive file creation protects existing shortcuts against concurrent writers.
-- Optional `gamesmenu.ini` and explicit, conservative Clean Up are new. Errors are reported rather than silently discarded (invalid source ZIPs are still silently ignored).
+- Optional `gamesmenu.ini` and explicit, conservative Clean Up are new. The output folder name and file exclusions are configurable there; with neither set, behavior matches Python. Errors are reported rather than silently discarded (invalid source ZIPs are still silently ignored).
 - NeoGeo Darksoft set folders and ZIPs mapped by `romsets.xml` are now supported as single games. This is a stock-MiSTer compatibility extension using the catalog's existing NeoGeo mount parameters, not a separate system catalog. Recognized set folders are treated as game entries in their parent directory's name order.
 
 ## Uninstall

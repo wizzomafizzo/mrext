@@ -95,6 +95,11 @@ func DefaultTUIConfig() TUIConfig {
 	}
 }
 
+type GamesMenuConfig struct {
+	MenuFolder string   `ini:"menu_folder,omitempty"`
+	Exclude    []string `ini:"exclude,omitempty,allowshadow" delim:"\n"`
+}
+
 type SystemsConfig struct {
 	GamesFolder []string `ini:"games_folder,omitempty,allowshadow"`
 	SetCore     []string `ini:"set_core,omitempty,allowshadow"`
@@ -112,6 +117,7 @@ type UserConfig struct {
 	Remote         RemoteConfig         `ini:"remote,omitempty"`
 	Favorites      FavoritesConfig      `ini:"favorites,omitempty"`
 	FavoritesCores FavoritesCoresConfig `ini:"cores,omitempty"`
+	GamesMenu      GamesMenuConfig      `ini:"gamesmenu,omitempty"`
 	TUI            TUIConfig            `ini:"tui,omitempty"`
 	Systems        SystemsConfig        `ini:"systems,omitempty"`
 }

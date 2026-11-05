@@ -21,15 +21,17 @@ package gamesmenu
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 )
 
 // Manager discovers games folders and maintains the _Games shortcut tree.
 type Manager struct {
-	cfg   *config.UserConfig
-	names *Names
-	paths Paths
+	cfg     *config.UserConfig
+	names   *Names
+	paths   Paths
+	exclude excludeRules
 }
 
 // NewManager targets the real MiSTer filesystem.
@@ -43,7 +45,17 @@ func NewManagerWithPaths(cfg *config.UserConfig, paths Paths) (*Manager, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{cfg: cfg, names: names, paths: paths}, nil
+	manager := &Manager{cfg: cfg, names: names, paths: paths}
+	if cfg != nil {
+		if name := MenuFolderNameFor(cfg); name != MenuFolderName {
+			if err := ValidateMenuFolder(name); err != nil {
+				return nil, err
+			}
+			manager.paths.MenuFolder = filepath.Join(paths.SDRoot, name)
+		}
+		manager.exclude = compileExclude(cfg.GamesMenu.Exclude)
+	}
+	return manager, nil
 }
 
 func (m *Manager) Paths() Paths {
