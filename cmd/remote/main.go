@@ -250,8 +250,9 @@ func startServiceWithListener(
 		logger.Error("skipping allowed origin: %s", originErr)
 	}
 
+	raModes := retroachievements.New(logger)
 	router := mux.NewRouter()
-	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, mouse, trk, logger, cfg, origins)
+	setupAPI(router.PathPrefix("/api").Subrouter(), kbd, mouse, trk, raModes, logger, cfg, origins)
 	router.PathPrefix("/").Handler(http.HandlerFunc(appHandler))
 
 	srv := &http.Server{
@@ -295,6 +296,10 @@ func startServiceWithListener(
 			logger.Error("failed to shutdown server: %s", err)
 		}
 
+		// A RetroAchievements mode still waiting for its core would
+		// otherwise stay as the default.
+		raModes.Settle()
+
 		return nil
 	}, nil
 }
@@ -304,12 +309,11 @@ func setupAPI(
 	kbd input.Keyboard,
 	mouse input.Mouse,
 	trk *tracker.Tracker,
+	raModes *retroachievements.Modes,
 	logger *service.Logger,
 	cfg *config.UserConfig,
 	origins *originPolicy,
 ) {
-	raModes := retroachievements.New(logger)
-
 	sub.HandleFunc("/ws", websocket.Handle(
 		logger, origins.requestAllowed, wsConnectPayload(trk), wsMsgHandler(kbd, mouse),
 	))
@@ -320,7 +324,8 @@ func setupAPI(
 	sub.HandleFunc("/screenshots/{core}/{image}", screenshots.DeleteScreenshot(logger)).Methods("DELETE")
 
 	sub.HandleFunc("/systems", systems.ListSystems(logger)).Methods("GET")
-	sub.HandleFunc("/systems/{id}", withSAMActivity(systems.LaunchCore(cfg, logger), logger)).Methods("POST")
+	launchCore := withSAMActivity(raModes.Settled(systems.LaunchCore(cfg, logger)), logger)
+	sub.HandleFunc("/systems/{id}", launchCore).Methods("POST")
 	sub.HandleFunc("/systems/{id}/rbfs", systems.ListSystemRBFs(cfg, logger)).Methods("GET")
 
 	sub.HandleFunc("/wallpapers", wallpapers.AllWallpapersHandler(logger)).Methods("GET")
@@ -338,7 +343,8 @@ func setupAPI(
 
 	sub.HandleFunc("/games/search", games.Search(logger)).Methods("POST")
 	sub.HandleFunc("/games/search/systems", games.ListSystems(logger)).Methods("GET")
-	sub.HandleFunc("/games/launch", withSAMActivity(games.LaunchGame(logger, cfg), logger)).Methods("POST")
+	launchGame := withSAMActivity(games.LaunchGame(logger, cfg, raModes.Launch), logger)
+	sub.HandleFunc("/games/launch", launchGame).Methods("POST")
 	sub.HandleFunc("/games/index", games.GenerateSearchIndex(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/games/playing", games.HandlePlaying(trk)).Methods("GET")
 	sub.HandleFunc("/games/view", games.ListGamesFolder(logger)).Methods("POST")
@@ -350,11 +356,11 @@ func setupAPI(
 	sub.HandleFunc("/playlog/game", playlog.HandleGame(playLog)).Methods("GET")
 	sub.HandleFunc("/playlog/sessions", playlog.HandleSessions(playLog)).Methods("GET")
 
-	launchToken := withSAMActivity(games.LaunchToken(logger, cfg, kbd), logger)
+	launchToken := withSAMActivity(raModes.Settled(games.LaunchToken(logger, cfg, kbd)), logger)
 	sub.HandleFunc("/l/{data:.*}", origins.LaunchGuard(launchToken)).Methods("GET")
 
-	sub.HandleFunc("/launch", withSAMActivity(games.LaunchFile(logger, cfg), logger)).Methods("POST")
-	sub.HandleFunc("/launch/menu", games.LaunchMenu).Methods("POST")
+	sub.HandleFunc("/launch", withSAMActivity(raModes.Settled(games.LaunchFile(logger, cfg)), logger)).Methods("POST")
+	sub.HandleFunc("/launch/menu", raModes.Settled(games.LaunchMenu)).Methods("POST")
 	sub.HandleFunc("/launch/new", games.CreateLauncher(logger, cfg)).Methods("POST")
 
 	sub.HandleFunc("/controls/keyboard/{key}", control.HandleKeyboard(kbd)).Methods("POST")

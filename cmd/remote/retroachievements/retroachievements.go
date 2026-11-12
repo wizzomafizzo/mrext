@@ -29,6 +29,8 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/mister"
@@ -46,18 +48,51 @@ type Status struct {
 	Forced bool `json:"forced"`
 }
 
+// Main writes CORENAME as a new core starts, about 0.1 s before it reads
+// retroachievements.cfg (measured on a SuperStation, MENU, SNES and PSX).
+// The default goes back settleDelay after that, or startTimeout after the
+// launch if CORENAME never changes.
+const (
+	pollInterval = 250 * time.Millisecond
+	settleDelay  = 3 * time.Second
+	startTimeout = 30 * time.Second
+)
+
 // Modes owns Remote's use of retroachievements.cfg.
 type Modes struct {
 	logger *service.Logger
-	path   string
-	mu     sync.Mutex
+	// restore is the default to put back while a launch in the other mode
+	// waits for its core to start.
+	restore  *bool
+	path     string
+	coreName string
+
+	pollInterval time.Duration
+	settleDelay  time.Duration
+	startTimeout time.Duration
+
+	// generation tells a waiting restore that a later launch took over.
+	generation uint64
+	mu         sync.Mutex
+	// pending mirrors restore != nil, so launches that ask for no mode only
+	// read a flag.
+	pending atomic.Bool
 }
 
 // New returns Modes for the MiSTer's retroachievements.cfg.
 func New(logger *service.Logger) *Modes {
-	return &Modes{logger: logger, path: config.RetroAchievementsFile}
+	return &Modes{
+		logger:       logger,
+		path:         config.RetroAchievementsFile,
+		coreName:     config.CoreNameFile,
+		pollInterval: pollInterval,
+		settleDelay:  settleDelay,
+		startTimeout: startTimeout,
+	}
 }
 
+// status reads the file, showing the default rather than a launch's mode
+// while that launch waits for its core.
 func (m *Modes) status() (Status, error) {
 	settings, err := mister.ReadRAHardcore(m.path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -66,7 +101,112 @@ func (m *Modes) status() (Status, error) {
 	if err != nil {
 		return Status{}, fmt.Errorf("RetroAchievements status: %w", err)
 	}
-	return Status{Present: true, Hardcore: settings.Hardcore, Forced: settings.Forced}, nil
+	status := Status{Present: true, Hardcore: settings.Hardcore, Forced: settings.Forced}
+	if m.restore != nil {
+		status.Hardcore = *m.restore
+	}
+	return status, nil
+}
+
+// coreStarted is when the running core started, from CORENAME's time.
+func (m *Modes) coreStarted() time.Time {
+	info, err := os.Stat(m.coreName)
+	if err != nil {
+		return time.Time{}
+	}
+	return info.ModTime()
+}
+
+// Launch runs launch so that the new core starts in the asked mode: the
+// mode is written first and the default put back once the core is up. A nil
+// mode, or no retroachievements.cfg, is a plain launch.
+func (m *Modes) Launch(hardcore *bool, launch func() error) error {
+	if hardcore == nil {
+		m.Settle()
+		return launch()
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.restoreLocked()
+
+	settings, err := mister.ReadRAHardcore(m.path)
+	if errors.Is(err, os.ErrNotExist) {
+		return launch()
+	}
+	if err != nil {
+		return fmt.Errorf("set RetroAchievements mode: %w", err)
+	}
+
+	if settings.Hardcore != *hardcore {
+		before := m.coreStarted()
+		if _, err := mister.SetRAHardcore(m.path, *hardcore); err != nil {
+			return fmt.Errorf("set RetroAchievements mode: %w", err)
+		}
+		previous := settings.Hardcore
+		m.restore = &previous
+		m.pending.Store(true)
+		m.generation++
+		go m.restoreAfterStart(m.generation, before)
+		m.logger.Info("retroachievements: launching with hardcore %t", *hardcore)
+	}
+
+	if err := launch(); err != nil {
+		m.restoreLocked()
+		return err
+	}
+	return nil
+}
+
+// Settle puts the default back now if a launch in the other mode is still
+// waiting, so a launch that asks for no mode never inherits it.
+func (m *Modes) Settle() {
+	if !m.pending.Load() {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.restoreLocked()
+}
+
+// Settled runs Settle before next, for routes that launch without a mode.
+func (m *Modes) Settled(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m.Settle()
+		next(w, r)
+	}
+}
+
+func (m *Modes) restoreLocked() {
+	if m.restore == nil {
+		return
+	}
+	if _, err := mister.SetRAHardcore(m.path, *m.restore); err != nil {
+		m.logger.Error("retroachievements: putting the default back: %s", err)
+	}
+	m.restore = nil
+	m.pending.Store(false)
+}
+
+// restoreAfterStart waits for the launched core to start, then puts the
+// default back, unless a later launch has taken over by then.
+func (m *Modes) restoreAfterStart(generation uint64, before time.Time) {
+	deadline := time.Now().Add(m.startTimeout)
+	for time.Now().Before(deadline) {
+		time.Sleep(m.pollInterval)
+		if !m.pending.Load() {
+			return // put back already, by a later launch
+		}
+		if !m.coreStarted().Equal(before) {
+			time.Sleep(m.settleDelay)
+			break
+		}
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.generation == generation {
+		m.restoreLocked()
+	}
 }
 
 // HandleStatus answers GET /settings/retroachievements.
@@ -98,7 +238,13 @@ func (m *Modes) HandleSetHardcore() http.HandlerFunc {
 
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		changed, err := mister.SetRAHardcore(m.path, *args.Hardcore)
+		if m.restore != nil {
+			// A launch in the other mode is waiting for its core: the new
+			// default goes in when that launch's mode comes out.
+			value := *args.Hardcore
+			m.restore = &value
+		}
+		changed, err := m.setDefaultLocked(*args.Hardcore)
 		switch {
 		case errors.Is(err, os.ErrNotExist):
 			http.Error(w, "retroachievements.cfg not found", http.StatusNotFound)
@@ -120,6 +266,22 @@ func (m *Modes) HandleSetHardcore() http.HandlerFunc {
 		}
 		writeJSON(w, m.logger, status)
 	}
+}
+
+// setDefaultLocked writes the default, unless a launch's mode is in the
+// file for now.
+func (m *Modes) setDefaultLocked(hardcore bool) (bool, error) {
+	if m.restore != nil {
+		if _, err := os.Stat(m.path); err != nil {
+			return false, fmt.Errorf("stat RetroAchievements settings: %w", err)
+		}
+		return false, nil
+	}
+	changed, err := mister.SetRAHardcore(m.path, hardcore)
+	if err != nil {
+		return false, fmt.Errorf("set RetroAchievements default: %w", err)
+	}
+	return changed, nil
 }
 
 func writeJSON(w http.ResponseWriter, logger *service.Logger, value any) {
