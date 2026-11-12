@@ -61,6 +61,12 @@ const MenuCore = "MENU"
 // RACoresFolder is the isolated RetroAchievements core directory relative to SD root.
 const RACoresFolder = "_RA_Cores/Cores"
 
+// RetroAchievementsFile is the settings file of MiSTer's RetroAchievements
+// build. Main reads it at every core load. It also holds the player's
+// RetroAchievements login, so mrext only ever reads and writes the hardcore
+// keys and never returns or logs the rest.
+const RetroAchievementsFile = SdFolder + "/retroachievements.cfg"
+
 const (
 	CmdInterface      = "/dev/MiSTer_cmd"
 	SSHConfigFolder   = "/root/.ssh"
