@@ -69,6 +69,8 @@
       * [Get .ini file values](#get-ini-file-values)
       * [Set .ini file values](#set-ini-file-values)
       * [Set menu background mode](#set-menu-background-mode)
+      * [Get RetroAchievements settings](#get-retroachievements-settings)
+      * [Set RetroAchievements hardcore mode](#set-retroachievements-hardcore-mode)
       * [Restart Remote service](#restart-remote-service)
       * [Download Remote log file](#download-remote-log-file)
       * [List Remote peers on network](#list-remote-peers-on-network)
@@ -829,6 +831,7 @@ Arguments (JSON):
 |-----------|--------|----------|-----------------------------|
 | `path`    | string | Yes      | Absolute path to game file. |
 | `rbf`     | string | No       | Core to run the game with instead of the system default: a core in the short form an `.mgl` file uses, for example `_Console/NES_Alt`, or an MGL launcher such as `_RA_Cores/NES.mgl`, whose `rbf` and `setname` are used. Either may be given as an absolute path. See [list system cores](#list-system-cores). |
+| `hardcore` | boolean | No     | RetroAchievements mode for this launch only: `true` for hardcore, `false` for softcore. Ignored without `/media/fat/retroachievements.cfg`. The default mode is not changed; see [RetroAchievements modes](remote.md#retroachievements-modes). |
 
 On success, returns `200`.
 
@@ -853,6 +856,12 @@ Example request through an MGL launcher, here a RetroAchievements build:
 
 ```shell
 curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/NES/Contra (USA).nes","rbf":"_RA_Cores/NES.mgl"}'
+```
+
+Example request through a RetroAchievements build in hardcore mode, whatever the default:
+
+```shell
+curl --request POST --url "http://mister:8182/api/games/launch" --data '{"path":"/media/fat/games/NES/Contra (USA).nes","rbf":"_RA_Cores/NES.mgl","hardcore":true}'
 ```
 
 #### Generate search index
@@ -1863,6 +1872,68 @@ Example request:
 
 ```shell
 curl --request PUT --url "http://mister:8182/api/settings/cores/menu" --data '{"mode":0}'
+```
+
+#### Get RetroAchievements settings
+
+Get the hardcore settings of MiSTer's RetroAchievements build from `/media/fat/retroachievements.cfg`, and the mode
+the running core started in. No other value from the file is returned: it also holds the player's login.
+
+```plaintext
+GET /settings/retroachievements
+```
+
+This method takes no arguments.
+
+On success, returns `200` and object:
+
+| Attribute  | Type    | Description |
+|------------|---------|-------------|
+| `present`  | boolean | `false` when `retroachievements.cfg` is not on the SD card. The other values are then `false` and `unknown`. |
+| `hardcore` | boolean | Default mode: whether each core load starts in hardcore. |
+| `forced`   | boolean | `force_hardcore` is set, so every core runs in hardcore whatever `hardcore` says. |
+| `session`  | string  | Mode the running core started in: `hardcore`, `softcore`, or `unknown` when Remote cannot tell, for example after the file was edited while the core runs. See [RetroAchievements modes](remote.md#retroachievements-modes). |
+
+Example request:
+
+```shell
+curl --request GET --url "http://mister:8182/api/settings/retroachievements"
+```
+
+Example response:
+
+```json
+{
+  "session": "hardcore",
+  "present": true,
+  "hardcore": false,
+  "forced": false
+}
+```
+
+#### Set RetroAchievements hardcore mode
+
+Set the default mode of MiSTer's RetroAchievements build: the `hardcore` key of `/media/fat/retroachievements.cfg`.
+Only that line is changed, or added when missing. It takes effect at the next core load.
+
+```plaintext
+PUT /settings/retroachievements
+```
+
+Arguments (JSON):
+
+| Attribute  | Type    | Required | Description                        |
+|------------|---------|----------|------------------------------------|
+| `hardcore` | boolean | Yes      | `true` for hardcore, `false` for softcore. |
+
+On success, returns `200` and the same object as [Get RetroAchievements settings](#get-retroachievements-settings).
+
+If `retroachievements.cfg` does not exist, returns `404`. Remote never creates it.
+
+Example request:
+
+```shell
+curl --request PUT --url "http://mister:8182/api/settings/retroachievements" --data '{"hardcore":true}'
 ```
 
 #### Restart Remote service

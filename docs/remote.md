@@ -102,6 +102,14 @@ A set name Arcade Database does not list, as on fan and homebrew MRAs (for examp
 
 When neither Arcade Database nor the arcade index resolves a set (no installed MRA or several carry its set name, or the first index is not ready yet), Remote can instead use the `.mra` path MiSTer's menu records in `cores_recent.cfg`. This publishes the launched file without scanning arcade folders, so clients receive its filename as the game name. Set `recents=1` in `MiSTer.ini`; with recents disabled, MiSTer does not record the launch and this fallback is unavailable. While using this fallback, `/tmp/ACTIVEGAME` contains the recorded `.mra` path rather than a set name.
 
+## RetroAchievements modes
+
+With MiSTer's RetroAchievements build installed (`_RA_Cores` and `/media/fat/retroachievements.cfg`), clients can read and set its default mode, and launch one game in the other mode, through [the API](remote-api.md#get-retroachievements-settings). Remote reads and writes only the `hardcore` key of `retroachievements.cfg`, and never returns or logs the rest: the file holds the player's RetroAchievements login. Without the file nothing changes, and Remote never creates it.
+
+MiSTer reads `retroachievements.cfg` each time a core starts. To launch a game in the other mode, Remote writes that mode, launches the game, and puts the default back three seconds after the new core starts. Launches through Remote that do not ask for a mode, from any client, first put back a mode still waiting, so they always start in the default. A core started from MiSTer's own menu in those few seconds can still start in the launched game's mode. Stopping or restarting Remote puts the default back at once; only a power cut in those seconds leaves the launched game's mode as the default.
+
+The mode a running core started in is reported as `hardcore` or `softcore` when Remote launched it with a mode, or when `retroachievements.cfg` has not changed since the core started; otherwise it is `unknown`. It is also `unknown` while the MiSTer clock is not set after boot. `force_hardcore` always reports `hardcore`.
+
 ## Play history
 
 With [PlayLog](playlog.md) running, Remote serves its play history: time played per game and system, how many times each game was started, recent sessions and a summary for stats screens. Remote only reads PlayLog's database. Without PlayLog, clients are told what is missing through `GET /api/playlog/status`. See [Play log](remote-api.md#play-log) in the API reference.
