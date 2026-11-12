@@ -37,8 +37,12 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/service"
 )
 
-// Status is the hardcore part of retroachievements.cfg.
+// Status is the hardcore part of retroachievements.cfg, and the mode the
+// running core started in.
 type Status struct {
+	// Session is the mode the running core started in: "hardcore",
+	// "softcore", or "unknown" when Remote cannot tell.
+	Session string `json:"session"`
 	// Present is false without a retroachievements.cfg, that is without the
 	// RetroAchievements build or its login.
 	Present bool `json:"present"`
@@ -46,6 +50,23 @@ type Status struct {
 	Hardcore bool `json:"hardcore"`
 	// Forced is force_hardcore, which turns hardcore on for every core.
 	Forced bool `json:"forced"`
+}
+
+const (
+	sessionHardcore = "hardcore"
+	sessionSoftcore = "softcore"
+	sessionUnknown  = "unknown"
+)
+
+// fileMargin is how much older than the running core retroachievements.cfg
+// must be for its value to count as the one Main read.
+const fileMargin = 2 * time.Second
+
+// launchRecord is a launch that asked for a mode, and when its core started.
+type launchRecord struct {
+	before   time.Time
+	started  time.Time
+	hardcore bool
 }
 
 // Main writes CORENAME as a new core starts, about 0.1 s before it reads
@@ -63,7 +84,9 @@ type Modes struct {
 	logger *service.Logger
 	// restore is the default to put back while a launch in the other mode
 	// waits for its core to start.
-	restore  *bool
+	restore *bool
+	// last is the latest launch that asked for a mode.
+	last     *launchRecord
 	path     string
 	coreName string
 
@@ -96,16 +119,60 @@ func New(logger *service.Logger) *Modes {
 func (m *Modes) status() (Status, error) {
 	settings, err := mister.ReadRAHardcore(m.path)
 	if errors.Is(err, os.ErrNotExist) {
-		return Status{}, nil
+		return Status{Session: sessionUnknown}, nil
 	}
 	if err != nil {
 		return Status{}, fmt.Errorf("RetroAchievements status: %w", err)
 	}
-	status := Status{Present: true, Hardcore: settings.Hardcore, Forced: settings.Forced}
+	status := Status{
+		Present:  true,
+		Hardcore: settings.Hardcore,
+		Forced:   settings.Forced,
+		Session:  m.sessionLocked(settings),
+	}
 	if m.restore != nil {
 		status.Hardcore = *m.restore
 	}
 	return status, nil
+}
+
+// sessionLocked works out the mode the running core started in, only when
+// asked, so core changes cost nothing. It is the mode a launch asked for
+// when the running core is that launch's; otherwise the file's value when
+// the file is older than the core; otherwise unknown. With no clock set at
+// boot, CORENAME can be dated 1970 and the answer is unknown, never a guess.
+func (m *Modes) sessionLocked(file mister.RAHardcore) string {
+	if file.Forced {
+		return sessionHardcore
+	}
+	core := m.coreStarted()
+	if core.IsZero() {
+		return sessionUnknown
+	}
+	if last := m.last; last != nil {
+		if last.started.IsZero() && !core.Equal(last.before) {
+			last.started = core
+		}
+		if core.Equal(last.started) {
+			return sessionName(last.hardcore)
+		}
+	}
+	if m.restore != nil {
+		// The file holds a launch's mode, not the running core's.
+		return sessionUnknown
+	}
+	info, err := os.Stat(m.path)
+	if err != nil || !info.ModTime().Add(fileMargin).Before(core) {
+		return sessionUnknown
+	}
+	return sessionName(file.Hardcore)
+}
+
+func sessionName(hardcore bool) string {
+	if hardcore {
+		return sessionHardcore
+	}
+	return sessionSoftcore
 }
 
 // coreStarted is when the running core started, from CORENAME's time.
@@ -138,8 +205,8 @@ func (m *Modes) Launch(hardcore *bool, launch func() error) error {
 		return fmt.Errorf("set RetroAchievements mode: %w", err)
 	}
 
+	record := &launchRecord{before: m.coreStarted(), hardcore: *hardcore}
 	if settings.Hardcore != *hardcore {
-		before := m.coreStarted()
 		if _, err := mister.SetRAHardcore(m.path, *hardcore); err != nil {
 			return fmt.Errorf("set RetroAchievements mode: %w", err)
 		}
@@ -147,7 +214,7 @@ func (m *Modes) Launch(hardcore *bool, launch func() error) error {
 		m.restore = &previous
 		m.pending.Store(true)
 		m.generation++
-		go m.restoreAfterStart(m.generation, before)
+		go m.restoreAfterStart(m.generation, record)
 		m.logger.Info("retroachievements: launching with hardcore %t", *hardcore)
 	}
 
@@ -155,6 +222,7 @@ func (m *Modes) Launch(hardcore *bool, launch func() error) error {
 		m.restoreLocked()
 		return err
 	}
+	m.last = record
 	return nil
 }
 
@@ -190,20 +258,25 @@ func (m *Modes) restoreLocked() {
 
 // restoreAfterStart waits for the launched core to start, then puts the
 // default back, unless a later launch has taken over by then.
-func (m *Modes) restoreAfterStart(generation uint64, before time.Time) {
+func (m *Modes) restoreAfterStart(generation uint64, record *launchRecord) {
+	var started time.Time
 	deadline := time.Now().Add(m.startTimeout)
 	for time.Now().Before(deadline) {
 		time.Sleep(m.pollInterval)
 		if !m.pending.Load() {
 			return // put back already, by a later launch
 		}
-		if !m.coreStarted().Equal(before) {
+		if core := m.coreStarted(); !core.Equal(record.before) {
+			started = core
 			time.Sleep(m.settleDelay)
 			break
 		}
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if record.started.IsZero() {
+		record.started = started
+	}
 	if m.generation == generation {
 		m.restoreLocked()
 	}

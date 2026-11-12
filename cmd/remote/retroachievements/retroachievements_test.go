@@ -84,15 +84,15 @@ func TestStatusWithoutTheFile(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("code = %d", recorder.Code)
 	}
-	if status := decodeStatus(t, recorder); status != (Status{}) {
-		t.Fatalf("status = %+v, want all false", status)
+	if status := decodeStatus(t, recorder); status != (Status{Session: sessionUnknown}) {
+		t.Fatalf("status = %+v, want nothing known", status)
 	}
 }
 
 func TestStatusReadsOnlyTheHardcoreKeys(t *testing.T) {
 	modes := testModes(t, loginFixture+"force_hardcore=1\n")
 	recorder := serve(t, modes.HandleStatus(), http.MethodGet, "")
-	want := Status{Present: true, Hardcore: false, Forced: true}
+	want := Status{Present: true, Hardcore: false, Forced: true, Session: sessionHardcore}
 	if status := decodeStatus(t, recorder); status != want {
 		t.Fatalf("status = %+v, want %+v", status, want)
 	}
@@ -298,5 +298,85 @@ func TestDefaultComesBackWhenTheCoreNeverStarts(t *testing.T) {
 	waitSettled(t, modes)
 	if hardcoreInFile(t, modes) {
 		t.Fatal("the launch's mode stayed in the file")
+	}
+}
+
+// age dates a file, as if written that long ago.
+func age(t *testing.T, path string, ago time.Duration) {
+	t.Helper()
+	when := time.Now().Add(-ago)
+	if err := os.Chtimes(path, when, when); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func session(t *testing.T, modes *Modes) string {
+	t.Helper()
+	return decodeStatus(t, serve(t, modes.HandleStatus(), http.MethodGet, "")).Session
+}
+
+func TestSessionOfACoreStartedFromTheMenu(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.path, time.Hour)
+	age(t, modes.coreName, time.Minute)
+	if got := session(t, modes); got != sessionSoftcore {
+		t.Fatalf("session = %q, want the file's mode", got)
+	}
+}
+
+func TestSessionUnknownWhenTheFileChangedSinceTheCoreStarted(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.coreName, time.Minute)
+	age(t, modes.path, time.Second)
+	if got := session(t, modes); got != sessionUnknown {
+		t.Fatalf("session = %q, want unknown", got)
+	}
+}
+
+func TestSessionUnknownBeforeTheClockIsSet(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.path, time.Hour)
+	epoch := time.Unix(6, 0)
+	if err := os.Chtimes(modes.coreName, epoch, epoch); err != nil {
+		t.Fatal(err)
+	}
+	if got := session(t, modes); got != sessionUnknown {
+		t.Fatalf("session = %q, want unknown", got)
+	}
+}
+
+func TestSessionOfALaunchInTheOtherMode(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.path, time.Hour)
+	age(t, modes.coreName, time.Hour)
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	startCore(t, modes, "RA_SNES")
+	waitSettled(t, modes)
+	if got := session(t, modes); got != sessionHardcore {
+		t.Fatalf("session = %q, want the launch's mode after the default came back", got)
+	}
+
+	// A core started later from the MiSTer's menu runs in the default.
+	later := time.Now().Add(time.Minute)
+	if err := os.Chtimes(modes.coreName, later, later); err != nil {
+		t.Fatal(err)
+	}
+	if got := session(t, modes); got != sessionSoftcore {
+		t.Fatalf("session = %q, want the default for a menu launch", got)
+	}
+}
+
+func TestSessionOfALaunchInTheDefaultMode(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.coreName, time.Hour)
+	if err := modes.Launch(off(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	startCore(t, modes, "RA_SNES")
+	// The file was written just now, so only the launch can tell.
+	if got := session(t, modes); got != sessionSoftcore {
+		t.Fatalf("session = %q, want the launch's mode", got)
 	}
 }
