@@ -39,6 +39,7 @@ import (
 	"github.com/wizzomafizzo/mrext/cmd/remote/menu"
 	"github.com/wizzomafizzo/mrext/cmd/remote/music"
 	"github.com/wizzomafizzo/mrext/cmd/remote/playlog"
+	"github.com/wizzomafizzo/mrext/cmd/remote/retroachievements"
 	"github.com/wizzomafizzo/mrext/cmd/remote/screenshots"
 	"github.com/wizzomafizzo/mrext/cmd/remote/scripts"
 	"github.com/wizzomafizzo/mrext/cmd/remote/settings"
@@ -307,6 +308,8 @@ func setupAPI(
 	cfg *config.UserConfig,
 	origins *originPolicy,
 ) {
+	raModes := retroachievements.New(logger)
+
 	sub.HandleFunc("/ws", websocket.Handle(
 		logger, origins.requestAllowed, wsConnectPayload(trk), wsMsgHandler(kbd, mouse),
 	))
@@ -384,6 +387,8 @@ func setupAPI(
 	sub.HandleFunc("/settings/inis/4", settings.HandleSaveIni(logger, 4)).Methods("PUT")
 
 	sub.HandleFunc("/settings/cores/menu", settings.HandleSetMenuBackgroundMode(logger)).Methods("PUT")
+	sub.HandleFunc("/settings/retroachievements", raModes.HandleStatus()).Methods("GET")
+	sub.HandleFunc("/settings/retroachievements", raModes.HandleSetHardcore()).Methods("PUT")
 	sub.HandleFunc("/settings/remote/restart", settings.HandleRestartRemote(logger, cfg)).Methods("POST")
 	sub.HandleFunc("/settings/remote/log", settings.HandleDownloadRemoteLog(logger)).Methods("GET")
 	sub.HandleFunc("/settings/remote/peers", settings.HandleListPeers(logger)).Methods("GET")
