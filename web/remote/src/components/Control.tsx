@@ -18,6 +18,10 @@ import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
 import KeyboardDoubleArrowDownIcon from "@mui/icons-material/KeyboardDoubleArrowDown";
 import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
+import SaveIcon from "@mui/icons-material/Save";
+import RestoreIcon from "@mui/icons-material/Restore";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
 import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
@@ -28,6 +32,8 @@ import Stack from "@mui/material/Stack";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
+import { useUIStateStore } from "../lib/store";
+import { KeyboardCodes, SAVESTATE_SLOTS, SavestateSlot } from "../lib/models";
 
 export const keyMap: { [key: string]: number } = {
   ESC: 1,
@@ -157,6 +163,11 @@ export const keyMap: { [key: string]: number } = {
   "?": -53,
 };
 
+const saveStateKey = (slot: SavestateSlot): KeyboardCodes =>
+  `save_state_${slot}`;
+const loadStateKey = (slot: SavestateSlot): KeyboardCodes =>
+  `load_state_${slot}`;
+
 function isTouchSupported() {
   // @ts-ignore
   const msTouchEnabled = window.navigator.msMaxTouchPoints;
@@ -170,6 +181,8 @@ export default function Control() {
   const [numpadOpen, setNumpadOpen] = React.useState(false);
   const [mouseOpen, setMouseOpen] = React.useState(false);
   const [resetOpen, setResetOpen] = React.useState(false);
+  const savestateSlot = useUIStateStore((state) => state.savestateSlot);
+  const setSavestateSlot = useUIStateStore((state) => state.setSavestateSlot);
 
   const ws = useWs();
 
@@ -400,6 +413,55 @@ export default function Control() {
             }}
           >
             5
+          </Button>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mt: 3 }}>
+        <Grid item xs={12}>
+          <ToggleButtonGroup
+            value={savestateSlot}
+            exclusive
+            fullWidth
+            size="small"
+            color="primary"
+            aria-label="Savestate slot"
+            onChange={(_e, slot: SavestateSlot | null) => {
+              // Clicking the selected slot again would clear the selection.
+              if (slot !== null) {
+                setSavestateSlot(slot);
+              }
+            }}
+          >
+            {SAVESTATE_SLOTS.map((slot) => (
+              <ToggleButton key={slot} value={slot}>
+                Slot {slot}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Grid>
+        <Grid item xs={6}>
+          <Button
+            variant="outlined"
+            sx={{ width: "100%" }}
+            onClick={() => {
+              sendKey(saveStateKey(savestateSlot));
+            }}
+            startIcon={<SaveIcon />}
+          >
+            Save state
+          </Button>
+        </Grid>
+        <Grid item xs={6}>
+          <Button
+            variant="outlined"
+            sx={{ width: "100%" }}
+            onClick={() => {
+              sendKey(loadStateKey(savestateSlot));
+            }}
+            startIcon={<RestoreIcon />}
+          >
+            Load state
           </Button>
         </Grid>
       </Grid>

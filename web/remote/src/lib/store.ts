@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { SearchServiceStatus } from "./models";
+import { SavestateSlot, SearchServiceStatus } from "./models";
 
 export enum SettingsPageId {
   Main,
@@ -28,6 +28,8 @@ export interface UIState {
   setFavoriteScripts: (scripts: string[]) => void;
   autoControlKeys: number[];
   setAutoControlKeys: (keys: number[]) => void;
+  savestateSlot: SavestateSlot;
+  setSavestateSlot: (slot: SavestateSlot) => void;
 }
 
 export const useUIStateStore = create<UIState>()(
@@ -74,6 +76,8 @@ export const useUIStateStore = create<UIState>()(
         11, // 10
       ],
       setAutoControlKeys: (keys: number[]) => set({ autoControlKeys: keys }),
+      savestateSlot: 1,
+      setSavestateSlot: (slot: SavestateSlot) => set({ savestateSlot: slot }),
     }),
     {
       name: "uiState",
