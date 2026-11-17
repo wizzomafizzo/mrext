@@ -138,15 +138,32 @@ func ReadRAHardcore(path string) (RAHardcore, error) {
 	return parseRAHardcore(data), nil
 }
 
-// withRAHardcore returns data with the hardcore key set. Only the value of
-// the line Main would use is replaced; with no such line one is appended,
-// using the file's own line ending. Every other byte is kept.
-func withRAHardcore(data []byte, enabled bool) []byte {
-	value := "0"
-	if enabled {
-		value = "1"
+// raDigits returns the offsets of the digits raOn reads in data[start:end],
+// from first up to last, or start, start when there are none.
+func raDigits(data []byte, start, end int) (first, last int) {
+	i := start
+	for i < end && strings.IndexByte(" \t\n\v\f\r", data[i]) >= 0 {
+		i++
 	}
+	if i < end && (data[i] == '+' || data[i] == '-') {
+		i++
+	}
+	first = i
+	for i < end && data[i] >= '0' && data[i] <= '9' {
+		i++
+	}
+	if first == i {
+		return start, start
+	}
+	return first, i
+}
 
+// withRAHardcore returns data with the hardcore key set. In the line Main
+// would use, only the digits Main reads are rewritten, in place and at the
+// same length, so a line longer than Main's buffer splits where it did.
+// With no such line, or one without digits, a line is appended, using the
+// file's own line ending; Main uses the last. Every other byte is kept.
+func withRAHardcore(data []byte, enabled bool) []byte {
 	var last *raLine
 	for _, line := range raLines(data) {
 		if strings.EqualFold(line.key, "hardcore") {
@@ -155,10 +172,21 @@ func withRAHardcore(data []byte, enabled bool) []byte {
 		}
 	}
 	if last != nil {
-		out := make([]byte, 0, len(data)+1)
-		out = append(out, data[:last.valueStart]...)
-		out = append(out, value...)
-		return append(out, data[last.valueEnd:]...)
+		if first, end := raDigits(data, last.valueStart, last.valueEnd); first < end {
+			out := bytes.Clone(data)
+			for i := first; i < end; i++ {
+				out[i] = '0'
+			}
+			if enabled {
+				out[first] = '1'
+			}
+			return out
+		}
+	}
+
+	value := "0"
+	if enabled {
+		value = "1"
 	}
 
 	newline := "\n"

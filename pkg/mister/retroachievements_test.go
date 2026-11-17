@@ -121,6 +121,24 @@ func TestSetRAHardcoreKeepsTheRestOfTheFile(t *testing.T) {
 			want:    "username=someone\r\nhardcore=1\r\n",
 		},
 		{
+			name:    "keeps the length of the digits",
+			content: "hardcore=+01 ; strict\n",
+			enabled: false,
+			want:    "hardcore=+00 ; strict\n",
+		},
+		{
+			name:    "appends when the value has no digits",
+			content: "hardcore=yes\n",
+			enabled: true,
+			want:    "hardcore=yes\nhardcore=1\n",
+		},
+		{
+			name:    "keeps where a long line splits",
+			content: "hardcore=0" + strings.Repeat("x", 501) + "force_hardcore=1\n",
+			enabled: true,
+			want:    "hardcore=1" + strings.Repeat("x", 501) + "force_hardcore=1\n",
+		},
+		{
 			name:      "leaves a matching value alone",
 			content:   "hardcore=1 ; on\n",
 			enabled:   true,
@@ -154,6 +172,9 @@ func TestSetRAHardcoreKeepsTheRestOfTheFile(t *testing.T) {
 			}
 			if settings.Hardcore != tt.enabled {
 				t.Fatalf("read back %v, want %v", settings.Hardcore, tt.enabled)
+			}
+			if want := parseRAHardcore([]byte(tt.content)).Forced; settings.Forced != want {
+				t.Fatalf("force_hardcore read back %v, want %v", settings.Forced, want)
 			}
 		})
 	}
