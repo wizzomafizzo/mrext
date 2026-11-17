@@ -380,3 +380,102 @@ func TestSessionOfALaunchInTheDefaultMode(t *testing.T) {
 		t.Fatalf("session = %q, want the launch's mode", got)
 	}
 }
+
+func TestModeLaunchWaitsForAPlainLaunch(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	modes.startTimeout = time.Minute
+	done := make(chan error, 1)
+	var seen bool
+	err := modes.Launch(nil, func() error {
+		go func() { done <- modes.Launch(on(), func() error { return nil }) }()
+		time.Sleep(20 * time.Millisecond)
+		seen = hardcoreInFile(t, modes)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seen {
+		t.Fatal("another launch wrote its mode while a plain launch started")
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCoreOfAnExpiredLaunchIsNotItsOwn(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.coreName, time.Hour)
+	modes.startTimeout = 20 * time.Millisecond
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	waitSettled(t, modes)
+	time.Sleep(10 * time.Millisecond) // the waiting restore lets go of the launch
+
+	startCore(t, modes, "SNES")
+	if got := session(t, modes); got == sessionHardcore {
+		t.Fatal("a later core was taken for the expired hardcore launch")
+	}
+}
+
+func TestPlainLaunchEndsALaunchWhoseCoreNeverStarted(t *testing.T) {
+	modes := testModes(t, "username=someone\nhardcore=1\n")
+	age(t, modes.coreName, time.Hour)
+	// Already the default: nothing is written and nothing waits.
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	serve(t, modes.HandleSetHardcore(), http.MethodPut, `{"hardcore":false}`)
+	if err := modes.Launch(nil, func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	startCore(t, modes, "SNES")
+	if got := session(t, modes); got == sessionHardcore {
+		t.Fatal("the plain launch's core was taken for the earlier hardcore launch")
+	}
+}
+
+func TestFailedRestoreIsTriedAgain(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	modes.startTimeout = time.Minute
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	aside := modes.path + ".aside"
+	if err := os.Rename(modes.path, aside); err != nil {
+		t.Fatal(err)
+	}
+	if err := modes.Launch(nil, func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if !modes.pending.Load() {
+		t.Fatal("the default to put back was dropped after a failed write")
+	}
+	if err := modes.Launch(off(), func() error { return nil }); err == nil {
+		t.Fatal("a mode launch went ahead without the default put back")
+	}
+
+	if err := os.Rename(aside, modes.path); err != nil {
+		t.Fatal(err)
+	}
+	modes.Close()
+	if modes.pending.Load() || hardcoreInFile(t, modes) {
+		t.Fatal("the default was not put back on the next try")
+	}
+}
+
+func TestCloseRefusesModeLaunches(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	modes.Close()
+	launched := false
+	if err := modes.Launch(on(), func() error { launched = true; return nil }); err == nil {
+		t.Fatal("a mode launch was accepted after Close")
+	}
+	if launched || hardcoreInFile(t, modes) {
+		t.Fatal("a mode launch ran after Close")
+	}
+	if err := modes.Launch(nil, func() error { launched = true; return nil }); err != nil || !launched {
+		t.Fatalf("a plain launch after Close: launched %v, err %v", launched, err)
+	}
+}

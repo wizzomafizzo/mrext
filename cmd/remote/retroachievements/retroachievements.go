@@ -96,10 +96,13 @@ type Modes struct {
 
 	// generation tells a waiting restore that a later launch took over.
 	generation uint64
-	mu         sync.Mutex
-	// pending mirrors restore != nil, so launches that ask for no mode only
-	// read a flag.
+	// mu also covers each launch, so no launch can write a mode between
+	// another launch putting the default back and starting its game.
+	mu sync.Mutex
+	// pending mirrors restore != nil, so a waiting restore can poll it.
 	pending atomic.Bool
+	// closed is set as Remote stops: no launch writes a mode after that.
+	closed bool
 }
 
 // New returns Modes for the MiSTer's retroachievements.cfg.
@@ -188,14 +191,18 @@ func (m *Modes) coreStarted() time.Time {
 // mode is written first and the default put back once the core is up. A nil
 // mode, or no retroachievements.cfg, is a plain launch.
 func (m *Modes) Launch(hardcore *bool, launch func() error) error {
-	if hardcore == nil {
-		m.Settle()
-		return launch()
-	}
-
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.restoreLocked()
+	if hardcore == nil {
+		m.plainLocked()
+		return launch()
+	}
+	if m.closed {
+		return errors.New("set RetroAchievements mode: Remote is stopping")
+	}
+	if err := m.restoreLocked(); err != nil {
+		return fmt.Errorf("set RetroAchievements mode: %w", err)
+	}
 
 	settings, err := mister.ReadRAHardcore(m.path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -219,41 +226,67 @@ func (m *Modes) Launch(hardcore *bool, launch func() error) error {
 	}
 
 	if err := launch(); err != nil {
-		m.restoreLocked()
+		if restoreErr := m.restoreLocked(); restoreErr != nil {
+			m.logger.Error("retroachievements: putting the default back: %s", restoreErr)
+		}
 		return err
 	}
 	m.last = record
 	return nil
 }
 
-// Settle puts the default back now if a launch in the other mode is still
-// waiting, so a launch that asks for no mode never inherits it.
-func (m *Modes) Settle() {
-	if !m.pending.Load() {
-		return
+// plainLocked readies a launch that asks for no mode: a mode still waiting
+// for its core is put back, so the launch starts in the default, and a
+// launch whose core never started stops counting, so the new core is not
+// taken for it.
+func (m *Modes) plainLocked() {
+	if err := m.restoreLocked(); err != nil {
+		m.logger.Error("retroachievements: putting the default back: %s", err)
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.restoreLocked()
+	if last := m.last; last != nil && last.started.IsZero() {
+		if core := m.coreStarted(); !core.Equal(last.before) {
+			last.started = core
+		} else {
+			m.last = nil
+		}
+	}
 }
 
-// Settled runs Settle before next, for routes that launch without a mode.
+// Settled readies a launch without a mode before next, and runs next under
+// the same lock, for routes that launch without a mode.
 func (m *Modes) Settled(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		m.Settle()
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		m.plainLocked()
 		next(w, r)
 	}
 }
 
-func (m *Modes) restoreLocked() {
+// Close puts the default back now if a launch in the other mode is still
+// waiting, and refuses mode launches from then on. Remote calls it as it
+// stops.
+func (m *Modes) Close() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.closed = true
+	if err := m.restoreLocked(); err != nil {
+		m.logger.Error("retroachievements: putting the default back: %s", err)
+	}
+}
+
+// restoreLocked puts the default back. On failure it is kept, so the next
+// launch, Close or waiting restore tries again.
+func (m *Modes) restoreLocked() error {
 	if m.restore == nil {
-		return
+		return nil
 	}
 	if _, err := mister.SetRAHardcore(m.path, *m.restore); err != nil {
-		m.logger.Error("retroachievements: putting the default back: %s", err)
+		return fmt.Errorf("put the default back: %w", err)
 	}
 	m.restore = nil
 	m.pending.Store(false)
+	return nil
 }
 
 // restoreAfterStart waits for the launched core to start, then puts the
@@ -277,8 +310,14 @@ func (m *Modes) restoreAfterStart(generation uint64, record *launchRecord) {
 	if record.started.IsZero() {
 		record.started = started
 	}
+	if started.IsZero() && m.last == record {
+		// The core never started: a later core is not this launch's.
+		m.last = nil
+	}
 	if m.generation == generation {
-		m.restoreLocked()
+		if err := m.restoreLocked(); err != nil {
+			m.logger.Error("retroachievements: putting the default back: %s", err)
+		}
 	}
 }
 

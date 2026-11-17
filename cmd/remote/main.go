@@ -297,8 +297,8 @@ func startServiceWithListener(
 		}
 
 		// A RetroAchievements mode still waiting for its core would
-		// otherwise stay as the default.
-		raModes.Settle()
+		// otherwise stay as the default; no launch can write one after this.
+		raModes.Close()
 
 		return nil
 	}, nil
