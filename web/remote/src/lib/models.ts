@@ -118,6 +118,10 @@ export type KeyboardCodes =
   | "load_state_3"
   | "load_state_4";
 
+// Cores with savestate support have four slots, reached with F1 to F4.
+export const SAVESTATE_SLOTS = [1, 2, 3, 4] as const;
+export type SavestateSlot = (typeof SAVESTATE_SLOTS)[number];
+
 export type MouseButtons =
   | "click"
   | "double_click"
