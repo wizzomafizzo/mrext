@@ -36,11 +36,17 @@ import (
 	"github.com/wizzomafizzo/mrext/pkg/utils"
 )
 
-func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc {
+// LaunchInMode runs a launch with the core starting in a RetroAchievements
+// mode, or as a plain launch for a nil mode; see cmd/remote/retroachievements.
+type LaunchInMode func(hardcore *bool, launch func() error) error
+
+func LaunchGame(logger *service.Logger, cfg *config.UserConfig, launchInMode LaunchInMode) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args struct {
-			Path string `json:"path"`
-			RBF  string `json:"rbf"`
+			// Hardcore asks for a RetroAchievements mode for this launch.
+			Hardcore *bool  `json:"hardcore"`
+			Path     string `json:"path"`
+			RBF      string `json:"rbf"`
 		}
 
 		err := json.NewDecoder(r.Body).Decode(&args)
@@ -73,7 +79,9 @@ func LaunchGame(logger *service.Logger, cfg *config.UserConfig) http.HandlerFunc
 			return
 		}
 
-		err = mister.LaunchGameWithCore(cfg, &system, args.Path, launch)
+		err = launchInMode(args.Hardcore, func() error {
+			return mister.LaunchGameWithCore(cfg, &system, args.Path, launch)
+		})
 		switch {
 		case errors.Is(err, mister.ErrRBFOverrideUnsupported):
 			http.Error(w, err.Error(), http.StatusBadRequest)
