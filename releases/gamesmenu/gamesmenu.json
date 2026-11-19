@@ -1,11 +1,11 @@
 {
     "db_id": "mrext/gamesmenu",
-    "timestamp": 1793861821,
+    "timestamp": 1795094041,
     "files": {
         "Scripts/gamesmenu.sh": {
-            "hash": "7a149a40799310d2b14713970adea067",
+            "hash": "a8bf6dcf3f57ccba5fd97ae05da791fd",
             "size": 2649716,
-            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20261105-1/gamesmenu.sh",
+            "url": "https://github.com/wizzomafizzo/mrext/releases/download/v20261119-1/gamesmenu.sh",
             "reboot": false,
             "tags": [
                 "gamesmenu"
