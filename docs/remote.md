@@ -24,6 +24,7 @@ Using Remote through the app is free: the virtual remote, keyboard and trackpad,
   * Includes all common media keys and hotkeys
   * Full on-screen keyboard and keypad
   * Virtual mouse trackpad with clicks, drag and desktop mouse capture
+  * Save and load states in slots 1 to 4 on cores that support savestates
 * Launch cores and game shortcuts with an in-app version of the MiSTer menu
   * Move, rename and delete anything in the menu
 * Search and launch your entire game collection
