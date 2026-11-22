@@ -163,3 +163,41 @@ func TestLoadRecentPublishesArcadeMRAPath(t *testing.T) {
 		t.Fatalf("published path = %q, want %q", published, want)
 	}
 }
+
+func TestLoadRecentIgnoresOSDSettingsPicks(t *testing.T) {
+	tests := []struct {
+		directory, name string
+		want            string
+	}{
+		{"presets", "Scanlines - Soft.ini", ""},
+		{"Presets/Retro", "CRT.ini", ""},
+		{"Filters/Scanlines", "Scanlines_25.txt", ""},
+		{"/media/fat/Shadow_Masks", "Mask.txt", ""},
+		{"gamma", "Gamma 1.2.txt", ""},
+		{"Filters_Audio", "Low pass.txt", ""},
+		{"games/PSX", "Ape Escape (Italy).cue", "games/PSX/Ape Escape (Italy).cue"},
+		{"games/Presets", "Not a folder MiSTer reads.cue", "games/Presets/Not a folder MiSTer reads.cue"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.directory, func(t *testing.T) {
+			entry := make([]byte, 1024+256+256)
+			copy(entry[:1024], tt.directory)
+			copy(entry[1024:1280], tt.name)
+			recentPath := filepath.Join(t.TempDir(), "PSX_recent_15.cfg")
+			if err := os.WriteFile(recentPath, entry, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			published := ""
+			err := loadRecentWithPublisher(recentPath, func(path string) error {
+				published = path
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if published != tt.want {
+				t.Fatalf("published %q, want %q", published, tt.want)
+			}
+		})
+	}
+}
