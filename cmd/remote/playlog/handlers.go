@@ -19,12 +19,17 @@
 package playlog
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -51,6 +56,9 @@ type Status struct {
 	Database  bool `json:"database"`
 	Recents   bool `json:"recents"`
 	Startup   bool `json:"startup"`
+	// Reset is true when this Remote can clear the history with
+	// DELETE /playlog, so clients know whether to offer it.
+	Reset bool `json:"reset"`
 }
 
 // Env holds everything the handlers read from the MiSTer, so tests can run
@@ -62,7 +70,9 @@ type Env struct {
 	Startup func() (bool, error)
 	// Live is the running game and how long it has run, from Remote's own
 	// tracker. Nil in tests that do not need it.
-	Live     func() (tracker.RunningGame, int)
+	Live func() (tracker.RunningGame, int)
+	// Reset asks PlayLog to clear its history.
+	Reset    func(ctx context.Context) error
 	Logger   *service.Logger
 	Database string
 	Script   string
@@ -70,6 +80,7 @@ type Env struct {
 
 // DefaultEnv reads the real MiSTer, and the running game from trk.
 func DefaultEnv(logger *service.Logger, trk *tracker.Tracker) *Env {
+	script := filepath.Join(config.ScriptsFolder, appName+".sh")
 	return &Env{
 		Live: func() (tracker.RunningGame, int) {
 			if trk == nil {
@@ -89,7 +100,8 @@ func DefaultEnv(logger *service.Logger, trk *tracker.Tracker) *Env {
 		},
 		Logger:   logger,
 		Database: config.PlayLogDbFile,
-		Script:   filepath.Join(config.ScriptsFolder, appName+".sh"),
+		Script:   script,
+		Reset:    func(ctx context.Context) error { return runReset(ctx, script) },
 	}
 }
 
@@ -100,6 +112,7 @@ func HandleStatus(env *Env) http.HandlerFunc {
 			Installed: exists(env.Script),
 			Running:   env.Running(),
 			Database:  exists(env.Database),
+			Reset:     true,
 		}
 		var err error
 		if status.Recents, err = env.Recents(); err != nil {
@@ -109,6 +122,77 @@ func HandleStatus(env *Env) http.HandlerFunc {
 			env.Logger.Warn("playlog status: %s", err)
 		}
 		writeJSON(w, env, status)
+	}
+}
+
+// errResetUnsupported is a PlayLog from before the -reset option.
+var errResetUnsupported = errors.New("this PlayLog cannot reset its history, update it")
+
+// resetTimeout bounds a reset: PlayLog may take up to 20 seconds to stop.
+const resetTimeout = time.Minute
+
+// resetting lets one reset run at a time.
+var resetting sync.Mutex
+
+// runReset runs "playlog.sh -reset". PlayLog owns its database and keeps
+// totals in memory, so only PlayLog can clear it: it stops its daemon,
+// copies the database to playlog.db.bak, clears it and starts again.
+func runReset(ctx context.Context, script string) error {
+	// #nosec G204 -- script is PlayLog's fixed path in the Scripts folder.
+	cmd := exec.CommandContext(ctx, script, "-reset")
+	cmd.Env = appEnv(os.Environ(), script)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(string(output), "flag provided but not defined") {
+		return errResetUnsupported
+	}
+	return fmt.Errorf("playlog -reset: %w: %s", err, strings.TrimSpace(string(output)))
+}
+
+// appEnv is env for running the mrext app at path from Remote. Remote's own
+// MREXT_APP_PATH and MREXT_CONFIG would otherwise pass on: PlayLog would look
+// for a daemon named after Remote, find none and clear the history under the
+// running one, and start a copy of Remote's binary with Remote's settings in
+// its place.
+func appEnv(env []string, path string) []string {
+	clean := make([]string, 0, len(env)+1)
+	for _, entry := range env {
+		key, _, _ := strings.Cut(entry, "=")
+		if key == config.UserAppPathEnv || key == config.UserConfigEnv {
+			continue
+		}
+		clean = append(clean, entry)
+	}
+	return append(clean, config.UserAppPathEnv+"="+path)
+}
+
+// HandleReset serves DELETE /playlog: it clears the play history, keeping
+// the previous one in playlog.db.bak.
+func HandleReset(env *Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		if !exists(env.Script) {
+			http.Error(w, "PlayLog is not installed", http.StatusNotFound)
+			return
+		}
+		resetting.Lock()
+		defer resetting.Unlock()
+		// Not the request's context: a client that goes away must not stop
+		// PlayLog half way through.
+		ctx, cancel := context.WithTimeout(context.Background(), resetTimeout)
+		defer cancel()
+		err := env.Reset(ctx)
+		switch {
+		case errors.Is(err, errResetUnsupported):
+			http.Error(w, err.Error(), http.StatusNotImplemented)
+		case err != nil:
+			env.Logger.Error("reset play log: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		default:
+			env.Logger.Info("play log reset")
+			w.WriteHeader(http.StatusNoContent)
+		}
 	}
 }
 
