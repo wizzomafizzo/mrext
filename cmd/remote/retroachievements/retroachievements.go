@@ -68,8 +68,11 @@ const coreRewrite = time.Second
 
 // launchRecord is a launch that asked for a mode, and when its core started.
 type launchRecord struct {
-	before   time.Time
-	started  time.Time
+	before  time.Time
+	started time.Time
+	// until is CORENAME's time when a launch without a mode followed this
+	// one; zero until one does. A core after it is the later launch's.
+	until    time.Time
 	hardcore bool
 }
 
@@ -78,7 +81,22 @@ type launchRecord struct {
 // build rewrites CORENAME about 40 ms after the first write (SuperStation,
 // RA_SNES), so the time first seen may not be the one that stays.
 func (r *launchRecord) owns(core time.Time) bool {
-	return !r.started.IsZero() && !core.Before(r.started) && core.Sub(r.started) <= coreRewrite
+	return !r.started.IsZero() && !core.Before(r.started) && core.Sub(r.started) <= coreRewrite &&
+		r.ran(core)
+}
+
+// ran reports whether a core that started at core can be this launch's:
+// one started after a later launch without a mode is that launch's.
+func (r *launchRecord) ran(core time.Time) bool {
+	return r.until.IsZero() || !core.After(r.until)
+}
+
+// adopt takes core as the launch's own when none is yet and core started
+// after the launch, and before any later launch without a mode.
+func (r *launchRecord) adopt(core time.Time) {
+	if r.started.IsZero() && !core.IsZero() && !core.Equal(r.before) && r.ran(core) {
+		r.started = core
+	}
 }
 
 // Main writes CORENAME as a new core starts, about 0.1 s before it reads
@@ -165,9 +183,7 @@ func (m *Modes) sessionLocked(file mister.RAHardcore) string {
 		return sessionUnknown
 	}
 	if last := m.last; last != nil {
-		if last.started.IsZero() && !core.Equal(last.before) {
-			last.started = core
-		}
+		last.adopt(core)
 		if last.owns(core) {
 			return sessionName(last.hardcore)
 		}
@@ -249,12 +265,15 @@ func (m *Modes) Launch(hardcore *bool, launch func() error) error {
 
 // plainLocked readies a launch that asks for no mode: a mode still waiting
 // for its core is put back, so the launch starts in the default, and the
-// launch before stops counting, so the new core is never taken for it.
+// launch before keeps only the core running now, so the new core is never
+// taken for it. A launch that fails leaves that core, and its mode, running.
 func (m *Modes) plainLocked() {
 	if err := m.restoreLocked(); err != nil {
 		m.logger.Error("retroachievements: putting the default back: %s", err)
 	}
-	m.last = nil
+	if last := m.last; last != nil && last.until.IsZero() {
+		last.until = m.coreStarted()
+	}
 }
 
 // Settled readies a launch without a mode before next, and runs next under
@@ -312,9 +331,7 @@ func (m *Modes) restoreAfterStart(generation uint64, record *launchRecord) {
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if record.started.IsZero() {
-		record.started = started
-	}
+	record.adopt(started)
 	if started.IsZero() && m.last == record {
 		// The core never started: a later core is not this launch's.
 		m.last = nil
