@@ -130,6 +130,7 @@ func defaultUserConfig() *config.UserConfig {
 func main() {
 	svcOpt := flag.String("service", "", "manage playlog service (start, stop, restart, status)")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	reset := flag.Bool("reset", false, "clear the play history, keeping a copy in playlog.db.bak, and exit")
 	flag.Parse()
 	if *showVersion {
 		_, _ = fmt.Printf("%s %s\n", "playlog", version.String())
@@ -156,6 +157,17 @@ func main() {
 		logger.Error("error creating service: %s", err)
 		_, _ = fmt.Println("Error creating service:", err)
 		os.Exit(1)
+	}
+
+	if *reset {
+		running := func() bool { return service.AppRunning(appName) }
+		if resetErr := resetHistory(svc, running, config.PlayLogDbFile, playLogBackupFile); resetErr != nil {
+			logger.Error("error resetting play history: %s", resetErr)
+			_, _ = fmt.Println("Error resetting play history:", resetErr)
+			os.Exit(1)
+		}
+		logger.Info("play history reset, previous copy in %s", playLogBackupFile)
+		return
 	}
 
 	recents, err := mister.RecentsOptionEnabled()

@@ -61,9 +61,17 @@ The question about adding PlayLog to MiSTer startup is the same question, asked 
 
 `playlog.sh -service start|stop|restart|status` is unchanged and stays headless, so `user-startup.sh` is unaffected.
 
+## Reset
+
+`playlog.sh -reset` clears the play history: every event, core time and game time. It copies `playlog.db` to `playlog.db.bak` first, replacing an older copy, so the last history cleared can be put back by stopping PlayLog and renaming the copy over the database. It runs headless and exits.
+
+If the service is running, the reset stops it first and starts it again after. PlayLog keeps the totals of the cores and games it has seen in memory and writes them back as they run, so clearing the database under a running service would be undone the next time one of them starts. Stopping it also saves the time of the game running now, so the copy holds it; that game then counts again from zero.
+
+[Remote](remote.md) runs the same reset for `DELETE /api/playlog`.
+
 ## Remote
 
-[Remote](remote.md) serves PlayLog's stats to its clients over its API: time per game and system, play counts, recent sessions and a summary. It only reads the database, so it adds no writes to the SD card.
+[Remote](remote.md) serves PlayLog's stats to its clients over its API: time per game and system, play counts, recent sessions and a summary. It only reads the database, so it adds no writes to the SD card; a reset asked through Remote is carried out by PlayLog, as above.
 
 ## Configuration
 
