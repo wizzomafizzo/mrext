@@ -63,7 +63,7 @@ The question about adding PlayLog to MiSTer startup is the same question, asked 
 
 ## Reset
 
-`playlog.sh -reset` clears the play history: every event, core time and game time. It copies `playlog.db` to `playlog.db.bak` first, replacing an older copy, so the last history cleared can be put back by stopping PlayLog and renaming the copy over the database. It runs headless and exits.
+`playlog.sh -reset` clears the play history: every event, core time and game time. It copies `playlog.db` to `playlog.db.bak` first, replacing an older copy, so the last history cleared can be put back by stopping PlayLog and renaming the copy over the database. A history that is already empty is left as it is and the copy is kept. It runs headless and exits.
 
 If the service is running, the reset stops it first and starts it again after. PlayLog keeps the totals of the cores and games it has seen in memory and writes them back as they run, so clearing the database under a running service would be undone the next time one of them starts. Stopping it also saves the time of the game running now, so the copy holds it; that game then counts again from zero.
 

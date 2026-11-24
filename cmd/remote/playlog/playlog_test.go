@@ -455,6 +455,36 @@ func TestHandleReset(t *testing.T) {
 	}
 }
 
+// Not parallel: it holds the package's reset lock.
+func TestHandleResetTurnsAwayASecondReset(t *testing.T) {
+	env := testEnv(t, library(t))
+	if err := os.WriteFile(env.Script, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	started := make(chan struct{})
+	release := make(chan struct{})
+	calls := 0
+	env.Reset = func(context.Context) error {
+		calls++
+		close(started)
+		<-release
+		return nil
+	}
+	first := make(chan int)
+	go func() { first <- resetCode(t, env) }()
+	<-started
+	if code := resetCode(t, env); code != http.StatusConflict {
+		t.Errorf("second reset = %d, want %d", code, http.StatusConflict)
+	}
+	close(release)
+	if code := <-first; code != http.StatusNoContent {
+		t.Errorf("first reset = %d", code)
+	}
+	if calls != 1 {
+		t.Errorf("reset ran %d times, want 1", calls)
+	}
+}
+
 func TestRunReset(t *testing.T) {
 	// Remote's own settings in the environment, as on a MiSTer.
 	t.Setenv(config.UserAppPathEnv, "/media/fat/Scripts/remote.sh")

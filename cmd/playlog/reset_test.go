@@ -225,3 +225,20 @@ func TestResetRefusesADaemonItCannotManage(t *testing.T) {
 		t.Fatalf("rows = %v, want the history untouched", got)
 	}
 }
+
+func TestResetTwiceKeepsTheBackup(t *testing.T) {
+	path := historyFixture(t)
+	backup := path + ".bak"
+	for range 2 {
+		svc := &fakeDaemon{running: true}
+		if err := resetHistory(svc, svcRuns(svc), path, backup); err != nil {
+			t.Fatal(err)
+		}
+		if !svc.running {
+			t.Fatal("PlayLog was not started again")
+		}
+	}
+	if got := rows(t, backup); got != [3]int{1, 1, 1} {
+		t.Fatalf("backup rows = %v, want the history before the first reset", got)
+	}
+}

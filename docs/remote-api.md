@@ -1029,7 +1029,7 @@ This method takes no arguments.
 
 On success, returns `204`.
 
-If PlayLog is not installed, returns `404`. If the installed PlayLog is too old to reset, returns `501`. If the reset fails, returns `500` with the reason; the history is cleared only once PlayLog has stopped and the copy is written.
+If PlayLog is not installed, returns `404`. If a reset is already running, returns `409`. If the installed PlayLog is too old to reset, returns `501`. If the reset fails, returns `500` with the reason; the history is cleared only once PlayLog has stopped and the copy is written.
 
 Example request:
 

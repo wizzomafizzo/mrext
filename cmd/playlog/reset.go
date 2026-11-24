@@ -77,11 +77,11 @@ func resetHistory(svc daemon, running func() bool, path, backup string) (err err
 		}()
 	}
 
-	if copyErr := copyFile(path, backup); copyErr != nil {
-		if errors.Is(copyErr, os.ErrNotExist) {
+	if _, statErr := os.Stat(path); statErr != nil {
+		if errors.Is(statErr, os.ErrNotExist) {
 			return nil
 		}
-		return fmt.Errorf("back up play history: %w", copyErr)
+		return fmt.Errorf("check play history: %w", statErr)
 	}
 
 	db, err := openPlayLogDbAt(path)
@@ -89,7 +89,38 @@ func resetHistory(svc daemon, running func() bool, path, backup string) (err err
 		return err
 	}
 	defer func() { err = errors.Join(err, db.db.Close()) }()
+
+	// An empty history has nothing to keep: copying it would replace the
+	// backup of the last history cleared, the only copy left of it.
+	empty, err := db.empty()
+	if err != nil {
+		return err
+	}
+	if empty {
+		return nil
+	}
+
+	if copyErr := copyFile(path, backup); copyErr != nil {
+		return fmt.Errorf("back up play history: %w", copyErr)
+	}
 	return db.clear()
+}
+
+// empty reports whether no table holds a row.
+func (p *playLogDb) empty() (bool, error) {
+	ctx := context.Background()
+	for _, table := range []string{"events", "core_times", "game_times"} {
+		var found int
+		// #nosec G202 -- the table names are the constants above.
+		err := p.db.QueryRowContext(ctx, "select exists (select 1 from "+table+")").Scan(&found)
+		if err != nil {
+			return false, fmt.Errorf("check %s: %w", table, err)
+		}
+		if found != 0 {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // startAndWait starts the daemon and waits until it runs, so whoever asked

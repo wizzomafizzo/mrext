@@ -176,7 +176,12 @@ func HandleReset(env *Env) http.HandlerFunc {
 			http.Error(w, "PlayLog is not installed", http.StatusNotFound)
 			return
 		}
-		resetting.Lock()
+		// A second request while one runs is turned away, not queued: run
+		// after the first, it would find the history already cleared.
+		if !resetting.TryLock() {
+			http.Error(w, "a reset is already running", http.StatusConflict)
+			return
+		}
 		defer resetting.Unlock()
 		// Not the request's context: a client that goes away must not stop
 		// PlayLog half way through.
