@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/wizzomafizzo/mrext/pkg/config"
@@ -162,7 +163,8 @@ func (p *playLogDb) clear() error {
 }
 
 // copyFile copies src to dst through a staged file, so dst is never left
-// half written.
+// half written. The copy is on the card before it returns: the history is
+// cleared right after, and MiSTers are often switched off at the wall.
 func copyFile(src, dst string) error {
 	// #nosec G304 -- src is PlayLog's own database.
 	data, err := os.ReadFile(src)
@@ -170,13 +172,51 @@ func copyFile(src, dst string) error {
 		return fmt.Errorf("read %s: %w", src, err)
 	}
 	staged := dst + ".tmp"
-	// #nosec G306 G703 -- PlayLog's fixed backup path, same mode as the database.
-	if err := os.WriteFile(staged, data, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", staged, err)
+	if err := writeSynced(staged, data); err != nil {
+		return errors.Join(err, os.Remove(staged))
 	}
 	// #nosec G703 -- dst is PlayLog's fixed backup path.
 	if err := os.Rename(staged, dst); err != nil {
 		return errors.Join(fmt.Errorf("replace %s: %w", dst, err), os.Remove(staged))
+	}
+	return syncDir(filepath.Dir(dst))
+}
+
+// writeSynced writes data to path and flushes it to the card.
+func writeSynced(path string, data []byte) (err error) {
+	// #nosec G302 G304 -- PlayLog's fixed backup path, same mode as the database.
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close %s: %w", path, closeErr))
+		}
+	}()
+	if _, err := f.Write(data); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	if err := f.Sync(); err != nil {
+		return fmt.Errorf("sync %s: %w", path, err)
+	}
+	return nil
+}
+
+// syncDir flushes a folder's entries, so a rename in it survives a power cut.
+func syncDir(path string) error {
+	// #nosec G304 -- the folder of PlayLog's backup.
+	dir, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", path, err)
+	}
+	syncErr := dir.Sync()
+	closeErr := dir.Close()
+	if syncErr != nil {
+		return fmt.Errorf("sync %s: %w", path, syncErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("close %s: %w", path, closeErr)
 	}
 	return nil
 }
