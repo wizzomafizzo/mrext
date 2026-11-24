@@ -150,10 +150,16 @@ func hardcoreInFile(t *testing.T, modes *Modes) bool {
 func startCore(t *testing.T, modes *Modes, name string) {
 	t.Helper()
 	later := time.Now().Add(time.Second)
-	if err := os.WriteFile(modes.coreName, []byte(name), 0o644); err != nil {
+	// Dated before it replaces CORENAME, so the restore worker never sees
+	// the time of the write itself.
+	staged := modes.coreName + ".tmp"
+	if err := os.WriteFile(staged, []byte(name), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chtimes(modes.coreName, later, later); err != nil {
+	if err := os.Chtimes(staged, later, later); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(staged, modes.coreName); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -368,6 +374,60 @@ func TestSessionOfALaunchInTheOtherMode(t *testing.T) {
 	}
 }
 
+func TestSessionOfALaunchWhoseCoreIsWrittenTwice(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.path, time.Hour)
+	age(t, modes.coreName, time.Hour)
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	startCore(t, modes, "RA_SNES")
+	// A client asks as soon as the core shows up, between the two writes.
+	if got := session(t, modes); got != sessionHardcore {
+		t.Fatalf("session = %q, want the launch's mode", got)
+	}
+	info, err := os.Stat(modes.coreName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again := info.ModTime().Add(40 * time.Millisecond)
+	if err := os.Chtimes(modes.coreName, again, again); err != nil {
+		t.Fatal(err)
+	}
+	waitSettled(t, modes)
+	if got := session(t, modes); got != sessionHardcore {
+		t.Fatalf("session = %q, want the launch's mode after CORENAME was written again", got)
+	}
+}
+
+func TestPlainLaunchSoonAfterIsNotTheModeLaunchs(t *testing.T) {
+	modes := testModes(t, loginFixture)
+	age(t, modes.path, time.Hour)
+	age(t, modes.coreName, time.Hour)
+	if err := modes.Launch(on(), func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	startCore(t, modes, "RA_SNES")
+	waitSettled(t, modes)
+	if got := session(t, modes); got != sessionHardcore {
+		t.Fatalf("session = %q, want the launch's mode", got)
+	}
+	if err := modes.Launch(nil, func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(modes.coreName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon := info.ModTime().Add(500 * time.Millisecond)
+	if err := os.Chtimes(modes.coreName, soon, soon); err != nil {
+		t.Fatal(err)
+	}
+	if got := session(t, modes); got == sessionHardcore {
+		t.Fatal("the plain launch's core was taken for the hardcore launch before it")
+	}
+}
+
 func TestSessionOfALaunchInTheDefaultMode(t *testing.T) {
 	modes := testModes(t, loginFixture)
 	age(t, modes.coreName, time.Hour)
@@ -477,5 +537,34 @@ func TestCloseRefusesModeLaunches(t *testing.T) {
 	}
 	if err := modes.Launch(nil, func() error { launched = true; return nil }); err != nil || !launched {
 		t.Fatalf("a plain launch after Close: launched %v, err %v", launched, err)
+	}
+}
+
+func TestFailedPlainLaunchKeepsTheRunningCoresMode(t *testing.T) {
+	for name, plain := range map[string]func(*Modes){
+		"launch": func(modes *Modes) {
+			if err := modes.Launch(nil, func() error { return errors.New("no core") }); err == nil {
+				t.Fatal("the failed launch succeeded")
+			}
+		},
+		"route": func(modes *Modes) {
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/launch", http.NoBody)
+			modes.Settled(func(http.ResponseWriter, *http.Request) {})(httptest.NewRecorder(), request)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			modes := testModes(t, loginFixture)
+			age(t, modes.path, time.Hour)
+			age(t, modes.coreName, time.Hour)
+			if err := modes.Launch(on(), func() error { return nil }); err != nil {
+				t.Fatal(err)
+			}
+			startCore(t, modes, "RA_SNES")
+			waitSettled(t, modes)
+			plain(modes)
+			if got := session(t, modes); got != sessionHardcore {
+				t.Fatalf("session = %q, want the running core's mode", got)
+			}
+		})
 	}
 }
