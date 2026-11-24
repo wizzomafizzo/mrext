@@ -161,7 +161,8 @@ func main() {
 
 	if *reset {
 		running := func() bool { return service.AppRunning(appName) }
-		if resetErr := resetHistory(svc, running, config.PlayLogDbFile, playLogBackupFile); resetErr != nil {
+		resetErr := resetHistory(svc, running, config.PlayLogDbFile, playLogBackupFile, logger.Warn)
+		if resetErr != nil {
 			logger.Error("error resetting play history: %s", resetErr)
 			_, _ = fmt.Println("Error resetting play history:", resetErr)
 			os.Exit(1)

@@ -56,7 +56,10 @@ var resetStopTimeout = 20 * time.Second
 // running reports whether a PlayLog daemon runs, found without the app path
 // the service takes from the environment. If it runs but svc does not see it,
 // svc would neither stop it nor start the right binary, so nothing is done.
-func resetHistory(svc daemon, running func() bool, path, backup string) (err error) {
+//
+// warn reports a failure that leaves the history cleared, such as the file
+// not being compacted.
+func resetHistory(svc daemon, running func() bool, path, backup string, warn func(string, ...any)) (err error) {
 	if running() && !svc.Running() {
 		return errDaemonUnknown
 	}
@@ -104,7 +107,15 @@ func resetHistory(svc daemon, running func() bool, path, backup string) (err err
 	if copyErr := copyFile(path, backup); copyErr != nil {
 		return fmt.Errorf("back up play history: %w", copyErr)
 	}
-	return db.clear()
+	if err := db.clear(); err != nil {
+		return err
+	}
+	// The history is gone by now: a file left its old size is no reason to
+	// report the reset as failed.
+	if _, vacuumErr := db.db.ExecContext(context.Background(), "vacuum"); vacuumErr != nil {
+		warn("compact play log database: %s", vacuumErr)
+	}
+	return nil
 }
 
 // empty reports whether no table holds a row.
@@ -140,7 +151,7 @@ func startAndWait(svc daemon) error {
 	return nil
 }
 
-// clear empties every table in one transaction and compacts the file.
+// clear empties every table in one transaction.
 func (p *playLogDb) clear() error {
 	ctx := context.Background()
 	tx, err := p.db.BeginTx(ctx, nil)
@@ -155,9 +166,6 @@ func (p *playLogDb) clear() error {
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit reset: %w", err)
-	}
-	if _, err = p.db.ExecContext(ctx, "vacuum"); err != nil {
-		return fmt.Errorf("compact play log database: %w", err)
 	}
 	return nil
 }

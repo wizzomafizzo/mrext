@@ -125,7 +125,7 @@ func TestResetStopsPlayLogClearsAndStartsItAgain(t *testing.T) {
 	svc := &fakeDaemon{running: true}
 	svc.onStart = func() { atStart = rows(t, path) }
 
-	if err := resetHistory(svc, svcRuns(svc), path, backup); err != nil {
+	if err := resetHistory(svc, svcRuns(svc), path, backup, t.Logf); err != nil {
 		t.Fatal(err)
 	}
 	if svc.startPolls != 0 || !svc.running {
@@ -148,7 +148,7 @@ func TestResetStopsPlayLogClearsAndStartsItAgain(t *testing.T) {
 func TestResetWhilePlayLogIsStopped(t *testing.T) {
 	path := historyFixture(t)
 	svc := &fakeDaemon{}
-	if err := resetHistory(svc, svcRuns(svc), path, path+".bak"); err != nil {
+	if err := resetHistory(svc, svcRuns(svc), path, path+".bak", t.Logf); err != nil {
 		t.Fatal(err)
 	}
 	if len(svc.calls) != 0 {
@@ -162,7 +162,7 @@ func TestResetWhilePlayLogIsStopped(t *testing.T) {
 func TestResetWithoutADatabaseCreatesNothing(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "playlog.db")
-	if err := resetHistory(&fakeDaemon{}, svcRuns(&fakeDaemon{}), path, path+".bak"); err != nil {
+	if err := resetHistory(&fakeDaemon{}, svcRuns(&fakeDaemon{}), path, path+".bak", t.Logf); err != nil {
 		t.Fatal(err)
 	}
 	entries, err := os.ReadDir(dir)
@@ -184,7 +184,7 @@ func TestResetKeepsTheHistoryWhenPlayLogDoesNotStop(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			path := historyFixture(t)
-			if err := resetHistory(svc, svcRuns(svc), path, path+".bak"); err == nil {
+			if err := resetHistory(svc, svcRuns(svc), path, path+".bak", t.Logf); err == nil {
 				t.Fatal("reset succeeded")
 			}
 			if got := rows(t, path); got != [3]int{1, 1, 1} {
@@ -203,7 +203,7 @@ func TestResetStartsPlayLogAgainWhenClearingFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	svc := &fakeDaemon{running: true}
-	if err := resetHistory(svc, svcRuns(svc), path, path+".bak"); err == nil {
+	if err := resetHistory(svc, svcRuns(svc), path, path+".bak", t.Logf); err == nil {
 		t.Fatal("reset succeeded")
 	}
 	if !svc.Running() {
@@ -214,7 +214,7 @@ func TestResetStartsPlayLogAgainWhenClearingFails(t *testing.T) {
 func TestResetRefusesADaemonItCannotManage(t *testing.T) {
 	path := historyFixture(t)
 	svc := &fakeDaemon{}
-	err := resetHistory(svc, func() bool { return true }, path, path+".bak")
+	err := resetHistory(svc, func() bool { return true }, path, path+".bak", t.Logf)
 	if !errors.Is(err, errDaemonUnknown) {
 		t.Fatalf("err = %v, want errDaemonUnknown", err)
 	}
@@ -231,7 +231,7 @@ func TestResetTwiceKeepsTheBackup(t *testing.T) {
 	backup := path + ".bak"
 	for range 2 {
 		svc := &fakeDaemon{running: true}
-		if err := resetHistory(svc, svcRuns(svc), path, backup); err != nil {
+		if err := resetHistory(svc, svcRuns(svc), path, backup, t.Logf); err != nil {
 			t.Fatal(err)
 		}
 		if !svc.running {
@@ -240,5 +240,24 @@ func TestResetTwiceKeepsTheBackup(t *testing.T) {
 	}
 	if got := rows(t, backup); got != [3]int{1, 1, 1} {
 		t.Fatalf("backup rows = %v, want the history before the first reset", got)
+	}
+}
+
+func TestPlayLogDbWaitsForReaders(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "playlog.db")
+	db, err := openPlayLogDbAt(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.db.Close() }()
+	var timeout int
+	if err := db.db.QueryRowContext(context.Background(), "pragma busy_timeout").Scan(&timeout); err != nil {
+		t.Fatal(err)
+	}
+	if timeout != 5000 {
+		t.Fatalf("busy_timeout = %d, want 5000", timeout)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("database not at its path: %s", err)
 	}
 }
