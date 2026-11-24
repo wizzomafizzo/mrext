@@ -36,6 +36,7 @@
       * [Browse game folders](#browse-game-folders)
     * [Play log](#play-log)
       * [Play log status](#play-log-status)
+      * [Reset play log](#reset-play-log)
       * [Play log summary](#play-log-summary)
       * [List played games](#list-played-games)
       * [Get game play history](#get-game-play-history)
@@ -956,7 +957,7 @@ curl --request POST --url "http://mister:8182/api/games/view" --data '{"path":""
 
 ### Play log
 
-These endpoints read the play history recorded by [PlayLog](playlog.md), another mrext app. Remote only reads PlayLog's database; it never writes to it. Without PlayLog, the status endpoint says what is missing and the others return empty results.
+These endpoints read the play history recorded by [PlayLog](playlog.md), another mrext app. Remote only reads PlayLog's database; to clear it, it asks PlayLog, which clears it itself. Without PlayLog, the status endpoint says what is missing, the reset returns `404` and the others return empty results.
 
 Times are in seconds. Timestamps are in the MiSTer's time zone, as PlayLog recorded them.
 
@@ -995,6 +996,7 @@ On success, returns `200` and object with attributes:
 | `database`  | boolean | PlayLog has created its database.                                  |
 | `recents`   | boolean | The `recents` option is enabled in `MiSTer.ini`, which game tracking needs. |
 | `startup`   | boolean | PlayLog starts when the MiSTer boots.                              |
+| `reset`     | boolean | This Remote can clear the history with [Reset play log](#reset-play-log). Missing from older versions. |
 
 Example request:
 
@@ -1010,8 +1012,29 @@ Example response:
   "running": true,
   "database": true,
   "recents": true,
-  "startup": true
+  "startup": true,
+  "reset": true
 }
+```
+
+#### Reset play log
+
+Clears the play history: every event, core time and game time. Remote runs `playlog.sh -reset`, which stops the PlayLog service if it runs, copies `playlog.db` to `playlog.db.bak` (replacing an older copy), clears the database and starts the service again. A history that is already empty is left as it is, and so is the older copy. A game running at the time counts again from zero. See [Reset](playlog.md#reset).
+
+```plaintext
+DELETE /playlog
+```
+
+This method takes no arguments.
+
+On success, returns `204`.
+
+If PlayLog is not installed, returns `404`. If a reset is already running, returns `409`. If the installed PlayLog is too old to reset, returns `501`. If the reset fails, returns `500` with the reason; the history is cleared only once PlayLog has stopped and the copy is written.
+
+Example request:
+
+```shell
+curl --request DELETE --url "http://mister:8182/api/playlog"
 ```
 
 #### Play log summary

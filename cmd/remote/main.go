@@ -355,6 +355,7 @@ func setupAPI(
 	sub.HandleFunc("/playlog/games", playlog.HandleGames(playLog)).Methods("GET")
 	sub.HandleFunc("/playlog/game", playlog.HandleGame(playLog)).Methods("GET")
 	sub.HandleFunc("/playlog/sessions", playlog.HandleSessions(playLog)).Methods("GET")
+	sub.HandleFunc("/playlog", playlog.HandleReset(playLog)).Methods("DELETE")
 
 	launchToken := withSAMActivity(raModes.Settled(games.LaunchToken(logger, cfg, kbd)), logger)
 	sub.HandleFunc("/l/{data:.*}", origins.LaunchGuard(launchToken)).Methods("GET")

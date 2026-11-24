@@ -22,12 +22,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/wizzomafizzo/mrext/pkg/config"
 	"github.com/wizzomafizzo/mrext/pkg/service"
 	"github.com/wizzomafizzo/mrext/pkg/tracker"
 )
@@ -329,7 +333,7 @@ func TestApplyLiveNamesAGameNotSavedYet(t *testing.T) {
 		ID:   "1943mii",
 		Path: "/media/fat/_Arcade/1943 Mark II (US).mra",
 		Name: "1943 Mark II (US)",
-	}, 120)
+	}, 120, base.Add(time.Hour))
 	game := history.Games["1943mii"]
 	if game.Path != "/media/fat/_Arcade/1943 Mark II (US).mra" || game.Name != "1943 Mark II (US)" {
 		t.Errorf("game = %+v, want the tracker's path and name", game)
@@ -347,7 +351,7 @@ func TestApplyLiveExtendsTheRunningSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	// sf2 is still running: PlayLog last saved 900s, 600 of them this session.
-	history.ApplyLive(tracker.RunningGame{ID: sf2}, 1000)
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 1000, base.Add(72*time.Hour))
 	last := history.Sessions[len(history.Sessions)-1]
 	if last.ID != sf2 || last.Duration != 1000 {
 		t.Errorf("running session = %+v, want sf2 at 1000s", last)
@@ -357,13 +361,31 @@ func TestApplyLiveExtendsTheRunningSession(t *testing.T) {
 	}
 
 	// A closed session and a shorter live time change nothing.
-	history.ApplyLive(tracker.RunningGame{ID: metroid}, 9999)
-	history.ApplyLive(tracker.RunningGame{ID: sf2}, 10)
+	history.ApplyLive(tracker.RunningGame{ID: metroid}, 9999, base.Add(72*time.Hour))
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 10, base.Add(72*time.Hour))
 	if got := history.Games[metroid].Time; got != 3000 {
 		t.Errorf("metroid time = %d, want 3000", got)
 	}
 	if got := history.Games[sf2].Time; got != 1300 {
 		t.Errorf("sf2 time after a shorter live time = %d, want 1300", got)
+	}
+}
+
+func TestApplyLiveStopsAtTheStartOfPlayLogsSession(t *testing.T) {
+	t.Parallel()
+	history, err := Open(context.Background(), library(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// sf2's session opened at 48h20m. PlayLog restarted then, as a reset
+	// does, while Remote's tracker has counted the game for an hour.
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 3600, base.Add(48*time.Hour+30*time.Minute))
+	last := history.Sessions[len(history.Sessions)-1]
+	if last.Duration != 600 {
+		t.Errorf("running session = %ds, want the 600s since PlayLog's session started", last.Duration)
+	}
+	if got := history.Games[sf2].Time; got != 900 {
+		t.Errorf("sf2 time = %d, want 900", got)
 	}
 }
 
@@ -395,4 +417,134 @@ func TestHandlersIncludeTheRunningSession(t *testing.T) {
 	if summary.TotalTime != 4900 {
 		t.Errorf("live total = %d, want 4900", summary.TotalTime)
 	}
+}
+
+func TestStatusOffersReset(t *testing.T) {
+	t.Parallel()
+	var status Status
+	get(t, HandleStatus(testEnv(t, library(t))), "/playlog/status", &status)
+	if !status.Reset {
+		t.Fatal("status does not offer the reset")
+	}
+}
+
+func resetCode(t *testing.T, env *Env) int {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, "/playlog", http.NoBody)
+	HandleReset(env)(recorder, request)
+	return recorder.Code
+}
+
+func TestHandleReset(t *testing.T) {
+	t.Parallel()
+	installed := func(t *testing.T, result error) (*Env, *int) {
+		t.Helper()
+		env := testEnv(t, library(t))
+		if err := os.WriteFile(env.Script, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		calls := 0
+		env.Reset = func(context.Context) error {
+			calls++
+			return result
+		}
+		return env, &calls
+	}
+
+	env, calls := installed(t, nil)
+	if code := resetCode(t, env); code != http.StatusNoContent || *calls != 1 {
+		t.Errorf("reset = %d after %d calls", code, *calls)
+	}
+	env, _ = installed(t, errResetUnsupported)
+	if code := resetCode(t, env); code != http.StatusNotImplemented {
+		t.Errorf("old PlayLog = %d", code)
+	}
+	env, _ = installed(t, errors.New("playlog did not stop"))
+	if code := resetCode(t, env); code != http.StatusInternalServerError {
+		t.Errorf("failed reset = %d", code)
+	}
+
+	env = testEnv(t, library(t))
+	called := false
+	env.Reset = func(context.Context) error { called = true; return nil }
+	if code := resetCode(t, env); code != http.StatusNotFound || called {
+		t.Errorf("not installed = %d, reset called %v", code, called)
+	}
+}
+
+// Not parallel: it holds the package's reset lock.
+func TestHandleResetTurnsAwayASecondReset(t *testing.T) {
+	env := testEnv(t, library(t))
+	if err := os.WriteFile(env.Script, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	started := make(chan struct{})
+	release := make(chan struct{})
+	calls := 0
+	env.Reset = func(context.Context) error {
+		calls++
+		close(started)
+		<-release
+		return nil
+	}
+	first := make(chan int)
+	go func() { first <- resetCode(t, env) }()
+	<-started
+	if code := resetCode(t, env); code != http.StatusConflict {
+		t.Errorf("second reset = %d, want %d", code, http.StatusConflict)
+	}
+	close(release)
+	if code := <-first; code != http.StatusNoContent {
+		t.Errorf("first reset = %d", code)
+	}
+	if calls != 1 {
+		t.Errorf("reset ran %d times, want 1", calls)
+	}
+}
+
+func TestRunReset(t *testing.T) {
+	// Remote's own settings in the environment, as on a MiSTer.
+	t.Setenv(config.UserAppPathEnv, "/media/fat/Scripts/remote.sh")
+	t.Setenv(config.UserConfigEnv, "/media/fat/Scripts/remote.ini")
+	script := func(t *testing.T, body string) (string, string) {
+		t.Helper()
+		dir := t.TempDir()
+		path := filepath.Join(dir, "playlog.sh")
+		args := filepath.Join(dir, "args")
+		record := "echo \"$@|$" + config.UserAppPathEnv + "|$" + config.UserConfigEnv + "\" > " + args
+		// #nosec G306 -- the fake PlayLog must be executable.
+		if err := os.WriteFile(path, []byte("#!/bin/sh\n"+record+"\n"+body), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		return path, args
+	}
+
+	path, args := script(t, "exit 0\n")
+	if err := runReset(context.Background(), path); err != nil {
+		t.Fatal(err)
+	}
+	// PlayLog must see itself as the app, not Remote, and no Remote settings.
+	if got, want := readFile(t, args), "-reset|"+path+"|\n"; got != want {
+		t.Errorf("arguments and environment = %q, want %q", got, want)
+	}
+
+	path, _ = script(t, "echo 'flag provided but not defined: -reset' >&2\nexit 2\n")
+	if err := runReset(context.Background(), path); !errors.Is(err, errResetUnsupported) {
+		t.Errorf("old PlayLog: %v", err)
+	}
+
+	path, _ = script(t, "echo 'Error resetting play history: playlog did not stop'\nexit 1\n")
+	if err := runReset(context.Background(), path); err == nil || !strings.Contains(err.Error(), "did not stop") {
+		t.Errorf("failed reset: %v", err)
+	}
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path) // #nosec G304 -- a temporary test file.
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
 }

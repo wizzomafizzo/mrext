@@ -40,7 +40,9 @@ func openPlayLogDb() (*playLogDb, error) {
 }
 
 func openPlayLogDbAt(path string) (*playLogDb, error) {
-	db, err := sql.Open("sqlite", path)
+	// Remote reads this database while PlayLog writes it: wait for its read
+	// to finish rather than fail at once.
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("open play log database: %w", err)
 	}
