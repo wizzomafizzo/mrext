@@ -185,6 +185,13 @@ func HandleReset(env *Env) http.HandlerFunc {
 			return
 		}
 		defer resetting.Unlock()
+		// The server's write timeout is shorter than a reset can take: the
+		// client would lose the answer to a reset that went through.
+		deadline := time.Now().Add(resetTimeout + 10*time.Second)
+		if err := http.NewResponseController(w).SetWriteDeadline(deadline); err != nil &&
+			!errors.Is(err, http.ErrNotSupported) {
+			env.Logger.Warn("reset play log: extend write deadline: %s", err)
+		}
 		// Not the request's context: a client that goes away must not stop
 		// PlayLog half way through.
 		ctx, cancel := context.WithTimeout(context.Background(), resetTimeout)
@@ -301,7 +308,8 @@ func load(w http.ResponseWriter, r *http.Request, env *Env) (*History, bool) {
 	// game's time, and a session left open by a crash would take on a
 	// later run's seconds.
 	if env.Live != nil && env.Running() {
-		history.ApplyLive(env.Live())
+		live, seconds := env.Live()
+		history.ApplyLive(live, seconds, env.Now())
 	}
 	return history, true
 }

@@ -237,7 +237,11 @@ func (h *History) readSessions(ctx context.Context, db *sql.DB) error {
 // Until that first save a game has no path, and an arcade game only its
 // set name, so a client cannot match it to a game it lists. The tracker
 // knows both, and fills them in.
-func (h *History) ApplyLive(live tracker.RunningGame, seconds int) {
+//
+// The tracker's time is capped at how long ago, at now, PlayLog's session
+// started: PlayLog restarted under a running game, as a reset does, opens a
+// new session that the tracker's earlier time must not run past.
+func (h *History) ApplyLive(live tracker.RunningGame, seconds int, now time.Time) {
 	id := live.ID
 	if id == "" {
 		return
@@ -260,6 +264,9 @@ func (h *History) ApplyLive(live tracker.RunningGame, seconds int) {
 			if game, ok := h.Games[id]; ok {
 				session.Path, session.Name = game.Path, game.Name
 			}
+		}
+		if elapsed := int(now.Sub(session.Start) / time.Second); elapsed >= 0 {
+			seconds = min(seconds, elapsed)
 		}
 		if session.open && seconds > session.Duration {
 			if game, ok := h.Games[id]; ok {

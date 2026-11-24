@@ -333,7 +333,7 @@ func TestApplyLiveNamesAGameNotSavedYet(t *testing.T) {
 		ID:   "1943mii",
 		Path: "/media/fat/_Arcade/1943 Mark II (US).mra",
 		Name: "1943 Mark II (US)",
-	}, 120)
+	}, 120, base.Add(time.Hour))
 	game := history.Games["1943mii"]
 	if game.Path != "/media/fat/_Arcade/1943 Mark II (US).mra" || game.Name != "1943 Mark II (US)" {
 		t.Errorf("game = %+v, want the tracker's path and name", game)
@@ -351,7 +351,7 @@ func TestApplyLiveExtendsTheRunningSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	// sf2 is still running: PlayLog last saved 900s, 600 of them this session.
-	history.ApplyLive(tracker.RunningGame{ID: sf2}, 1000)
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 1000, base.Add(72*time.Hour))
 	last := history.Sessions[len(history.Sessions)-1]
 	if last.ID != sf2 || last.Duration != 1000 {
 		t.Errorf("running session = %+v, want sf2 at 1000s", last)
@@ -361,13 +361,31 @@ func TestApplyLiveExtendsTheRunningSession(t *testing.T) {
 	}
 
 	// A closed session and a shorter live time change nothing.
-	history.ApplyLive(tracker.RunningGame{ID: metroid}, 9999)
-	history.ApplyLive(tracker.RunningGame{ID: sf2}, 10)
+	history.ApplyLive(tracker.RunningGame{ID: metroid}, 9999, base.Add(72*time.Hour))
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 10, base.Add(72*time.Hour))
 	if got := history.Games[metroid].Time; got != 3000 {
 		t.Errorf("metroid time = %d, want 3000", got)
 	}
 	if got := history.Games[sf2].Time; got != 1300 {
 		t.Errorf("sf2 time after a shorter live time = %d, want 1300", got)
+	}
+}
+
+func TestApplyLiveStopsAtTheStartOfPlayLogsSession(t *testing.T) {
+	t.Parallel()
+	history, err := Open(context.Background(), library(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// sf2's session opened at 48h20m. PlayLog restarted then, as a reset
+	// does, while Remote's tracker has counted the game for an hour.
+	history.ApplyLive(tracker.RunningGame{ID: sf2}, 3600, base.Add(48*time.Hour+30*time.Minute))
+	last := history.Sessions[len(history.Sessions)-1]
+	if last.Duration != 600 {
+		t.Errorf("running session = %ds, want the 600s since PlayLog's session started", last.Duration)
+	}
+	if got := history.Games[sf2].Time; got != 900 {
+		t.Errorf("sf2 time = %d, want 900", got)
 	}
 }
 

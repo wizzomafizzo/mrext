@@ -957,7 +957,7 @@ curl --request POST --url "http://mister:8182/api/games/view" --data '{"path":""
 
 ### Play log
 
-These endpoints read the play history recorded by [PlayLog](playlog.md), another mrext app. Remote only reads PlayLog's database; to clear it, it asks PlayLog, which clears it itself. Without PlayLog, the status endpoint says what is missing and the others return empty results.
+These endpoints read the play history recorded by [PlayLog](playlog.md), another mrext app. Remote only reads PlayLog's database; to clear it, it asks PlayLog, which clears it itself. Without PlayLog, the status endpoint says what is missing, the reset returns `404` and the others return empty results.
 
 Times are in seconds. Timestamps are in the MiSTer's time zone, as PlayLog recorded them.
 
@@ -1019,7 +1019,7 @@ Example response:
 
 #### Reset play log
 
-Clears the play history: every event, core time and game time. Remote runs `playlog.sh -reset`, which stops the PlayLog service if it runs, copies `playlog.db` to `playlog.db.bak` (replacing an older copy), clears the database and starts the service again. A game running at the time counts again from zero. See [Reset](playlog.md#reset).
+Clears the play history: every event, core time and game time. Remote runs `playlog.sh -reset`, which stops the PlayLog service if it runs, copies `playlog.db` to `playlog.db.bak` (replacing an older copy), clears the database and starts the service again. A history that is already empty is left as it is, and so is the older copy. A game running at the time counts again from zero. See [Reset](playlog.md#reset).
 
 ```plaintext
 DELETE /playlog
