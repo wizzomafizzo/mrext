@@ -51,6 +51,12 @@ func loadRecentWithPublisher(filename string, publish func(string) error) error 
 	}
 
 	newest := recents[0]
+	if isSettingsEntry(newest.Directory) {
+		// The OSD's video and audio options keep a recent list of their own:
+		// picking "Scanlines - Soft" writes presets/Scanlines - Soft.ini to
+		// <core>_recent_15.cfg while the game keeps running.
+		return nil
+	}
 
 	if strings.HasSuffix(filename, "cores_recent.cfg") {
 		// main menu's recent file, written when launching mgls
@@ -85,6 +91,23 @@ func loadRecentWithPublisher(filename string, publish func(string) error) error 
 	}
 
 	return nil
+}
+
+// settingsFolders are the SD card folders MiSTer's OSD picks options from
+// (presets, filters, gamma, shadow masks), never games.
+var settingsFolders = []string{"presets", "filters", "filters_audio", "gamma", "shadow_masks"}
+
+// isSettingsEntry reports whether a recent entry's directory lies in one of
+// settingsFolders. Main writes it relative to the SD card, in any case.
+func isSettingsEntry(directory string) bool {
+	rel := strings.TrimPrefix(filepath.ToSlash(directory), config.SdFolder+"/")
+	top, _, _ := strings.Cut(strings.TrimPrefix(rel, "/"), "/")
+	for _, folder := range settingsFolders {
+		if strings.EqualFold(top, folder) {
+			return true
+		}
+	}
+	return false
 }
 
 // StartFileWatch Start thread for monitoring changes to all files relating to core/game launches.
