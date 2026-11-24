@@ -128,8 +128,10 @@ func HandleStatus(env *Env) http.HandlerFunc {
 // errResetUnsupported is a PlayLog from before the -reset option.
 var errResetUnsupported = errors.New("this PlayLog cannot reset its history, update it")
 
-// resetTimeout bounds a reset: PlayLog may take up to 20 seconds to stop.
-const resetTimeout = time.Minute
+// resetTimeout bounds a reset. PlayLog may wait 20 seconds to stop, 20 to
+// start again and some more for Remote's reads; killed between the stop and
+// the start, it would be left stopped, so this stays well above all of them.
+const resetTimeout = 2 * time.Minute
 
 // resetting lets one reset run at a time.
 var resetting sync.Mutex
